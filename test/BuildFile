@@ -1,0 +1,30 @@
+<use name=FWCore/Framework>
+<use name=FWCore/Utilities>
+<use name=FWCore/ParameterSet>
+<use name=RecoMuon/TrackingTools>
+<use name=TrackingTools/TransientTrack>
+
+<use name=Foundation/PluginManager>
+<use name=DataFormats/L1Trigger>
+<use name=DataFormats/TrackReco>
+<use name=SimDataFormats/Track>
+<use name=SimDataFormats/Vertex>
+
+<use name=CLHEP>
+<use name=root>
+
+<library file="STAMuonAnalyzer.cc" name=STAMuonAnalyzer>
+  <flags SEAL_PLUGIN_NAME="STAMuonAnalyzer"> 
+</library> 
+
+<library file="STAMuonAnalyzer2.cc" name=STAMuonAnalyzer2>
+  <flags SEAL_PLUGIN_NAME="STAMuonAnalyzer2"> 
+</library> 
+
+<library file="RecoMuonEffAnlyzer.cc" name=RecoMuonEffAnlyzer>
+  <flags SEAL_PLUGIN_NAME="RecoMuonEffAnlyzer"> 
+</library> 
+
+<library file="MyMuonAnalyzer.cc" name=MyMuonAnalyzer>
+  <flags SEAL_PLUGIN_NAME="MyMuonAnalyzer"> 
+</library> 
