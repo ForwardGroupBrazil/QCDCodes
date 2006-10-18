@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Wed Sep 27 14:54:28 EDT 2006
-// $Id$
+// $Id: MyMuonAnalyzer.cc,v 1.1 2006/10/16 18:06:54 anonymous Exp $
 //
 //
 
@@ -213,11 +213,10 @@ MyMuonAnalyzer::~MyMuonAnalyzer()
 void
 MyMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-  cout << "DEBUG  210" << endl;
   //using namespace edm;
   using reco::TrackCollection;
   using reco::MuonCollection;
-  cout << "DEBUG  214" << endl;
+
   // Update the services
   theService->update(iSetup);
 
@@ -226,45 +225,36 @@ MyMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   
   iEvent.getByLabel( TKtrackTags_, TKTrackCollection);
   const reco::TrackCollection tkTC = *(TKTrackCollection.product());
-  cout << "TK size: " << tkTC.size() << endl;
 
   iEvent.getByLabel( STAtrackTags_, STATrackCollection);
   const reco::TrackCollection staTC = *(STATrackCollection.product());
-  cout << "STA size: " << staTC.size() << endl;
   
   iEvent.getByLabel(MuonTags_,MuCollection);
   const reco::MuonCollection muonC = *(MuCollection.product());
-  cout << "Mu size: " << muonC.size() << endl;
 
-  SimTrackRefVector simMuons1, simMuons2;
+  SimTrackRefVector simMuons1;
   int position = 0;
   SimTrackContainer::const_iterator simTrack;
   for (simTrack = simTC.begin(); simTrack != simTC.end(); ++simTrack){
+    position++;
     if (abs((*simTrack).type()) == 13
 	&& (*simTrack).momentum().perp() >= theMinPt 
 	&& (*simTrack).momentum().eta() <= theMaxEta
 	&& (*simTrack).momentum().eta() >= theMinEta
 	) {
-      position++;
-      //cout<<"Sim pT: "<<(*simTrack).momentum().perp()<<endl;
-      //cout<<"Sim Eta: "<<(*simTrack).momentum().eta()<<endl;
       SimTrackRef simTrackRef(SIMTrackCollection,position-1);
       simMuons1.push_back(simTrackRef);
-      simMuons2.push_back(simTrackRef);
       hi_sim_pt->Fill((*simTrack).momentum().perp());
       hi_sim_eta->Fill(((*simTrack).momentum().eta()));
     }    
   }
 
-  reco::TrackRefVector staMuons1, staMuons2;
+  reco::TrackRefVector staMuons1;
   TrackCollection::const_iterator staTrack;
   position = 0;
   for (staTrack = staTC.begin(); staTrack != staTC.end(); ++staTrack){
     position++;
-    //cout<<"STA pT: "<<(*staTrack).pt()<<endl;
-    //cout<<"STA Eta: "<<(*staTrack).eta()<<endl;
     staMuons1.push_back(TrackRef(STATrackCollection,position-1));
-    staMuons2.push_back(TrackRef(STATrackCollection,position-1));
     hi_sta_pt->Fill((*staTrack).pt());
     hi_sta_eta->Fill(((*staTrack).eta()));
     //ADAM
@@ -280,42 +270,34 @@ MyMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   for (glbMuon = muonC.begin(); glbMuon != muonC.end(); ++glbMuon){
     position++;
     TrackRef glbTrack = glbMuon->combinedMuon();
-    //cout<<"GLB pT: "<<(*glbTrack).pt()<<endl;
-    //cout<<"GLB Eta: "<<(*glbTrack).eta()<<endl;
     glbMuons1.push_back(MuonRef(MuCollection,position-1));
     glbMuons2.push_back(MuonRef(MuCollection,position-1));
     hi_glb_pt->Fill((*glbTrack).pt());
     hi_glb_eta->Fill(((*glbTrack).eta())); 
   }
   
-  /*
-    for (MuonRefVector::const_iterator glbTrack = glbMuons1.begin(); glbTrack != glbMuons1.end(); ++glbTrack){
+  for (MuonRefVector::const_iterator glbTrack = glbMuons1.begin(); glbTrack != glbMuons1.end(); ++glbTrack){
     for (TrackRefVector::const_iterator staTrack = staMuons1.begin(); staTrack != staMuons1.end(); ++staTrack){
-    float D = calculateDistance((*glbTrack)->combinedMuon()->momentum(),(*staTrack)->momentum());
-    hi_dist_glb_sta->Fill(D);
+      float D = calculateDistance((*glbTrack)->combinedMuon()->momentum(),(*staTrack)->momentum());
+      hi_dist_glb_sta->Fill(D);
     }
-    }
-  */
+  }
   
-  /*
-    for (MuonRefVector::const_iterator glbTrack = glbMuons1.begin(); glbTrack != glbMuons1.end(); ++glbTrack){
+  for (MuonRefVector::const_iterator glbTrack = glbMuons1.begin(); glbTrack != glbMuons1.end(); ++glbTrack){
     for (SimTrackRefVector::const_iterator simTrack = simMuons1.begin(); simTrack != simMuons1.end(); ++simTrack){
-    const math::XYZVector simVect((*simTrack)->momentum().x(),(*simTrack)->momentum().y(),(*simTrack)->momentum().z());
-    float D = calculateDistance((*glbTrack)->combinedVector()->momentum(),simVect);
-    hi_dist_glb_sim->Fill(D);
+      const math::XYZVector simVect((*simTrack)->momentum().x(),(*simTrack)->momentum().y(),(*simTrack)->momentum().z());
+      float D = calculateDistance((*glbTrack)->combinedMuon()->momentum(),simVect);
+      hi_dist_glb_sim->Fill(D);
     }
-    }
-  */
+  }
   
-  /*
-    for (TrackRefVector::const_iterator staTrack = staMuons1.begin(); staTrack != staMuons1.end(); ++staTrack){
+  for (TrackRefVector::const_iterator staTrack = staMuons1.begin(); staTrack != staMuons1.end(); ++staTrack){
     for (SimTrackRefVector::const_iterator simTrack = simMuons1.begin(); simTrack != simMuons1.end(); ++simTrack){
-    const math::XYZVector simVect((*simTrack)->momentum().x(),(*simTrack)->momentum().y(),(*simTrack)->momentum().z());
-    float D = calculateDistance((*staTrack)->momentum(),simVect);
-    hi_dist_sta_sim->Fill(D);
+      const math::XYZVector simVect((*simTrack)->momentum().x(),(*simTrack)->momentum().y(),(*simTrack)->momentum().z());
+      float D = calculateDistance((*staTrack)->momentum(),simVect);
+      hi_dist_sta_sim->Fill(D);
     }
-    }
-  */
+  }
   
   //
   //Now make pairs
@@ -325,10 +307,9 @@ MyMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //Global-Simulated pairs
   vector<CandMuonSim> pairGlbSim;
   for (SimTrackRefVector::const_iterator simTrack = simMuons1.begin(); simTrack != simMuons1.end(); ++simTrack){
-    float minDist = 1000.;
+    float minDist = 9999.;
     int index = 0;
     int keep = -1;
-    //cout << "glbMuons1.size = " << glbMuons1.size() << endl;
     MuonRefVector::const_iterator match;
     for (MuonRefVector::const_iterator glbTrack = glbMuons1.begin(); glbTrack != glbMuons1.end(); ++glbTrack){
       //float deta = (*glbTrack)->combinedMuon()->eta() - (*simTrack)->momentum().eta();
@@ -349,17 +330,15 @@ MyMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       CandMuonSim tmp = CandMuonSim((*match),(*simTrack));
       pairGlbSim.push_back(tmp);
       glbMuons1.erase(match);
-      //cout << "pairGlbSim.size = " << pairGlbSim.size() << " index " << keep << endl;
     }
   }
 
   //Standalone-Simulated pairs
   vector<CandStaSim> pairStaSim;
   for (SimTrackRefVector::const_iterator simTrack = simMuons1.begin(); simTrack != simMuons1.end(); ++simTrack){
-    float minDist = 1000.;
+    float minDist = 9999.;
     int index = 0;
     int keep = -1;
-    //cout << "staMuons1.size = " << staMuons1.size() << endl;
     TrackRefVector::const_iterator match;
     for (TrackRefVector::const_iterator staTrack = staMuons1.begin(); staTrack != staMuons1.end(); ++staTrack){
       //float deta = (*staTrack)->eta() - (*simTrack)->momentum().eta();
@@ -380,7 +359,6 @@ MyMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       CandStaSim tmp = CandStaSim((*match),(*simTrack));
       pairStaSim.push_back(tmp);
       staMuons1.erase(match);
-      //cout << "pairStaSim.size = " << pairStaSim.size() << " index " << keep << endl;
     }
   }
   
@@ -449,21 +427,20 @@ MyMuonAnalyzer::beginJob(const edm::EventSetup&)
    effStyle->SetOptTitle(0);
    effStyle->SetOptStat(0);
    //...................  
-   effStyle->SetCanvasBorderMode(0);cout << "Debug 410" << endl;
-   effStyle->SetPadBorderMode(1);cout << "Debug 411" << endl;
-   effStyle->SetOptTitle(0);cout << "Debug 412" << endl;
-   effStyle->SetStatFont(42);cout << "Debug 413" << endl;
-   effStyle->SetTitleFont(22);cout << "Debug 414" << endl;
-   effStyle->SetCanvasColor(10);cout << "Debug 415" << endl;
-   effStyle->SetPadColor(0);cout << "Debug 416" << endl;
-   effStyle->SetLabelFont(42,"x");cout << "Debug 417" << endl;
-   effStyle->SetLabelFont(42,"y");cout << "Debug 418" << endl;
-   effStyle->SetHistFillStyle(1001);cout << "Debug 419" << endl;
-   effStyle->SetHistFillColor(0);cout << "Debug 420" << endl;
-   effStyle->SetOptStat(0);cout << "Debug 421" << endl;
-   //effStyle->SetOptStat(00011110);cout << "Debug 422" << endl;
-   effStyle->SetOptFit(0111);cout << "Debug 423" << endl;
-   effStyle->SetStatH(0.05); cout << "Debug 424" << endl;
+   effStyle->SetCanvasBorderMode(0);
+   effStyle->SetPadBorderMode(1);
+   effStyle->SetOptTitle(0);
+   effStyle->SetStatFont(42);
+   effStyle->SetTitleFont(22);
+   effStyle->SetCanvasColor(10);
+   effStyle->SetPadColor(0);
+   effStyle->SetLabelFont(42,"x");
+   effStyle->SetLabelFont(42,"y");
+   effStyle->SetHistFillStyle(1001);
+   effStyle->SetHistFillColor(0);
+   effStyle->SetOptStat(0);
+   effStyle->SetOptFit(0111);
+   effStyle->SetStatH(0.05);
    //.................... 
    
 
@@ -546,7 +523,7 @@ MyMuonAnalyzer::beginJob(const edm::EventSetup&)
 // ------------ method called once each job just after ending the event loop  ------------
 void 
 MyMuonAnalyzer::endJob() {
-  cout << "Debug 503" << endl;
+
   hi_glbsim_eff_pt = divideErr(hi_glbsim_pt,hi_sim_pt,hi_glbsim_eff_pt);
   hi_stasim_eff_pt = divideErr(hi_stasim_pt,hi_sim_pt,hi_stasim_eff_pt);
   hi_glbsta_eff_pt = divideErr(hi_glbsta_pt,hi_sta2_pt,hi_glbsta_eff_pt);
@@ -565,29 +542,27 @@ MyMuonAnalyzer::endJob() {
   hi_glbsta_pur_eta = divideErr(hi_glbsta2_eta,hi_glb_eta,hi_glbsta_pur_eta);
 
   //...................  
-  effStyle->SetCanvasBorderMode(0);cout << "Debug 523" << endl;
-  effStyle->SetPadBorderMode(1);cout << "Debug 524" << endl;
-  effStyle->SetOptTitle(0);cout << "Debug 525" << endl;
-  effStyle->SetStatFont(42);cout << "Debug 526" << endl;
-  effStyle->SetTitleFont(22);cout << "Debug 527" << endl;
-  effStyle->SetCanvasColor(10);cout << "Debug 528" << endl;
-  effStyle->SetPadColor(0);cout << "Debug 529" << endl;
-  effStyle->SetLabelFont(42,"x");cout << "Debug 530" << endl;
-  effStyle->SetLabelFont(42,"y");cout << "Debug 531" << endl;
-  effStyle->SetHistFillStyle(1001);cout << "Debug 532" << endl;
-  effStyle->SetHistFillColor(0);cout << "Debug 533" << endl;
-  effStyle->SetOptStat(0);cout << "Debug 534" << endl;
-  //effStyle->SetOptStat(00011110);cout << "Debug 535" << endl;
-  effStyle->SetOptFit(0111);cout << "Debug 536" << endl;
-  effStyle->SetStatH(0.05); cout << "Debug 537" << endl;
+  effStyle->SetCanvasBorderMode(0);
+  effStyle->SetPadBorderMode(1);
+  effStyle->SetOptTitle(0);
+  effStyle->SetStatFont(42);
+  effStyle->SetTitleFont(22);
+  effStyle->SetCanvasColor(10);
+  effStyle->SetPadColor(0);
+  effStyle->SetLabelFont(42,"x");
+  effStyle->SetLabelFont(42,"y");
+  effStyle->SetHistFillStyle(1001);
+  effStyle->SetHistFillColor(0);
+  effStyle->SetOptStat(0);
+  effStyle->SetOptFit(0111);
+  effStyle->SetStatH(0.05);
   //.................... 
-  cout << "Debug 539" << endl;
+
   gROOT->SetStyle("effStyle");
-  cout << "Debug 541" << endl;
+
   char* l1string = "Simulated";
   char* l2string = "StandAlone";
   char* l3string = "Global";
-  cout << "Debug 545" << endl;
 
   TCanvas* c1 = new TCanvas("eff","Efficiency pt",10,10,700,500);
   c1->SetFillColor(0);
@@ -596,7 +571,7 @@ MyMuonAnalyzer::endJob() {
   c1->SetRightMargin(0.03);
   c1->SetTopMargin(0.02);
   c1->cd(); 
-  cout << "Debug 554" << endl;  
+
   hi_stasim_eff_pt->SetXTitle("p_{T}^{#mu}");
   hi_stasim_eff_pt->SetYTitle("Efficiency");
   hi_stasim_eff_pt->SetTitleOffset(1.1,"x");
@@ -604,7 +579,7 @@ MyMuonAnalyzer::endJob() {
   //hi_stasim_eff_pt->SetMaximum(1.02);
   //hi_stasim_eff_pt->SetMinimum(0.5);
   hi_stasim_eff_pt->SetStats(false);
-  cout << "Debug 562" << endl;
+
   hi_stasim_eff_pt->SetLineWidth(1);
   hi_glbsim_eff_pt->SetLineWidth(1);
   hi_stasim_eff_pt->SetLineColor(2);
@@ -619,11 +594,11 @@ MyMuonAnalyzer::endJob() {
   hi_glbsim_eff_pt->SetMarkerStyle(26);
   hi_stasim_eff_pt->SetMarkerColor(2);
   hi_glbsim_eff_pt->SetMarkerColor(4);
-  cout << "Debug 577" << endl;
+
   hi_stasim_eff_pt ->DrawCopy("PE");
   hi_glbsim_eff_pt ->DrawCopy("PEsame");
   //hi_stasim_eff_pt ->DrawCopy("AxisSame");
-  cout << "Debug 581" << endl;
+
   TLegend* legend1 = new TLegend(0.6,0.2,0.8,0.4);
   legend1->SetTextAlign(32);
   legend1->SetTextColor(1);
@@ -633,7 +608,7 @@ MyMuonAnalyzer::endJob() {
   legend1 ->Draw();
   c1->Write();
   // 
-  cout << "Debug 591" << endl;
+
   TCanvas* c1a = new TCanvas("algEff","Algo Efficiency pt",10,10,700,500);
   c1a->SetFillColor(0);
   c1a->SetGrid(1);
@@ -653,7 +628,7 @@ MyMuonAnalyzer::endJob() {
   hi_glbsta_eff_pt->SetMarkerStyle(22);
   hi_glbsta_eff_pt ->DrawCopy("E");
   c1a->Write();
-  cout << "Debug 611" << endl;
+
 
   TCanvas* c2 = new TCanvas("eff_eta","Efficiency eta",10,10,700,500);
   c2->SetFillColor(0);
@@ -662,7 +637,7 @@ MyMuonAnalyzer::endJob() {
   c2->SetRightMargin(0.03);
   c2->SetTopMargin(0.02);
   c2->cd(); 
-  cout << "Debug 620" << endl;  
+
   hi_stasim_eff_eta->SetXTitle("#eta^{#mu}");
   hi_stasim_eff_eta->SetYTitle("Efficiency");
   hi_stasim_eff_eta->SetTitleOffset(1.1,"x");
@@ -670,7 +645,7 @@ MyMuonAnalyzer::endJob() {
   //hi_stasim_eff_eta->SetMaximum(1.02);
   //hi_stasim_eff_eta->SetMinimum(0.5);
   hi_stasim_eff_eta->SetStats(false);
-  cout << "Debug 628" << endl;
+
   hi_stasim_eff_eta->SetLineWidth(1);
   hi_glbsim_eff_eta->SetLineWidth(1);
   hi_stasim_eff_eta->SetLineColor(2);
@@ -685,11 +660,11 @@ MyMuonAnalyzer::endJob() {
   hi_glbsim_eff_eta->SetMarkerStyle(26);
   hi_stasim_eff_eta->SetMarkerColor(2);
   hi_glbsim_eff_eta->SetMarkerColor(4);
-  cout << "Debug 643" << endl;
+
   hi_stasim_eff_eta ->DrawCopy("PE");
   hi_glbsim_eff_eta ->DrawCopy("PEsame");
   //hi_stasim_eff_eta ->DrawCopy("AxisSame");
-  cout << "Debug 647" << endl;
+
   TLegend* legend2 = new TLegend(0.6,0.2,0.8,0.4);
   legend2->SetTextAlign(32);
   legend2->SetTextColor(1);
@@ -699,7 +674,7 @@ MyMuonAnalyzer::endJob() {
   legend2 ->Draw();
   c2->Write();
   // 
-  cout << "Debug 657" << endl;
+
   TCanvas* c2a = new TCanvas("algEff_eta","Algo Efficiency eta",10,10,700,500);
   c2a->SetFillColor(0);
   c2a->SetGrid(1);
@@ -719,7 +694,7 @@ MyMuonAnalyzer::endJob() {
   hi_glbsta_eff_eta->SetMarkerStyle(22);
   hi_glbsta_eff_eta ->DrawCopy("E");
   c2a->Write();
-  cout << "Debug 677" << endl;
+
 
   TCanvas* c3 = new TCanvas("pur","Purity pt",10,10,700,500);
   c3->SetFillColor(0);
@@ -728,7 +703,7 @@ MyMuonAnalyzer::endJob() {
   c3->SetRightMargin(0.03);
   c3->SetTopMargin(0.02);
   c3->cd(); 
-  cout << "Debug 686" << endl;  
+
   hi_stasim_pur_pt->SetXTitle("p_{T}^{#mu}");
   hi_stasim_pur_pt->SetYTitle("Purity");
   hi_stasim_pur_pt->SetTitleOffset(1.1,"x");
@@ -736,7 +711,7 @@ MyMuonAnalyzer::endJob() {
   //hi_stasim_pur_pt->SetMaximum(1.02);
   //hi_stasim_pur_pt->SetMinimum(0.5);
   hi_stasim_pur_pt->SetStats(false);
-  cout << "Debug 694" << endl;
+
   hi_stasim_pur_pt->SetLineWidth(1);
   hi_glbsim_pur_pt->SetLineWidth(1);
   hi_stasim_pur_pt->SetLineColor(2);
@@ -751,11 +726,11 @@ MyMuonAnalyzer::endJob() {
   hi_glbsim_pur_pt->SetMarkerStyle(26);
   hi_stasim_pur_pt->SetMarkerColor(2);
   hi_glbsim_pur_pt->SetMarkerColor(4);
-  cout << "Debug 709" << endl;
+
   hi_stasim_pur_pt ->DrawCopy("PE");
   hi_glbsim_pur_pt ->DrawCopy("PEsame");
   //hi_stasim_pur_pt ->DrawCopy("AxisSame");
-  cout << "Debug 554" << endl;
+
   TLegend* legend3 = new TLegend(0.6,0.2,0.8,0.4);
   legend3->SetTextAlign(32);
   legend3->SetTextColor(1);
@@ -765,7 +740,7 @@ MyMuonAnalyzer::endJob() {
   legend3 ->Draw();
   c3->Write();
   // 
-  cout << "Debug 723" << endl;
+
   TCanvas* c3a = new TCanvas("algPur","Algo Purity pt",10,10,700,500);
   c3a->SetFillColor(0);
   c3a->SetGrid(1);
@@ -785,7 +760,7 @@ MyMuonAnalyzer::endJob() {
   hi_glbsta_pur_pt->SetMarkerStyle(22);
   hi_glbsta_pur_pt ->DrawCopy("E");
   c3a->Write();
-  cout << "Debug 743" << endl;
+
 
   TCanvas* c4 = new TCanvas("pur_eta","Purity eta",10,10,700,500);
   c4->SetFillColor(0);
@@ -794,7 +769,7 @@ MyMuonAnalyzer::endJob() {
   c4->SetRightMargin(0.03);
   c4->SetTopMargin(0.02);
   c4->cd(); 
-  cout << "Debug 752" << endl;  
+
   hi_stasim_pur_eta->SetXTitle("#eta^{#mu}");
   hi_stasim_pur_eta->SetYTitle("Purity");
   hi_stasim_pur_eta->SetTitleOffset(1.1,"x");
@@ -802,7 +777,7 @@ MyMuonAnalyzer::endJob() {
   //hi_stasim_pur_eta->SetMaximum(1.02);
   //hi_stasim_pur_eta->SetMinimum(0.5);
   hi_stasim_pur_eta->SetStats(false);
-  cout << "Debug 760" << endl;
+
   hi_stasim_pur_eta->SetLineWidth(1);
   hi_glbsim_pur_eta->SetLineWidth(1);
   hi_stasim_pur_eta->SetLineColor(2);
@@ -817,11 +792,11 @@ MyMuonAnalyzer::endJob() {
   hi_glbsim_pur_eta->SetMarkerStyle(26);
   hi_stasim_pur_eta->SetMarkerColor(2);
   hi_glbsim_pur_eta->SetMarkerColor(4);
-  cout << "Debug 775" << endl;
+
   hi_stasim_pur_eta ->DrawCopy("PE");
   hi_glbsim_pur_eta ->DrawCopy("PEsame");
   //hi_stasim_pur_eta ->DrawCopy("AxisSame");
-  cout << "Debug 779" << endl;
+
   TLegend* legend4 = new TLegend(0.6,0.2,0.8,0.4);
   legend4->SetTextAlign(32);
   legend4->SetTextColor(1);
@@ -831,7 +806,7 @@ MyMuonAnalyzer::endJob() {
   legend4 ->Draw();
   c4->Write();
   // 
-  cout << "Debug 789" << endl;
+
   TCanvas* c4a = new TCanvas("algPur_eta","Algo Purity eta",10,10,700,500);
   c4a->SetFillColor(0);
   c4a->SetGrid(1);
@@ -851,7 +826,6 @@ MyMuonAnalyzer::endJob() {
   hi_glbsta_pur_eta->SetMarkerStyle(22);
   hi_glbsta_pur_eta ->DrawCopy("E");
   c4a->Write();
-  cout << "Debug 809" << endl;
 
   hFile->Write();
 }
@@ -862,6 +836,7 @@ MyMuonAnalyzer::calculateDistance(const math::XYZVector& vect1, const math::XYZV
   float dPhi = vect1.phi() - vect2.phi();
   float dPt = sqrt(vect1.perp2()) - sqrt(vect2.perp2());
   float distance = sqrt(pow(dEta,2) + pow(dPhi,2) + pow(dPt,2) );
+  //float distance = sqrt(pow(dEta,2) + pow(dPhi,2) );
 
   return distance;
 }
