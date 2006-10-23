@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Wed Sep 27 14:54:28 EDT 2006
-// $Id: MyMuonAnalyzer.cc,v 1.1 2006/10/16 18:06:54 anonymous Exp $
+// $Id: MyMuonAnalyzer.cc,v 1.2 2006/10/18 19:22:16 anonymous Exp $
 //
 //
 
@@ -232,6 +232,14 @@ MyMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByLabel(MuonTags_,MuCollection);
   const reco::MuonCollection muonC = *(MuCollection.product());
 
+  if(muonC.size() == 0) {
+    cout << "*****No GLBMuon in run " << iEvent.id() << " event " << iEvent.id().event() << endl;
+    cout << "     GLBMuons " << muonC.size() << " STAMuons " << staTC.size() << " TkTracks  " << tkTC.size() <<endl;
+    if(staTC.size() > 0 && tkTC.size() > 0){
+      cout << "          IGUANA this event! Run: " << iEvent.id() << " Event: " << iEvent.id().event() << endl;
+    }
+  }
+  
   SimTrackRefVector simMuons1;
   int position = 0;
   SimTrackContainer::const_iterator simTrack;
@@ -249,16 +257,18 @@ MyMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     }    
   }
 
-  reco::TrackRefVector staMuons1;
+  reco::TrackRefVector staMuons1,staMuons2;
   TrackCollection::const_iterator staTrack;
   position = 0;
   for (staTrack = staTC.begin(); staTrack != staTC.end(); ++staTrack){
     position++;
     staMuons1.push_back(TrackRef(STATrackCollection,position-1));
+    //staMuons2.push_back(TrackRef(STATrackCollection,position-1));
     hi_sta_pt->Fill((*staTrack).pt());
     hi_sta_eta->Fill(((*staTrack).eta()));
     //ADAM
     if(tkTC.size() > 0) {
+      staMuons2.push_back(TrackRef(STATrackCollection,position-1));
       hi_sta2_pt->Fill((*staTrack).pt());
       hi_sta2_eta->Fill(((*staTrack).eta()));         
     }
@@ -383,7 +393,7 @@ MyMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     float etaGLB = (*pair).first->eta();
     hi_glbsim_etares->Fill((qGLB/etaGLB - qSIM/etaSim)/(qSIM/etaSim));
   }
-  
+
   for (vector<CandStaSim>::const_iterator pair = pairStaSim.begin(); pair != pairStaSim.end(); pair++){
   hi_stasim_pt->Fill((*pair).second->momentum().perp());
   hi_stasim_eta->Fill(((*pair).second->momentum().eta()));
@@ -402,12 +412,29 @@ MyMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   float etaSTA = (*pair).first->eta();
   hi_stasim_etares->Fill((qSTA/etaSTA-qSIM/etaSim)/(qSIM/etaSim));
   }
-  
-  for (MuonRefVector::const_iterator glbTrack = glbMuons2.begin(); glbTrack != glbMuons2.end(); ++glbTrack){
-    hi_glbsta2_pt->Fill( (*glbTrack)->combinedMuon()->pt() );
-    hi_glbsta2_eta->Fill( (*glbTrack)->combinedMuon()->eta() );
-    hi_glbsta_pt->Fill( (*glbTrack)->standAloneMuon()->pt() );
-    hi_glbsta_eta->Fill( (*glbTrack)->standAloneMuon()->eta() );
+
+  for (TrackRefVector::const_iterator staTrack = staMuons2.begin(); staTrack != staMuons2.end(); ++staTrack){
+    double chi2 = 9999.;
+    int index = 0;
+    int keep = -1;
+    MuonRefVector::const_iterator match;
+    for (MuonRefVector::const_iterator glbTrack = glbMuons2.begin(); glbTrack != glbMuons2.end(); ++glbTrack){
+      if((*staTrack) == (*glbTrack)->standAloneMuon()) {
+	double tmp_chi2 = (*glbTrack)->combinedMuon()->chi2();
+	if(tmp_chi2 < chi2) {
+	  chi2 = tmp_chi2;
+	  keep = index;
+	  match = glbTrack;
+	}
+	index++;
+      }
+    }
+    if(glbMuons2.size() > 0 && keep > -1) {
+      hi_glbsta2_pt->Fill( (*match)->combinedMuon()->pt() );
+      hi_glbsta2_eta->Fill( (*match)->combinedMuon()->eta() );
+      hi_glbsta_pt->Fill( (*match)->standAloneMuon()->pt() );
+      hi_glbsta_eta->Fill( (*match)->standAloneMuon()->eta() );
+    }
   }
 
 }
