@@ -1,8 +1,8 @@
 /** \class STAMuonAnalyzer
  *  Analyzer of the StandAlone muon tracks
  *
- *  $Date: 2006/09/01 14:35:48 $
- *  $Revision: 1.4 $
+ *  $Date: 2006/10/16 18:06:54 $
+ *  $Revision: 1.1 $
  *  \author R. Bellan - INFN Torino <riccardo.bellan@cern.ch>
  */
 
@@ -179,7 +179,7 @@ void STAMuonAnalyzer::analyze(const Event & event, const EventSetup& eventSetup)
 	cout<<"Sim pT: "<<(*simTrack).momentum().perp()<<endl;
 	simPt=(*simTrack).momentum().perp();
         float simEta=(*simTrack).momentum().eta();
-	if (simPt > 4. && abs(simEta) < 2.4 )  {
+	if (simPt >= 5. && abs(simEta) <= 2.5 )  {
  	  nmusim++;
 	  pxsim[nmusim] = (*simTrack).momentum().x();
 	  pysim[nmusim] = (*simTrack).momentum().y();
@@ -294,7 +294,7 @@ void STAMuonAnalyzer::analyze(const Event & event, const EventSetup& eventSetup)
   int ngood = 0;  // matched tracks with simulation
   for ( int imu = 1; imu != nmusim+1; ++imu ) {
     hptsim-> Fill(ptsim[imu]);
-    if( ptsim[imu] > 5. ) hetasim-> Fill(etasim[imu]);
+    if( true || ptsim[imu] > 5. ) hetasim-> Fill(etasim[imu]);
     float dRmin = 9999.;
     int jbest = 0;  // best reco candidate
     for ( int imur = 1; imur != nmurec+1; ++imur ) {
