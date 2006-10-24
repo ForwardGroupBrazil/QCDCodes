@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Wed Sep 27 14:54:28 EDT 2006
-// $Id: MyMuonAnalyzer.cc,v 1.2 2006/10/18 19:22:16 anonymous Exp $
+// $Id: MyMuonAnalyzer.cc,v 1.3 2006/10/23 21:02:42 anonymous Exp $
 //
 //
 
@@ -267,7 +267,10 @@ MyMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     hi_sta_pt->Fill((*staTrack).pt());
     hi_sta_eta->Fill(((*staTrack).eta()));
     //ADAM
-    if(tkTC.size() > 0) {
+    bool staCut = true;
+    if ( (*staTrack).pt() < 1.0 || (*staTrack).innerMomentum().Rho() < 1.0
+ || (*staTrack).innerMomentum().R() < 2.5 ) staCut = false;
+    if(staCut && tkTC.size() > 0) {
       staMuons2.push_back(TrackRef(STATrackCollection,position-1));
       hi_sta2_pt->Fill((*staTrack).pt());
       hi_sta2_eta->Fill(((*staTrack).eta()));         
