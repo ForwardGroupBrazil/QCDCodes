@@ -1,0 +1,22 @@
+#!/bin/csh -f
+#
+
+set name = $1
+set events = $2
+set njobs = $3
+set nsubmit = $4
+
+set n = 1
+#@ n += 10
+#@ njobs += 10
+#@ nsubmit += 10
+
+while ( $n <= $njobs )
+    ./lsf_job_template ${name} $events $n
+
+    if ( $n <= $nsubmit ) bsub ${name}_${n}.job
+#    if ( $n <= $nsubmit ) qsub -q cms_analysis@hamlet ${name}_${n}.job
+
+    @ n++
+end
+
