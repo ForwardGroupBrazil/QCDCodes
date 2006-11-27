@@ -13,8 +13,9 @@ set n = 1
 
 while ( $n <= $njobs )
     ./lsf_job_template ${name} $events $n
+#    ./pbs_job_template ${name} $events $n
 
-    if ( $n <= $nsubmit ) bsub ${name}_${n}.job
+    if ( $n <= $nsubmit ) bsub -q 8nh -R "pool>4000" ${name}_${n}.job
 #    if ( $n <= $nsubmit ) qsub -q cms_analysis@hamlet ${name}_${n}.job
 
     @ n++
