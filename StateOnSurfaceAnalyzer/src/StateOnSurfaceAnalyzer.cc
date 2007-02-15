@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Thu Feb  8 18:22:43 CET 2007
-// $Id$
+// $Id: StateOnSurfaceAnalyzer.cc,v 1.1 2007/02/12 15:20:40 aeverett Exp $
 //
 //
 
@@ -22,6 +22,7 @@
 #include <memory>
 //#include <TFile.h>
 #include <TH1.h>
+#include <TH2.h>
 
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Units/PhysicalConstants.h"
@@ -67,6 +68,8 @@
 #include "SimTracker/TrackAssociation/interface/TrackAssociatorBase.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 
+#include "RecoMuon/GlobalTrackFinder/interface/GlobalMuonTrackMatcher.h"
+
 //
 // class decleration
 //
@@ -93,7 +96,8 @@ private:
   //  int trkIndOffset_;
   MuonServiceProxy * theService;
   TrackAssociatorBase * associatorByChi2;
-  
+  GlobalMuonTrackMatcher *theTrackMatcher;  
+
   //std::string outputFileName_;
   edm::InputTag simsrc_;
   edm::InputTag tpsrc_;
@@ -101,7 +105,13 @@ private:
   edm::InputTag stasrc_;
 
   TH1F * h_pt, * h_eta, * h_phi;
-  TH1F *h_dist1, *h_dist2 , *h_dist3, *h_dist4, *h_dist5, *h_dist6;
+  TH2F *h_dist1pt, *h_dist2pt, *h_dist3pt, *h_dist4pt, *h_dist5pt, *h_dist6pt;
+  TH2F *h_dist1eta, *h_dist2eta , *h_dist3eta, *h_dist4eta, *h_dist5eta, *h_dist6eta;
+
+  TH1F *h_tkSim_chi2a, *h_tkSim_chi2b, *h_tkSim_chi2c;
+  TH1F *h_staSim_chi2a, *h_staSim_chi2b, *h_staSim_chi2c_1, *h_staSim_chi2c_2;
+  TH1F *h_staTk_chi2b, *h_staTk_chi2c_1, *h_staTk_chi2c_2;
+
   double ptMax_;
 };
 
@@ -131,15 +141,18 @@ StateOnSurfaceAnalyzer::StateOnSurfaceAnalyzer(const edm::ParameterSet& iConfig)
  //  trkIndOffset_ = iConfig.getParameter<int>("trkIndOffset");
   noErrPropMode_ = iConfig.getParameter<bool>("noErrorPropagationMode");
 
+  theTrackMatcher = new GlobalMuonTrackMatcher(iConfig,theService);
+
 }
 
 
 StateOnSurfaceAnalyzer::~StateOnSurfaceAnalyzer()
 {
  
-   // do anything here that needs to be done at desctruction time
-   // (e.g. close files, deallocate resources etc.)
-
+  // do anything here that needs to be done at desctruction time
+  // (e.g. close files, deallocate resources etc.)
+  if(theService) delete theService;
+  if(theTrackMatcher) delete theTrackMatcher;
 }
 
 
@@ -225,9 +238,16 @@ StateOnSurfaceAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	
 	//calculae distance
 	double distance1 = distance(simTsos,tkTsos1);
-	h_dist1->Fill(distance1);
+	h_dist1pt->Fill(simTsos.globalMomentum().perp(),distance1);
+	h_dist1eta->Fill(simTsos.globalMomentum().eta(),distance1);
 	double distance2 = distance(simTsos,tkTsos2);
-	h_dist2->Fill(distance2);
+	h_dist2pt->Fill(simTsos.globalMomentum().perp(),distance2);
+	h_dist2eta->Fill(simTsos.globalMomentum().eta(),distance2);
+
+	//calculate Chi2
+	//h_tkSim_chi2a;
+	//h_tkSim_chi2b->Fill(theTrackMatcher->matchChiAtIP());
+	h_tkSim_chi2c->Fill(theTrackMatcher->matchChiAtSurface(simTsos,tkTsos2));
       }
       //    } catch (Exception event) {
       //      LogDebug("Analyzer") << " No Match Found" ;
@@ -250,9 +270,14 @@ StateOnSurfaceAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup&
 
 	//calculae distance
 	double distance3 = distance(simTsos,muTsos1);
-	h_dist3->Fill(distance3);
+	h_dist3pt->Fill(simTsos.globalMomentum().perp(),distance3);
+	h_dist3eta->Fill(simTsos.globalMomentum().eta(),distance3);
 	double distance4 = distance(simTsos,muTsos2);
-	h_dist4->Fill(distance4);
+	h_dist4pt->Fill(simTsos.globalMomentum().perp(),distance4);
+	h_dist4eta->Fill(simTsos.globalMomentum().eta(),distance4);
+
+	h_staSim_chi2c_1->Fill(theTrackMatcher->matchChiAtSurface(simTsos,muTsos1));
+	h_staSim_chi2c_2->Fill(theTrackMatcher->matchChiAtSurface(simTsos,muTsos2));
       }
       //    } catch (Exception event) {
       //      LogDebug("Analyzer") << " No Match Found" ;
@@ -285,8 +310,13 @@ StateOnSurfaceAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup&
       double distance5 = distance(muTsos1,tkTsos2);   
       double distance6 = distance(muTsos2,tkTsos2);   
       
-      h_dist5->Fill(distance5);
-      h_dist6->Fill(distance6);
+      h_dist5pt->Fill(tkTsos2.globalMomentum().perp(),distance5);
+      h_dist5eta->Fill(tkTsos2.globalMomentum().eta(),distance5);
+      h_dist6pt->Fill(tkTsos2.globalMomentum().perp(),distance6);
+      h_dist6eta->Fill(tkTsos2.globalMomentum().eta(),distance6);
+
+      h_staTk_chi2c_1->Fill(theTrackMatcher->matchChiAtSurface(tkTsos2,muTsos1));
+      h_staTk_chi2c_2->Fill(theTrackMatcher->matchChiAtSurface(tkTsos2,muTsos2));
     }
   }
 
@@ -341,12 +371,46 @@ StateOnSurfaceAnalyzer::beginJob(const edm::EventSetup& iSetup)
   h_eta   = fs->make<TH1F>( "eta" , "#eta" , 50, -3, 3 );
   h_phi   = fs->make<TH1F>( "phi" , "#phi" , 50, -M_PI, M_PI );
 
-  h_dist1 = fs->make<TH1F>("h_dist1","Distance SIM Tk_{initial}",100,0,0.1);
-  h_dist2 = fs->make<TH1F>("h_dist2","Distance SIM Tk_{outer}",100,0,0.1);
-  h_dist3 = fs->make<TH1F>("h_dist3","Distance SIM STA_{initial}",200,0,1);
-  h_dist4 = fs->make<TH1F>("h_dist4","Distance SIM STA_{inner}",300,0,1);
-  h_dist5 = fs->make<TH1F>("h_dist5","Distance Tk_{outer} STA_{initial}",300,0,1);
-  h_dist6 = fs->make<TH1F>("h_dist6","Distance Tk_{outer} STA_{inner}",300,0,1);
+  h_dist1pt = fs->make<TH2F>("h_dist1pt","Distance SIM Tk_{initial}",100,0.,ptMax_,100,0,0.1);
+  h_dist1pt->SetXTitle("P_{t}");h_dist1pt->SetYTitle("#Delta R");
+  h_dist2pt = fs->make<TH2F>("h_dist2pt","Distance SIM Tk_{outer}",100,0.,ptMax_,100,0,0.1);
+  h_dist2pt->SetXTitle("P_{t}");h_dist2pt->SetYTitle("#Delta R");
+  h_dist3pt = fs->make<TH2F>("h_dist3pt","Distance SIM STA_{initial}",100,0.,ptMax_,200,0,1);
+  h_dist3pt->SetXTitle("P_{t}");h_dist3pt->SetYTitle("#Delta R");
+  h_dist4pt = fs->make<TH2F>("h_dist4pt","Distance SIM STA_{inner}",100,0.,ptMax_,300,0,1);
+  h_dist4pt->SetXTitle("P_{t}");h_dist4pt->SetYTitle("#Delta R");
+  h_dist5pt = fs->make<TH2F>("h_dist5pt","Distance Tk_{outer} STA_{initial}",100,0.,ptMax_,300,0,1);
+  h_dist5pt->SetXTitle("P_{t}");h_dist5pt->SetYTitle("#Delta R");
+  h_dist6pt = fs->make<TH2F>("h_dist6pt","Distance Tk_{outer} STA_{inner}",100,0.,ptMax_,300,0,1);
+  h_dist6pt->SetXTitle("P_{t}");h_dist6pt->SetYTitle("#Delta R");
+
+  h_dist1eta = fs->make<TH2F>("h_dist1eta","Distance SIM Tk_{initial}",25,0.,3.,100,0,0.1);
+  h_dist1eta->SetXTitle("#eta");h_dist1eta->SetYTitle("#Delta R");
+  h_dist2eta = fs->make<TH2F>("h_dist2eta","Distance SIM Tk_{outer}",25,0.,3.,100,0,0.1);
+  h_dist2eta->SetXTitle("#eta");h_dist2eta->SetYTitle("#Delta R");
+  h_dist3eta = fs->make<TH2F>("h_dist3eta","Distance SIM STA_{initial}",25,0.,3.,200,0,1);
+  h_dist3eta->SetXTitle("#eta");h_dist3eta->SetYTitle("#Delta R");
+  h_dist4eta = fs->make<TH2F>("h_dist4eta","Distance SIM STA_{inner}",25,0.,3.,300,0,1);
+  h_dist4eta->SetXTitle("#eta");h_dist4eta->SetYTitle("#Delta R");
+  h_dist5eta = fs->make<TH2F>("h_dist5eta","Distance Tk_{outer} STA_{initial}",25,0.,3.,300,0,1);
+  h_dist5eta->SetXTitle("#eta");h_dist5eta->SetYTitle("#Delta R");
+  h_dist6eta = fs->make<TH2F>("h_dist6eta","Distance Tk_{outer} STA_{inner}",25,0.,3.,300,0,1);
+  h_dist6eta->SetXTitle("#eta");h_dist6eta->SetYTitle("#Delta R");
+
+  h_tkSim_chi2a = fs->make<TH1F>("h_tkSim_chi2a","Tk:SIM #chi^{2} (from associator)", 100,0.,100.);
+  h_tkSim_chi2b = fs->make<TH1F>("h_tkSim_chi2b","Tk:SIM #chi^{2} (from matcher IP)", 100,0.,100.);
+  h_tkSim_chi2c = fs->make<TH1F>("h_tkSim_chi2c","Tk:SIM #chi^{2} (from matcher Surface)", 100,0.,100.);
+
+  h_staSim_chi2a = fs->make<TH1F>("h_staSim_chi2a","STA:SIM #chi^{2} (from associator)", 100,0.,100.);
+  h_staSim_chi2b = fs->make<TH1F>("h_staSim_chi2b","STA:SIM #chi^{2} (from matcher IP)", 100,0.,100.);
+  h_staSim_chi2c_1 = fs->make<TH1F>("h_staSim_chi2c_1","STA_{IPS}:SIM #chi^{2} (from matcher Surface)", 100,0.,100.);
+  h_staSim_chi2c_2 = fs->make<TH1F>("h_staSim_chi2c_2","STA_{muon}:SIM #chi^{2} (from matcher Surface)", 100,0.,100.);
+
+  h_staTk_chi2b = fs->make<TH1F>("h_staTk_chi2b","STA:Tk #chi^{2} (from matcher IP)", 100,0.,100.);
+  h_staTk_chi2c_1 = fs->make<TH1F>("h_staTk_chi2c_1","STA_{IPS}:Tk #chi^{2} (from matcher Surface)", 100,0.,100.);
+  h_staTk_chi2c_2 = fs->make<TH1F>("h_staTk_chi2c_2","STA_{muon}:Tk #chi^{2} (from matcher Surface)", 100,0.,100.);
+
+
 
   edm::ESHandle<TrackAssociatorBase> theChiAssociator;
   iSetup.get<TrackAssociatorRecord>().get("TrackAssociatorByChi2",theChiAssociator);

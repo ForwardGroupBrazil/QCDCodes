@@ -1,0 +1,19 @@
+<use name=DataFormats/MuonReco>
+<use name=DataFormats/TrackReco>
+<use name=FWCore/Framework>
+<use name=FWCore/ParameterSet>
+<use name=FWCore/ServiceRegistry>
+<use name=PhysicsTools/UtilAlgos>
+<use name=RecoMuon/TrackingTools>
+<use name=RecoMuon/GlobalTrackFinder>
+<use name=TrackingTools/GeomPropagators>
+<use name=TrackingTools/TrajectoryState>
+<use name=SimTracker/Records>
+<use name=SimTracker/TrackAssociation>
+<use name=rootcore>
+<use name=CLHEP>
+<flags SEALPLUGIN=1>
+<export>
+  <lib name=UserCodeStateOnSurfaceAnalyzer>
+</export>
+
