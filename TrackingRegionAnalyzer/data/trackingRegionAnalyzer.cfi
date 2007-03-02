@@ -1,0 +1,10 @@
+module regionTest = TrackingRegionAnalyzer {
+    using MuonServiceProxy
+    InputTag SIMCollectionLabel = g4SimHits
+    InputTag TKCollectionLabel = ctfWithMaterialTracks
+    InputTag STACollectionLabel = standAloneMuons:UpdatedAtVtx
+    InputTag GLBCollectionLabel = globalMuons
+    
+    string StateOnTrackerBoundOutPropagator = "SteppingHelixPropagatorAlong"
+}
+

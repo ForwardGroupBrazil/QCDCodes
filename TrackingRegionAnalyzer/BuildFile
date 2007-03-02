@@ -1,0 +1,18 @@
+<use name=FWCore/Framework>
+<use name=Foundation/PluginManager>
+<use name=FWCore/ParameterSet>
+<use name=RecoTracker/TkTrackingRegions>
+<use name=DataFormats/MuonReco>
+<use name=RecoMuon/TrackingTools>
+<use name=PhysicsTools/UtilAlgos>
+<use name=root>
+<use name=CLHEP>q
+<flags SEAL_PLUGIN_NAME="UserCodeTrackingRegionAnalyzer">
+<export>
+   <lib name=UserCodeTrackingRegionAnalyzer>
+   <use name=FWCore/Framework>
+   <use name=Foundation/PluginManager>
+   <use name=FWCore/ParameterSet>
+   <use name=root>
+   <use name=CLHEP>
+</export>
