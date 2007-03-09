@@ -1,0 +1,7 @@
+module GLBFailFilter = GLBFailFilter {
+    untracked InputTag  STAtracks = standAloneMuons:UpdatedAtVtx
+    untracked InputTag  TKtracks = ctfWithMaterialTracks
+    untracked InputTag  Muons = globalMuons
+    untracked InputTag  SIMtracks  = g4SimHits
+    double  PtCut = 1.0
+}
