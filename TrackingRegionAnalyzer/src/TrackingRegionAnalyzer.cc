@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Tue Feb 20 17:29:48 CET 2007
-// $Id$
+// $Id: TrackingRegionAnalyzer.cc,v 1.1 2007/03/02 20:08:46 aeverett Exp $
 //
 //
 
@@ -54,6 +54,7 @@
 #include "RecoMuon/TrackingTools/interface/MuonServiceProxy.h"
 
 #include "TrackingTools/GeomPropagators/interface/StateOnTrackerBound.h"
+#include <TrackingTools/PatternTools/interface/TSCPBuilderNoMaterial.h>
 
 #include <TH1.h>
 #include <TH2.h>
@@ -87,6 +88,11 @@ private:
   edm::InputTag theGLBLabel;
   edm::InputTag theTKLabel;
   edm::InputTag theSIMLabel;
+
+
+  GlobalPoint theVertexPos;
+  GlobalError theVertexErr;
+
 
   TH2F *h_region1, *h_region2, *h_region3;
   TH2F *h_region1a, *h_region2a, *h_region3a, *h_region3b;
@@ -130,6 +136,10 @@ TrackingRegionAnalyzer::TrackingRegionAnalyzer(const edm::ParameterSet& iConfig)
   LogDebug("Analyzer");  
 
   stateOnTrackerOutProp = iConfig.getParameter<std::string>("StateOnTrackerBoundOutPropagator");
+
+  theVertexPos = GlobalPoint(0.0,0.0,0.0);
+  theVertexErr = GlobalError(0.0001,0.0,0.0001,0.0,0.0,28.09);
+
 }
 
 
@@ -183,40 +193,40 @@ TrackingRegionAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup&
  for(MuonCollection::const_iterator mu = muonC.begin(); mu != muonC.end(); ++mu) {
    TrackRef sta = mu->standAloneMuon();
    TrackRef trk = mu->track();
-
+   
    float deta = (fabs(trk->eta() - sta->eta()));
    float dphi = (fabs(Geom::Phi<float>(trk->phi())-Geom::Phi<float>(sta->phi())));
-
+   
    if(trk->eta() > 2.5 || sta->eta() > 2.5) LogDebug(category) << "*********\n**********\n**********\nEta out of range trk: " << trk->eta() << " sta: " << sta->eta() << "\n**********\n**********\n**********";
-
+   
    h_deta->Fill(deta);
    h_dphi->Fill(dphi);
    h_optimal->Fill(deta,dphi);
    h_deta1->Fill(fabs(sta->eta()),deta);
    h_dphi1->Fill(fabs(sta->eta()),dphi);
-
+   
    h_deta2->Fill(sta->pt(),deta);
    h_dphi2->Fill(sta->pt(),dphi);
-
+   
    RectangularEtaPhiTrackingRegion regionX = defineRegionOfInterest3(sta);
-
+   
    Range  etaRange  = regionX.etaRange();
    Margin phiMargin = regionX.phiMargin();
    
    float regiondeta =  fabs(etaRange.max()-etaRange.mean());
    float regiondphi =  phiMargin.right();
-
+   
    h_deta3->Fill(deta,regiondeta);
    h_dphi3->Fill(dphi,regiondphi);
-
+   
    h_deta4->Fill(fabs(sta->eta()),regiondeta);
    h_dphi4->Fill(fabs(sta->eta()),regiondphi);
-
+   
    h_deta5->Fill(sta->pt(),regiondeta);
    h_dphi5->Fill(sta->pt(),regiondphi);
    
    TrackCollection regionalTkTracks =  chooseRegionalTrackerTracks(regionX,tkTC);
-
+   
    RectangularEtaPhiTrackingRegion region1 = defineRegionOfInterest1(sta);
    TrackCollection regionalTkTracks1 =  chooseRegionalTrackerTracks(region1,tkTC);
    RectangularEtaPhiTrackingRegion region2 = defineRegionOfInterest2(sta);
@@ -300,86 +310,14 @@ TrackingRegionAnalyzer::endJob() {
 // define a region of interest within the tracker
 //
 RectangularEtaPhiTrackingRegion TrackingRegionAnalyzer::defineRegionOfInterest1(const reco::TrackRef& staTrack) const {
-  //region 1 is FTS momentum - TSOS position -- with mods
+  // revision 1.81
 
-  TrajectoryStateTransform tsTransform;
-  FreeTrajectoryState muFTS = tsTransform.initialFreeState(*staTrack,&*theService->magneticField());
-  
-  //Get Track direction at vertex
-  GlobalVector dirVector(staTrack->px(),staTrack->py(),staTrack->pz());
-  LogDebug("Analyzer") << dirVector;
-  //--
-  dirVector = muFTS.momentum();
-  LogDebug("Analyzer") << dirVector;
-  
-  //Get track momentum
-  const math::XYZVector& mo = staTrack->innerMomentum();
-  GlobalVector mom(mo.x(),mo.y(),mo.z());
-  if ( staTrack->p() > 1.0 ) {
-    mom = dirVector; 
-  }
-  //Get innerMu position
-  const math::XYZPoint& po = staTrack->innerPosition();
-  GlobalPoint pos(po.x(),po.y(),po.z());
-  
-  //Get dEta and dPhi: (direction at vertex) - (innerMuTsos position)
-  float eta1 = dirVector.eta();
-  float eta2 = pos.eta();
-  float deta(fabs(eta1- eta2));
-  float dphi(fabs(Geom::Phi<float>(dirVector.phi())-Geom::Phi<float>(pos.phi())));
-  
-  //deta = 1 * deta;
-  //dphi = 1 * dphi;
-  
-  //deta = 1 * max(double(deta),0.05);
-  //dphi = 1 * max(double(dphi),0.07);
-  
-  GlobalPoint vertexPos = (muFTS.position());
-  GlobalError vertexErr = (muFTS.cartesianError().position());
-  
-  double minPt    = max(1.5,mom.perp()*0.6);
-  double deltaZ   = min(15.9,3*sqrt(vertexErr.czz()));
-  double deltaEta = 0.05;
-  double deltaPhi = 0.07;
-  
-  if ( deta > 0.05 ) { // 0.06
-    deltaEta += deta/2;
-  }
-  if ( dphi > 0.07 ) {
-    deltaPhi += 0.15;
-    if ( fabs(eta2) < 1.0 && mom.perp() < 6. ) deltaPhi = dphi;
-  }
-  if ( fabs(eta1) < 1.25 && fabs(eta1) > 0.8 ) deltaEta = max(0.07,deltaEta);
-  if ( fabs(eta1) < 1.3  && fabs(eta1) > 1.0 ) deltaPhi = max(0.3,deltaPhi);
-
-  deltaEta = 1 * max(double(2.5 * deta),deltaEta);
-  deltaPhi = 1 * max(double(3.5 * dphi),deltaPhi);
-  //deltaEta = deta;
-  //deltaPhi = dphi;
-
-  RectangularEtaPhiTrackingRegion rectRegion(dirVector, vertexPos,
-                                             minPt, 0.2,
-                                             deltaZ, deltaEta, deltaPhi);
-  h_region1->Fill(deltaEta,deltaPhi);
-  h_region1a->Fill(deta,dphi);
-  return rectRegion;
-
-}
-
-//
-// define a region of interest within the tracker
-//
-RectangularEtaPhiTrackingRegion TrackingRegionAnalyzer::defineRegionOfInterest2(const reco::TrackRef& staTrack) const {
-
-  //region 2 is FTS mometum and TSOS position deltaEta deltaPhi
-
-  // Get Mu FTS updated at vertex
   TrajectoryStateTransform tsTransform;
   FreeTrajectoryState muFTS = tsTransform.initialFreeState(*staTrack,&*theService->magneticField());
   
   //Get Track direction at vertex
   GlobalVector dirVector(muFTS.momentum());
-  
+
   //Get track momentum
   const math::XYZVector& mo = staTrack->innerMomentum();
   GlobalVector mom(mo.x(),mo.y(),mo.z());
@@ -389,95 +327,6 @@ RectangularEtaPhiTrackingRegion TrackingRegionAnalyzer::defineRegionOfInterest2(
 
   //Get Mu state on inner muon surface
   TrajectoryStateOnSurface muTSOS = tsTransform.innerStateOnSurface(*staTrack,*theService->trackingGeometry(),&*theService->magneticField());
-  
-  //Get Mu state on tracker bound
-  StateOnTrackerBound fromInside(&*theService->propagator(stateOnTrackerOutProp));
-  //muTSOS = fromInside(muFTS);
-
-
-  //Get Mu global position from the MuState (muon or tracker)
-  GlobalPoint tsosPos(muTSOS.globalPosition());
-
-  //Get the error of the global position
-  GlobalError tsosErr(muTSOS.cartesianError().position());
-
-  //Add the error to the state
-  GlobalPoint tsosPosErr(tsosPos.x() + sqrt(tsosErr.cxx()),
-			 tsosPos.y() + sqrt(tsosErr.cyy()),
-			 tsosPos.z() + sqrt(tsosErr.czz()) );
-
-  //Get dEta and dPhi
-  float eta1 = tsosPos.eta();
-  float eta2 = tsosPosErr.eta();
-  float deta(fabs(eta1- eta2));
-  float dphi(fabs(Geom::Phi<float>(tsosPos.phi())-Geom::Phi<float>(tsosPosErr.phi())));
-
-  LogDebug("Analyzer") << "Region2 deta, dphi: " << deta << " " << dphi;  
-
-  //Get Mu FTS vertex position  
-  GlobalPoint vertexPos = (muFTS.position());
-  GlobalError vertexErr = (muFTS.cartesianError().position());
-  
-  double minPt    = max(1.5,mom.perp()*0.6);
-  double deltaZ   = min(15.9,3*sqrt(vertexErr.czz()));
-  
-  double deltaEta = 0.05;//0.05
-  double deltaPhi = 0.07;//0.07
-
-  /*    
-  if ( deta > 0.05 ) { // 0.06
-    deltaEta += deta/2;
-  }
-  if ( dphi > 0.07 ) {
-    deltaPhi += 0.15;
-    if ( fabs(eta1) < 1.0 && mom.perp() < 6. ) deltaPhi = dphi;
-  }
-  if ( fabs(eta1) < 1.25 && fabs(eta1) > 0.8 ) deltaEta = max(0.07,deltaEta);
-  if ( fabs(eta1) < 1.3  && fabs(eta1) > 1.0 ) deltaPhi = max(0.3,deltaPhi);
-  
-  deltaEta = 1 * max(double(1. * deta),deltaEta);
-  deltaPhi = 1 * max(double(1. * dphi),deltaPhi);
-*/  
-  
-  deltaEta = deta;
-  deltaPhi = dphi;
-
-  RectangularEtaPhiTrackingRegion rectRegion(dirVector, vertexPos,
-                                             minPt, 0.2,
-                                             deltaZ, deltaEta, deltaPhi);
-  h_region2->Fill(deltaEta,deltaPhi);
-  h_region2a->Fill(deta,dphi);
-  return rectRegion;
-
-}
-
-//
-// define a region of interest within the tracker
-//
-RectangularEtaPhiTrackingRegion TrackingRegionAnalyzer::defineRegionOfInterest3(const reco::TrackRef& staTrack) const {
-
-  //region 3 is FTS momentum and TSOS momentum dEta dPhi
-
-  TrajectoryStateTransform tsTransform;
-  FreeTrajectoryState muFTS = tsTransform.initialFreeState(*staTrack,&*theService->magneticField());
-  
-  //Get Track direction at vertex
-  GlobalVector dirVector(muFTS.momentum());
-
-  //Get track momentum
-  const math::XYZVector& mo = staTrack->innerMomentum();
-  GlobalVector mom(mo.x(),mo.y(),mo.z());
-  if ( staTrack->p() > 1.0 ) {
-    mom = dirVector; 
-  }
-
-  //-- Choices
-  //-- 1) error from freeInitialState ***
-  //-- 2) error from tracker bound
-  //-- 3) error from inner muon surface
-
-  //Get Mu state on inner muon surface
-  //TrajectoryStateOnSurface muTSOS = tsTransform.innerStateOnSurface(*staTrack,*theService->trackingGeometry(),&*theService->magneticField());
   
   //Get Mu state on tracker bound
   //StateOnTrackerBound fromInside(&*theService->propagator(stateOnTrackerOutProp));
@@ -493,9 +342,6 @@ RectangularEtaPhiTrackingRegion TrackingRegionAnalyzer::defineRegionOfInterest3(
   float eta2 = dirVecErr.eta();
   float deta(fabs(eta1- eta2));
   float dphi(fabs(Geom::Phi<float>(dirVector.phi())-Geom::Phi<float>(dirVecErr.phi())));
-
-  //LogDebug("Analyzer") << "&&&&&&& Sta" << trk->eta() << " " << trk->phi() << " " << trk->pt();
-  LogDebug("Analyzer") << "Region3 deta, dphi: " << deta << " " << dphi;  
   
   GlobalPoint vertexPos = (muFTS.position());
   GlobalError vertexErr = (muFTS.cartesianError().position());
@@ -530,29 +376,106 @@ RectangularEtaPhiTrackingRegion TrackingRegionAnalyzer::defineRegionOfInterest3(
 
   deltaEta = min(double(1.), 1.25 * deltaEta);
   deltaPhi = 1.2 * deltaPhi;
-    
-  LogDebug("Analyzer")<< "Region3 dEta, dPhi: " << deltaEta << " " << deltaPhi;
   
-  //-- Choices
-  //-- 4) position on inner muon surface ***
-  //-- 5) position on tracker bound
+  RectangularEtaPhiTrackingRegion rectRegion(dirVector, vertexPos,
+                                             minPt, 0.2,
+                                             deltaZ, deltaEta, deltaPhi);
+
+  return rectRegion;
+
+}
+
+//
+// define a region of interest within the tracker
+//
+RectangularEtaPhiTrackingRegion TrackingRegionAnalyzer::defineRegionOfInterest2(const reco::TrackRef& staTrack) const {
+
+  //CMSSW_1_3_1
+  
+  //Get muon free state updated at vertex
+  TrajectoryStateTransform tsTransform;
+  FreeTrajectoryState muFTS = tsTransform.initialFreeState(*staTrack,&*theService->magneticField());
+  
+  //Get track direction at vertex
+  GlobalVector dirVector(muFTS.momentum());
+  
+  //Get region size using momentum uncertainty
+  
+  //Get track momentum
+  const math::XYZVector& mo = staTrack->innerMomentum();
+  GlobalVector mom(mo.x(),mo.y(),mo.z());
+  if ( staTrack->p() > 1.0 ) {
+    mom = dirVector; 
+  }
+  
+  //Get Mu state on inner muon surface
+  //TrajectoryStateOnSurface muTSOS = tsTransform.innerStateOnSurface(*staTrack,*theService->trackingGeometry(),&*theService->magneticField());
+  
+  //Get Mu state on tracker bound
+  //StateOnTrackerBound fromInside(&*theService->propagator(stateOnTrackerOutProp));
+  //muTSOS = fromInside(muFTS);
+  
+  //Get error of momentum of the Mu state
+  GlobalError  dirErr(muFTS.cartesianError().matrix().sub(4,6));
+  GlobalVector dirVecErr(dirVector.x() + sqrt(dirErr.cxx()),
+			 dirVector.y() + sqrt(dirErr.cyy()),
+			 dirVector.z() + sqrt(dirErr.czz()));
+  
+  //Get dEta and dPhi
+  float eta1 = dirVector.eta();
+  float eta2 = dirVecErr.eta();
+  float deta(fabs(eta1- eta2));
+  float dphi(fabs(Geom::Phi<float>(dirVector.phi())-Geom::Phi<float>(dirVecErr.phi())));
+  
+  //Get vertex, Pt constraints  
+  GlobalPoint vertexPos = (muFTS.position());
+  GlobalError vertexErr = (muFTS.cartesianError().position());
+  
+  double minPt    = max(1.5,mom.perp()*0.6);
+  double deltaZ   = min(15.9,3*sqrt(theVertexErr.czz()));
+  
+  //Adjust tracking region dEta and dPhi  
+  double deltaEta = 0.1;
+  double deltaPhi = 0.1;
+
+  if ( deta > 0.05 ) {
+    deltaEta += deta/2;
+  }
+  if ( dphi > 0.07 ) {
+    deltaPhi += 0.15;
+  }
+
+  deltaPhi = min(double(0.2), deltaPhi);
+  if(mom.perp() < 25.) deltaPhi = max(double(dphi),0.3);
+  if(mom.perp() < 10.) deltaPhi = max(deltaPhi,0.8);
+ 
+  deltaEta = min(double(0.2), deltaEta);
+  if( mom.perp() < 6.0 ) deltaEta = 0.5;
+  if( fabs(eta1) > 2.25 ) deltaEta = 0.6;
+  if( fabs(eta1) > 3.0 ) deltaEta = 1.0;
+  //if( fabs(eta1) > 2. && mom.perp() < 10. ) deltaEta = 1.;
+  //if ( fabs(eta1) < 1.25 && fabs(eta1) > 0.8 ) deltaEta= max(0.07,deltaEta);
+  if ( fabs(eta1) < 1.3  && fabs(eta1) > 1.0 ) deltaPhi = max(0.3,deltaPhi);
+
+  deltaEta = min(double(1.), 1.25 * deltaEta);
+  deltaPhi = 1.2 * deltaPhi;
+  
+  //Get region size using position uncertainty
   
   //Get innerMu position
   const math::XYZPoint& po = staTrack->innerPosition();
-  GlobalPoint pos(po.x(),po.y(),po.z());
-  
+  GlobalPoint pos(po.x(),po.y(),po.z());    
   //pos = muTSOS.globalPosition();
   
   float eta3 = pos.eta();
   float deta2(fabs(eta1- eta3));
-  float dphi2(fabs(Geom::Phi<float>(dirVector.phi())-Geom::Phi<float>(pos.phi())));
-  
-  LogDebug("Analyzer") << "Region3 deta2, dphi2: " << deta2 << " " << dphi2;  
-  
+  float dphi2(fabs(Geom::Phi<float>(dirVector.phi())-Geom::Phi<float>(pos.phi())));  
+     
+  //Adjust tracking region dEta dPhi
   double deltaEta2 = 0.05;
   double deltaPhi2 = 0.07;
-  
-  if ( deta2 > 0.05 ) { // 0.06
+    
+  if ( deta2 > 0.05 ) {
     deltaEta2 += deta2 / 2;
   }
   if ( dphi2 > 0.07 ) {
@@ -565,18 +488,141 @@ RectangularEtaPhiTrackingRegion TrackingRegionAnalyzer::defineRegionOfInterest3(
   deltaEta2 = 1 * max(double(2.5 * deta2),deltaEta2);
   deltaPhi2 = 1 * max(double(3.5 * dphi2),deltaPhi2);
   
-  LogDebug("Analyzer")<< "Region3 dEta2, dPhi2: " << deltaEta2 << " " << deltaPhi2;
-  
+  //Use whichever will give smallest region size
   deltaEta = min(deltaEta,deltaEta2);
   deltaPhi = min(deltaPhi,deltaPhi2);
+
+  //if(theMakeTkSeedFlag) {
+  //    deltaEta = deltaEta2;
+  //    deltaPhi = deltaPhi2;
+  //    vertexPos = theVertexPos;
+  //  }
+
   
   RectangularEtaPhiTrackingRegion rectRegion(dirVector, vertexPos,
                                              minPt, 0.2,
                                              deltaZ, deltaEta, deltaPhi);
-  h_region3->Fill(deltaEta,deltaPhi);
-  h_region3a->Fill(deta,dphi);
-  h_region3b->Fill(deta2,dphi2);
+  
   return rectRegion;
+  
+
+}
+
+//
+// define a region of interest within the tracker
+//
+RectangularEtaPhiTrackingRegion TrackingRegionAnalyzer::defineRegionOfInterest3(const reco::TrackRef& staTrack) const {
+
+   //copied from Jean-Roch
+
+  const std::string _category = "Analyzer";
+  int _Nsigma = 6;
+
+  using namespace std;
+
+  //fixme. it would rather consider non-perturbative error propagation !
+
+  TSCPBuilderNoMaterial tscpBuilder;
+  TrajectoryStateTransform tsTransform;
+
+  FreeTrajectoryState muFTS = tsTransform.initialFreeState(*staTrack,&*theService->magneticField());
+  //position at IP
+  GlobalPoint vertexPos = muFTS.position();
+  //-  const GlobalPoint theVertexPos(0,0,0);
+  TrajectoryStateClosestToPoint tscp = tscpBuilder(muFTS,theVertexPos);
+  //  TrajectoryStateClosestToPoint tscp(muFTS,theVertexPos);
+
+  const PerigeeTrajectoryError & covar = tscp.perigeeError();
+  //- covar.rescaleError(_Nsigma);
+  const PerigeeTrajectoryParameters & param = tscp.perigeeParameters();
+
+  //delta phi
+  double deltaPhi = _Nsigma*covar.phiError();
+  //double deltaPhi = covar.phiError();
+
+  //calculate deltaEta from deltaTheta
+  double deltaTheta = covar.thetaError();
+  double theta=param.theta();
+  double deltaEta=0;
+  const double deltaEta_default =0.1;
+  double sin_theta=sin(theta);
+  if (sin_theta!=0){
+    deltaEta = _Nsigma/fabs(sin_theta)*deltaTheta ;}
+    //- deltaEta = _Nsigma*_Nsigma/fabs(sin_theta)*deltaTheta ;}
+  else{
+    edm::LogInfo(_category)<<"sin(theta)=0, cannot propagate error into eta error: taking "<<deltaEta_default;
+    deltaEta= deltaEta_default;}
+
+  //direction at IP
+  GlobalVector dirVector = muFTS.momentum().unit();
+
+  //minimum pT from inverse curavture (assumed gaussian)
+  double minPt = 0;
+  double maxPt = 0;
+  double pT = muFTS.momentum().perp();
+  double unsigned_rho = fabs(param.transverseCurvature());
+  double deltaRho = covar.transverseCurvatureError();
+  double coeff = pT*unsigned_rho;
+  if (unsigned_rho==0){
+    edm::LogInfo(_category)<<"transverse curvature is null: taking half transverse momentum as minimum";
+    minPt = 0.5*pT;
+    maxPt = 10*pT;}
+  else {
+    minPt = coeff/(unsigned_rho+_Nsigma*deltaRho);
+    if (unsigned_rho-_Nsigma*deltaRho !=0){maxPt = coeff/(unsigned_rho-_Nsigma*deltaRho);}
+    //- minPt = coeff/(unsigned_rho+deltaRho);
+    //- if (unsigned_rho-deltaRho !=0){maxPt = coeff/(unsigned_rho-deltaRho);}
+  }
+
+  //error at IP
+  GlobalError vertexErr = muFTS.cartesianError().position();
+
+  //z error on the muon state (assume gaussian)
+  double deltaZ=_Nsigma*sqrt(vertexErr.czz());
+
+  //r error on the muon state
+  double x2 = vertexPos.x() * vertexPos.x();
+  double xy = vertexPos.x() * vertexPos.y();
+  double y2 = vertexPos.y() * vertexPos.y();
+  double deltaR=0;
+  const double deltaR_default=2; //cm
+  double r=vertexPos.perp();
+  if (r!=0){
+    deltaR=_Nsigma*sqrt(x2*vertexErr.cxx()+
+                        xy*vertexErr.cyx()+
+                        y2*vertexErr.cyy())/r;}
+  else{
+    edm::LogInfo(_category)<<"r=0 at IP, cannot get a proper radial errro: taking "<<deltaR_default;
+    deltaR=deltaR_default;}
+
+
+  /*
+  deltaEta = max(0.05, deltaEta);
+  deltaPhi = max(0.05, deltaPhi);
+
+  float eta1 = dirVector.eta();
+
+  if ( fabs(eta1) < 1.25 && fabs(eta1) > 0.8 ) deltaEta = max(0.07,deltaEta);
+  if ( fabs(eta1) < 1.3  && fabs(eta1) > 1.0 ) deltaPhi = max(0.3,deltaPhi);
+  if ( fabs(eta1) < 0.35  && fabs(eta1) > 0.2 ) deltaEta = max(0.07,deltaEta);
+  if ( fabs(eta1) < 0.35  && fabs(eta1) > 0.2 ) deltaPhi = max(0.3,deltaPhi);
+
+  //deltaEta = min(1., deltaEta);
+  //deltaPhi = min(1., deltaPhi);
+  */
+
+  vertexPos = theVertexPos;
+  deltaZ = 15.9;
+  deltaR = 0.2; //max(0.2,deltaR);
+
+  RectangularEtaPhiTrackingRegion rectRegion(dirVector, vertexPos,
+                                             minPt,
+                                             deltaR,deltaZ,
+                                             deltaEta, deltaPhi);
+
+
+  return rectRegion;
+
   
 }
 
@@ -597,7 +643,7 @@ TrackingRegionAnalyzer::chooseRegionalTrackerTracks(const RectangularEtaPhiTrack
   for ( is = tkTs.begin(); is != tkTs.end(); ++is ) {
     //check if each trackCand is in region of interest
     bool inEtaRange = etaRange.inside(is->eta());
-    bool inPhiRange = (fabs(Geom::Phi<float>(is->phi()) - Geom::Phi<float>(regionOfInterest.direction().phi())) < phiMargin.right() ) ? true : false ;
+    bool inPhiRange = (fabs(Geom::Phi<float>(is->phi() - regionOfInterest.direction().phi() )) <= phiMargin.right() ) ? true : false ;
 
     //for each trackCand in region, add trajectory and add to result
     if( inEtaRange && inPhiRange ) result.push_back(*is);
