@@ -6,8 +6,9 @@
 <use name=RecoMuon/TrackingTools>
 <use name=PhysicsTools/UtilAlgos>
 <use name=root>
-<use name=CLHEP>q
-<flags SEAL_PLUGIN_NAME="UserCodeTrackingRegionAnalyzer">
+<use name=CLHEP>
+<flags EDM_PLUGIN=1>
+
 <export>
    <lib name=UserCodeTrackingRegionAnalyzer>
    <use name=FWCore/Framework>

@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Tue Feb 20 17:29:48 CET 2007
-// $Id: TrackingRegionAnalyzer.cc,v 1.1 2007/03/02 20:08:46 aeverett Exp $
+// $Id: TrackingRegionAnalyzer.cc,v 1.2 2007/05/04 16:00:56 aeverett Exp $
 //
 //
 
@@ -86,6 +86,7 @@ private:
 
   edm::InputTag theSTALabel;
   edm::InputTag theGLBLabel;
+  edm::InputTag theGLBMuLabel;
   edm::InputTag theTKLabel;
   edm::InputTag theSIMLabel;
 
@@ -128,6 +129,7 @@ TrackingRegionAnalyzer::TrackingRegionAnalyzer(const edm::ParameterSet& iConfig)
    //now do what ever initialization is needed
   theSTALabel = iConfig.getParameter<edm::InputTag>("STACollectionLabel");
   theGLBLabel = iConfig.getParameter<edm::InputTag>("GLBCollectionLabel");
+  theGLBMuLabel = iConfig.getParameter<edm::InputTag>("GLBMuCollectionLabel");
   theTKLabel = iConfig.getParameter<edm::InputTag>("TKCollectionLabel");
   theSIMLabel = iConfig.getParameter<edm::InputTag>("SIMCollectionLabel");
 
@@ -184,7 +186,7 @@ TrackingRegionAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup&
  const reco::TrackCollection glbTC = *(GLBTrackCollection.product());
  
  Handle<reco::MuonCollection> MuCollection;
- iEvent.getByLabel(theGLBLabel,MuCollection);
+ iEvent.getByLabel(theGLBMuLabel,MuCollection);
  const reco::MuonCollection muonC = *(MuCollection.product());
 
  h_tracks0->Fill(tkTC.size());
@@ -332,7 +334,8 @@ RectangularEtaPhiTrackingRegion TrackingRegionAnalyzer::defineRegionOfInterest1(
   //StateOnTrackerBound fromInside(&*theService->propagator(stateOnTrackerOutProp));
   //muTSOS = fromInside(muFTS);
 
-  GlobalError  dirErr(muFTS.cartesianError().matrix().sub(4,6));
+  //Get error of momentum of the Mu state
+  GlobalError  dirErr(muFTS.cartesianError().matrix().Sub<AlgebraicSymMatrix33>(3,3));
   GlobalVector dirVecErr(dirVector.x() + sqrt(dirErr.cxx()),
 			 dirVector.y() + sqrt(dirErr.cyy()),
 			 dirVector.z() + sqrt(dirErr.czz()));
@@ -416,7 +419,7 @@ RectangularEtaPhiTrackingRegion TrackingRegionAnalyzer::defineRegionOfInterest2(
   //muTSOS = fromInside(muFTS);
   
   //Get error of momentum of the Mu state
-  GlobalError  dirErr(muFTS.cartesianError().matrix().sub(4,6));
+  GlobalError  dirErr(muFTS.cartesianError().matrix().Sub<AlgebraicSymMatrix33>(3,3));
   GlobalVector dirVecErr(dirVector.x() + sqrt(dirErr.cxx()),
 			 dirVector.y() + sqrt(dirErr.cyy()),
 			 dirVector.z() + sqrt(dirErr.czz()));

@@ -4,6 +4,7 @@ module regionTest = TrackingRegionAnalyzer {
     InputTag TKCollectionLabel = ctfWithMaterialTracks
     InputTag STACollectionLabel = standAloneMuons:UpdatedAtVtx
     InputTag GLBCollectionLabel = globalMuons
+    InputTag GLBMuCollectionLabel = muons
     
     string StateOnTrackerBoundOutPropagator = "SteppingHelixPropagatorAlong"
 }
