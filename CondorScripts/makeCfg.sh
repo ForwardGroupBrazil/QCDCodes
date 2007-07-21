@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 jobName=$1
 configTemplate=$2
 configFileBlock=$3
@@ -31,7 +30,6 @@ while IFS= read -r file
 do
   files[count]=$file
   count=$(($count+1))
-#  echo $file
 done < $configFileBlock
 
 while read  -a array;
@@ -43,7 +41,6 @@ while read  -a array;
   fi
 done < MuValidSubstitutions.txt
 
-#cd $ORIGINAL_DIR
 
 #
 # Starting values for the job loop
@@ -57,13 +54,11 @@ declare -i fileIndex=$firstFile
 #
 while [ $nFiles -gt $nFilesSubmitted ]; do
     rm tmp.txt
-#    echo "job " $totalJobs
     let indexCount=1
     while [ $indexCount -le $filesPerJob ]; do
 	if [ $fileIndex -le $lastFile ]; then     
-#	    echo "indexCount $indexCount filesPerJob $filesPerJob"
 	    cat << EOFFF >> tmp.txt
-            replace PoolSource.fileNames +=  ${files[$fileIndex]}
+            replace PoolSource.fileNames +=  '${files[$fileIndex]}'
 EOFFF
 	fi
 	let indexCount=$indexCount+1
