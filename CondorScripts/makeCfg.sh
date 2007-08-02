@@ -8,11 +8,11 @@ declare -i lastFile=$5
 declare -i filesPerJob=$6
 COMMON_DIR=$7
 
-blockName=`basename $configFileBlock .plain`
+blockName=`basename $configFileBlock .txt`
 
 lines=`wc -l $configFileBlock | awk '{printf("%d",$1)}'`
 
-Pt=`basename $configFileBlock .plain | sed -e "s/Mu13/YYY/g" \
+Pt=`basename $configFileBlock .txt | sed -e "s/Mu13/YYY/g" \
     -e "s/Mu-13/ZZZ/g" | cut -c4-`
 
 if [ $firstFile -lt 0 ]; then
@@ -58,7 +58,7 @@ while [ $nFiles -gt $nFilesSubmitted ]; do
     while [ $indexCount -le $filesPerJob ]; do
 	if [ $fileIndex -le $lastFile ]; then     
 	    cat << EOFFF >> tmp.txt
-            replace PoolSource.fileNames +=  '${files[$fileIndex]}'
+            replace PoolSource.fileNames +=  'rfio:${files[$fileIndex]}'
 EOFFF
 	fi
 	let indexCount=$indexCount+1

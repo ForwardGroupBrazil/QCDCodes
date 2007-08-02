@@ -54,5 +54,5 @@ pwd
 ls -al
 echo -----------------------------------------
 cp ${WORKDIR}/*.root ${COMMON_DIR}/.
-cp ${WORKDIR}/*.log  ${COMMON_DIR}/.  
+#cp ${WORKDIR}/*.log  ${COMMON_DIR}/.  
 

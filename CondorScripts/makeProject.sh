@@ -56,9 +56,9 @@ cd $ORIGINAL_DIR
 #
 # make the CFG files
 #
-totalJobs=`${ORIGINAL_DIR}/makeCfg.sh $jobName $configTemplate $configFileBlock $firstFile $lastFile $filesPerJob $COMMON_DIR`
-
-echo "Done making CFG"
+#totalJobs=`${ORIGINAL_DIR}/makeCfg.sh $jobName $configTemplate $configFileBlock $firstFile $lastFile $filesPerJob $COMMON_DIR`
+#
+#echo "Done making CFG"
 
 #
 # Submit the project
