@@ -69,9 +69,15 @@ if [ "$subtype" = "PBS" ] || [ "$subtype" = "BSUB" ]; then
     while [ $job -le $totalJobs ]; do	
 	submitFile=batchRunScript.sh
 	fileName=`echo $jobName $blockName $job | awk '{printf("%s-%s-%4.4d", $1, $2, $3)}'`
-	$subcommand -q$que $submitFile $fileName $COMMON_DIR
+
+	if [ "$subtype" = "PBS" ]; then
+	    $subcommand -q$que -N ${blockName}-${job} -o${COMMON_DIR}/${fileName}.out -e${COMMON_DIR}/${fileName}.err -vfileName=${fileName},COMMON_DIR=${COMMON_DIR} -V $submitFile
+	elif [ "$subtype" = "BSUB" ]; then
+	    $subcommand -q$que -J ${blockName}-${job} $submitFile $fileName $COMMON_DIR
+	fi
 	job=$(($job+1))	
     done
+
 elif [ "$subtype" = "CONDOR" ]; then
     submitFile=$COMMON_DIR/submit    
 #
