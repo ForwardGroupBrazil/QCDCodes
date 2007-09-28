@@ -92,8 +92,53 @@ elif [ "$subtype" = "CONDOR" ]; then
     chmod +x ${COMMON_DIR}/condorRunScript.csh
     
     condor_submit $submitFile
+
+elif [ "$subtype" = "CRAB" ]; then
+
+blockName=`basename $configFileBlock .txt`
+
+job=1
+
+fileName=`echo $jobName $blockName $job | awk '{printf("%s-%s-%4.4d", $1, $2, $3)}'`
+
+count=1
+while IFS= read -r file
+do
+  files[count]=$file
+  count=$(($count+1))
+done < $configFileBlock
+
+rm -f tmp.txt
+cat << EOFF >> tmp.txt
+datasetpath            = ${files[1]}
+total_number_of_events = ${files[2]}
+number_of_jobs         = ${files[3]}
+EOFF
+
+#rm tmp2.txt
+#cat <<EOFF>>tmp2.txt
+#ui_working_dir = ${COMMON_DIR}.common
+#EOFF
+
+#    -e '/#uidir/ r 'tmp2.txt'' \
+#    -e "s/\\\$totalEvents/${lastFile}/" \
+#    -e "s/\\\$totalJobs/$filesPerJob/" 
+sed -e '/#CMSSWBlock/ r 'tmp.txt'' \
+    -e "s/\\\$configFile/${fileName}.cfg/" \
+    -e "s/\\\$outputFileName/$fileName/g" < crabTemplate.cfg > crab.${fileName}.cfg
+
+rm -f tmp.txt
+
+mv crab.${fileName}.cfg ${COMMON_DIR}/crab.${fileName}.cfg
+
+cd ${COMMON_DIR}
+
+#crab -cfg ${COMMON_DIR}/crab.${fileName}.cfg -create
+
+cd -
+
 else
-    echo "Unknow submission type: " $subtype    
+    echo "Unknown submission type: " $subtype    
 fi
 
 echo -n "Jobs for $jobName are created in " $COMMON_DIR
