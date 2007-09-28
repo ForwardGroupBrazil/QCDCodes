@@ -133,7 +133,9 @@ mv crab.${fileName}.cfg ${COMMON_DIR}/crab.${fileName}.cfg
 
 cd ${COMMON_DIR}
 
-#crab -cfg ${COMMON_DIR}/crab.${fileName}.cfg -create
+crab -cfg ${COMMON_DIR}/crab.${fileName}.cfg -create
+
+crab -submit
 
 cd -
 
