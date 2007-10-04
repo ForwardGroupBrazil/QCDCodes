@@ -13,7 +13,7 @@
 //
 // Original Author:  A. Everett - Purdue University
 //         Created:  Tue Oct  2 12:38:18 EDT 2007
-// $Id$
+// $Id: MatchStudy.cc,v 1.1 2007/10/02 21:12:22 aeverett Exp $
 //
 //
 
@@ -165,12 +165,14 @@ MatchStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairTk 
 	= convertToTSOSTk(*iSta,*iTk);
 
-      r_tk_mom->Fill( match_Rmom(tsosPairTk.first,tsosPairTk.second) );
-      r_tk_pos->Fill( match_Rmom(tsosPairTk.first,tsosPairTk.second) );
-      d_tk->Fill( match_D(tsosPairTk.first,tsosPairTk.second) );
-
       bool sameSurface = samePlane(tsosPairTk.first,tsosPairTk.second);
       surface_tk->Fill(sameSurface);
+
+      if( sameSurface ) {
+	r_tk_mom->Fill( match_Rmom(tsosPairTk.first,tsosPairTk.second) );
+	r_tk_pos->Fill( match_Rpos(tsosPairTk.first,tsosPairTk.second) );
+	d_tk->Fill( match_D(tsosPairTk.first,tsosPairTk.second) );
+      }
 
       double chi2 = -1;
       if( sameSurface ) 
@@ -181,12 +183,14 @@ MatchStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairMu 
 	= convertToTSOSMu(*iSta,*iTk);
 
-      r_mu_mom->Fill( match_Rmom(tsosPairMu.first,tsosPairMu.second) );
-      r_mu_pos->Fill( match_Rmom(tsosPairMu.first,tsosPairMu.second) );
-      d_mu->Fill( match_D(tsosPairMu.first,tsosPairMu.second) );
-
       bool sameSurfaceMu = samePlane(tsosPairMu.first,tsosPairMu.second);
       surface_mu->Fill(sameSurfaceMu);
+
+      if( sameSurfaceMu ) {
+	r_mu_mom->Fill( match_Rmom(tsosPairMu.first,tsosPairMu.second) );
+	r_mu_pos->Fill( match_Rpos(tsosPairMu.first,tsosPairMu.second) );
+	d_mu->Fill( match_D(tsosPairMu.first,tsosPairMu.second) );
+      }
 
       double chi2Mu = -1;
       if( sameSurfaceMu ) 
@@ -210,8 +214,8 @@ MatchStudy::beginJob(const edm::EventSetup&)
   r_tk_mom = fs->make<TH1F>("r_tk_mom","R_{mom} at Tk Surface",100,0.,1.);
   r_tk_pos = fs->make<TH1F>("r_tk_pos","R_{pos} at Tk Surface",100,0.,1.);
 
-  r_mu_mom = fs->make<TH1F>("r_mu_mom","R_{mom} at Tk Surface",100,0.,1.);
-  r_mu_pos = fs->make<TH1F>("r_mu_pos","R_{pos} at Tk Surface",100,0.,1.);
+  r_mu_mom = fs->make<TH1F>("r_mu_mom","R_{mom} at Mu Surface",100,0.,1.);
+  r_mu_pos = fs->make<TH1F>("r_mu_pos","R_{pos} at Mu Surface",100,0.,1.);
 
   d_mu = fs->make<TH1F>("d_mu","D at Mu Surface",100,0.,100.);
   d_tk = fs->make<TH1F>("d_tk","D at Tk Surface",100,0.,100.);
@@ -234,14 +238,10 @@ MatchStudy::convertToTSOSTk(const reco::Track& staCand,
   
   const string category = "MatchStudy";
   
-  LogDebug(category);
-
   TransientTrack muTT(staCand,&*theService->magneticField(),theService->trackingGeometry());
   TrajectoryStateOnSurface impactMuTSOS = muTT.impactPointState();
 
   TrajectoryStateOnSurface outerTkTsos;
-
-  LogDebug(category);
 
   // make sure the tracker Track has enough momentum to reach the muon chambers
   if ( !(tkCand.p() < theMinP || tkCand.pt() < theMinPt )) {
@@ -249,8 +249,6 @@ MatchStudy::convertToTSOSTk(const reco::Track& staCand,
     outerTkTsos = tsTransform.outerStateOnSurface(tkCand,*theService->trackingGeometry(),&*theService->magneticField());
   }
   
-  LogDebug(category);
-
   if ( !impactMuTSOS.isValid() || !outerTkTsos.isValid() ) return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(impactMuTSOS,outerTkTsos);
   
   // define StateOnTrackerBound objects  
@@ -267,15 +265,18 @@ MatchStudy::convertToTSOSTk(const reco::Track& staCand,
     TrajectoryStateOnSurface newTkTsosFromTk, newTkTsosFromMu;
     if( tkTsosFromMu.isValid() ) newTkTsosFromTk = theService->propagator(theOutPropagatorName)->propagate(outerTkTsos,tkTsosFromMu.surface());
     same1 =  samePlane(newTkTsosFromTk,tkTsosFromMu);
-    LogDebug(category) << "Propagating to same surface (Mu):" << same1;
+    LogDebug(category) << "Propagating to same tracker surface (Mu):" << same1;
     if( !same1 ) {
       if( tkTsosFromTk.isValid() ) newTkTsosFromMu = theService->propagator(theOutPropagatorName)->propagate(impactMuTSOS,tkTsosFromTk.surface());
       same2 =  samePlane(newTkTsosFromMu,tkTsosFromTk);
-      LogDebug(category) << "Propagating to same surface (Tk):" << same2;
+      LogDebug(category) << "Propagating to same tracker surface (Tk):" << same2;
     }
     if(same1) tkTsosFromTk = newTkTsosFromTk;
     else if(same2) tkTsosFromMu = newTkTsosFromMu;
-    else  LogDebug(category) << "Could not propagate Muon and Tracker track to the same tracker bound!";
+    else  {
+      LogDebug(category) << "Could not propagate Muon and Tracker track to the same tracker bound!";
+      return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(impactMuTSOS, outerTkTsos);
+    }
   }
   
   return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(tkTsosFromMu, tkTsosFromTk);
@@ -287,15 +288,11 @@ MatchStudy::convertToTSOSMu(const reco::Track& staCand,
   
   const string category = "MatchStudy";
   
-  LogDebug(category);
-
   TransientTrack muTT(staCand,&*theService->magneticField(),theService->trackingGeometry());
   //TrajectoryStateOnSurface impactMuTSOS = muTT.impactPointState();
   TrajectoryStateOnSurface innerMuTSOS = muTT.innermostMeasurementState();
 
   TrajectoryStateOnSurface outerTkTsos;
-
-  LogDebug(category);
 
   // make sure the tracker Track has enough momentum to reach the muon chambers
   if ( !(tkCand.p() < theMinP || tkCand.pt() < theMinPt )) {
@@ -303,8 +300,6 @@ MatchStudy::convertToTSOSMu(const reco::Track& staCand,
     outerTkTsos = tsTransform.outerStateOnSurface(tkCand,*theService->trackingGeometry(),&*theService->magneticField());
   }
   
-  LogDebug(category);
-
   if ( !innerMuTSOS.isValid() || !outerTkTsos.isValid() ) return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(innerMuTSOS,outerTkTsos);
   
   // define StateOnTrackerBound objects  
@@ -322,15 +317,18 @@ MatchStudy::convertToTSOSMu(const reco::Track& staCand,
     TrajectoryStateOnSurface newMuTsosFromTk, newMuTsosFromMu;
     if( muTsosFromMu.isValid() ) newMuTsosFromTk = theService->propagator(theOutPropagatorName)->propagate(outerTkTsos,muTsosFromMu.surface());
     same1 =  samePlane(newMuTsosFromTk,muTsosFromMu);
-    LogDebug(category) << "Propagating to same surface (Mu):" << same1;
+    LogDebug(category) << "Propagating to same muon surface (Mu):" << same1;
     if( !same1 ) {
       if( muTsosFromTk.isValid() ) newMuTsosFromMu = theService->propagator(theOutPropagatorName)->propagate(innerMuTSOS,muTsosFromTk.surface());
       same2 =  samePlane(newMuTsosFromMu,muTsosFromTk);
-      LogDebug(category) << "Propagating to same surface (Tk):" << same2;
+      LogDebug(category) << "Propagating to same muon surface (Tk):" << same2;
     }
     if(same1) muTsosFromTk = newMuTsosFromTk;
     else if(same2) muTsosFromMu = newMuTsosFromMu;
-    else  LogDebug(category) << "Could not propagate Muon and Tracker track to the same tracker bound!";
+    else {
+      LogDebug(category) << "Could not propagate Muon and Tracker track to the same muon bound!";
+      return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(innerMuTSOS, outerTkTsos);
+  }
   }
   
   return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(muTsosFromMu, muTsosFromTk);
@@ -365,7 +363,7 @@ MatchStudy::matchChiAtSurface(const TrajectoryStateOnSurface& tsos1,
 
   AlgebraicVector5 v(tsos1.localParameters().vector() - tsos2.localParameters().vector());
   AlgebraicSymMatrix55 m(tsos1.localError().matrix() + tsos2.localError().matrix());
-  LogDebug(category) << "vector v " << v;
+  //LogDebug(category) << "vector v " << v;
 
   int ierr = ! m.Invert();
 
@@ -373,7 +371,7 @@ MatchStudy::matchChiAtSurface(const TrajectoryStateOnSurface& tsos1,
 
   double est = ROOT::Math::Similarity(v,m);
 
-  LogDebug(category) << "Chi2 " << est;
+  //LogDebug(category) << "Chi2 " << est;
 
 /*
   GlobalVector x = tsos1.globalParameters().position() - tsos2.globalParameters().position();
