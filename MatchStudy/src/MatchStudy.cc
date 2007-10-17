@@ -13,7 +13,7 @@
 //
 // Original Author:  A. Everett - Purdue University
 //         Created:  Tue Oct  2 12:38:18 EDT 2007
-// $Id: MatchStudy.cc,v 1.1 2007/10/02 21:12:22 aeverett Exp $
+// $Id: MatchStudy.cc,v 1.2 2007/10/04 19:31:26 aeverett Exp $
 //
 //
 
@@ -77,14 +77,17 @@ private:
   double match_Rpos(const TrajectoryStateOnSurface&, const TrajectoryStateOnSurface&) const;
   std::pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface> convertToTSOSTk(const reco::Track&,const reco::Track& ) const;
   std::pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface> convertToTSOSMu(const reco::Track&,const reco::Track& ) const;
+  std::pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface> convertToTSOSMuHit(const reco::Track&,const reco::Track& ) const;
   bool samePlane(const TrajectoryStateOnSurface&,const TrajectoryStateOnSurface&) const;
   double matchChiAtSurface(const TrajectoryStateOnSurface& , const TrajectoryStateOnSurface& ) const;
       // ----------member data ---------------------------
   TH1F *r_ip, *r_tk_mom, *r_tk_pos;
   TH1F        *r_mu_mom, *r_mu_pos;
-  TH1F        *d_mu, *d_tk;
+  TH1F        *r_muHit_mom, *r_muHit_pos;
+  TH1F        *d_mu, *d_tk, *d_muHit;
   TH1F *chi2_tk_all, *surface_tk;
   TH1F *chi2_mu_all, *surface_mu;
+  TH1F *chi2_muHit_all, *surface_muHit;
 
   double theMinP, theMinPt, theMaxChi2, theDeltaEta, theDeltaPhi;
   
@@ -197,6 +200,24 @@ MatchStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	chi2Mu = matchChiAtSurface(tsosPairMu.first, tsosPairMu.second);
       chi2_mu_all->Fill(chi2Mu);
 
+      ///
+      std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairMuHit 
+	= convertToTSOSMuHit(*iSta,*iTk);
+
+      bool sameSurfaceMuHit = samePlane(tsosPairMuHit.first,tsosPairMuHit.second);
+      surface_muHit->Fill(sameSurfaceMuHit);
+
+      if( sameSurfaceMuHit ) {
+	r_muHit_mom->Fill( match_Rmom(tsosPairMuHit.first,tsosPairMuHit.second) );
+	r_muHit_pos->Fill( match_Rpos(tsosPairMuHit.first,tsosPairMuHit.second) );
+	d_muHit->Fill( match_D(tsosPairMuHit.first,tsosPairMuHit.second) );
+      }
+
+      double chi2MuHit = -1;
+      if( sameSurfaceMuHit ) 
+	chi2MuHit = matchChiAtSurface(tsosPairMuHit.first, tsosPairMuHit.second);
+      chi2_muHit_all->Fill(chi2MuHit);
+
     }
     
   }
@@ -217,14 +238,20 @@ MatchStudy::beginJob(const edm::EventSetup&)
   r_mu_mom = fs->make<TH1F>("r_mu_mom","R_{mom} at Mu Surface",100,0.,1.);
   r_mu_pos = fs->make<TH1F>("r_mu_pos","R_{pos} at Mu Surface",100,0.,1.);
 
+  r_muHit_mom = fs->make<TH1F>("r_muHit_mom","R_{mom} at Mu Hit Surface",100,0.,1.);
+  r_muHit_pos = fs->make<TH1F>("r_muHit_pos","R_{pos} at Mu Hit Surface",100,0.,1.);
+
   d_mu = fs->make<TH1F>("d_mu","D at Mu Surface",100,0.,100.);
+  d_muHit = fs->make<TH1F>("d_muHit","D at Mu Hit Surface",100,0.,100.);
   d_tk = fs->make<TH1F>("d_tk","D at Tk Surface",100,0.,100.);
 
   chi2_tk_all = fs->make<TH1F>("chi2_tk_all","#chi^{2} of all tracks on Tk Surface",501,-2.,1000.);
   chi2_mu_all = fs->make<TH1F>("chi2_mu_all","#chi^{2} of all tracks on Mu Surface",501,-2.,1000.);
+  chi2_muHit_all = fs->make<TH1F>("chi2_muHit_all","#chi^{2} of all tracks on Mu Hit Surface",501,-2.,1000.);
 
   surface_tk = fs->make<TH1F>("surface_tk","Pass/Fail Tk Surface",3,-0.5,2.5);
   surface_mu = fs->make<TH1F>("surface_mu","Pass/Fail Mu Surface",3,-0.5,2.5);
+  surface_muHit = fs->make<TH1F>("surface_muHit","Pass/Fail Mu Hit Surface",3,-0.5,2.5);
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
@@ -332,6 +359,38 @@ MatchStudy::convertToTSOSMu(const reco::Track& staCand,
   }
   
   return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(muTsosFromMu, muTsosFromTk);
+}
+
+
+std::pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>
+MatchStudy::convertToTSOSMuHit(const reco::Track& staCand,
+			       const reco::Track& tkCand) const {
+  
+  const string category = "MatchStudy";
+  
+  TransientTrack muTT(staCand,&*theService->magneticField(),theService->trackingGeometry());
+  TrajectoryStateOnSurface innerMuTSOS = muTT.innermostMeasurementState();
+
+  TrajectoryStateOnSurface outerTkTsos;
+
+  // make sure the tracker Track has enough momentum to reach the muon chambers
+  if ( !(tkCand.p() < theMinP || tkCand.pt() < theMinPt )) {
+    TrajectoryStateTransform tsTransform;
+    outerTkTsos = tsTransform.outerStateOnSurface(tkCand,*theService->trackingGeometry(),&*theService->magneticField());
+  }
+  
+  if ( !innerMuTSOS.isValid() || !outerTkTsos.isValid() ) return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(innerMuTSOS,outerTkTsos);
+  
+  //TrajectoryStateOnSurface tkAtMu = theService->propagator(theOutPropagatorName)->propagate(outerTkTsos,theService->trackingGeometry()->idToDet( DetId(staCand.innerDetId()) )->surface());
+  TrajectoryStateOnSurface tkAtMu = theService->propagator(theOutPropagatorName)->propagate(outerTkTsos,innerMuTSOS.surface());
+  
+  
+  if( !samePlane(innerMuTSOS,tkAtMu)) {
+    LogDebug(category) << "Could not propagate Muon and Tracker track to the same muon hit surface!";
+    return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(innerMuTSOS, outerTkTsos);    
+  }
+  
+  return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(innerMuTSOS, tkAtMu);
 }
 
 
