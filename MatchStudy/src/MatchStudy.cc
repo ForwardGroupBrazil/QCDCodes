@@ -13,22 +13,35 @@
 //
 // Original Author:  A. Everett - Purdue University
 //         Created:  Tue Oct  2 12:38:18 EDT 2007
-// $Id: MatchStudy.cc,v 1.2 2007/10/04 19:31:26 aeverett Exp $
+// $Id: MatchStudy.cc,v 1.3 2007/10/17 18:19:19 aeverett Exp $
 //
 //
 
 
 // system include files
 #include <memory>
+#include <string>
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
-
+#include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ParameterSet/interface/InputTag.h"
+
+#include "SimTracker/Records/interface/TrackAssociatorRecord.h"
+#include "SimTracker/TrackAssociation/interface/TrackAssociatorBase.h"
+#include "SimDataFormats/Track/interface/SimTrackContainer.h"
+
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
+#include "DataFormats/Common/interface/View.h"
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "DataFormats/MuonReco/interface/MuonTrackLinks.h"
+#include "DataFormats/MuonReco/interface/MuonFwd.h"
 
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
@@ -46,6 +59,8 @@
 
 #include "DataFormats/GeometrySurface/interface/TangentPlane.h"
 #include "DataFormats/Math/interface/deltaR.h"
+
+#include "Geometry/CommonDetUnit/interface/GeomDetUnit.h"
 
 #include "RecoMuon/TrackingTools/interface/MuonServiceProxy.h"
 
@@ -91,7 +106,10 @@ private:
 
   double theMinP, theMinPt, theMaxChi2, theDeltaEta, theDeltaPhi;
   
-  InputTag staTag, tkTag;
+  const TrackAssociatorBase *tkAssociator_, *muAssociator_;
+  std::string tkAssociatorName_, muAssociatorName_;
+  edm::InputTag tkName_, tpName_, glbName_, staName_;
+
   std::string theInPropagatorName;
   std::string theOutPropagatorName;
   MuonServiceProxy *theService;
@@ -115,9 +133,15 @@ MatchStudy::MatchStudy(const edm::ParameterSet& iConfig)
   ParameterSet serviceParameters = iConfig.getParameter<ParameterSet>("ServiceParameters");
   theService = new MuonServiceProxy(serviceParameters);
   
-   //now do what ever initialization is needed
-  staTag = iConfig.getParameter<InputTag>("StaCollection");
-  tkTag = iConfig.getParameter<InputTag>("TkCollection");
+  //now do what ever initialization is needed
+  tkAssociatorName_ = iConfig.getUntrackedParameter<std::string>("tkAssociator");
+  muAssociatorName_ = iConfig.getUntrackedParameter<std::string>("muAssociator");
+
+  tpName_ = iConfig.getUntrackedParameter<edm::InputTag>("tpLabel");
+  tkName_ = iConfig.getUntrackedParameter<edm::InputTag>("tkLabel");
+  staName_ = iConfig.getUntrackedParameter<edm::InputTag>("muLabel");
+  glbName_ = iConfig.getUntrackedParameter<edm::InputTag>("glbLabel");
+
 
   theOutPropagatorName = iConfig.getParameter<string>("StateOnTrackerBoundOutPropagator");
   theInPropagatorName = iConfig.getParameter<string>("StateOnMuonBoundInPropagator");
@@ -153,19 +177,52 @@ MatchStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   theService->update(iSetup);
 
-  Handle<reco::TrackCollection> staTracksH;
-  iEvent.getByLabel(staTag,staTracksH);
-  const reco::TrackCollection staTracks = *(staTracksH.product());
+  Handle<TrackingParticleCollection> tpHandle;
+  iEvent.getByLabel(tpName_,tpHandle);
+  const TrackingParticleCollection tpColl = *(tpHandle.product());
 
-  Handle<reco::TrackCollection> tkTracksH;
-  iEvent.getByLabel(tkTag,tkTracksH);
-  const reco::TrackCollection tkTracks = *(tkTracksH.product());  
+  Handle<reco::TrackCollection> staHandle;
+  iEvent.getByLabel(staName_,staHandle);
+  const reco::TrackCollection staColl = *(staHandle.product());
 
-  for(reco::TrackCollection::const_iterator iSta=staTracks.begin(); iSta!=staTracks.end();++iSta) {
-    for (reco::TrackCollection::const_iterator iTk = tkTracks.begin(); iTk != tkTracks.end(); ++iTk) {
-      r_ip->Fill( match_R_IP(*iSta,*iTk) );
-      
-      std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairTk 
+  Handle<reco::TrackCollection> tkHandle;
+  iEvent.getByLabel(tkName_,tkHandle);
+  const reco::TrackCollection tkColl = *(tkHandle.product());  
+
+   reco::RecoToSimCollection tkrecoToSimCollection;
+   reco::SimToRecoCollection tksimToRecoCollection;
+   tkrecoToSimCollection = tkAssociator_->associateRecoToSim(tkHandle,tpHandle,&iEvent);
+   tksimToRecoCollection = tkAssociator_->associateSimToReco(tkHandle,tpHandle,&iEvent);
+
+   reco::RecoToSimCollection starecoToSimCollection;
+   reco::SimToRecoCollection stasimToRecoCollection;
+   starecoToSimCollection = muAssociator_->associateRecoToSim(staHandle,tpHandle,&iEvent);
+   stasimToRecoCollection = muAssociator_->associateSimToReco(staHandle,tpHandle,&iEvent);
+
+   for (TrackingParticleCollection::size_type i=0; i<tpColl.size(); ++i){
+     TrackingParticleRef tp(tpHandle,i);
+
+     std::vector<std::pair<reco::TrackRef, double> > rvSta;
+     reco::TrackRef iSta;
+     if(stasimToRecoCollection.find(tp) != stasimToRecoCollection.end()){
+       rvSta = stasimToRecoCollection[tp];
+       if(rvSta.size() != 0) {
+	 iSta = rvSta.begin()->first;
+       }
+     }
+
+     std::vector<std::pair<reco::TrackRef, double> > rvTk;
+     reco::TrackRef iTk;
+     if(tksimToRecoCollection.find(tp) != tksimToRecoCollection.end()){
+       rvTk = tksimToRecoCollection[tp];
+       if(rvTk.size() != 0) {
+	 iTk = rvTk.begin()->first;
+       }
+     }
+     
+     r_ip->Fill( match_R_IP(*iSta,*iTk) );
+     
+     std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairTk 
 	= convertToTSOSTk(*iSta,*iTk);
 
       bool sameSurface = samePlane(tsosPairTk.first,tsosPairTk.second);
@@ -178,10 +235,11 @@ MatchStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
 
       double chi2 = -1;
-      if( sameSurface ) 
+      if( sameSurface ) {
 	chi2 = matchChiAtSurface(tsosPairTk.first, tsosPairTk.second);
-      chi2_tk_all->Fill(chi2);
-
+	chi2_tk_all->Fill(chi2);
+      }
+      
       ///
       std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairMu 
 	= convertToTSOSMu(*iSta,*iTk);
@@ -196,9 +254,10 @@ MatchStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
 
       double chi2Mu = -1;
-      if( sameSurfaceMu ) 
+      if( sameSurfaceMu ) { 
 	chi2Mu = matchChiAtSurface(tsosPairMu.first, tsosPairMu.second);
-      chi2_mu_all->Fill(chi2Mu);
+	chi2_mu_all->Fill(chi2Mu);
+      }
 
       ///
       std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairMuHit 
@@ -214,21 +273,33 @@ MatchStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
 
       double chi2MuHit = -1;
-      if( sameSurfaceMuHit ) 
+      if( sameSurfaceMuHit ) {
 	chi2MuHit = matchChiAtSurface(tsosPairMuHit.first, tsosPairMuHit.second);
-      chi2_muHit_all->Fill(chi2MuHit);
+	chi2_muHit_all->Fill(chi2MuHit);
+      }
 
     }
     
-  }
+   //}
 
 }
 
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
-MatchStudy::beginJob(const edm::EventSetup&)
+MatchStudy::beginJob(const edm::EventSetup& setup)
 {
+  // Tk Associator
+  edm::ESHandle<TrackAssociatorBase> tkassociatorHandle;
+  setup.get<TrackAssociatorRecord>().get(tkAssociatorName_,tkassociatorHandle);
+  tkAssociator_ = tkassociatorHandle.product();
+
+  // Mu Associator
+  edm::ESHandle<TrackAssociatorBase> muassociatorHandle;
+  setup.get<TrackAssociatorRecord>().get(muAssociatorName_,muassociatorHandle);
+  muAssociator_ = muassociatorHandle.product();
+
+
   edm::Service<TFileService> fs;
   r_ip = fs->make<TH1F>("r_ip","R at IP",100,0.,1.);
 
@@ -381,8 +452,8 @@ MatchStudy::convertToTSOSMuHit(const reco::Track& staCand,
   
   if ( !innerMuTSOS.isValid() || !outerTkTsos.isValid() ) return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(innerMuTSOS,outerTkTsos);
   
-  //TrajectoryStateOnSurface tkAtMu = theService->propagator(theOutPropagatorName)->propagate(outerTkTsos,theService->trackingGeometry()->idToDet( DetId(staCand.innerDetId()) )->surface());
-  TrajectoryStateOnSurface tkAtMu = theService->propagator(theOutPropagatorName)->propagate(outerTkTsos,innerMuTSOS.surface());
+  TrajectoryStateOnSurface tkAtMu = theService->propagator(theOutPropagatorName)->propagate(outerTkTsos,theService->trackingGeometry()->idToDet( DetId(staCand.innerDetId()) )->surface());
+  //TrajectoryStateOnSurface tkAtMu = theService->propagator(theOutPropagatorName)->propagate(outerTkTsos,innerMuTSOS.surface());
   
   
   if( !samePlane(innerMuTSOS,tkAtMu)) {

@@ -6,7 +6,9 @@
 <use name=RecoMuon/TrackingTools>
 <use name=PhysicsTools/UtilAlgos>
 <use name=FWCore/ServiceRegistry>
-
+<use name=SimTracker/TrackAssociation>
+<use name=SimTracker/Records>
+<use name=DataFormats/TrackReco>
 <flags EDM_PLUGIN=1>
 <export>
    <lib name=UserCodeMatchStudy>
