@@ -13,7 +13,7 @@
 //
 // Original Author:  A. Everett - Purdue University
 //         Created:  Tue Oct  2 12:38:18 EDT 2007
-// $Id: MatchStudy.cc,v 1.3 2007/10/17 18:19:19 aeverett Exp $
+// $Id: MatchStudy.cc,v 1.4 2007/10/20 17:23:49 aeverett Exp $
 //
 //
 
@@ -103,8 +103,9 @@ private:
   TH1F *chi2_tk_all, *surface_tk;
   TH1F *chi2_mu_all, *surface_mu;
   TH1F *chi2_muHit_all, *surface_muHit;
+  TH1F *matchMethod;
 
-  double theMinP, theMinPt, theMaxChi2, theDeltaEta, theDeltaPhi;
+  double theMinP, theMinPt, theMaxChi2, theDeltaEta, theDeltaPhi, theDeltaD, theDeltaR;
   
   const TrackAssociatorBase *tkAssociator_, *muAssociator_;
   std::string tkAssociatorName_, muAssociatorName_;
@@ -113,6 +114,7 @@ private:
   std::string theInPropagatorName;
   std::string theOutPropagatorName;
   MuonServiceProxy *theService;
+
 };
 
 //
@@ -146,11 +148,13 @@ MatchStudy::MatchStudy(const edm::ParameterSet& iConfig)
   theOutPropagatorName = iConfig.getParameter<string>("StateOnTrackerBoundOutPropagator");
   theInPropagatorName = iConfig.getParameter<string>("StateOnMuonBoundInPropagator");
 
-  theMaxChi2 =  iConfig.getParameter<double>("Chi2Cut");
+  theMaxChi2  = iConfig.getParameter<double>("Chi2Cut");
   theDeltaEta = iConfig.getParameter<double>("DeltaEtaCut");
   theDeltaPhi = iConfig.getParameter<double>("DeltaPhiCut");
-  theMinP = iConfig.getParameter<double>("MinP");
-  theMinPt = iConfig.getParameter<double>("MinPt");
+  theDeltaD   = iConfig.getParameter<double>("DeltaDCut");
+  theDeltaR   = iConfig.getParameter<double>("DeltaRCut");
+  theMinP     = iConfig.getParameter<double>("MinP");
+  theMinPt    = iConfig.getParameter<double>("MinPt");
 }
 
 
@@ -278,6 +282,22 @@ MatchStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	chi2_muHit_all->Fill(chi2MuHit);
       }
 
+      /// check match method
+
+      matchMethod->Fill(0);
+      if(sameSurfaceMuHit) {
+	if(matchChiAtSurface(tsosPairMuHit.first,tsosPairMuHit.second) < theMaxChi2) {
+	  matchMethod->Fill(1); 
+	} else if (match_Rpos(tsosPairMuHit.first,tsosPairMuHit.second) < theDeltaR) {
+	  matchMethod->Fill(2);
+	} else if (match_D(tsosPairMuHit.first,tsosPairMuHit.second) < theDeltaR) {
+	  matchMethod->Fill(3);
+	} else {
+	  matchMethod->Fill(10);
+	}
+      }
+
+
     }
     
    //}
@@ -323,6 +343,8 @@ MatchStudy::beginJob(const edm::EventSetup& setup)
   surface_tk = fs->make<TH1F>("surface_tk","Pass/Fail Tk Surface",3,-0.5,2.5);
   surface_mu = fs->make<TH1F>("surface_mu","Pass/Fail Mu Surface",3,-0.5,2.5);
   surface_muHit = fs->make<TH1F>("surface_muHit","Pass/Fail Mu Hit Surface",3,-0.5,2.5);
+
+  matchMethod = fs->make<TH1F>("matchMethod","MatchMethod",11,-0.5,10.5);
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
