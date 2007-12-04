@@ -41,6 +41,9 @@ while read  -a array;
   fi
 done < MuValidSubstitutions.txt
 
+#for CRAB Drell-Yan
+#let minPt=0
+#let maxPt=100
 
 #
 # Starting values for the job loop
@@ -70,6 +73,8 @@ EOFFF
     sed -e '/#inputFileBlock/ r 'tmp.txt'' \
 	-e "s/\\\$minPt/$minPt/" \
 	-e "s/\\\$maxPt/$maxPt/" \
+        -e "s/\\\$minMass/$minPt/" \
+        -e "s/\\\$maxMass/$maxPt/" \
 	-e "s/\\\$outputFileName/$fileName/g" < ${configTemplate} > ${fileName}.cfg
 
     mv ${fileName}.cfg ${COMMON_DIR}/${fileName}.cfg
