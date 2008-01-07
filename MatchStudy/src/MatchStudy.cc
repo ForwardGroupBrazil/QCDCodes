@@ -1,5 +1,5 @@
 // -*- C++ -*-
-//
+// 
 // Package:    MatchStudy
 // Class:      MatchStudy
 // 
@@ -13,7 +13,7 @@
 //
 // Original Author:  A. Everett - Purdue University
 //         Created:  Tue Oct  2 12:38:18 EDT 2007
-// $Id: MatchStudy.cc,v 1.4 2007/10/20 17:23:49 aeverett Exp $
+// $Id: MatchStudy.cc,v 1.5 2007/10/20 17:51:45 aeverett Exp $
 //
 //
 
@@ -66,6 +66,7 @@
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TNtuple.h>
 
 using namespace edm;
 using namespace std;
@@ -95,15 +96,20 @@ private:
   std::pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface> convertToTSOSMuHit(const reco::Track&,const reco::Track& ) const;
   bool samePlane(const TrajectoryStateOnSurface&,const TrajectoryStateOnSurface&) const;
   double matchChiAtSurface(const TrajectoryStateOnSurface& , const TrajectoryStateOnSurface& ) const;
+  void FillMtch(const reco::Track&,const reco::Track&,int) const;
+
       // ----------member data ---------------------------
-  TH1F *r_ip, *r_tk_mom, *r_tk_pos;
-  TH1F        *r_mu_mom, *r_mu_pos;
-  TH1F        *r_muHit_mom, *r_muHit_pos;
-  TH1F        *d_mu, *d_tk, *d_muHit;
-  TH1F *chi2_tk_all, *surface_tk;
-  TH1F *chi2_mu_all, *surface_mu;
-  TH1F *chi2_muHit_all, *surface_muHit;
-  TH1F *matchMethod;
+  TH1S *hEn;
+  TH1F *Sim_eta,*Sim_P,*Sim_Pt;
+  TH1F **r_ip;
+  TH1F **r_tk_mom, **r_tk_pos;
+  TH1F **r_mu_mom, **r_mu_pos;
+  TH1F **r_muHit_mom, **r_muHit_pos;
+  TH1F **d_mu, **d_tk, **d_muHit;
+  TH1F **chi2_tk, **surface_tk;
+  TH1F **chi2_mu, **surface_mu;
+  TH1F **chi2_muHit, **surface_muHit;
+  TH1F **matchMethod;
 
   double theMinP, theMinPt, theMaxChi2, theDeltaEta, theDeltaPhi, theDeltaD, theDeltaR;
   
@@ -120,6 +126,12 @@ private:
 //
 // constants, enums and typedefs
 //
+
+
+enum matches {good,bad,wrong};
+const Int_t nbins=sizeof(matches)-1;
+
+
 
 //
 // static data member definitions
@@ -171,141 +183,11 @@ MatchStudy::~MatchStudy()
 // member functions
 //
 
-// ------------ method called to for each event  ------------
-void
-MatchStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
-{
-   using namespace edm;
-   using namespace std;
-   using namespace reco;
-
-  theService->update(iSetup);
-
-  Handle<TrackingParticleCollection> tpHandle;
-  iEvent.getByLabel(tpName_,tpHandle);
-  const TrackingParticleCollection tpColl = *(tpHandle.product());
-
-  Handle<reco::TrackCollection> staHandle;
-  iEvent.getByLabel(staName_,staHandle);
-  const reco::TrackCollection staColl = *(staHandle.product());
-
-  Handle<reco::TrackCollection> tkHandle;
-  iEvent.getByLabel(tkName_,tkHandle);
-  const reco::TrackCollection tkColl = *(tkHandle.product());  
-
-   reco::RecoToSimCollection tkrecoToSimCollection;
-   reco::SimToRecoCollection tksimToRecoCollection;
-   tkrecoToSimCollection = tkAssociator_->associateRecoToSim(tkHandle,tpHandle,&iEvent);
-   tksimToRecoCollection = tkAssociator_->associateSimToReco(tkHandle,tpHandle,&iEvent);
-
-   reco::RecoToSimCollection starecoToSimCollection;
-   reco::SimToRecoCollection stasimToRecoCollection;
-   starecoToSimCollection = muAssociator_->associateRecoToSim(staHandle,tpHandle,&iEvent);
-   stasimToRecoCollection = muAssociator_->associateSimToReco(staHandle,tpHandle,&iEvent);
-
-   for (TrackingParticleCollection::size_type i=0; i<tpColl.size(); ++i){
-     TrackingParticleRef tp(tpHandle,i);
-
-     std::vector<std::pair<reco::TrackRef, double> > rvSta;
-     reco::TrackRef iSta;
-     if(stasimToRecoCollection.find(tp) != stasimToRecoCollection.end()){
-       rvSta = stasimToRecoCollection[tp];
-       if(rvSta.size() != 0) {
-	 iSta = rvSta.begin()->first;
-       }
-     }
-
-     std::vector<std::pair<reco::TrackRef, double> > rvTk;
-     reco::TrackRef iTk;
-     if(tksimToRecoCollection.find(tp) != tksimToRecoCollection.end()){
-       rvTk = tksimToRecoCollection[tp];
-       if(rvTk.size() != 0) {
-	 iTk = rvTk.begin()->first;
-       }
-     }
-     
-     r_ip->Fill( match_R_IP(*iSta,*iTk) );
-     
-     std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairTk 
-	= convertToTSOSTk(*iSta,*iTk);
-
-      bool sameSurface = samePlane(tsosPairTk.first,tsosPairTk.second);
-      surface_tk->Fill(sameSurface);
-
-      if( sameSurface ) {
-	r_tk_mom->Fill( match_Rmom(tsosPairTk.first,tsosPairTk.second) );
-	r_tk_pos->Fill( match_Rpos(tsosPairTk.first,tsosPairTk.second) );
-	d_tk->Fill( match_D(tsosPairTk.first,tsosPairTk.second) );
-      }
-
-      double chi2 = -1;
-      if( sameSurface ) {
-	chi2 = matchChiAtSurface(tsosPairTk.first, tsosPairTk.second);
-	chi2_tk_all->Fill(chi2);
-      }
-      
-      ///
-      std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairMu 
-	= convertToTSOSMu(*iSta,*iTk);
-
-      bool sameSurfaceMu = samePlane(tsosPairMu.first,tsosPairMu.second);
-      surface_mu->Fill(sameSurfaceMu);
-
-      if( sameSurfaceMu ) {
-	r_mu_mom->Fill( match_Rmom(tsosPairMu.first,tsosPairMu.second) );
-	r_mu_pos->Fill( match_Rpos(tsosPairMu.first,tsosPairMu.second) );
-	d_mu->Fill( match_D(tsosPairMu.first,tsosPairMu.second) );
-      }
-
-      double chi2Mu = -1;
-      if( sameSurfaceMu ) { 
-	chi2Mu = matchChiAtSurface(tsosPairMu.first, tsosPairMu.second);
-	chi2_mu_all->Fill(chi2Mu);
-      }
-
-      ///
-      std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairMuHit 
-	= convertToTSOSMuHit(*iSta,*iTk);
-
-      bool sameSurfaceMuHit = samePlane(tsosPairMuHit.first,tsosPairMuHit.second);
-      surface_muHit->Fill(sameSurfaceMuHit);
-
-      if( sameSurfaceMuHit ) {
-	r_muHit_mom->Fill( match_Rmom(tsosPairMuHit.first,tsosPairMuHit.second) );
-	r_muHit_pos->Fill( match_Rpos(tsosPairMuHit.first,tsosPairMuHit.second) );
-	d_muHit->Fill( match_D(tsosPairMuHit.first,tsosPairMuHit.second) );
-      }
-
-      double chi2MuHit = -1;
-      if( sameSurfaceMuHit ) {
-	chi2MuHit = matchChiAtSurface(tsosPairMuHit.first, tsosPairMuHit.second);
-	chi2_muHit_all->Fill(chi2MuHit);
-      }
-
-      /// check match method
-
-      matchMethod->Fill(0);
-      if(sameSurfaceMuHit) {
-	if(matchChiAtSurface(tsosPairMuHit.first,tsosPairMuHit.second) < theMaxChi2) {
-	  matchMethod->Fill(1); 
-	} else if (match_Rpos(tsosPairMuHit.first,tsosPairMuHit.second) < theDeltaR) {
-	  matchMethod->Fill(2);
-	} else if (match_D(tsosPairMuHit.first,tsosPairMuHit.second) < theDeltaR) {
-	  matchMethod->Fill(3);
-	} else {
-	  matchMethod->Fill(10);
-	}
-      }
-
-
-    }
-    
-   //}
-
-}
-
 
 // ------------ method called once each job just before starting event loop  ------------
+
+
+
 void 
 MatchStudy::beginJob(const edm::EventSetup& setup)
 {
@@ -321,36 +203,238 @@ MatchStudy::beginJob(const edm::EventSetup& setup)
 
 
   edm::Service<TFileService> fs;
-  r_ip = fs->make<TH1F>("r_ip","R at IP",100,0.,1.);
 
-  r_tk_mom = fs->make<TH1F>("r_tk_mom","R_{mom} at Tk Surface",100,0.,1.);
-  r_tk_pos = fs->make<TH1F>("r_tk_pos","R_{pos} at Tk Surface",100,0.,1.);
 
-  r_mu_mom = fs->make<TH1F>("r_mu_mom","R_{mom} at Mu Surface",100,0.,1.);
-  r_mu_pos = fs->make<TH1F>("r_mu_pos","R_{pos} at Mu Surface",100,0.,1.);
+  hEn = fs->make<TH1S>("hEn","iEvent.id().event() Entries",1000,0,1000);
+  Sim_eta = fs->make<TH1F>("Sim_eta","simulated eta distribution",100,0,2.5);
+  Sim_P = fs->make<TH1F>("Sim_P","simulated P distribution",5000,0,5000);
+  Sim_Pt = fs->make<TH1F>("Sim_Pt","simulated Pt distribution",5000,0,5000);
 
-  r_muHit_mom = fs->make<TH1F>("r_muHit_mom","R_{mom} at Mu Hit Surface",100,0.,1.);
-  r_muHit_pos = fs->make<TH1F>("r_muHit_pos","R_{pos} at Mu Hit Surface",100,0.,1.);
+  r_ip = new TH1F*[nbins];
+  r_tk_mom = new TH1F*[nbins];
+  r_tk_pos = new TH1F*[nbins];
+  r_mu_mom = new TH1F*[nbins];
+  r_mu_pos = new TH1F*[nbins];
+  r_muHit_mom = new TH1F*[nbins];
+  r_muHit_pos = new TH1F*[nbins];
+  d_mu = new TH1F*[nbins];
+  d_muHit = new TH1F*[nbins];
+  d_tk = new TH1F*[nbins];
+  chi2_tk = new TH1F*[nbins];
+  chi2_mu = new TH1F*[nbins];
+  chi2_muHit = new TH1F*[nbins];
+  surface_tk = new TH1F*[nbins];
+  surface_mu = new TH1F*[nbins];
+  surface_muHit = new TH1F*[nbins];
+  matchMethod = new TH1F*[nbins];
 
-  d_mu = fs->make<TH1F>("d_mu","D at Mu Surface",100,0.,100.);
-  d_muHit = fs->make<TH1F>("d_muHit","D at Mu Hit Surface",100,0.,100.);
-  d_tk = fs->make<TH1F>("d_tk","D at Tk Surface",100,0.,100.);
 
-  chi2_tk_all = fs->make<TH1F>("chi2_tk_all","#chi^{2} of all tracks on Tk Surface",501,-2.,1000.);
-  chi2_mu_all = fs->make<TH1F>("chi2_mu_all","#chi^{2} of all tracks on Mu Surface",501,-2.,1000.);
-  chi2_muHit_all = fs->make<TH1F>("chi2_muHit_all","#chi^{2} of all tracks on Mu Hit Surface",501,-2.,1000.);
+  // label histograms according to enumeration 
+  for (Int_t i=0;i<nbins;i++) {
+    
+    std::stringstream c;
+    c << i;
+    TString en(c.str());
 
-  surface_tk = fs->make<TH1F>("surface_tk","Pass/Fail Tk Surface",3,-0.5,2.5);
-  surface_mu = fs->make<TH1F>("surface_mu","Pass/Fail Mu Surface",3,-0.5,2.5);
-  surface_muHit = fs->make<TH1F>("surface_muHit","Pass/Fail Mu Hit Surface",3,-0.5,2.5);
-
-  matchMethod = fs->make<TH1F>("matchMethod","MatchMethod",11,-0.5,10.5);
+    r_ip[i] = fs->make<TH1F>(TString("r_ip")+en,"matched R at IP",100,0.,1.);
+    r_tk_mom[i] = fs->make<TH1F>(TString("r_tk_mom")+en,"R_{mom} at Tk Surface",100,0.,1.);
+    r_tk_pos[i] = fs->make<TH1F>(TString("r_tk_pos")+en,"R_{pos} at Tk Surface",100,0.,1.);
+    r_mu_mom[i] = fs->make<TH1F>(TString("r_mu_mom")+en,"R_{mom} at Mu Surface",100,0.,1.);
+    r_mu_pos[i] = fs->make<TH1F>(TString("r_mu_pos")+en,"R_{pos} at Mu Surface",100,0.,1.);
+    r_muHit_mom[i] = fs->make<TH1F>(TString("r_muHit_mom")+en,"R_{mom} at Mu Hit Surface",100,0.,1.);
+    r_muHit_pos[i] = fs->make<TH1F>(TString("r_muHit_pos")+en,"R_{pos} at Mu Hit Surface",100,0.,1.);
+    
+    d_mu[i] = fs->make<TH1F>(TString("d_mu")+en,"D at Mu Surface",100,0.,100.);
+    d_muHit[i] = fs->make<TH1F>(TString("d_muHit")+en,"D at Mu Hit Surface",100,0.,100.);
+    d_tk[i] = fs->make<TH1F>(TString("d_tk")+en,"D at Tk Surface",100,0.,100.);
+    
+    chi2_tk[i] = fs->make<TH1F>(TString("chi2_tk")+en,"#chi^{2} of all tracks on Tk Surface",501,-2.,1000.);
+    chi2_mu[i] = fs->make<TH1F>(TString("chi2_mu")+en,"#chi^{2} of all tracks on Mu Surface",501,-2.,1000.);
+    chi2_muHit[i] = fs->make<TH1F>(TString("chi2_muHit")+en,"#chi^{2} of all tracks on Mu Hit Surface",501,-2.,1000.);
+    
+    surface_tk[i] = fs->make<TH1F>(TString("surface_tk")+en,"Pass/Fail Tk Surface",3,-0.5,2.5);
+    surface_mu[i] = fs->make<TH1F>(TString("surface_mu")+en,"Pass/Fail Mu Surface",3,-0.5,2.5);
+    surface_muHit[i] = fs->make<TH1F>(TString("surface_muHit")+en,"Pass/Fail Mu Hit Surface",3,-0.5,2.5);
+    
+    matchMethod[i] = fs->make<TH1F>(TString("matchMethod")+en,"MatchMethod",11,-0.5,10.5);
+  }
+ 
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
 MatchStudy::endJob() {
 }
+
+
+
+// ------------ method called to for each event  ------------
+void
+MatchStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+{
+  
+  using namespace edm;
+  using namespace std;
+  using namespace reco;
+
+  hEn->Fill(iEvent.id().event());
+
+  theService->update(iSetup);
+
+  Handle<TrackingParticleCollection> tpHandle;
+  iEvent.getByLabel(tpName_,tpHandle);
+  const TrackingParticleCollection tpColl = *(tpHandle.product());
+
+  Handle<reco::TrackCollection> staHandle;
+  iEvent.getByLabel(staName_,staHandle);
+  const reco::TrackCollection staColl = *(staHandle.product());
+
+  Handle<reco::TrackCollection> tkHandle;
+  iEvent.getByLabel(tkName_,tkHandle);
+  const reco::TrackCollection tkColl = *(tkHandle.product());  
+
+  reco::RecoToSimCollection tkrecoToSimCollection;
+  reco::SimToRecoCollection tksimToRecoCollection;
+  
+  tkrecoToSimCollection = tkAssociator_->associateRecoToSim(tkHandle,tpHandle,&iEvent);
+  tksimToRecoCollection = tkAssociator_->associateSimToReco(tkHandle,tpHandle,&iEvent);
+  
+  reco::RecoToSimCollection starecoToSimCollection;
+  reco::SimToRecoCollection stasimToRecoCollection;
+  starecoToSimCollection = muAssociator_->associateRecoToSim(staHandle,tpHandle,&iEvent);
+  stasimToRecoCollection = muAssociator_->associateSimToReco(staHandle,tpHandle,&iEvent);
+
+  //  LogDebug("MatchStudy") << "Association size: tk2sim =" << tkrecoToSimCollection.size() << ", sim2tk =" << tksimToRecoCollection.size();
+  //  LogDebug("MatchStudy") << "Association size: sta2sim =" << starecoToSimCollection.size() << ", sim2sta =" << stasimToRecoCollection.size();
+  
+  for (TrackingParticleCollection::size_type i=0; i<tpColl.size(); ++i){
+    TrackingParticleRef tp(tpHandle,i);
+    
+    // Get Momenta and Eta of simulated muons 
+    if(abs(tp->pdgId())==13){
+      Sim_Pt->Fill(tp->pt());
+      Sim_P->Fill(tp->p());
+      Sim_eta->Fill(tp->eta());
+    }
+    
+    std::vector<std::pair<reco::TrackRef, double> > rvSta;
+    reco::TrackRef iSta;
+    if(stasimToRecoCollection.find(tp) != stasimToRecoCollection.end()){
+      rvSta = stasimToRecoCollection[tp];
+      if(rvSta.size() != 0) {
+	iSta = rvSta.begin()->first;
+      }
+    }
+    
+    std::vector<std::pair<reco::TrackRef, double> > rvTk;
+    reco::TrackRef iTk;
+    if(tksimToRecoCollection.find(tp) != tksimToRecoCollection.end()){
+      rvTk = tksimToRecoCollection[tp];
+      if(rvTk.size() != 0) {
+	iTk = rvTk.begin()->first;
+      }
+    }
+    
+    // match to correct muon in tracker  
+    FillMtch(*iSta,*iTk,good); 
+    
+    for( reco::TrackCollection::size_type it=0; it<tkColl.size(); it++){
+
+      reco::TrackRef T(tkHandle,it);
+      
+      if(T != iTk){ 
+	//  match to any tracker track
+	FillMtch(*iSta,*T,bad); 
+	// match to wrong muon in the tracker  
+	if(tkrecoToSimCollection.find(T)!= tkrecoToSimCollection.end())
+	  FillMtch(*iSta,*T,wrong);
+      }
+    }
+    
+  }
+}
+
+
+// ------------------- Member Function implementations --------------------------------------
+
+void MatchStudy::FillMtch(const reco::Track& staCand,const reco::Track& tkCand,int en) const {
+
+  std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairTk 
+    = convertToTSOSTk(staCand,tkCand);
+  
+  r_ip[en]->Fill( match_R_IP(staCand,tkCand));
+	      
+  
+  bool sameSurface = samePlane(tsosPairTk.first,tsosPairTk.second);
+  surface_tk[en]->Fill(sameSurface);
+  
+  if( sameSurface ) {
+    r_tk_mom[en]->Fill( match_Rmom(tsosPairTk.first,tsosPairTk.second) );
+    r_tk_pos[en]->Fill( match_Rpos(tsosPairTk.first,tsosPairTk.second) );
+    d_tk[en]->Fill( match_D(tsosPairTk.first,tsosPairTk.second) );
+  }
+  
+    double chi2 = -1;
+    if( sameSurface ) {
+      chi2 = matchChiAtSurface(tsosPairTk.first, tsosPairTk.second);
+      chi2_tk[en]->Fill(chi2);
+    }
+    
+    ///
+    std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairMu 
+      = convertToTSOSMu(staCand,tkCand);
+    
+    bool sameSurfaceMu = samePlane(tsosPairMu.first,tsosPairMu.second);
+    surface_mu[en]->Fill(sameSurfaceMu);
+    
+    if( sameSurfaceMu ) {
+      r_mu_mom[en]->Fill( match_Rmom(tsosPairMu.first,tsosPairMu.second) );
+      r_mu_pos[en]->Fill( match_Rpos(tsosPairMu.first,tsosPairMu.second) );
+      d_mu[en]->Fill( match_D(tsosPairMu.first,tsosPairMu.second) );
+    }
+    
+    double chi2Mu = -1;
+    if( sameSurfaceMu ) { 
+      chi2Mu = matchChiAtSurface(tsosPairMu.first, tsosPairMu.second);
+      chi2_mu[en]->Fill(chi2Mu);
+    }
+    
+    ///
+    std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPairMuHit 
+      = convertToTSOSMuHit(staCand,tkCand);
+    
+    bool sameSurfaceMuHit = samePlane(tsosPairMuHit.first,tsosPairMuHit.second);
+    surface_muHit[en]->Fill(sameSurfaceMuHit);
+    
+    if( sameSurfaceMuHit ) {
+      r_muHit_mom[en]->Fill( match_Rmom(tsosPairMuHit.first,tsosPairMuHit.second) );
+      r_muHit_pos[en]->Fill( match_Rpos(tsosPairMuHit.first,tsosPairMuHit.second) );
+      d_muHit[en]->Fill( match_D(tsosPairMuHit.first,tsosPairMuHit.second) );
+    }
+    
+    double chi2MuHit = -1;
+    if( sameSurfaceMuHit ) {
+      chi2MuHit = matchChiAtSurface(tsosPairMuHit.first, tsosPairMuHit.second);
+      chi2_muHit[en]->Fill(chi2MuHit);
+    }
+    
+    /// check match method
+    
+    matchMethod[en]->Fill(0);
+    if(sameSurfaceMuHit) {
+      if (match_Rpos(tsosPairMuHit.first,tsosPairMuHit.second) < theDeltaR) {
+	matchMethod[en]->Fill(1);
+      } else if (match_D(tsosPairMuHit.first,tsosPairMuHit.second) < theDeltaD) {
+	matchMethod[en]->Fill(2);
+      } else if(matchChiAtSurface(tsosPairMuHit.first,tsosPairMuHit.second) < theMaxChi2) {
+	matchMethod[en]->Fill(3); 
+      } else {
+	matchMethod[en]->Fill(10);
+      }
+    }
+    
+}
+
 
 std::pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>
 MatchStudy::convertToTSOSTk(const reco::Track& staCand,
@@ -439,7 +523,7 @@ MatchStudy::convertToTSOSMu(const reco::Track& staCand,
     same1 =  samePlane(newMuTsosFromTk,muTsosFromMu);
     LogDebug(category) << "Propagating to same muon surface (Mu):" << same1;
     if( !same1 ) {
-      if( muTsosFromTk.isValid() ) newMuTsosFromMu = theService->propagator(theOutPropagatorName)->propagate(innerMuTSOS,muTsosFromTk.surface());
+      if( muTsosFromTk.isValid() ) newMuTsosFromMu = theService->propagator(theInPropagatorName)->propagate(innerMuTSOS,muTsosFromTk.surface());
       same2 =  samePlane(newMuTsosFromMu,muTsosFromTk);
       LogDebug(category) << "Propagating to same muon surface (Tk):" << same2;
     }
@@ -447,9 +531,12 @@ MatchStudy::convertToTSOSMu(const reco::Track& staCand,
     else if(same2) muTsosFromMu = newMuTsosFromMu;
     else {
       LogDebug(category) << "Could not propagate Muon and Tracker track to the same muon bound!";
-      return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(innerMuTSOS, outerTkTsos);
+     //  ReferenceCountingPointer<TangentPlane> p1(newMuTsosFromTk.surface().tangentPlane(innerMuTSOS.localPosition()));
+//       ReferenceCountingPointer<TangentPlane> p2(outerMuTSOS.surface().tangentPlane(outerMuTSOS.localPosition()));
+//       LogDebug(category) << "tilt = " p1->normalVector().dot(p2->normalVector()) << ", dist =" << p1->toLocal(p2->position())).z() << ;
+    return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(innerMuTSOS, outerTkTsos);
   }
-  }
+}
   
   return pair<TrajectoryStateOnSurface,TrajectoryStateOnSurface>(muTsosFromMu, muTsosFromTk);
 }
