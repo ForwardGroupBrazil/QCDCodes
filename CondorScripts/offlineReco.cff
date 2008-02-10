@@ -1,0 +1,15 @@
+#-------- Online Reco Sequence ------------------------
+include "Configuration/ReleaseValidation/data/Services.cff"
+include "Configuration/StandardSequences/data/RawToDigi.cff"
+include "Configuration/StandardSequences/data/Reconstruction.cff"
+include "Configuration/StandardSequences/data/FakeConditions.cff"
+#include "Configuration/StandardSequences/data/Simulation.cff"
+#include "Configuration/StandardSequences/data/MixingNoPileUp.cff"
+
+sequence re_tracking =   {
+    ckftracks,
+  //muontracking
+    standAloneMuons,globalMuons
+}
+
+path pRecoOffline = { re_tracking }

@@ -1,0 +1,8 @@
+#-------- Online Reco Sequence ------------------------
+include "Configuration/StandardSequences/data/FrontierConditions.cff"    
+include "HLTrigger/Configuration/data/common/HLTSetup.cff"
+replace hltTrigReport.HLTriggerResults = TriggerResults:HLTMuonOfflineAnalysis
+#include "HLTrigger/Configuration/data/main/Muon.cff"
+include "HLTrigger/Muon/data/OnlyReco.cff"
+
+path pRecoOnline = { recoHLTMuIso }

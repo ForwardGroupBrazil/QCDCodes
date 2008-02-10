@@ -39,10 +39,10 @@ setenv PATH /usr/local/bin:/usr/bin:/bin:/opt/osg/srmclient/bin
 setenv CMS_PATH /grp/cms/purdueCMS
 source ${CMS_PATH}/cmsset_default.csh
 
-setenv CMSSW_RELEASE CMSSW_1_3_1_HLT4
+setenv CMSSW_RELEASE CMSSW_1_7_1
 setenv SCRAM_ARCH slc4_ia32_gcc345 
 
-setenv SRCDIR   /grp/cms/users/aeverett/${CMSSW_RELEASE}
+setenv SRCDIR /scratch/aeverett/SLC4/${CMSSW_RELEASE}
 
 echo " "
 echo "Output directory is : " $COMMON_DIR
