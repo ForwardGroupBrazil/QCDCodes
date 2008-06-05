@@ -1,0 +1,30 @@
+    #
+    # the analyzer
+    #
+
+    service = TFileService {
+        string fileName = "$outFileName_tnp.root"
+    }
+
+
+    include "Analyzer/DiMuonAnalyzer/data/MuonTagAndProbe.cfi"
+    include "Analyzer/DiMuonAnalyzer/data/TrackCalIsolations.cff"
+    replace TrkTrackCalIsolation.src = generalTracks
+    replace muonTagAndProbe.OutputFile = ""
+    replace muonTagAndProbe.L3MuonCollection = globalMuons
+    replace muonTagAndProbe.TkTrackCollection = generalTracks
+    replace muonTagAndProbe.IsoCut = 10.0
+    replace muonTagAndProbe.minPt = 0
+    replace muonTagAndProbe.maxPt = 1000
+    replace muonTagAndProbe.binPt = 50
+    replace muonTagAndProbe.minEta = -2.5
+    replace muonTagAndProbe.maxEta = 2.5
+    replace muonTagAndProbe.binEta = 50
+    replace muonTagAndProbe.minMass = 0.
+    replace muonTagAndProbe.maxMass = 1000.
+    replace muonTagAndProbe.massWinGS = {0., 9999.}
+    replace muonTagAndProbe.massWinGT = {0., 9999.}
+    
+    
+    sequence iso = { re_tracking,GlbTrackCalIsolation, StaTrackCalIsolation, TrkTrackCalIsolation }
+    path pTagAndProbe = { iso, muonTagAndProbe }
