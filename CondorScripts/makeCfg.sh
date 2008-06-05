@@ -1,12 +1,12 @@
 #!/bin/bash
 
-fileOfSamples=MW.txt
-COMMON_DIR=${HOME}/data/SLC4/CMSSW_1_7_1/src/UserCode/CondorScripts/tmpdir
-subtype=CONDOR
-jobName=name1
+fileOfSamples=batchValidate210p5.txt
+COMMON_DIR=/afs/cern.ch/user/a/aeverett/scratch0/validate210p5
+subtype=BSUB
+jobName=validate210p5
 configTemplate="cfgTemplate.cfg"
-recoFragment="offlineReco.cff"
-analyzerFragment="MuValidTemplate.cfg"
+recoFragment="onlineReco.cff"
+analyzerFragment="MuValidTemplateHLT.cfg"
 
 # setup runtime environment
 ORIGINAL_DIR=`pwd`
@@ -43,6 +43,17 @@ while [ $sample -lt $count ]; do
     # make a directory for each sample
     RUN_DIR=${COMMON_DIR}/${tag[sample]}
     mkdir -p ${RUN_DIR}
+
+    if [ "$subtype" = "BSUB" ]; then
+	errDir=${RUN_DIR}/errDir
+	logDir=${RUN_DIR}/logDir
+	lanciaDir=${RUN_DIR}/lanciaDir
+	outDir=${RUN_DIR}/outDir
+	mkdir -p ${errDir}
+	mkdir -p ${logDir}
+	mkdir -p ${lanciaDir}
+	mkdir -p ${outDir}
+    fi
     
     declare -i M=0
     declare -i N=0
@@ -52,7 +63,7 @@ while [ $sample -lt $count ]; do
 	let M=1
 	let N=1
     fi
-    if [ "$subtype" = "CONDOR" ]; then
+    if [ "$subtype" = "CONDOR" ] || [ "$subtype" = "BSUB" ]; then
 	# set the number of subSamples for CONDOR to depend on the
         # numberOfEventsPerJob and the totalNumberOfEvents
 	let M=nEvents[sample]
@@ -73,7 +84,7 @@ while [ $sample -lt $count ]; do
     skipEvents=0
     subSample=1
     while [ $skipEvents -lt $M ]; do
-	
+
 	if [ "$subtype" = "CRAB" ]; then
 	    fileName=`echo $jobName ${tag[sample]} | awk '{printf("%s-%s",$1, $2)}'`
 	    
@@ -92,15 +103,17 @@ EOF
 	    rm -f tmpCrab.txt
 	    
 	fi
-	if [ "$subtype" = "CONDOR" ];then
+	if [ "$subtype" = "CONDOR" ] || [ "$subtype" = "BSUB" ];then
 	    fileName=`echo $jobName ${tag[sample]} $subSample | awk '{printf("%s-%s-%3.3d",$1, $2, $3)}'`
+
+	    if [ "$subtype" = "CONDOR" ]; then
 
 	    # add common info to the condor submit file
             # First put all the submit file commands that 
             # are the same for all jobs.
-	    if [ $subSample -eq 1 ]; then
-
-		cat << EOF > $submitFile
+		if [ $subSample -eq 1 ]; then
+		    
+		    cat << EOF > $submitFile
 Universe             = vanilla
 Executable           = condorRunScript.csh
 Copy_To_Spool        = false
@@ -113,16 +126,17 @@ on_exit_remove       = (ExitBySignal == FALSE && ExitStatus == 0)
 requirements = (Arch == "X86_64")&&regexp("cms",Name)
 +CMSJob = True
 EOF
+		fi
 	    fi
-	    
 	    # name the files for this subSample
 	    conlog=${fileName}.log
 	    stdout=${fileName}.out
 	    stderr=${fileName}.err
 	    jobcfg=${fileName}.cfg
 	    
+	    if [ "$subtype" = "CONDOR" ]; then
 	    # prepare condor submit file for the job
-	    cat >> $submitFile <<EOF
+		cat >> $submitFile <<EOF
 
 InitialDir           = $RUN_DIR
 Arguments            = \$(CLUSTER) \$(PROCESS) $jobcfg $RUN_DIR
@@ -133,10 +147,33 @@ log                  = $conlog
 
 Queue
 EOF
-	    
-	    cp condorRunScript.csh ${RUN_DIR}/condorRunScript.csh
-	    chmod +x ${RUN_DIR}/condorRunScript.csh	    
+		
+		cp condorRunScript.csh ${RUN_DIR}/condorRunScript.csh
+		chmod +x ${RUN_DIR}/condorRunScript.csh	    
+	    fi
+	    if [ "$subtype" = "BSUB" ]; then
+#		cp batchRunScript.sh ${lanciaDir}/batch${fileName}.sh
+#		chmod +x ${lanciaDir}/batch${fileName}.sh
+		cp lanciaTemplate.sh ${lanciaDir}/${fileName}.sh
+		chmod +x ${lanciaDir}/${fileName}.sh
+		localName=${lanciaDir}/${fileName}
+		cat >>  ${lanciaDir}/${fileName}.sh <<EOF
+cmsRun $localName.cfg
 
+cp \${WORKDIR}/*.root ${outDir}/.
+EOF
+
+		cat >> ${RUN_DIR}/runAll <<EOF
+bsub -q 8nh -e ${errDir}/${stderr} -o ${logDir}/${stdout} ${lanciaDir}/${fileName}.sh
+EOF
+
+#		cat >> ${RUN_DIR}/batchRunAll <<EOF
+#bsub -q 8nh -e ${errDir}/${stderr} -o ${logDir}/${stdout} ${lanciaDir}/batch${fileName}.sh ${fileName} ${RUN_DIR}
+#EOF
+
+#		sed -e "s/\\\$RUN_DIR/${fileName}/" \
+#		    -e "s/\\\$fileName/${fileName}/"  < lanciaTemplate.sh > ${RUN_DIR}/${fileName}.sh	
+	    fi
 	fi
 
 	# prepare the configuration file
@@ -148,12 +185,17 @@ EOF
 	sed -e "s/\\\$skipEvents/${skipEvents}/" \
 	    -e "s/\\\$outFileName/${fileName}/" \
 	    -e "s/\\\$nEvents/${N}/" < tmp.cfg > ${RUN_DIR}/${fileName}.cfg
+
+	if [ "$subtype" = "BSUB" ]; then
+	    mv ${RUN_DIR}/${fileName}.cfg ${lanciaDir}/${fileName}.cfg
+	fi
 	
 	subSample=$(($subSample+1))
 	skipEvents=$(($skipEvents+N))
 	
 	rm -f tmp.cfg
-	
+	chmod +x ${RUN_DIR}/runAll
+#	chmod +x ${RUN_DIR}/batchRunAll
     done
 
     if [ "$subtype" = "CRAB" ]; then
