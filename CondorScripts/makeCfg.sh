@@ -163,13 +163,9 @@ cmsRun $localName.cfg
 cp \${WORKDIR}/*.root ${outDir}/.
 EOF
 
-		cat >> ${RUN_DIR}/runAll <<EOF
-bsub -q 8nh -e ${errDir}/${stderr} -o ${logDir}/${stdout} ${lanciaDir}/${fileName}.sh
+		cat >> ${RUN_DIR}/batchRunAll <<EOF
+bsub -q 8nh -e ${errDir}/${stderr} -o ${logDir}/${stdout} ${lanciaDir}/${fileName}.sh ${fileName} ${RUN_DIR}
 EOF
-
-#		cat >> ${RUN_DIR}/batchRunAll <<EOF
-#bsub -q 8nh -e ${errDir}/${stderr} -o ${logDir}/${stdout} ${lanciaDir}/batch${fileName}.sh ${fileName} ${RUN_DIR}
-#EOF
 
 #		sed -e "s/\\\$RUN_DIR/${fileName}/" \
 #		    -e "s/\\\$fileName/${fileName}/"  < lanciaTemplate.sh > ${RUN_DIR}/${fileName}.sh	
@@ -188,14 +184,13 @@ EOF
 
 	if [ "$subtype" = "BSUB" ]; then
 	    mv ${RUN_DIR}/${fileName}.cfg ${lanciaDir}/${fileName}.cfg
+	    chmod +x ${RUN_DIR}/batchRunAll
 	fi
 	
 	subSample=$(($subSample+1))
 	skipEvents=$(($skipEvents+N))
 	
 	rm -f tmp.cfg
-	chmod +x ${RUN_DIR}/runAll
-#	chmod +x ${RUN_DIR}/batchRunAll
     done
 
     if [ "$subtype" = "CRAB" ]; then
@@ -211,4 +206,3 @@ EOF
     fi
     
 done
-
