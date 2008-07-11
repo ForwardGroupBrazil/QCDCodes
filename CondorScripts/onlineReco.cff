@@ -1,7 +1,7 @@
 #-------- Online Reco Sequence ------------------------
 //include "Configuration/StandardSequences/data/FakeConditions.cff"
 include "Configuration/StandardSequences/data/FrontierConditions_GlobalTag.cff"
-replace GlobalTag.globaltag = "STARTUP::All"
+replace GlobalTag.globaltag = "IDEAL_V1::All"
 
 include "Configuration/StandardSequences/data/VtxSmearedBetafuncEarlyCollision.cff"
 include "Configuration/StandardSequences/data/Generator.cff"
