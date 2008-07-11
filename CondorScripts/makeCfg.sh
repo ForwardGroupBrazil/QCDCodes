@@ -1,12 +1,12 @@
 #!/bin/bash
 
-fileOfSamples=batchValidate210p5.txt
-COMMON_DIR=/afs/cern.ch/user/a/aeverett/scratch0/validate210p5
-subtype=BSUB
-jobName=validate210p5
+fileOfSamples=tmpDataCrab.txt
+COMMON_DIR=/afs/cern.ch/user/a/aeverett/scratch0/note-reco209-01
+subtype=CRAB
+jobName=note-reco209-01
 configTemplate="cfgTemplate.cfg"
-recoFragment="onlineReco.cff"
-analyzerFragment="MuValidTemplateHLT.cfg"
+recoFragment="offlineReco.cff"
+analyzerFragment="MuValidTemplate.cfg"
 
 # setup runtime environment
 ORIGINAL_DIR=`pwd`
@@ -87,6 +87,7 @@ while [ $sample -lt $count ]; do
 
 	if [ "$subtype" = "CRAB" ]; then
 	    fileName=`echo $jobName ${tag[sample]} | awk '{printf("%s-%s",$1, $2)}'`
+	    cacheName=`echo ${tag[sample]} | awk '{printf("%s",$1)}'`
 	    
 	    # customize the crab configuration file
 	    rm -f tmpCrab.txt
@@ -97,13 +98,14 @@ total_number_of_events = -1
 events_per_job = 1000
 EOF
 	    
-#         srmmkdir -2 srm://dcache.rcac.purdue.edu:8443/srm/managerv2?SFN=/store/user/aeverett/206ValidOffline/${fileName}
+#         srmmkdir -2 srm://dcache.rcac.purdue.edu:8443/srm/managerv2?SFN=/store/user/aeverett/206ValidOffline/${cacheName}
 
-#         rfmkdir /castor/cern.ch/user/a/aeverett/206ValidOffline/${fileName}
-#         rfchmod +777 /castor/cern.ch/user/a/aeverett/206ValidOffline/${fileName}
+#      rfmkdir /castor/cern.ch/user/a/aeverett/note-reco209-01/${cacheName}
+#      rfchmod +777 /castor/cern.ch/user/a/aeverett/206ValidOffline/${cacheName}
 
 	    sed -e '/#CMSSWBlock/ r 'tmpCrab.txt'' \
 		-e "s/\\\$configFile/${fileName}.cfg/" \
+		-e "s/\\\$cacheName/${cacheName}/g" \
 		-e "s/\\\$outFileName/${fileName}/g" < crabTemplate.cfg > ${RUN_DIR}/crab.${fileName}.cfg
 	    
 	    rm -f tmpCrab.txt
