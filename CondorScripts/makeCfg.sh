@@ -92,10 +92,16 @@ while [ $sample -lt $count ]; do
 	    rm -f tmpCrab.txt
 	    cat << EOF >> tmpCrab.txt
 datasetpath = ${files[$sample]}
-total_number_of_events = ${nEvents[$sample]}
-number_of_jobs = ${nEventsJob[$sample]}
+total_number_of_events = -1
+#number_of_jobs = ${nEventsJob[$sample]}
+events_per_job = 1000
 EOF
 	    
+#         srmmkdir -2 srm://dcache.rcac.purdue.edu:8443/srm/managerv2?SFN=/store/user/aeverett/206ValidOffline/${fileName}
+
+#         rfmkdir /castor/cern.ch/user/a/aeverett/206ValidOffline/${fileName}
+#         rfchmod +777 /castor/cern.ch/user/a/aeverett/206ValidOffline/${fileName}
+
 	    sed -e '/#CMSSWBlock/ r 'tmpCrab.txt'' \
 		-e "s/\\\$configFile/${fileName}.cfg/" \
 		-e "s/\\\$outFileName/${fileName}/g" < crabTemplate.cfg > ${RUN_DIR}/crab.${fileName}.cfg
@@ -198,6 +204,9 @@ EOF
 #	crab -cfg crab.${fileName}.cfg -create -submit
 	cd -
 	echo "crab -cfg crab.${fileName}.cfg -create -submit"
+cat <<EOF>> ${COMMON_DIR}/createAll
+cd $RUN_DIR; crab -cfg crab.${fileName}.cfg -create -submit; cd $COMMON_DIR
+EOF
     fi
 
     if [ "$subtype" = "CONDOR" ]; then
