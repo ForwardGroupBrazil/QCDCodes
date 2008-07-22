@@ -87,17 +87,25 @@ while [ $sample -lt $count ]; do
 
 	if [ "$subtype" = "CRAB" ]; then
 	    fileName=`echo $jobName ${tag[sample]} | awk '{printf("%s-%s",$1, $2)}'`
+	    cacheName=`echo ${tag[sample]} | awk '{printf("%s",$1)}'`
 	    
 	    # customize the crab configuration file
 	    rm -f tmpCrab.txt
 	    cat << EOF >> tmpCrab.txt
 datasetpath = ${files[$sample]}
-total_number_of_events = ${nEvents[$sample]}
-number_of_jobs = ${nEventsJob[$sample]}
+total_number_of_events = -1
+#number_of_jobs = ${nEventsJob[$sample]}
+events_per_job = 1000
 EOF
 	    
+#         srmmkdir -2 srm://dcache.rcac.purdue.edu:8443/srm/managerv2?SFN=/store/user/aeverett/206ValidOffline/${cacheName}
+
+#      rfmkdir /castor/cern.ch/user/a/aeverett/note-reco209-03/${cacheName}
+#      rfchmod +777 /castor/cern.ch/user/a/aeverett/note-reco209-03/${cacheName}
+
 	    sed -e '/#CMSSWBlock/ r 'tmpCrab.txt'' \
 		-e "s/\\\$configFile/${fileName}.cfg/" \
+		-e "s/\\\$cacheName/${cacheName}/g" \
 		-e "s/\\\$outFileName/${fileName}/g" < crabTemplate.cfg > ${RUN_DIR}/crab.${fileName}.cfg
 	    
 	    rm -f tmpCrab.txt
@@ -152,19 +160,19 @@ EOF
 		chmod +x ${RUN_DIR}/condorRunScript.csh	    
 	    fi
 	    if [ "$subtype" = "BSUB" ]; then
-#		cp batchRunScript.sh ${lanciaDir}/batch${fileName}.sh
-#		chmod +x ${lanciaDir}/batch${fileName}.sh
-		cp lanciaTemplate.sh ${lanciaDir}/${fileName}.sh
+		cp batchRunScript.sh ${lanciaDir}/${fileName}.sh
 		chmod +x ${lanciaDir}/${fileName}.sh
+		#cp lanciaTemplate.sh ${lanciaDir}/lancia-${fileName}.sh
+		#chmod +x ${lanciaDir}/lancia-${fileName}.sh
 		localName=${lanciaDir}/${fileName}
-		cat >>  ${lanciaDir}/${fileName}.sh <<EOF
-cmsRun $localName.cfg
-
-cp \${WORKDIR}/*.root ${outDir}/.
-EOF
+#		cat >>  ${lanciaDir}/lancia-${fileName}.sh <<EOF
+#cmsRun $localName.cfg
+#rename Validation ${fileName} *.root
+#cp \${WORKDIR}/*.root ${outDir}/.
+#EOF
 
 		cat >> ${RUN_DIR}/batchRunAll <<EOF
-bsub -q 8nh -e ${errDir}/${stderr} -o ${logDir}/${stdout} ${lanciaDir}/${fileName}.sh ${fileName} ${RUN_DIR}
+bsub -q 8nh -e ${errDir}/${stderr} -o ${logDir}/${stdout} ${lanciaDir}/${fileName}.sh ${subtype} ${fileName} ${RUN_DIR}
 EOF
 
 #		sed -e "s/\\\$RUN_DIR/${fileName}/" \
@@ -198,6 +206,9 @@ EOF
 #	crab -cfg crab.${fileName}.cfg -create -submit
 	cd -
 	echo "crab -cfg crab.${fileName}.cfg -create -submit"
+cat <<EOF>> ${COMMON_DIR}/createAll
+cd $RUN_DIR; crab -cfg crab.${fileName}.cfg -create -submit; cd $COMMON_DIR
+EOF
     fi
 
     if [ "$subtype" = "CONDOR" ]; then
