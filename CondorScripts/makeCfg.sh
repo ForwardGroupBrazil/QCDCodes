@@ -1,9 +1,9 @@
 #!/bin/bash
 
-fileOfSamples=tmpDataCrab.txt
-COMMON_DIR=/afs/cern.ch/user/a/aeverett/scratch0/note-reco209-01
+fileOfSamples=tmpDataCrab_tmp.txt
+COMMON_DIR=/afs/cern.ch/user/a/aeverett/scratch0/note-reco209-03
 subtype=CRAB
-jobName=note-reco209-01
+jobName=note-reco209-03
 configTemplate="cfgTemplate.cfg"
 recoFragment="offlineReco.cff"
 analyzerFragment="MuValidTemplate.cfg"
@@ -100,8 +100,8 @@ EOF
 	    
 #         srmmkdir -2 srm://dcache.rcac.purdue.edu:8443/srm/managerv2?SFN=/store/user/aeverett/206ValidOffline/${cacheName}
 
-#      rfmkdir /castor/cern.ch/user/a/aeverett/note-reco209-01/${cacheName}
-#      rfchmod +777 /castor/cern.ch/user/a/aeverett/206ValidOffline/${cacheName}
+#      rfmkdir /castor/cern.ch/user/a/aeverett/note-reco209-03/${cacheName}
+#      rfchmod +777 /castor/cern.ch/user/a/aeverett/note-reco209-03/${cacheName}
 
 	    sed -e '/#CMSSWBlock/ r 'tmpCrab.txt'' \
 		-e "s/\\\$configFile/${fileName}.cfg/" \
@@ -160,19 +160,19 @@ EOF
 		chmod +x ${RUN_DIR}/condorRunScript.csh	    
 	    fi
 	    if [ "$subtype" = "BSUB" ]; then
-#		cp batchRunScript.sh ${lanciaDir}/batch${fileName}.sh
-#		chmod +x ${lanciaDir}/batch${fileName}.sh
-		cp lanciaTemplate.sh ${lanciaDir}/${fileName}.sh
+		cp batchRunScript.sh ${lanciaDir}/${fileName}.sh
 		chmod +x ${lanciaDir}/${fileName}.sh
+		cp lanciaTemplate.sh ${lanciaDir}/lancia-${fileName}.sh
+		chmod +x ${lanciaDir}/lancia-${fileName}.sh
 		localName=${lanciaDir}/${fileName}
-		cat >>  ${lanciaDir}/${fileName}.sh <<EOF
+		cat >>  ${lanciaDir}/lancia-${fileName}.sh <<EOF
 cmsRun $localName.cfg
-
+rename Validation ${fileName} *.root
 cp \${WORKDIR}/*.root ${outDir}/.
 EOF
 
 		cat >> ${RUN_DIR}/batchRunAll <<EOF
-bsub -q 8nh -e ${errDir}/${stderr} -o ${logDir}/${stdout} ${lanciaDir}/${fileName}.sh ${fileName} ${RUN_DIR}
+bsub -q 8nh -e ${errDir}/${stderr} -o ${logDir}/${stdout} ${lanciaDir}/${fileName}.sh ${subtype} ${fileName} ${RUN_DIR}
 EOF
 
 #		sed -e "s/\\\$RUN_DIR/${fileName}/" \

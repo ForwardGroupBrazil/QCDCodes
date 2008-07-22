@@ -1,8 +1,10 @@
 #!/bin/csh -f
 
+set subtype=$1
+
 if ( $subtype != "PBS" ) then
-    set fileName=$1
-    set COMMON_DIR=$2
+    set fileName=$2
+    set COMMON_DIR=$3
 endif
 
 # LSF parameters
@@ -59,8 +61,8 @@ echo -----------------------------------------
 cd $WORKDIR
 ls -al
 echo -----------------------------------------
-echo Copying $COMMON_DIR/${fileName}.cfg  to $WORKDIR
-cp $COMMON_DIR/${fileName}.cfg $WORKDIR/.
+echo Copying $COMMON_DIR/lanciaDir/${fileName}.cfg  to $WORKDIR
+cp $COMMON_DIR/lanciaDir/${fileName}.cfg $WORKDIR/.
 ls -al
 echo -----------------------------------------
 
@@ -77,6 +79,10 @@ echo -----------------------------------------
 pwd
 ls -al
 echo -----------------------------------------
-cp ${WORKDIR}/*.root ${COMMON_DIR}/.
-#cp ${WORKDIR}/*.log  ${COMMON_DIR}/.  
+rename Validation_CMSSW_2_0_9 ${fileName}_saver *.root
+echo -----------------------------------------
+ls -al
+echo Copying ${WORKDIR}/*.root to ${COMMON_DIR}/outDir/.
+cp ${WORKDIR}/*.root ${COMMON_DIR}/outDir/.
+cp ${WORKDIR}/*.log  ${COMMON_DIR}/logDir/.  
 
