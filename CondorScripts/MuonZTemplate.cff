@@ -1,0 +1,15 @@
+    include "RecoZ/MuonAnalyser/test/replaces/$cacheName.cff"
+
+    include "Configuration/StandardSequences/data/Geometry.cff"
+    include "Configuration/StandardSequences/data/MagneticField.cff"
+    include "Configuration/StandardSequences/data/FrontierConditions_GlobalTag.cff"
+    replace GlobalTag.globaltag = "IDEAL_V2::All"
+
+    include "RecoZ/MuonAnalyser/data/MuonAnalyser.cff"
+    include "RecoZ/MuonAnalyser/data/MuonQualityAnalyser.cff"
+    replace MuonAnalyser.SimAssociator.SimHitsOccurrences = 0
+
+    replace MuonAnalyser.OutputFileName = "$outFileName_ric.root"
+    replace MuonQualityAnalyser.OutputFileName = "$outFileName_mqa.root"
+
+    path pMuonZ = { MuonAnalyser } 

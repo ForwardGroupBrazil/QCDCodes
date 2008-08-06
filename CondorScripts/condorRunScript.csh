@@ -36,13 +36,13 @@ echo "process " ${CONDOR_PROCESS}
 #
 #-- Is this necessary if GetEnv=true ?
 setenv PATH /usr/local/bin:/usr/bin:/bin:/opt/osg/srmclient/bin
-setenv CMS_PATH /grp/cms/purdueCMS
+setenv CMS_PATH /apps/02/cmssoft/cms/
 source ${CMS_PATH}/cmsset_default.csh
 
-setenv CMSSW_RELEASE CMSSW_1_7_1
+setenv CMSSW_RELEASE CMSSW_2_0_11
 setenv SCRAM_ARCH slc4_ia32_gcc345 
 
-setenv SRCDIR /scratch/aeverett/SLC4/${CMSSW_RELEASE}
+setenv SRCDIR /scratch/scratch96/a/aeverett/${CMSSW_RELEASE}
 
 echo " "
 echo "Output directory is : " $COMMON_DIR

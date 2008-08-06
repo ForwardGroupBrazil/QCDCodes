@@ -1,12 +1,12 @@
 #!/bin/bash
 
-fileOfSamples=batchValidate210p5.txt
-COMMON_DIR=/afs/cern.ch/user/a/aeverett/scratch0/validate210p5
-subtype=BSUB
-jobName=validate210p5
+fileOfSamples=tmpDataCrab_tmp.txt
+COMMON_DIR=/scratch/scratch96/a/aeverett/trash
+subtype=CRAB
+jobName=valid
 configTemplate="cfgTemplate.cfg"
-recoFragment="onlineReco.cff"
-analyzerFragment="MuValidTemplateHLT.cfg"
+recoFragment="offlineReco.cff"
+analyzerFragment="MuValidTemplate.cfg"
 
 # setup runtime environment
 ORIGINAL_DIR=`pwd`
@@ -84,10 +84,9 @@ while [ $sample -lt $count ]; do
     skipEvents=0
     subSample=1
     while [ $skipEvents -lt $M ]; do
-
+	    cacheName=`echo ${tag[sample]} | awk '{printf("%s",$1)}'`
 	if [ "$subtype" = "CRAB" ]; then
 	    fileName=`echo $jobName ${tag[sample]} | awk '{printf("%s-%s",$1, $2)}'`
-	    cacheName=`echo ${tag[sample]} | awk '{printf("%s",$1)}'`
 	    
 	    # customize the crab configuration file
 	    rm -f tmpCrab.txt
@@ -98,7 +97,7 @@ total_number_of_events = -1
 events_per_job = 1000
 EOF
 	    
-#         srmmkdir -2 srm://dcache.rcac.purdue.edu:8443/srm/managerv2?SFN=/store/user/aeverett/206ValidOffline/${cacheName}
+#      srmmkdir -2 srm://dcache.rcac.purdue.edu:8443/srm/managerv2?SFN=/store/user/aeverett/206ValidOffline/${cacheName}
 
 #      rfmkdir /castor/cern.ch/user/a/aeverett/note-reco209-03/${cacheName}
 #      rfchmod +777 /castor/cern.ch/user/a/aeverett/note-reco209-03/${cacheName}
@@ -162,21 +161,12 @@ EOF
 	    if [ "$subtype" = "BSUB" ]; then
 		cp batchRunScript.sh ${lanciaDir}/${fileName}.sh
 		chmod +x ${lanciaDir}/${fileName}.sh
-		#cp lanciaTemplate.sh ${lanciaDir}/lancia-${fileName}.sh
-		#chmod +x ${lanciaDir}/lancia-${fileName}.sh
 		localName=${lanciaDir}/${fileName}
-#		cat >>  ${lanciaDir}/lancia-${fileName}.sh <<EOF
-#cmsRun $localName.cfg
-#rename Validation ${fileName} *.root
-#cp \${WORKDIR}/*.root ${outDir}/.
-#EOF
 
 		cat >> ${RUN_DIR}/batchRunAll <<EOF
 bsub -q 8nh -e ${errDir}/${stderr} -o ${logDir}/${stdout} ${lanciaDir}/${fileName}.sh ${subtype} ${fileName} ${RUN_DIR}
 EOF
 
-#		sed -e "s/\\\$RUN_DIR/${fileName}/" \
-#		    -e "s/\\\$fileName/${fileName}/"  < lanciaTemplate.sh > ${RUN_DIR}/${fileName}.sh	
 	    fi
 	fi
 
@@ -188,6 +178,7 @@ EOF
 	
 	sed -e "s/\\\$skipEvents/${skipEvents}/" \
 	    -e "s/\\\$outFileName/${fileName}/" \
+	    -e "s/\\\$cacheName/${cacheName}/" \
 	    -e "s/\\\$nEvents/${N}/" < tmp.cfg > ${RUN_DIR}/${fileName}.cfg
 
 	if [ "$subtype" = "BSUB" ]; then
