@@ -178,6 +178,7 @@ EOF
 	
 	sed -e "s/\\\$skipEvents/${skipEvents}/" \
 	    -e "s/\\\$outFileName/${fileName}/" \
+	    -e '/#replaces/ r '${CMSSW_BASE}/src/RecoZ/MuonAnalyser/test/replaces/${cacheName}_cff.py'' \
 	    -e "s/\\\$cacheName/${cacheName}/" \
 	    -e "s/\\\$nEvents/${N}/" < tmp_cfg.py > ${RUN_DIR}/${fileName}_cfg.py
 

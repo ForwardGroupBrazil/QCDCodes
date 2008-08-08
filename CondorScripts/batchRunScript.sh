@@ -61,8 +61,10 @@ echo -----------------------------------------
 cd $WORKDIR
 ls -al
 echo -----------------------------------------
-echo Copying $COMMON_DIR/lanciaDir/${fileName}.cfg  to $WORKDIR
-cp $COMMON_DIR/lanciaDir/${fileName}.cfg $WORKDIR/.
+echo Copying $COMMON_DIR/lanciaDir/${fileName}_cfg.py  to $WORKDIR
+cp $COMMON_DIR/lanciaDir/${fileName}_cfg.py $WORKDIR/.
+#echo Copying $COMMON_DIR/lanciaDir/${fileName}.cfg  to $WORKDIR
+#cp $COMMON_DIR/lanciaDir/${fileName}.cfg $WORKDIR/.
 ls -al
 echo -----------------------------------------
 
@@ -73,13 +75,14 @@ setenv CMSSW_SEARCH_PATH `pwd`:$CMSSW_SEARCH_PATH
 pwd
 
 rm ${fileName}.log
-cmsRun -p ${fileName}.cfg >& ${fileName}.log
+cmsRun -p ${fileName}_cfg.py >& ${fileName}.log
+#cmsRun -p ${fileName}.cfg >& ${fileName}.log
 
 echo -----------------------------------------
 pwd
 ls -al
 echo -----------------------------------------
-rename Validation_CMSSW_2_0_9 ${fileName}_saver *.root
+rename Validation_CMSSW_2_1_0 ${fileName}_saver *.root
 echo -----------------------------------------
 ls -al
 echo Copying ${WORKDIR}/*.root to ${COMMON_DIR}/outDir/.
