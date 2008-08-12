@@ -5,6 +5,9 @@ set CONDOR_CLUSTER = $1
 set CONDOR_PROCESS = $2
 set PARAMETER_SET  = $3
 set COMMON_DIR     = $4
+set CACHE_DIR      = $5
+
+set blockName = `basename $PARAMETER_SET .cfg`
 
 echo "cluster " ${CONDOR_CLUSTER}
 echo "process " ${CONDOR_PROCESS}
@@ -88,9 +91,10 @@ echo "Workdir " ${WORKDIR}
 #----------------------------------------------------------
 #
 #  if ( \${status} != 0 ) cp \${WORKDIR}/*.root \${COMMON_DIR}/H_1.root
-#    cp \${WORKDIR}/*.root \${COMMON_DIR}/${basename}.root
-    cp ${WORKDIR}/*.root ${COMMON_DIR}/.
-    cp ${WORKDIR}/*.log  ${COMMON_DIR}/.  
+#    cp ${WORKDIR}/*.root ${COMMON_DIR}/.
+
+srmcp -2 "file:///`pwd`/${blockName}_edm.root" "srm://dcache.rcac.purdue.edu:8443/srm/managerv2?SFN=/store/user/aeverett/reReco2011/${CACHE_DIR}/${blockName}_edm.root"
+
 #
 # show what is being left behind...
 #

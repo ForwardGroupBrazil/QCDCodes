@@ -69,6 +69,10 @@ while [ $sample -lt $count ]; do
 	let M=nEvents[sample]
 	let N=nEventsJob[sample]
 
+       #cacheName=`echo ${tag[sample]} | awk '{printf("%s",$1)}'`
+       #srmmkdir -2 srm://dcache.rcac.purdue.edu:8443/srm/managerv2?SFN=/store/user/aeverett/reReco2011/${cacheName}
+
+
 	# each subSample must have a submit file
 	submitFile="${RUN_DIR}/submit"
 	if [ -f $submitFile ]; then
@@ -122,6 +126,7 @@ EOF
 		    
 		    cat << EOF > $submitFile
 Universe             = vanilla
+X509UserProxy        = /tmp/x509up_u169482
 Executable           = condorRunScript.csh
 Copy_To_Spool        = false
 Notification         = never
@@ -146,11 +151,12 @@ EOF
 		cat >> $submitFile <<EOF
 
 InitialDir           = $RUN_DIR
-Arguments            = \$(CLUSTER) \$(PROCESS) $jobcfg $RUN_DIR
+Arguments            = \$(CLUSTER) \$(PROCESS) $jobcfg $RUN_DIR $cacheName
 Transfer_Input_Files = $jobcfg
 output               = $stdout
 error                = $stderr
 log                  = $conlog
+transfer_output_files =  $stdout,$stderr
 
 Queue
 EOF
@@ -204,7 +210,7 @@ EOF
 
     if [ "$subtype" = "CONDOR" ]; then
 #	condor_submit $submitFile
-	echo "condor_submit $submitFile"
+	echo "cd ${RUN_DIR}; condor_submit $submitFile; cd ${COMMON_DIR}"
     fi
     
 done
