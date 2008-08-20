@@ -2,9 +2,8 @@
 include "Configuration/StandardSequences/data/Services.cff"
 include "Configuration/StandardSequences/data/Geometry.cff"
 include "Configuration/StandardSequences/data/MagneticField.cff"
-//include "Configuration/StandardSequences/data/FakeConditions.cff" 
 include "Configuration/StandardSequences/data/FrontierConditions_GlobalTag.cff"
-replace GlobalTag.globaltag = "IDEAL_V1::All" 
+//replace GlobalTag.globaltag = "IDEAL_V1::All" 
 
 include "Configuration/StandardSequences/data/RawToDigi.cff"
 
