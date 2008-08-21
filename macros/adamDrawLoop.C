@@ -10,9 +10,11 @@ int gType;
 bool gForce= false;
 
 /*
- *type = 1: efficiency
- *type = 2: resolution
- *type = 3: pull
+ * opt = 1: draw option "E1XO L"
+ *
+ * type = 1: efficiency
+ * type = 2: resolution
+ * type = 3: pull
  */
 
 TH1F *adamDrawLoop(TString & sampleLoc,TString & histoName, int iSwitch =0, int opt = 0, int type = 1){

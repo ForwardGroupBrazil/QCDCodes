@@ -24,6 +24,10 @@ void muonZEfficiencies(TString &dir="./"){
   ///////////////
   ///////////////
 
+  //
+  // Axis labels etc. are more easily set in adamDrawLoop
+  //
+
   gStyle->SetOptLogy(1);
 
   TCanvas *c0_03 = newCanvas("seed_res_vs_eta","Muon reconstruction efficiences",0,0,2);
