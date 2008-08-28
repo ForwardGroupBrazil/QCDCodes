@@ -7,8 +7,8 @@ void setTDRStyle() {
 // For the canvas:
   tdrStyle->SetCanvasBorderMode(0);
   tdrStyle->SetCanvasColor(kWhite);
-  tdrStyle->SetCanvasDefH(600); //Height of canvas
-  tdrStyle->SetCanvasDefW(600); //Width of canvas
+  tdrStyle->SetCanvasDefH(500); //Height of canvas for form=1 //600
+  tdrStyle->SetCanvasDefW(700); //Width of canvas  for form=1 //600
   tdrStyle->SetCanvasDefX(0);   //POsition on screen
   tdrStyle->SetCanvasDefY(0);
 
@@ -76,8 +76,8 @@ void setTDRStyle() {
 // Margins:
   tdrStyle->SetPadTopMargin(0.05);
   tdrStyle->SetPadBottomMargin(0.13);
-  tdrStyle->SetPadLeftMargin(0.13);
-  tdrStyle->SetPadRightMargin(0.05);
+  tdrStyle->SetPadLeftMargin(0.15); //aaa 0.13
+  tdrStyle->SetPadRightMargin(0.03); //aaa 0.05
 
 // For the Global title:
 
@@ -102,7 +102,7 @@ void setTDRStyle() {
   // tdrStyle->SetTitleXSize(Float_t size = 0.02); // Another way to set the size?
   // tdrStyle->SetTitleYSize(Float_t size = 0.02);
   tdrStyle->SetTitleXOffset(0.9);
-  tdrStyle->SetTitleYOffset(1.05);
+  tdrStyle->SetTitleYOffset(1.17); //aaa 1.05
   // tdrStyle->SetTitleOffset(1.1, "Y"); // Another way to set the Offset
 
 // For the axis labels:
@@ -118,8 +118,8 @@ void setTDRStyle() {
   tdrStyle->SetStripDecimals(kTRUE);
   tdrStyle->SetTickLength(0.03, "XYZ");
   tdrStyle->SetNdivisions(510, "XYZ");
-  tdrStyle->SetPadTickX(1);  // To get tick marks on the opposite side of the frame
-  tdrStyle->SetPadTickY(1);
+  tdrStyle->SetPadTickX(true);  // To get tick marks on the opposite side of the frame
+  tdrStyle->SetPadTickY(true);
 
 // Change for log plots:
   tdrStyle->SetOptLogx(0);
