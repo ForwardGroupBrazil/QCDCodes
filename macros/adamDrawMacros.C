@@ -1,3 +1,7 @@
+#include "TGraph.h"
+#include "TGraphErrors.h"
+#include <vector>
+
 TH1 *getAndDrawSingleHisto(TString & sampleLoc, TString & fileType, TString & histoName, TString newName = ""){
   TString fileName = sampleLoc+fileType+".root"; 
   if(gLineColor==1) cout<<"Opening the file: "<<fileName<<endl;
@@ -23,7 +27,7 @@ TH1 *getAndDrawSingleHisto(TString & sampleLoc, TString & fileType, TString & hi
   return histo;
 }
 
-TH1 *getAndDrawSlicedHisto(TString & sampleLoc, TString & fileType, TString & histoName, int hNum = 2, TString newName = "",float fitRange = 0.0){
+TH1 *getAndDrawSlicedHistoOrig(TString & sampleLoc, TString & fileType, TString & histoName, int hNum = 2, TString newName = "",float fitRange = 0.0){
   TString fileName = sampleLoc+fileType+".root"; 
   cout<<"Opening the file: "<<fileName<<endl;
   TFile * file =  new TFile(fileName); file->cd();
@@ -94,9 +98,10 @@ TGraph* drawHisto(TH1 *histo){
   TString optColor(gLineColor==1 ? "" : "same");
   if(gForce) optColor = "same";
   TString optErr = (gOpt==1 ? "E1X0" : "") + optColor;
-  histo->Clear();
 
+  histo->Clear();
   histo->Draw(optErr);
+
   TGraph *myGraph;
   myGraph = ConnectLines(histo);
   if (gLineColor==28) gLineColor=3;
@@ -259,4 +264,174 @@ TH1 *computeEfficiency(const TH1F *num, const TH1F *denom){
     hEff->SetBinError(bin, error);
   }
   return hEff;
+}
+
+TH1 *getAndDrawSlicedHisto(TString & sampleLoc, TString & fileType, TString & histoName, int hNum = 2, TString newName = "",float fitRange = 0.0){
+  TString fileName = sampleLoc+fileType+".root"; 
+  cout<<"Opening the file: "<<fileName<<endl;
+  TFile * file =  new TFile(fileName); file->cd();
+  if(!file->IsOpen()){
+    cout<<"File not opened!"<<endl;
+    return;
+  }
+  cout<<"Getting the histogram: "<<histoName<<endl;
+  TH2F *histo = file->IsOpen() ? (TH2F*)file->Get(histoName) : 0;
+  if(!histo){ 
+    cout<<"Histo not found!"<<endl;  
+    return;
+  }
+
+  TGraph* result = fit(histo);      cout << "Line 442" << endl;      
+  TGraph * graph= result;
+  if(graph)  cout<<"YES!"<<endl;
+  drawGraph(graph);
+  //graph->Clear();
+
+  TString type = reformatLegend(fileType);
+  if(newName > "") gLegend->AddEntry(graph,newName,"PL");
+  else gLegend->AddEntry(graph, type, "PL");
+
+  return graph->GetHistogram();
+}
+
+
+TGraph* fit(const TH2F* histo){
+  vector<const TGraphErrors*> results;
+
+  static int i = 0;
+  i++;
+
+  vector<double> width;
+  vector<double> mass;
+  // Errors
+  vector<double> widthError;
+  vector<double> massError;
+  // Chi2
+  vector<double> chi2;
+  //>>
+
+  //X bin centre and width
+  vector<double> binCentre;
+  vector<double> binWidth;
+
+  // Fit slices projected along Y from bins in X 
+  double cont_min = 100;    //Minimum number of entries
+  Int_t binx =  histo->GetXaxis()->GetNbins();
+
+  histo->RebinY(4);
+  histo->RebinX(2);
+
+  for (int i = 1; i < binx ; i++) {
+    TH1 *histoY =  histo->ProjectionY(" ", i, i);
+    double cont = histoY->GetEntries();
+    //cout << "Entries: " << cont << endl;
+    if (cont >= cont_min) {
+      float minfit = histoY->GetMean() - histoY->GetRMS();
+      float maxfit = histoY->GetMean() + histoY->GetRMS();
+
+      //  fitFcn = new TF1("gauss","gaus",-0.5,0.5);
+      TF1 *fitFcn = new TF1(TString("g")+i,"gaus",minfit,maxfit);
+
+      double x1,x2;
+      fitFcn->GetRange(x1,x2);
+      cout << "Range: " << x1 << " " << x2 << endl; 
+
+
+      histoY->Fit(fitFcn,"0","",x1,x2);
+
+//      histoY->Fit(fitFcn->GetName(),"RME");
+      double *par = fitFcn->GetParameters();
+      double *err = fitFcn->GetParErrors();
+
+      // Values
+      mass.push_back(par[1]);
+      width.push_back(par[2]);
+
+      // Errors
+      massError.push_back(err[1]);
+      widthError.push_back(err[2]);
+
+      chi2.push_back(fitFcn->GetChisquare());
+      
+      double xx= histo->GetXaxis()->GetBinCenter(i);
+      binCentre.push_back(xx);
+      
+      double ex = 0; //FIXME: you can use the bin width
+      binWidth.push_back(ex); 
+
+    }
+    else continue;
+  }
+  cout << "Line 656" << endl;      
+  // Put the fit results in arrays for TGraphErrors
+  const int nn= mass.size();
+  double *x = new double[nn];
+  double *ym = new double[nn];
+  double *e = new double[nn];
+  double *eym = new double[nn];
+  double *yw = new double[nn];
+  double *eyw = new double[nn];
+  double *yc = new double[nn];
+  
+  for (int j=0;j<nn;j++){
+    x[j]=binCentre[j];
+    ym[j]=mass[j];
+    eym[j]=massError[j];
+    yw[j]=width[j];
+    eyw[j]=widthError[j];
+    //     if(j==nn-1)
+    //        if(eyw[j] > (eyw[j-1]+0.6)) eyw[j]-=0.6;
+    //        if(j==0){
+    // 	 if(eyw[0] > (eyw[1]+0.6)) eyw[0]-=0.6;}
+    //        else
+    // 	 if(eyw[j] > (eyw[j-1]+0.6)) eyw[j]-=0.6;
+    //     if(eyw[j] > 1.) eyw[j]=1;
+    
+    yc[j]=chi2[j];
+    e[j]=binWidth[j];
+  }
+  cout << "Line 685" << endl;        
+  //Create TGraphErrors
+  TString name = histo->GetName();
+  TGraphErrors *grM = new TGraphErrors(nn,x,ym,e,eym);
+  grM->SetTitle(name+"_Mean");
+  grM->SetName(name+"_Mean");
+  TGraphErrors *grW = new TGraphErrors(nn,x,yw,e,eyw);
+  grW->SetTitle(name+"_Width");
+  grW->SetName(name+"_Width");
+  TGraphErrors *grC = new TGraphErrors(nn,x,yc,e,e);
+  grC->SetTitle(name+"_chi2");
+  grC->SetName(name+"_chi2");
+
+
+  //results.first = grM;  cout << "Line 706" << endl;      
+  //results.second = grW;  cout << "Line 707" << endl;      
+
+  //  results.push_back(grC);
+
+  if(grW)  cout<<"YES! 709"<<endl;
+
+  //  return result; 
+
+
+  return grW;
+}
+
+void drawGraph(TGraph *graph){
+  if(!graph) return;
+  graph->SetLineColor(gLineColor);
+  graph->SetMarkerColor(gLineColor);
+  graph->SetMarkerStyle(gMarkerStyle);
+
+  TString optErr(gLineColor==1 ? "PAL" : "PL");
+
+  graph->Clear();
+  graph->Draw(optErr);
+
+  if (gLineColor==28) gLineColor=3;
+  ++gLineColor;
+  ++gLineStyle;
+  ++gMarkerStyle;
+  if (gLineColor == 5 || gLineColor == 10) ++gLineColor;  
+
 }
