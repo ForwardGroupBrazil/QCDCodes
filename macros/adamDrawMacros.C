@@ -1,4 +1,4 @@
-TH1F *getAndDrawSingleHisto(TString & sampleLoc, TString & fileType, TString & histoName, TString newName = ""){
+TH1 *getAndDrawSingleHisto(TString & sampleLoc, TString & fileType, TString & histoName, TString newName = ""){
   TString fileName = sampleLoc+fileType+".root"; 
   if(gLineColor==1) cout<<"Opening the file: "<<fileName<<endl;
   TFile * file =  new TFile(fileName); file->cd();
@@ -14,16 +14,16 @@ TH1F *getAndDrawSingleHisto(TString & sampleLoc, TString & fileType, TString & h
   }
   if(gLineColor==1) cout<<"Entries: " << histo->GetEntries()<<endl;
 
-  drawHisto(histo);
+  TGraph * myGraph = drawHisto(histo);
 
   TString type = reformatLegend(fileType);
-  if(newName > "") gLegend->AddEntry(histo,newName,"PL");
-  else gLegend->AddEntry(histo, type, "PL");
+  if(newName > "") gLegend->AddEntry(myGraph,newName,"PL");
+  else gLegend->AddEntry(myGraph, type, "PL");
 
   return histo;
 }
 
-TH1 *getAndDrawSlicedHisto(TString & sampleLoc, TString & fileType, TString & histoName, int hNum = 2, TString newName = ""){
+TH1 *getAndDrawSlicedHisto(TString & sampleLoc, TString & fileType, TString & histoName, int hNum = 2, TString newName = "",float fitRange = 0.0){
   TString fileName = sampleLoc+fileType+".root"; 
   cout<<"Opening the file: "<<fileName<<endl;
   TFile * file =  new TFile(fileName); file->cd();
@@ -38,9 +38,11 @@ TH1 *getAndDrawSlicedHisto(TString & sampleLoc, TString & fileType, TString & hi
     return;
   }
 
+  float fitMax = (fitRange>0.) ? fitRange : histo->GetYaxis()->GetXmax();
+  float fitMin = (fitRange>0.) ? -1*fitRange : histo->GetYaxis()->GetXmin();
+
   TF1 *fitFcn = 0;
-  //  fitFcn = new TF1("gauss","gaus",-0.5,0.5);
-  fitFcn = new TF1("gauss","gaus",-0.5,0.5);
+  fitFcn = new TF1("gauss","gaus",fitMin,fitMax);
 
   histo->FitSlicesY(fitFcn);
   string name(histo->GetName());
@@ -74,20 +76,20 @@ TH1 *getAndDrawSlicedHisto(TString & sampleLoc, TString & fileType, TString & hi
   }
   }
   
-  drawHisto(myHisto);
+  TGraph* myGraph = drawHisto(myHisto);
 
   TString type = reformatLegend(fileType);
-  if(newName > "") gLegend->AddEntry(myHisto,newName,"PL");
-  else gLegend->AddEntry(myHisto, type, "PL");
+  if(newName > "") gLegend->AddEntry(myGraph,newName,"PL");
+  else gLegend->AddEntry(myGraph, type, "PL");
 
   return myHisto;
 }
 
 
-void drawHisto(TH1 *histo){
+TGraph* drawHisto(TH1 *histo){
   histo->SetLineColor(gLineColor);
   histo->SetMarkerColor(gLineColor);  
-  histo->SetMarkerStyle(20);
+  histo->SetMarkerStyle(gMarkerStyle);
 
   TString optColor(gLineColor==1 ? "" : "same");
   if(gForce) optColor = "same";
@@ -95,31 +97,25 @@ void drawHisto(TH1 *histo){
   histo->Clear();
 
   histo->Draw(optErr);
-
-  if(gOpt==1) ConnectLines(histo);
+  TGraph *myGraph;
+  myGraph = ConnectLines(histo);
   if (gLineColor==28) gLineColor=3;
   ++gLineColor;
   ++gLineStyle;
+  ++gMarkerStyle;
   if (gLineColor == 5 || gLineColor == 10) ++gLineColor;
+  return myGraph;
 }
 
 
-
-void ConnectLines(TH1* hist)
+TGraph* ConnectLines(TH1* hist)
 {
-  if ( hist->GetEntries() == 0 ) return;
-  const int nBin = hist->GetNbinsX();
-  TGraph* grp = new TGraph(nBin);
-
-  for(int i=0; i<nBin; i++) {
-    double val = hist->GetBinContent(i+1);
-    //    if(val<=0) val = 0.0001; 
-    grp->SetPoint(i, hist->GetBinCenter(i+1), val);
-  }
-  grp->SetLineWidth(1);
-  grp->SetLineColor(gLineColor);
-  grp->SetLineStyle(gLineStyle);//++
-  grp->Draw("LSame");
+  TGraph * myGraph = new TGraph(hist);
+  myGraph->SetLineColor(gLineColor);
+  myGraph->SetLineStyle(gLineStyle);
+  myGraph->SetMarkerStyle(hist->GetMarkerStyle());
+  if(gOpt==1) myGraph->Draw("L");
+  return myGraph;
 }
 
 
@@ -215,6 +211,7 @@ TString reformatLegend(TString &fileType){
   return type;
 }
 
+
 void reformatHisto(TH1 *histo, int msty, int lsty){
   histo->SetLineStyle(gLineStyle-1);//lsty
   histo->SetMarkerStyle(msty);
@@ -222,4 +219,44 @@ void reformatHisto(TH1 *histo, int msty, int lsty){
   TH1F *h2 = histo->Clone();
   h2->SetLineStyle(1);
   h2->Draw("E1X0 same");
+}
+
+TH1 *getHisto(TString & sampleLoc, TString & fileType, TString & histoName){
+  TString fileName = sampleLoc+fileType+".root"; 
+  cout<<"Opening the file: "<<fileName<<endl;
+  TFile * file =  new TFile(fileName); file->cd();
+  if(!file->IsOpen()){
+    cout<<"File not opened!"<<endl;
+    return;
+  }
+  cout<<"Getting the file: "<<histoName<<endl;
+  TH1 *histo = file->IsOpen() ? (TH1*)file->Get(histoName) : 0;
+  if(!histo){ 
+    cout<<"Histo not found!"<<endl;  
+    return;
+  }
+  cout<<"Entries: " << histo->GetEntries()<<endl;
+  return histo;
+}
+
+TH1 *computeEfficiency(const TH1F *num, const TH1F *denom){
+  
+  //  num->Rebin(5); denom->Rebin(5);
+
+  TH1F *hEff = (TH1F*) num->Clone();
+  
+  hEff->Divide(denom);
+
+  // Set the error accordingly to binomial statistics
+  int nBinsEta = hEff->GetNbinsX();
+  for(int bin = 1; bin <=  nBinsEta; bin++) {
+    float nDenomHit = denom->GetBinContent(bin);
+    float eff = hEff->GetBinContent(bin);
+    float error = 0;
+    if(nDenomHit != 0 && eff <= 1) {
+      error = sqrt(eff*(1-eff)/nDenomHit);
+    }
+    hEff->SetBinError(bin, error);
+  }
+  return hEff;
 }
