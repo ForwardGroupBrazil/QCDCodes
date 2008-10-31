@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Wed Sep 10 15:08:42 EDT 2008
-// $Id$
+// $Id: MissingHitsFilter.cc,v 1.1 2008/10/20 20:41:09 aeverett Exp $
 //
 //
 
@@ -125,9 +125,9 @@ MissingHitsFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
    for (reco::MuonCollection::const_iterator muon = muons->begin(); muon != muons->end(); ++muon) {
      if(muon->isGlobalMuon()) {
        //returnVal = false;
-       int hitTk = muon->track().get()->hitPattern().numberOfValidTrackerHits();
+       int hitTk = muon->track().get()->recHitsSize();
        int hitGlbTk =   muon->combinedMuon().get()->hitPattern().numberOfValidTrackerHits();
-       int hitSta =  muon->standAloneMuon().get()->hitPattern().numberOfValidMuonHits();
+       int hitSta =  muon->standAloneMuon().get()->recHitsSize();
        int hitGlbSta = muon->combinedMuon().get()->hitPattern().numberOfValidMuonHits();
        int hitGlb =  muon->combinedMuon().get()->hitPattern().numberOfValidHits(
 );
