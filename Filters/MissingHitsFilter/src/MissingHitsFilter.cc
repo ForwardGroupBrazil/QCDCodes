@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Wed Sep 10 15:08:42 EDT 2008
-// $Id: MissingHitsFilter.cc,v 1.1 2008/10/20 20:41:09 aeverett Exp $
+// $Id: MissingHitsFilter.cc,v 1.2 2008/10/31 19:44:43 aeverett Exp $
 //
 //
 
@@ -111,15 +111,15 @@ MissingHitsFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
    
    bool returnVal = false;
 
-   /*
+   
    for (reco::MuonCollection::const_iterator muon = muons->begin(); muon != muons->end(); ++muon) {
-     if(muon->isGlobalMuon()) {
-       if(fabs(muon->eta()) > 1.2) returnVal = true;
+     if( !muon->isGlobalMuon() && muon->isStandAloneMuon() ) {
+       if(muon->pt() > 300) returnVal = true;
      }
    }
 
    return returnVal;
-   */
+   
 
    
    for (reco::MuonCollection::const_iterator muon = muons->begin(); muon != muons->end(); ++muon) {

@@ -1,0 +1,6 @@
+module chargeFltr = ChargeFilter {
+    InputTag trkMuAssocLabel = tpToGlbTrackAssociation
+    InputTag simLabel = muonTP
+    InputTag trkLabel = globalMuons
+    int32 charge = 1
+}

@@ -1,0 +1,5 @@
+module missingHitsFilter = MissingHitsFilter {
+    InputTag muLabel = muons
+    int32 hitCut = 3
+    double hitFraction = 0.20
+}

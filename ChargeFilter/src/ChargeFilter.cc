@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Mon Oct 27 20:59:07 CDT 2008
-// $Id$
+// $Id: ChargeFilter.cc,v 1.1 2008/10/28 06:28:39 aeverett Exp $
 //
 //
 
@@ -41,6 +41,7 @@
 #include "DataFormats/RecoCandidate/interface/TrackAssociation.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 #include "SimTracker/Records/interface/TrackAssociatorRecord.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 using namespace edm;
 using namespace reco;
@@ -137,19 +138,19 @@ ChargeFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
    bool goodMatch = false;
 
    ChargeSelector chargeSelector_(charge_);
-   std::cout << "size " << trackCollection->size() << std::endl;
+   LogDebug("ChargeFilter") << "size " << trackCollection->size() << std::endl;
    for(View<Track>::size_type i=0; i<trackCollection->size(); ++i){
      RefToBase<Track> track(trackCollection, i);
      goodMatch = false;
      goodTk = chargeSelector_(*track);
-     //     std::cout << "track i " << i << " charge " << track->charge() << " goodTk " << goodTk << std::endl;
+     LogDebug("ChargeFilter") << "track i " << i << " tk charge " << track->charge() << " goodTk " << goodTk << std::endl;
      std::vector<std::pair<TrackingParticleRef, double> > tp;
      if(trkToSimColl.find(track) != trkToSimColl.end()){
        tp = trkToSimColl[track];
        goodTP = chargeSelector_(*tp.begin()->first);
-       //       std::cout << "track i " << i << " charge " << tp.begin()->first->charge() << " goodTP " << goodTP << std::endl;
+       LogDebug("ChargeFilter") << "track i " << i << " TP charge " << tp.begin()->first->charge() << " goodTP " << goodTP << std::endl;
        goodMatch = goodTk & goodTP;
-       //       std::cout << "goodMatch " << goodMatch;
+       LogDebug("ChargeFilter") << "goodMatch " << goodMatch;
      }
    }
 
