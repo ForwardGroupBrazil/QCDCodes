@@ -13,7 +13,7 @@
 //
 // Original Author:  Jean-Roch Vlimant
 //         Created:  Thu Jul 17 12:57:41 CEST 2008
-// $Id$
+// $Id: BitPlotting.cc,v 1.1 2008/11/07 14:58:32 aeverett Exp $
 //
 //
 
@@ -257,7 +257,7 @@ BitPlotting::endJob() {
 
   edm::LogError("BitPlotting")<<report.str();
   total_=0;
-  if(out) edm::Service<DQMStore>()->save(out);
+  if( out.size() != 0 ) edm::Service<DQMStore>()->save(out);
 }
 
 //define this as a plug-in
