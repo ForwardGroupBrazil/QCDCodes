@@ -44,6 +44,6 @@ hltL3TrajectorySeed.TSGForRoadSearchOI.errorMatrixPset.errorMatrixValuesPSet.pf3
 
 from HLTrigger.Configuration.HLT_2E30_cff import MuonCkfTrajectoryBuilder
 
-MuonCkfTrajectoryBuilder.useSeedLayer = True
+#MuonCkfTrajectoryBuilder.useSeedLayer = True
 #MuonCkfTrajectoryBuilder.rescaleErrorIfFail = 3.0
 
