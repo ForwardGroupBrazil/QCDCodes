@@ -20,6 +20,8 @@ hltL3TrajectorySeed.tkSeedGenerator = "TSGForRoadSearchOI"
 #from ptDepRescale import *
 from ptEtaRescale import *
 
+hltL3TrajectorySeed.TSGForRoadSearchOI.errorMatrixPset.action = "use"
+
 hltL3TrajectorySeed.TSGForRoadSearchOI.errorMatrixPset.errorMatrixValuesPSet.xAxis = ptRange
 hltL3TrajectorySeed.TSGForRoadSearchOI.errorMatrixPset.errorMatrixValuesPSet.yAxis = etaRange
 
