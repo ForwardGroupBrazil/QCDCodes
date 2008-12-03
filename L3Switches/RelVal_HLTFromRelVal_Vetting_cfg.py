@@ -4,11 +4,11 @@ process = cms.Process("HLT2")
 
 process.load("Configuration.StandardSequences.Services_cff")
 
-#process.load("FWCore.MessageService.MessageLogger_cfi")
-#process.options = cms.untracked.PSet(
-#    wantSummary = cms.untracked.bool(True)
-#)
-process.load("RecoMuon.Configuration.MessageLogger_cfi")
+process.load("FWCore.MessageService.MessageLogger_cfi")
+process.options = cms.untracked.PSet(
+    wantSummary = cms.untracked.bool(True)
+)
+#process.load("RecoMuon.Configuration.MessageLogger_cfi")
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(-1)
@@ -40,7 +40,7 @@ process.load("SimGeneral.HepPDTESSource.pythiapdt_cfi")
 process.load("HLTrigger.Configuration.HLT_2E30_cff")
 #process.schedule = process.HLTSchedule
 
-process.load("UserCode.L3Switches.SwitchToRegular_cff")
+process.load("UserCode.L3Switches.SwitchToIOHit_cff")
 #process.load("UserCode.L3Switches.SwitchToOIHit_cff")
 #process.load("UserCode.L3Switches.SwitchToOIState_cff")
 
@@ -66,6 +66,10 @@ MuonHLTSchedule = cms.Schedule(
     )
 process.schedule = cms.Schedule()
 process.schedule.extend( MuonHLTSchedule )
+
+process.load("Validation.RecoMuon.muonValidationHLT_cff")
+process.muonValidationHLT_step = cms.Path(process.recoMuonValidationHLT_seq)
+process.schedule.append(process.muonValidationHLT_step)
 
 process.hltL1gtTrigReport = cms.EDAnalyzer( "L1GtTrigReport",
     UseL1GlobalTriggerRecord = cms.bool( False ),
@@ -117,3 +121,30 @@ process.endp1 = cms.EndPath( process.timer + process.hltPoolOutput)
 process.schedule.append( process.endp1  )
 
 #process.muonCkfTrajectoryFilter.filterPset.maxNumberOfHits = 6
+process.mergedtruth.vertexDistanceCut = 1000
+process.muonTPSet.tip = 10000
+process.muonTPSet.lip = 10000
+process.l2MuonTrackV.tipTP = 10000
+process.l2MuonTrackV.lipTP = 10000
+process.l3MuonTrackV.tipTP = 10000
+process.l3MuonTrackV.lipTP = 10000
+process.l3TkMuonTrackV.tipTP = 10000
+process.l3TkMuonTrackV.lipTP = 10000
+process.l3TkMuonMuTrackV.tipTP = 10000
+process.l3TkMuonMuTrackV.lipTP = 10000
+process.l2MuonMuTrackV.tipTP = 10000
+process.l2MuonMuTrackV.lipTP = 10000
+process.l3MuonMuTrackV.tipTP = 10000
+process.l3MuonMuTrackV.lipTP = 10000
+
+process.TrackAssociatorByPosDeltaR.method = 'posdr'
+process.TrackAssociatorByPosDeltaR.QCut = 0.1
+
+import SimTracker.TrackAssociation.TrackAssociatorByPosition_cfi
+process.TrackAssociatorByPosDeltaR2 = SimTracker.TrackAssociation.TrackAssociatorByPosition_cfi.TrackAssociatorByPosition.clone()
+process.TrackAssociatorByPosDeltaR2.method = 'posdr'
+process.TrackAssociatorByPosDeltaR2.QCut = 0.2
+process.TrackAssociatorByPosDeltaR2.ComponentName = 'TrackAssociatorByDeltaR2'
+
+process.tpToL2TrackAssociation.associator = 'TrackAssociatorByDeltaR2'
+process.l2MuonTrackV.associators = 'TrackAssociatorByDeltaR2'
