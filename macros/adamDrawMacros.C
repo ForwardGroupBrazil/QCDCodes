@@ -27,7 +27,7 @@ TH1 *getAndDrawSingleHisto(TString & sampleLoc, TString & fileType, TString & hi
   return histo;
 }
 
-TH1 *getAndDrawSlicedHistoOrig(TString & sampleLoc, TString & fileType, TString & histoName, int hNum = 2, TString newName = "",float fitRange = 0.0){
+TH1 *getAndDrawSlicedHistoOrig(TString & sampleLoc, TString & fileType, TString & histoName, int hNum = 2, TString newName = "",float fitRange = 0.0){  
   TString fileName = sampleLoc+fileType+".root"; 
   cout<<"Opening the file: "<<fileName<<endl;
   TFile * file =  new TFile(fileName); file->cd();
@@ -79,7 +79,7 @@ TH1 *getAndDrawSlicedHistoOrig(TString & sampleLoc, TString & fileType, TString 
     break;
   }
   }
-  
+
   TGraph* myGraph = drawHisto(myHisto);
 
   TString type = reformatLegend(fileType);
@@ -295,7 +295,7 @@ TH1 *getAndDrawSlicedHisto(TString & sampleLoc, TString & fileType, TString & hi
 }
 
 
-TGraph* fit(const TH2F* histo){
+TGraph* fit(const TH2* histo, int fitType = 2){
   vector<const TGraphErrors*> results;
 
   static int i = 0;
@@ -318,8 +318,8 @@ TGraph* fit(const TH2F* histo){
   double cont_min = 100;    //Minimum number of entries
   Int_t binx =  histo->GetXaxis()->GetNbins();
 
-  histo->RebinY(4);
-  histo->RebinX(2);
+  //  histo->RebinY(4);
+  //  histo->RebinX(2);
 
   for (int i = 1; i < binx ; i++) {
     TH1 *histoY =  histo->ProjectionY(" ", i, i);
@@ -328,14 +328,11 @@ TGraph* fit(const TH2F* histo){
     if (cont >= cont_min) {
       float minfit = histoY->GetMean() - histoY->GetRMS();
       float maxfit = histoY->GetMean() + histoY->GetRMS();
-
-      //  fitFcn = new TF1("gauss","gaus",-0.5,0.5);
-      TF1 *fitFcn = new TF1(TString("g")+i,"gaus",minfit,maxfit);
-
+      TString iString(i);
+      TF1 *fitFcn = new TF1(TString("g")+iString,"gaus",minfit,maxfit);
       double x1,x2;
       fitFcn->GetRange(x1,x2);
-      cout << "Range: " << x1 << " " << x2 << endl; 
-
+      //cout << "Range: " << x1 << " " << x2 << endl; 
 
       histoY->Fit(fitFcn,"0","",x1,x2);
 
@@ -362,7 +359,7 @@ TGraph* fit(const TH2F* histo){
     }
     else continue;
   }
-  cout << "Line 656" << endl;      
+
   // Put the fit results in arrays for TGraphErrors
   const int nn= mass.size();
   double *x = new double[nn];
@@ -390,7 +387,7 @@ TGraph* fit(const TH2F* histo){
     yc[j]=chi2[j];
     e[j]=binWidth[j];
   }
-  cout << "Line 685" << endl;        
+
   //Create TGraphErrors
   TString name = histo->GetName();
   TGraphErrors *grM = new TGraphErrors(nn,x,ym,e,eym);
@@ -409,12 +406,16 @@ TGraph* fit(const TH2F* histo){
 
   //  results.push_back(grC);
 
-  if(grW)  cout<<"YES! 709"<<endl;
+  //if(grW)  cout<<"YES! 709"<<endl;
 
   //  return result; 
 
 
+  if(fitType==1) return grM;
+  if(fitType==2) return grW;
+  if(fitType==3) return grC;
   return grW;
+
 }
 
 void drawGraph(TGraph *graph){
