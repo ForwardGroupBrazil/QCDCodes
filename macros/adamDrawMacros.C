@@ -8,13 +8,17 @@ convertTH1toTGraph(TH1* histo_)
   return myGraph;
 }
 
-void
-drawObjectCollection(TSortedList * objectList_, bool draw_=true)
+TLegend *
+drawObjectCollection(TSortedList * objectList_, bool draw_=true, TString * legend_ = 0)
 {
 
-  int color[] = {1,2,3,4,5,6,7,8,9,10};
-  int style[] = {22,23,24,25,26,27,22,23,24,25}
+  int color[] = { 1, 2, 3, 4, 6, 7, 8, 9,11,12,13,14,15,16,17,18,19,20};
+  int style[] = {21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38};
+  int lstyle[] ={ 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   int type = 0;
+
+  TLegend * myLegend = new TLegend(.35, .13, 0.65, .33, "");
+  myLegend->SetFillColor(0);
 
   TIter hIter(objectList_);
   TObject * obj;
@@ -25,6 +29,8 @@ drawObjectCollection(TSortedList * objectList_, bool draw_=true)
     if( obj->IsA()->InheritsFrom("TH2") ) type = 2;
     if( obj->IsA()->InheritsFrom("TGraph") ) type = 3;
 
+    TString legEntry = (legend_) ? legend_[i] : obj->GetTitle();
+
     switch(type){
     case 1: {
       TString opt1(color[i]==1 ? "" : "same");
@@ -33,7 +39,9 @@ drawObjectCollection(TSortedList * objectList_, bool draw_=true)
       h1->SetLineColor(color[i]);
       h1->SetMarkerColor(color[i]);
       h1->SetMarkerStyle(style[i]);
+      h1->SetLineStyle(lstyle[i]);
       if(draw_) h1->Draw(opt2);
+      if(draw_) myLegend->AddEntry(h1,legEntry,"PL");
       break;
     }
     case 2: {
@@ -43,7 +51,9 @@ drawObjectCollection(TSortedList * objectList_, bool draw_=true)
       h2->SetLineColor(color[i]);
       h2->SetMarkerColor(color[i]);
       h2->SetMarkerStyle(style[i]);
+      h2->SetLineStyle(lstyle[i]);
       if(draw_) h2->Draw(opt2);
+      if(draw_) myLegend->AddEntry(h2,legEntry,"PL");
       break;
     } 
     case 3: {
@@ -53,7 +63,9 @@ drawObjectCollection(TSortedList * objectList_, bool draw_=true)
       h3->SetLineColor(color[i]);
       h3->SetMarkerColor(color[i]);
       h3->SetMarkerStyle(style[i]);
+      h3->SetLineStyle(lstyle[i]);
       if(draw_) h3->Draw(opt2);
+      if(draw_) myLegend->AddEntry(h3,legEntry,"PL");
       break;
     }
     default: {
@@ -63,9 +75,14 @@ drawObjectCollection(TSortedList * objectList_, bool draw_=true)
       h4->SetLineColor(color[i]);
       h4->SetMarkerColor(color[i]);
       h4->SetMarkerStyle(style[i]);
+      h4->SetLineStyle(lstyle[i]);
       if(draw_) h4->Draw(opt2);
+      if(draw_) myLegend->AddEntry(h4,legEntry,"PL");
       break;
     }
     }
   }
+  myLegend->Draw("same");
+  
+  return myLegend;
 }

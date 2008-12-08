@@ -1,4 +1,4 @@
-void test2()
+TLegend * test2()
 {
   gROOT->LoadMacro("adamStyles.C");
   
@@ -50,8 +50,9 @@ void test2()
   TSortedList * resList = makeFitCollection(collectionRes,2);
   ((TGraph*)resList->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.01,0.08);
   TCanvas * canvas = newCanvas("c_test","Test 2 Canvas");
-  drawObjectCollection(resList);
+  TString legend[] = {"General Tracks","Global Muons"}
+  TLegend * myLegend2 = drawObjectCollection(resList,true,legend);
 
-   printCanvasesType(".eps");
-
+  //printCanvasesType(".eps");
+  return myLegend2;
 }
