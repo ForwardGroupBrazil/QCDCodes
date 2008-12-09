@@ -9,7 +9,7 @@ convertTH1toTGraph(TH1* histo_)
 }
 
 TLegend *
-drawObjectCollection(TSortedList * objectList_, bool draw_=true, TString * legend_ = 0)
+drawObjectCollection(TList * objectList_, bool draw_=true, TString * legend_ = 0)
 {
 
   int color[] = { 1, 2, 3, 4, 6, 7, 8, 9,11,12,13,14,15,16,17,18,19,20};

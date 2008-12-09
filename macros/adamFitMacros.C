@@ -26,8 +26,8 @@ TGraph* fit(const TH2* histo, int fitType = 2){
   double cont_min = 100;    //Minimum number of entries
   Int_t binx =  histo->GetXaxis()->GetNbins();
 
-  //  histo->RebinY(4);
-  //  histo->RebinX(2);
+    histo->RebinY(4);
+    histo->RebinX(2);
 
   for (int i = 1; i < binx ; i++) {
     TH1 *histoY =  histo->ProjectionY(" ", i, i);

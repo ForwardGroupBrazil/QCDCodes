@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-TSortedList *
+TList *
 makeFileCollection(TString &title="")
 {
   ifstream file;
@@ -10,7 +10,7 @@ makeFileCollection(TString &title="")
   char c;
   char line[1000];
 
-  TSortedList * fileCollection = new TSortedList();
+  TList * fileCollection = new TList();
 
   while( file.getline(line,1000)) {
     newline++;
@@ -22,10 +22,10 @@ makeFileCollection(TString &title="")
   return fileCollection;
 }
 
-TSortedList *
-makeDirectoryCollection(TSortedList * fileList_ , TString * inDirs, Int_t size)
+TList *
+makeDirectoryCollection(TList * fileList_ , TString * inDirs, Int_t size)
 {
-  TSortedList * dirList = new TSortedList();
+  TList * dirList = new TList();
 
   TFile * file;
   TDirectory * dir;
@@ -41,10 +41,10 @@ makeDirectoryCollection(TSortedList * fileList_ , TString * inDirs, Int_t size)
   return dirList;
 }
 
-TSortedList *
-makeObjectCollection(TSortedList * dirList_ , TString & histoName_)
+TList *
+makeObjectCollection(TList * dirList_ , TString & histoName_)
 {
-  TSortedList * objList = new TSortedList();
+  TList * objList = new TList();
   TIter iter(dirList_);
   TDirectory * dir;
   while ( (dir = (TDirectory *)iter()) ) {
@@ -55,10 +55,10 @@ makeObjectCollection(TSortedList * dirList_ , TString & histoName_)
 }
 
 
-TSortedList *
-makeFitCollection(TSortedList * objectList_,int fitType = 2) 
+TList *
+makeFitCollection(TList * objectList_,int fitType = 2) 
 {
-  TSortedList * fitList = new TSortedList();
+  TList * fitList = new TList();
 
   TGraph * fitGraph;
 
