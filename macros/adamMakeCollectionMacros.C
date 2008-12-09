@@ -73,3 +73,21 @@ makeFitCollection(TList * objectList_,int fitType = 2)
   }
   return fitList;
 }
+
+TList *
+makeTGfromTHCollection(TList * objectlist_)
+{
+  TList * graphList = new TList();
+
+  TObject * obj;
+  TIter iter(objectlist_);
+  while ( (obj=(TObject*)iter()) ) {
+    if( ! (obj->IsA()->InheritsFrom("TH1") && ! obj->IsA()->InheritsFrom("TH2") ) ) {
+      cout << "Not a TH1!" << endl;
+      continue;
+    }
+    TH1* h1 = (TH1*)obj;
+    graphList->Add(convertTH1toTGraph(h1));
+  }
+  return graphList;
+}

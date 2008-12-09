@@ -30,14 +30,15 @@ TGraph* fit(const TH2* histo, int fitType = 2){
     histo->RebinX(2);
 
   for (int i = 1; i < binx ; i++) {
+    TString iString(i);
     TH1 *histoY =  histo->ProjectionY(" ", i, i);
     double cont = histoY->GetEntries();
     //cout << "Entries: " << cont << endl;
     if (cont >= cont_min) {
       float minfit = histoY->GetMean() - histoY->GetRMS();
       float maxfit = histoY->GetMean() + histoY->GetRMS();
-      TString iString(i);
-      TF1 *fitFcn = new TF1(TString("g")+iString,"gaus",minfit,maxfit);
+      
+      TF1 *fitFcn = new TF1(TString("g")+histo->GetName()+iString,"gaus",minfit,maxfit);
       double x1,x2;
       fitFcn->GetRange(x1,x2);
       //cout << "Range: " << x1 << " " << x2 << endl; 
