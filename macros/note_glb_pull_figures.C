@@ -20,19 +20,21 @@ TLegend * note_glb_pull_figures()
   // General setup for files and directories
   //----------------------------------------------------
 
+  TString dirName_("MultiTrack/globalMuons_tpToGlbAssociation");
+  TString figDirName_("global/glb");
+  TString figLongName_("Global Muons");
+
   TList * fileList = makeFileCollection("my2112FileList.txt");
 
   TString directories[] = {
-    "/DQMData/Run 1/RecoMuonV/Run summary/MultiTrack/globalMuons_tpToGlbAssociation"
+    "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName_
   }
 
   TList * dirList = makeDirectoryCollection(fileList,directories,1);
 
-  TString directoriesComposites[] = {
-    "/DQMData/Run 1/RecoMuonV/Run summary/MultiTrack"
-  };
 
-  TList * dirListComposites = makeDirectoryCollection(fileList,directoriesComposites,1);
+
+
 
   TString legendPt[] = {"muPt10","muPt100","muPt200","muPt500","muPt1000"}
   //TString legendPt[] = {"muPt100"};
@@ -42,14 +44,8 @@ TLegend * note_glb_pull_figures()
   //----------------------------------------------------
 
 
-  TString p_level[] = {
-		     
-		     "global/glb"
-		     };
-  TString p_levelName[] = {
-			 
-			 "GlobalMuons"
-			 };
+  TString p_level[] = {figDirName_};
+  TString p_levelName[] = {figLongName_};
   
   TString p_quantity[] = {"pull_dxy",
 			"pull_dz",
@@ -101,6 +97,5 @@ TLegend * note_glb_pull_figures()
     }
   }
 
-
-  //printCanvasesType(".eps");
+  printCanvasesType(".eps");
 }

@@ -20,10 +20,15 @@ TLegend * note_glb_figures()
   // General setup for files and directories
   //----------------------------------------------------
 
+  TString dirName_("MultiTrack/globalMuons_tpToGlbAssociation");
+  TString figDirName_("global/glb");
+  TString figLongName_("Global Muons");
+  TString figDirName2_("FigGLB");
+
   TList * fileList = makeFileCollection("my2112FileList.txt");
 
   TString directories[] = {
-    "/DQMData/Run 1/RecoMuonV/Run summary/MultiTrack/globalMuons_tpToGlbAssociation"
+    "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName_
   }
 
   TList * dirList = makeDirectoryCollection(fileList,directories,1);
@@ -45,8 +50,8 @@ TLegend * note_glb_figures()
   // Algorithm Efficiencies
   //----------------------------------------------------
   
-  TString ec_level[] = {"global/glb"};
-  TString ec_levelName[] = { "GlobalMuons" };
+  TString ec_level[] = {figDirName_};
+  TString ec_levelName[] = { figLongName_ };
   TString ec_quantity[] = {"sta_eff","tk_eff"};
   TString ec_quantity2[] = {"GlbSta","GlbTk"};
   TString ec_histo[] = {"Eff"};
@@ -64,7 +69,7 @@ TLegend * note_glb_figures()
   for (int iLevel=0;iLevel < 1; ++iLevel) {
     for (int iQuantity=0;iQuantity < 2; ++iQuantity) {
       for (int iXaxis=0;iXaxis < 1; ++iXaxis) {
-	e_canvas = newCanvas("FigGLB/efficiencies/"+ec_level[iLevel]+"_"+ec_quantity[iQuantity]+ec_xAxis2[iXaxis],ec_levelName[iLevel]+" "+ec_histo[0]+" "+ec_quantity[iQuantity]+ec_xAxis2[iXaxis]);
+	e_canvas = newCanvas(figDirName2_+"/efficiencies/"+ec_level[iLevel]+"_"+ec_quantity[iQuantity]+ec_xAxis2[iXaxis],ec_levelName[iLevel]+" "+ec_histo[0]+" "+ec_quantity[iQuantity]+ec_xAxis2[iXaxis]);
 
 	ec_objCol =  makeObjectCollection(dirListComposites,ec_histo[0]+"_"+ec_quantity2[iQuantity]+"_"+ec_xAxis[iXaxis]);
 	drawObjectCollection(ec_objCol,false);
@@ -82,8 +87,8 @@ TLegend * note_glb_figures()
   // Absolute Efficiencies
   //----------------------------------------------------
   
-  TString e_level[] = {"global/glb"};
-  TString e_levelName[] = { "GlobalMuons" };
+  TString e_level[] = {figDirName_};
+  TString e_levelName[] = { figLongName_ };
   TString e_quantity[] = {"sim_eff"};
   TString e_histo[] = {"effic"};
   TString e_xAxis[] = {"","Pt","_vs_hit"};
@@ -100,7 +105,7 @@ TLegend * note_glb_figures()
   for (int iLevel=0;iLevel < 1; ++iLevel) {
     for (int iQuantity=0;iQuantity < 1; ++iQuantity) {
       for (int iXaxis=0;iXaxis < 3; ++iXaxis) {
-	e_canvas = newCanvas("FigGLB/efficiencies/"+e_level[iLevel]+"_"+e_quantity[iQuantity]+e_xAxis2[iXaxis],e_levelName[iLevel]+" "+e_histo[0]+" "+e_quantity[iQuantity]+e_xAxis2[iXaxis]);
+	e_canvas = newCanvas(figDirName2_+"/efficiencies/"+e_level[iLevel]+"_"+e_quantity[iQuantity]+e_xAxis2[iXaxis],e_levelName[iLevel]+" "+e_histo[0]+" "+e_quantity[iQuantity]+e_xAxis2[iXaxis]);
 
 	e_objCol =  makeObjectCollection(dirList,e_histo[0]+e_xAxis[iXaxis]);
 	drawObjectCollection(e_objCol,false);
@@ -113,64 +118,5 @@ TLegend * note_glb_figures()
     }
   }
   
-
-  //----------------------------------------------------
-  // Resolutions
-  //----------------------------------------------------
-  
-  TString level[] = {"global/glb"};
-  TString levelName[] = { "GlobalMuons" };
-  TString quantity[] = {"res_dxy",
-			"res_dz",
-			"res_eta",
-			"res_phi",
-			"res_qpt",
-			"res_cotTheta"};
-  TString yTitle[] = {"#sigma(#delta d_{xy})[cm]",
-		      "#sigma(#delta d_{z}) [cm]",
-		      "#sigma(#delta #eta)",
-		      "#sigma(#delta #phi)[rad]",
-		      "#sigma(#delta (q/p_{t}))",
-		      "#sigma(cot #theta)"};
-  TString histo[] = {"dxyres",
-		     "dzres",
-		     "etares",
-		     "phires",
-		     "ptres",
-		     "cotThetares"};
-  TString xAxis[]  = {"eta","pt","phi"}; 
-  TString XAxis[]  = {"|#eta|","p_{T} (GeV/c)","#phi (rad)"}; 
-
-  int canvasCounter = 01;
-  TCanvas * canvas;
-  TLegend * theLegend;
-  TH1 * h;
-  TList * objCol;
-  TList * fitCol;
-  for (int iLevel=0;iLevel < 1; ++iLevel) {
-    for (int iQuantity=0;iQuantity < 6; ++iQuantity) {
-      for (int iXaxis=0;iXaxis < 3; ++iXaxis) {
-	if(iQuantity==2 && iXaxis==1) continue;
-	if(iXaxis==2 && (iQuantity != 3 || iQuantity !=4)) continue;
-	canvas = newCanvas("FigParam/resolutions/"+level[iLevel]+"_"+quantity[iQuantity]+"_vs_"+xAxis[iXaxis],"Resolutions "+levelName[iLevel]+" "+quantity[iQuantity]+"_vs_"+xAxis[iXaxis] );
-
-	objCol = makeObjectCollection(dirList,histo[iQuantity]+"_vs_"+xAxis[iXaxis]);
-	fitCol = makeFitCollection(objCol,2);
-	((TGraph*)fitCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.00001,0.5);
-	theLegend = drawObjectCollection(fitCol,true,legendPt);
-	((TGraph*)fitCol->First())->GetHistogram()->GetYaxis()->SetTitle(yTitle[iQuantity]);
-	((TGraph*)fitCol->First())->GetHistogram()->GetXaxis()->SetTitle(XAxis[iXaxis]);
-	canvas->SetLogy(1);
-	theLegend->SetX1NDC(0.2);
-	theLegend->SetX2NDC(0.5);
-	theLegend->SetY1NDC(0.7);
-	theLegend->SetY2NDC(0.9);
-	theLegend->Modify();
-	canvas->Update();
-      }
-    }
-  }
-  
-
-  //printCanvasesType(".eps");
+  printCanvasesType(".eps");
 }
