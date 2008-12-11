@@ -25,6 +25,8 @@ TLegend * note_glb_figures()
   TString figLongName_("Global Muons");
   TString figDirName2_("FigGLB");
 
+  bool doAlgEff_ = true;
+
   TList * fileList = makeFileCollection("my2112FileList.txt");
 
   TString directories[] = {
@@ -40,7 +42,6 @@ TLegend * note_glb_figures()
   TList * dirListComposites = makeDirectoryCollection(fileList,directoriesComposites,1);
 
   TString legendPt[] = {"muPt10","muPt100","muPt200","muPt500","muPt1000"}
-  //TString legendPt[] = {"muPt100"};
 
   //----------------------------------------------------
   // Now do each specific figure
@@ -49,7 +50,7 @@ TLegend * note_glb_figures()
   //----------------------------------------------------
   // Algorithm Efficiencies
   //----------------------------------------------------
-  
+  if(doAlgEff_) {  
   TString ec_level[] = {figDirName_};
   TString ec_levelName[] = { figLongName_ };
   TString ec_quantity[] = {"sta_eff","tk_eff"};
@@ -81,7 +82,7 @@ TLegend * note_glb_figures()
       }
     }
   }
-  
+  }  
 
   //----------------------------------------------------
   // Absolute Efficiencies
@@ -118,5 +119,5 @@ TLegend * note_glb_figures()
     }
   }
   
-  printCanvasesType(".eps");
+  //printCanvasesType(".eps");
 }
