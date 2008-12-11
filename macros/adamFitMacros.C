@@ -26,10 +26,10 @@ TGraph* fit(const TH2* histo, int fitType = 2){
   double cont_min = 100;    //Minimum number of entries
   Int_t binx =  histo->GetXaxis()->GetNbins();
 
-    histo->RebinY(4);
-    histo->RebinX(2);
+  //histo->RebinY(4);
+  //histo->RebinX(2);
 
-  for (int i = 1; i < binx ; i++) {
+  for (int i = 1; i <= binx ; i++) {
     TString iString(i);
     TH1 *histoY =  histo->ProjectionY(" ", i, i);
     double cont = histoY->GetEntries();
@@ -64,9 +64,13 @@ TGraph* fit(const TH2* histo, int fitType = 2){
       
       double ex = 0; //FIXME: you can use the bin width
       binWidth.push_back(ex); 
-
+      if (fitFcn) delete fitFcn;
+      if (histoY) delete histoY;
     }
-    else continue;
+    else {
+      if (histoY) delete histoY;
+      continue;
+    }
   }
 
   // Put the fit results in arrays for TGraphErrors
@@ -111,6 +115,14 @@ TGraph* fit(const TH2* histo, int fitType = 2){
   TGraphErrors *grC = new TGraphErrors(nn,x,yc,e,e);
   grC->SetTitle(name+"_chi2");
   grC->SetName(name+"_chi2");
+
+  if(x) delete x;
+  if(ym) delete ym;
+  if(e) delete e;
+  if(eym) delete eym;
+  if(yw) delete yw;
+  if(eyw) delete eyw;
+  if(yc) delete yc;
 
   if(fitType==1) return grM;
   if(fitType==2) return grW;

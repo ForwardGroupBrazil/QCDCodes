@@ -64,13 +64,18 @@ makeFitCollection(TList * objectList_,int fitType = 2)
 
   TIter iter(objectList_);
   TObject * obj;
+  int i = 0;
   while ( (obj=(TObject*)iter()) )  {
+    i++;
+    TString iString(i);
     if( obj->IsA()->InheritsFrom("TH2") ) {
       TH2 * h2 = (TH2*)obj;
       fitGraph = fit(h2,fitType);
+      fitGraph->SetName(fitGraph->GetName()+iString);
       fitList->Add(fitGraph);
     }
   }
+  fitList->SetOwner();
   return fitList;
 }
 
@@ -89,5 +94,6 @@ makeTGfromTHCollection(TList * objectlist_)
     TH1* h1 = (TH1*)obj;
     graphList->Add(convertTH1toTGraph(h1));
   }
+  graphList->SetOwner();
   return graphList;
 }
