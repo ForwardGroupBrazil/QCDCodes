@@ -33,7 +33,6 @@ TLegend * note_glb_res_figures()
   TList * dirList = makeDirectoryCollection(fileList,directories,1);
 
   TString legendPt[] = {"muPt10","muPt100","muPt200","muPt500","muPt1000"}
-  //TString legendPt[] = {"muPt100"};
 
   //----------------------------------------------------
   // Now do each specific figure
@@ -81,20 +80,20 @@ TLegend * note_glb_res_figures()
 
 	objCol = makeObjectCollection(dirList,histo[iQuantity]+"_vs_"+xAxis[iXaxis]);
 	fitCol = makeFitCollection(objCol,2);
-	((TGraph*)fitCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.00001,0.5);
+	((TGraph*)fitCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.00001,1.);
 	theLegend = drawObjectCollection(fitCol,true,legendPt);
 	((TGraph*)fitCol->First())->GetHistogram()->GetYaxis()->SetTitle(yTitle[iQuantity]);
 	((TGraph*)fitCol->First())->GetHistogram()->GetXaxis()->SetTitle(XAxis[iXaxis]);
 	canvas->SetLogy(1);
-	theLegend->SetX1NDC(0.2);
-	theLegend->SetX2NDC(0.5);
-	theLegend->SetY1NDC(0.7);
-	theLegend->SetY2NDC(0.9);
+	theLegend->SetX1(0.2);
+	theLegend->SetX2(0.5);
+	theLegend->SetY1(0.7);
+	theLegend->SetY2(0.9);
 	theLegend->Modify();
 	canvas->Update();
       }
     }
   }
 
-  printCanvasesType(".eps");
+  //printCanvasesType(".eps");
 }
