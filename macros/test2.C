@@ -29,7 +29,7 @@ TLegend * test2()
   }
 
   //  TList * collection = makeObjectCollection(dirList,"ptres_vs_eta_Sigma");
-  TList * collection = makeObjectCollection(dirList,"effic");
+  TList * collection = makeObjectCollection(dirList,"ptres_vs_eta_Sigma");
   collection->Print();
 
   drawObjectCollection(collection,false);
@@ -37,23 +37,39 @@ TLegend * test2()
   TList * graphList = new TList();
 
   TIter iterG(collection);
-  TH1* h1;
+  TH1* h;
   while( (h=(TH1*)iterG()) ) {
     graphList->Add(convertTH1toTGraph(h));
   }
-
+  
   new TCanvas();
   TString legendPt[] = {"muPt10","muPt100","muPt200","muPt500","muPt1000"}
   drawObjectCollection(graphList,true,legendPt);
-  ((TGraph*)graphList->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.9,1.01);
+  ((TGraph*)graphList->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.0001,1.);
 
   TList * collectionRes = makeObjectCollection(dirList,"ptres_vs_eta");
   TList * resList = makeFitCollection(collectionRes,2);
-  ((TGraph*)resList->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.001,1.08);
+  ((TGraph*)resList->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.0001,1.);
   TCanvas * canvas = newCanvas("c_test","Test 2 Canvas");
-  //  TString legend[] = {"General Tracks","Global Muons"}
+
   TLegend * myLegend2 = drawObjectCollection(resList,true,legendPt);
 
+  myLegend2->SetX1(0.2);
+  myLegend2->SetX2(0.5);
+  myLegend2->SetY1(0.7);
+  myLegend2->SetY2(0.9);
+
+  //to delte all items in the list
+  //graphList->Delete();
+
+  //to remove but NOT delete all items in the list (unless list owns the objects via list->SetOwner())
+  //resList->Clear();
+
+  //to remove the list and all objects in the list
+  //resList->SetOwner();
+  //delete resList;
+
   //printCanvasesType(".eps");
-  //  return myLegend2;
+  return myLegend2;
+  
 }
