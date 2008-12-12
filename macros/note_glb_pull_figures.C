@@ -54,11 +54,11 @@ TLegend * note_glb_pull_figures()
 			"pull_qpt"
 			
 			};
-  TString p_yTitle[] = {"#sigma_{pull}(#delta d_{xy})",
-		      "#sigma_{pull}(#delta d_{z})",
-		      "#sigma_{pull}(#delta #theta)",
-		      "#sigma_{pull}(#delta #phi)",
-		      "#sigma_{pull}((q/p_{t}))"
+  TString p_yTitle[] = {"#sigma_{pull}(d_{xy})",
+		      "#sigma_{pull}(d_{z})",
+		      "#sigma_{pull}(#theta)",
+		      "#sigma_{pull}(#phi)",
+		      "#sigma_{pull}(p_{t})"
 		      
 		      };
   TString p_histo[] = {"dxypull",
@@ -68,8 +68,8 @@ TLegend * note_glb_pull_figures()
 		     "ptpull"
 		     
 		     };
-  TString p_xAxis[]  = {"eta"}; 
-  TString p_XAxis[]  = {"Eta"}; 
+  TString p_xAxis[]  = {"eta","phi"}; 
+  TString p_XAxis[]  = {"Eta","Phi"}; 
 
   TCanvas * p_canvas;
   TLegend * p_theLegend;
@@ -78,7 +78,9 @@ TLegend * note_glb_pull_figures()
   TList * p_fitCol;
   for (int iLevel=0;iLevel < 1; ++iLevel) {
     for (int iQuantity=0;iQuantity < 5; ++iQuantity) {
-      for (int iXaxis=0;iXaxis < 1; ++iXaxis) {
+      for (int iXaxis=0;iXaxis < 2; ++iXaxis) {
+	if(iXaxis==1 && (iQuantity==0 || iQuantity==1) continue;
+
 	p_canvas = newCanvas("FigParam/pulls/"+p_level[iLevel]+"_"+p_quantity[iQuantity]+"_vs_"+p_xAxis[iXaxis],"Pulls "+p_levelName[iLevel]+" "+p_quantity[iQuantity]+"_vs_"+p_xAxis[iXaxis] );
 	p_objCol = makeObjectCollection(dirList,p_histo[iQuantity]+"_vs_"+p_xAxis[iXaxis]);
 	p_fitCol = makeFitCollection(p_objCol,2);
