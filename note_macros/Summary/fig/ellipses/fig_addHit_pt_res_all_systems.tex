@@ -1,0 +1,30 @@
+\begin{figure}[!Hhtb]
+  \centering
+  \subfigure[Barrel $q/p_{T}$ resulution vs $p_{T}$]{
+    %\label{fig:res_qpt_vs_pt_combined_barrel}
+    \ifpdf
+    \epsfig{file=fig/ellipses/Pt_barrel,clip,width=0.45\linewidth}
+    \else
+    \epsfig{file=fig/CMScol,clip,width=0.45\linewidth}
+    \fi
+  }
+  \subfigure[Overlap $q/p_{T}$ resulution vs $p_{T}$]{
+   %\label{fig:res_qpt_vs_pt_combined_overlap}
+    \ifpdf
+    \epsfig{file=fig/ellipses/Pt_overlap,clip,width=0.45\linewidth}
+    \else
+    \epsfig{file=fig/CMScol,clip,width=0.45\linewidth}
+    \fi
+  }
+  \subfigure[End-caps $q/p_{T}$ resulution vs $p_{T}$]{
+    %\label{fig:res_qpt_vs_pt_combined_endcap}
+    \ifpdf
+    \epsfig{file=fig/ellipses/Pt_endcaps,clip,width=0.45\linewidth}
+    \else
+    \epsfig{file=fig/CMScol,clip,width=0.45\linewidth}
+    \fi
+  }
+  \caption[Effect of adding Tracker hits to Muon system and Muon stations to Tracker system]{
+    Resolution on $q/\pt$ divided by pseudorapidity regions for the different muon reconstruction steps. 
+    \label{fig:boe} }
+\end{figure}

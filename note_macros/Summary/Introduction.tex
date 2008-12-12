@@ -1,0 +1,231 @@
+\section{Introduction}\label{sec:intro}
+%\fixme{Add Introduction}
+The CMS experiment is expected to make major new discoveries at the LHC
+ and make precision measurements of the properties of the fundamental
+ particles and interactions. The key to these discoveries and
+ measurements is the ability to trigger on, and reconstruct, muons with
+ high efficiency. The muon reconstruction algorithms have been designed
+ to achieve these goals and this note decscribes the current performance
+ of the algorithms. The analysis presented here is \it ideal \rm in that
+ it does not include effects such as miscalibration or
+ detector inefficiencies, except those caused by the detector
+ geometry. Similarly actual event environments or beam induced
+ backgrounds are not studied.  The performance of these
+ algorithms has been evaluated using the full detector simulation with a
+ magnetic field of 4 Tesla. The performance has been tested using
+ samples of single muons generated with different values of \pt{} and
+ flat distributions in $\eta$ and $\phi$ and in the presence of more
+ than one muon and with non-flat distributions.  The categories of
+ reconstruction analyzed are \bi
+\item Stand-alone reconstruction: this just uses hits in the muon detectors
+\item Global Reconstruction: this starts with the muon segment information and then adds tracker information
+\item Tracker Muon reconstruction: this starts with tracks found in
+  the inner tracker and identifies them as muon 
+by matching expected information from the calorimeters and muon system.
+\ei 
+In all cases the \it beam \rm spot position is used as a constraint.
+ 
+\section{Muon Reconstruction Efficiencies}\label{sec:efficiencies}
+In \qfig{fig:sta_sim_eff_inclusive} the total efficiency for the
+stand-alone reconstruction ($\varepsilon_{sa}$) is shown. The loss in
+efficiency at $|\eta| \sim 0.3$ is due to a geometrical effect, since in
+that region there is a discontinuity between the central wheel and its
+neighbours.  The dips in the $0.8 < |\eta| < 1.2$ region are due to
+failures in the seed-finding algorithm which may be recovered although
+that region is known to be problematic as in that region DT and CSC
+segments are used together to estimate the seed state.
+
+The inner tracker is less affected by multiple scattering and energy
+loss than the muon system. Moreover the magnetic field in the tracker
+volume is homogeneous and almost constant. In
+\qfigand{fig:tk_sim_eff_inclusive}{fig:tkmu_sim_eff_inclusive} the
+efficiency as a function of pseudorapidity and $\phi$, for different
+\pt{} samples, is shown. The integrated efficiency is almost constant
+for all \pt{} values (\qfig{fig:tk_sim_eff_inclusive}) and its value is
+above 99.5\%.  The dip at $\eta\simeq 0$ is due to the tracker
+geometry. The tracker is made of two half-barrels joined together, and
+the junction surface is at $\eta = 0$.
+
+Global reconstruction requires the matching of reconstructed tracks in
+both the muon system and the tracker and the overall efficiency is a
+product of the stand-alone, the tracker track and the matching
+efficiencies.The results are shown in the following figures:
+(\qfig{fig:glb_sim_eff_inclusive}) shows the global efficiency
+$\varepsilon_{glb}$, $\varepsilon_{glb,sa} =
+\varepsilon_{glb}/\varepsilon_{sta}$, (\qfig{fig:glb_sta_eff_inclusive})
+shows $\varepsilon_{glb,tk}$ , and (\qfig{fig:glb_tk_eff_inclusive})
+shows $\varepsilon_{glb}/\varepsilon_{tk}$.
+
+The efficiency plot shown in \qfig{fig:glb_sim_eff_inclusive} exhibit
+a number of lower efficiency structures which correspond to
+discontinuities in the geometry of the detector. These
+are as follows: \bi
+   \item $\eta \simeq 0$: junction surface between the two
+     tracker barrels;
+   \item $|\eta| \simeq 0.3$: inter-space between the DT central wheel
+     and its neighbours;
+   \item $0.8<|\eta|<1.2$: problematic region for seed
+     estimation (DT and CSC overlap);
+   \item $|\eta| \simeq 1.8$: problematic region for tracker track
+     reconstruction (transition from TID to TID/TEC subsystem); 
+   \item $\phi \simeq 1.2$: barrel inactive region (chimney),
+                            because of instrumentation services;
+   \item periodic structure in $phi$: loss in efficiency in the
+     stand-alone muon reconstruction due to muons which escape in the
+     space between two adjacent sectors or chambers in CSCs (although all
+     chambers overlap in $\phi$, except those in ME1/3).
+     \ei
+%
+
+The $\varepsilon_{matching}$ is shown in
+(\qfig{fig:glb_matching_eff_inclusive}) as a function of $\eta$ and
+$\phi$ and the integrated efficiencies are shown in \qtab{tab:glb_eff}.
+The matching efficiency is above 99\% over all the \pt{} spectra down to
+5~\GeVc, where it is around 91\%. This drop in efficiency for low \pt{}
+is due to muon seed parameters which are poorly estimated and this
+directly affects the stand-alone muon reconstruction and the subsequent
+matching with the tracker tracks.  This efficiency can be improved by
+tuning the seed parameters for low \pt{} muons.  $\varepsilon_{glb,sta}$
+shows that the stand-alone muon efficiency dominates the final muon
+reconstruction efficiency.
+
+
+The \qfig{fig:all_eff_unbinned} shows a direct comparison of the
+ reconstruction efficiencies: $\varepsilon_{seed}$, $\varepsilon_{sa}$,
+ $\varepsilon_{tk}$ and $\varepsilon_{glb}$, as a function of \pt{},
+ $\eta$ and $\phi$.  The values are almost the same for
+ $\pt{} \geq 10~\GeVc{}$. The structure visible in the efficiency as a
+ function of $\phi$, for the seed, stand-alone and global
+ reconstruction, is due to the $\phi$-acceptance of the muon system.
+
+The efficiency as a function of the muon transverse momentum is shown in
+(\qfig{fig:all_eff_unbinned}).  The muon reconstruction efficiency increases
+up to a plateau which is approximately constant from $8~\GeVc{}$ to
+$1~\TeVc{}$ (starting from $\pt=5~\GeVc{}$ more than 50\% of muons are
+reconstructed).  At TeV momenta the muon reconstruction efficiency
+decreases slowly, due to the effects of bremsstrahlung on finding
+correct seeds.
+
+The tracker efficiency is stable above $1~\GeVc{}$ so the loss in
+efficiency at low \pt{} is due to the muon identification efficiency.
+The conclusion from the analysis is that high reconstruction efficiency
+in the tracker together with the muon spectrometer ensure a robust muon
+identification system with minimal losses.
+
+\section{Charge Identification}\label{sec:chargeId}
+The charge identification probability has been evaluated for the
+different stages of the reconstruction. In 
+%\qfig{fig:seed_charge_inclusive}, 
+\qfig{fig:sta_charge_inclusive}, \qfig{fig:tk_charge_inclusive}, and~\qfig{fig:glb_charge_inclusive} the probability to assign the correct charge
+is shown as a function of $\eta$ and $\phi$.
+
+
+\section{\pt Resolution from Silicon Tracker, Muon System, and Combined System}
+\label{sec:fullSystem}
+Since the pattern recognition of selecting appropriate hits has already
+been performed during the reconstruction of the tracker track and stand-alone
+muon track, there is no additional pattern recognition to be done for
+the global muon track fit.  The default global muon algorithm simply
+combines the collection of tracker hits corresponding to the chosen
+tracker track with the collection of muon hits corresponding to the
+stand-alone muon track. However it is also possible to combine only a
+subset of the hits for the global fit. Choosing a subset of the muon
+hits provides a better reconstruction resolution for high energy muons,
+when the measurements in the muon system are frequently contaminated by
+electromagnetic showers.
+
+The contribution due to multiple scattering is the \emph{flat} component
+on the resolution curves vs momentum, this appears below $100~\GeVc$ for
+the Muon system and below $50~\GeVc$ for the Tracker Simple calculation
+for the magnitude shows that for the \emph{muon system} (excluding the
+tracker region) with $L/X_o=220$, and average of ${\bf{B}}=2$ T and
+$L=(7-1)$m we expect a momentum resolution of 5\%, which is within 20\%
+of what is seen; recalling that the formula used is accurate within 11\%
+for $L/X_o\leq 100$. For the \emph{tracker system} $L/X_o \cong 0.5$ and
+uniform ${\bf{B}}=4$ T and $L=1$m we expect a momentum resolution of
+0.9\%, this is roughly what is seen.
+
+At higher momenta the \emph{intrinsic} resolution due to the measurements, 
+being proportional to the momentum, becomes significant. This is a 
+linear increase in the tracker above $50~\GeVc$, and later becomes of the same order of magnitude in the Muon system at 2 TeV in the barrel. This effect occurs
+in the muon system later in momenta because of the larger amount of
+material of an additional 60 radiation lengths in the end-caps and
+somewhat less in the overlap.
+
+The effect of adding one muon hit with very precise resolution has
+little or not effect on the combined fit. The reason has to do with the
+fact that we update the stand-alone trajectory to originate from the
+vertex, so the stand-alone fit and the stand-alone + 1 tracker hit are
+essentially identical; The resolution as a function of the number of
+tracker hits added to the muon system is more significant below $\pt
+\leq 10 \GeVc$ and above $\pt \geq 100 \GeVc$, where the improvements
+arise due to the multiple scattering component for the low momentum case
+and to the intrinsic resolution of the muon ( + tracker) system in the
+$\pt \geq 100 \GeVc$ range.
+
+An inherent feature for all plots is the
+sudden decrease in resolution above $|\eta|\geq 1.5$. The two main
+contributions for this effect are the increase in material in the
+end-caps and the steady decrease of the magnetic field. The
+\emph{stand-alone} fit directly reflects the distribution of the
+material at low momentum (neglecting non-linear magnetic field effects),
+we can infer this another way, given that the fact that the resolution
+curves cross for momenta below a few hundred GeVs, shows that the
+resolution component linear in momentum is small compared to the
+resolution component due to multiple scattering.
+
+Adding hits from the \emph{tracker} to the stand-alone fit has the effect
+of \emph{leveling out} the features of the curves due to material
+effects.  As more hits are added, the weight of the tracker hits
+can eventually separate the stand-alone curves at low momentum.
+
+At $|\eta| = 1.5$ there is a minimum in the material, this directly
+translates into a minimum for resolution curves.
+
+
+\section{Effect of Misalignment}\label{sec:misalignment}
+To properly reconstruct muons, the positions and orientations of all
+elements in the silicon tracker and the muon system need to be
+well-known relative to one another.  Misalignment, by which we mean an
+incorrect assumption about the geometry of the detectors, causes
+errors in the direction and curvature of reconstructed tracks, both of
+which have a degrading effect on reconstructed masses.  To minimize
+these errors, data from dedicated hardware alignment systems and from
+the tracks themselves are used to identify the true positions of the
+detector elements in a common coordinate system, but there will always
+be some residual error.  In this section, we calculate the error in
+muon \pt and dimuon masses which would be incurred under a variety
+of realistic alignment scenarios.  The scenarios have been derived
+from experiences with the hardware alignment systems at the TIF
+(Tracker Integration Facility, for the silicon tracker), global runs
+in the spring of 2008 (for the muon alignment system), and the CSA08
+computing exercise (for track-based alignment of both systems).
+
+\qfig{misalignment:curvature_resolution} presents the curvature
+($1/\pt$) resolution of muon tracks over three orders of magnitude in
+\pt.  Each series of points represents a different alignment
+scenario: a perfectly-aligned detector (what one would get from the
+constants database using an ``IDEAL\_V$n$'' tag), the result of the
+$10~\pbinv$ CSA08 exercise (a ``CSA08\_S156'' tag), a
+randomly-generated estimate of alignment quality after $10~\pbinv$
+(``10PB\_V$n$''), used in the generation of some Monte Carlo samples,
+and a randomly-generated estimate of alignment quality with only
+hardware data (``STARTUP\_V$n$'').  Muons were selected from physics
+samples: $\JPsi$ (below 5~\GeVc) using the calorimeter only (caloMuons),
+$Z$ (5--50~\GeVc) using full global muons (globalMuons), and Sequential
+Standard Model $Z'$ (above 50~\GeVc) using the first hit on every
+station (TeVmuon/firstHit) to avoid losses in resolution due to
+showering.
+
+To interpret this plot, note first that the fractional uncertainty in
+curvature ($1/\pt$) for a given track is equal to the fractional
+uncertainty in transverse momentum (\pt) for that track, so we can
+read the
+\[(\mbox{reconstructed} - \mbox{generated}) / \mbox{generated} \]
+curvature resolution as transverse momentum resolution.
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "MuonReco"
+%%% End: 
