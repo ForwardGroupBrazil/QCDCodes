@@ -3,11 +3,11 @@
  *   TeV muon reconstructor:
  *
  *
- *   $Date: 2008/05/13 02:25:45 $
- *   $Revision: 1.3 $
+ *   $Date: 2008/11/10 09:26:23 $
+ *   $Revision: 1.4 $
  *
  *   \author  Piotr Traczyk (SINS Warsaw)
- *   \author A. Everett (Purdue University)
+ *   \author  Adam Everett (Purdue University)
  */
 
 // Framework
@@ -57,7 +57,7 @@ GlobalTruncator::GlobalTruncator(const ParameterSet& parameterSet) {
   
   // TrackRefitter parameters
   ParameterSet refitterParameters = parameterSet.getParameter<ParameterSet>("RefitterParameters");
-  theRefitter = new GlobalMuonRefitter(refitterParameters, theService);
+  theRefitter = new GlobalTruncRefitter(refitterParameters, theService);
 
   // TrackLoader parameters
   ParameterSet trackLoaderParameters = parameterSet.getParameter<ParameterSet>("TrackLoaderParameters");
@@ -96,8 +96,8 @@ GlobalTruncator::~GlobalTruncator() {
 void GlobalTruncator::produce(Event& event, const EventSetup& eventSetup) {
 
   const string metname = "Muon|RecoMuon|GlobalTruncator";  
-  LogTrace(metname)<<endl<<endl<<endl;
-  LogTrace(metname)<<"TeV Muon Reconstruction started"<<endl;  
+  LogTrace(metname)<< endl << endl;
+  LogTrace(metname)<< "TeV Muon Reconstruction started" << endl;  
 
   // Update the services
   theService->update(eventSetup);
@@ -127,9 +127,6 @@ void GlobalTruncator::produce(Event& event, const EventSetup& eventSetup) {
     reco::TrackRef::key_type trackIndex = 0;
     for (reco::TrackCollection::const_iterator track = glbTracks->begin(); track!=glbTracks->end(); track++ , ++trackIndex) {
       reco::TrackRef glbRef(glbMuons,trackIndex);
-      
-      // FIXME temporary protection very energetic tracks crash the refitter...
-      if (track->pt()>10000.) continue;
       
       vector<Trajectory> refitted=theRefitter->refit(*track,theRefitIndex[ww]);
 

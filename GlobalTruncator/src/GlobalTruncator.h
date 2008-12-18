@@ -13,11 +13,11 @@
  *   $Revision: 1.2 $
  *
  *   \author  R.Bellan - INFN TO
- *   \author  A. Everett - Purdue University
+ *   \author A. Everett - Purdue University
  */
 
 #include "FWCore/Framework/interface/EDProducer.h"
-#include "RecoMuon/GlobalTrackingTools/interface/GlobalMuonRefitter.h"
+#include "UserCode/GlobalTruncator/interface/GlobalTruncRefitter.h"
 #include "RecoMuon/TrackingTools/interface/MuonTrackLoader.h"
 
 namespace edm {class ParameterSet; class Event; class EventSetup;}
@@ -46,7 +46,7 @@ class GlobalTruncator : public edm::EDProducer {
   /// the event setup proxy, it takes care the services update
   MuonServiceProxy* theService;
   
-  GlobalMuonRefitter* theRefitter;
+  GlobalTruncRefitter* theRefitter;
 
   MuonTrackLoader* theTrackLoader;
   
