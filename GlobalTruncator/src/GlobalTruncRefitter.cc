@@ -4,8 +4,8 @@
  *  Description:
  *
  *
- *  $Date: 2008/12/18 18:04:16 $
- *  $Revision: 1.2 $
+ *  $Date: 2008/12/18 19:48:00 $
+ *  $Revision: 1.3 $
  *
  *  Authors :
  *  P. Traczyk, SINS Warsaw
@@ -246,7 +246,7 @@ void GlobalTruncRefitter::checkMuonHits(const reco::Track& muon,
   for ( int i=0; i<4; i++ ) hits[i]=dethits[i]=0;
 
   MuonRecHitContainer dRecHits;
-  DetLayer* oldlayer = 0;
+  //DetLayer* oldlayer = 0;
 
   // loop through all muon hits and calculate the maximum # of hits in each chamber
   for (ConstRecHitContainer::const_iterator imrh = all.begin(); imrh != all.end(); imrh++ ) {
