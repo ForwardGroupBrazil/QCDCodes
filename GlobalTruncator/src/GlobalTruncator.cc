@@ -3,8 +3,8 @@
  *   TeV muon reconstructor:
  *
  *
- *   $Date: 2008/11/10 09:26:23 $
- *   $Revision: 1.4 $
+ *   $Date: 2008/12/18 18:04:16 $
+ *   $Revision: 1.2 $
  *
  *   \author  Piotr Traczyk (SINS Warsaw)
  *   \author  Adam Everett (Purdue University)
@@ -65,6 +65,7 @@ GlobalTruncator::GlobalTruncator(const ParameterSet& parameterSet) {
 
   theRefits = parameterSet.getParameter< std::vector<std::string> >("Refits");
   theRefitIndex = parameterSet.getParameter< std::vector<int> >("RefitIndex");
+  theRefitSubIndex = parameterSet.getParameter< std::vector<int> >("RefitSubIndex");
 
   for(unsigned int ww=0;ww<theRefits.size();ww++){
     LogDebug("Muon|RecoMuon|GlobalTruncator") << "Refit " << theRefits[ww];
@@ -128,7 +129,7 @@ void GlobalTruncator::produce(Event& event, const EventSetup& eventSetup) {
     for (reco::TrackCollection::const_iterator track = glbTracks->begin(); track!=glbTracks->end(); track++ , ++trackIndex) {
       reco::TrackRef glbRef(glbMuons,trackIndex);
       
-      vector<Trajectory> refitted=theRefitter->refit(*track,theRefitIndex[ww]);
+      vector<Trajectory> refitted=theRefitter->refit(*track,theRefitIndex[ww],theRefitSubIndex[ww]);
 
       if (refitted.size()>0) {
         Trajectory *refit = new Trajectory(refitted.front());

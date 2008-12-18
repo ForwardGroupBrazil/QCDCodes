@@ -4,8 +4,8 @@
  *  Description:
  *
  *
- *  $Date: 2008/11/12 09:39:47 $
- *  $Revision: 1.5 $
+ *  $Date: 2008/12/18 18:04:16 $
+ *  $Revision: 1.2 $
  *
  *  Authors :
  *  P. Traczyk, SINS Warsaw
@@ -147,7 +147,7 @@ void GlobalTruncRefitter::setServices(const EventSetup& setup){
 // build a combined tracker-muon trajectory
 //
 vector<Trajectory> GlobalTruncRefitter::refit(const reco::Track& globalTrack, 
-                   const int theMuonHitsOption) const {
+                   const int theMuonHitsOption, const int theMuonHitsSubOption=-1) const {
 
   // MuonHitsOption: 0 - tracker only
   //                 1 - include all muon hits
@@ -190,7 +190,7 @@ vector<Trajectory> GlobalTruncRefitter::refit(const reco::Track& globalTrack,
     }
   }
   
-  allRecHits = getRidOfSelectStationHits(allRecHitsTemp);  
+  allRecHits = getRidOfSelectStationHits(allRecHitsTemp,theMuonHitsSubOption);
   //    printHits(allRecHits);
   LogTrace(theCategory) << " Hits size: " << allRecHits.size() << endl;
 
@@ -218,7 +218,7 @@ vector<Trajectory> GlobalTruncRefitter::refit(const reco::Track& globalTrack,
       outputTraj = transform(globalTrack, track, selectedRecHits);
     }     
   } else if (theMuonHitsOption == 2 )  {
-      getFirstHits(globalTrack, allRecHits, fmsRecHits);
+      getFirstHits(globalTrack, allRecHits, fmsRecHits, theMuonHitsSubOption);
       outputTraj = transform(globalTrack, track, fmsRecHits);
     } 
 
@@ -366,7 +366,8 @@ void GlobalTruncRefitter::checkMuonHits(const reco::Track& muon,
 //
 void GlobalTruncRefitter::getFirstHits(const reco::Track& muon, 
 				       ConstRecHitContainer& all,
-				       ConstRecHitContainer& first) const {
+				       ConstRecHitContainer& first,
+				       const int theMuonHitsSubOption=-1) const {
 
   LogTrace(theCategory) << " GlobalTruncRefitter::getFirstHits " << endl;
 
@@ -380,10 +381,21 @@ void GlobalTruncRefitter::getFirstHits(const reco::Track& muon,
   
   int station1 = -999;
   int station2 = -999;
+  int DT_station = -999;
+  int CSC_station = -999;
+  bool dt_1 = false;
+  bool dt_2 = false;
+  bool dt_3 = false;
+  bool dt_4 = false;
+  bool csc_1 = false;
+  bool csc_2 = false;
+  bool csc_3 = false;
+  bool csc_4 = false;
   for (ConstRecHitContainer::const_iterator ihit = all.begin(); ihit != all.end(); ihit++ ) {
 
     if ( !(*ihit)->isValid() ) continue;
     station1 = -999; station2 = -999;
+    DT_station = -999; CSC_station = -999;
     // store muon hits one at a time.
     first.push_back(*ihit);
     DetId id = (*ihit)->geographicalId();
@@ -397,12 +409,25 @@ void GlobalTruncRefitter::getFirstHits(const reco::Track& muon,
     if ( (*immrh).isDT()  ) {
       DTChamberId did(id.rawId());
       station1 = did.station();
+      DT_station = station1;
     }
     // otherwise get station of 1st hit if it is in CSC
     else if  ( (*immrh).isCSC() ) {
       CSCDetId did(id.rawId());
       station1 = did.station();
+      CSC_station = station1;
     }
+
+    if(DT_station == 1) dt_1 = true;
+    if(DT_station == 2) dt_2 = true;
+    if(DT_station == 3) dt_3 = true;
+    if(DT_station == 4) dt_4 = true;
+    
+    if(CSC_station == 1) csc_1 = true;
+    if(CSC_station == 2) csc_2 = true;
+    if(CSC_station == 3) csc_3 = true;
+    if(CSC_station == 4) csc_4 = true;
+    
     // check next RecHit
     ConstRecHitContainer::const_iterator nexthit(ihit);
     nexthit++;
@@ -415,16 +440,51 @@ void GlobalTruncRefitter::getFirstHits(const reco::Track& muon,
       if ( (*immrh2).isDT()  ) {
         DTChamberId did2(id2.rawId());
         station2 = did2.station();
+	DT_station = station2;
       }
       // otherwise get station of 1st hit if it is in CSC
       else if  ( (*immrh2).isCSC() ) {
         CSCDetId did2(id2.rawId());
         station2 = did2.station();
+	CSC_station = station2;
       }
+
+      if(DT_station == 1) dt_1 = true;
+      if(DT_station == 2) dt_2 = true;
+      if(DT_station == 3) dt_3 = true;
+      if(DT_station == 4) dt_4 = true;
+
+      if(CSC_station == 1) csc_1 = true;
+      if(CSC_station == 2) csc_2 = true;
+      if(CSC_station == 3) csc_3 = true;
+      if(CSC_station == 4) csc_4 = true;
+
+      int n_dt = 0;
+      if (dt_1) n_dt++;
+      if (dt_2) n_dt++;
+      if (dt_3) n_dt++;
+      if (dt_4) n_dt++;
+      
+      int n_csc = 0;
+      if (csc_1) n_csc++;
+      if (csc_2) n_csc++;
+      if (csc_3) n_csc++;
+      if (csc_4) n_csc++;
+      
       
       // 1st hit is in station 1 and second hit is in a different station
       // or an rpc (if station = -999 it could be an rpc hit)
-      if ( (station1 != -999) && ((station2 == -999) || (station2 > station1)) ) {
+      if( theMuonHitsSubOption == -1 && ( (station1 != -999) && ((station2 == -999) || (station2 > station1)) ) ) { 
+	LogTrace(theCategory) << " station 1 = "<<station1 
+			      <<", r = "<< (*ihit)->globalPosition().perp()
+			      <<", z = "<< (*ihit)->globalPosition().z() << ", "; 
+      
+	LogTrace(theCategory) << " station 2 = " << station2
+			      <<", r = "<<(*(nexthit))->globalPosition().perp()
+			      <<", z = "<<(*(nexthit))->globalPosition().z() << ", ";
+	return;
+      }
+      else if ( theMuonHitsOption != -1 && (station1 != -999) && (n_dt+n_csc > theMuonHitsSubOption) ) {
 	LogTrace(theCategory) << " station 1 = "<<station1 
 			      <<", r = "<< (*ihit)->globalPosition().perp()
 			      <<", z = "<< (*ihit)->globalPosition().z() << ", "; 
@@ -433,15 +493,15 @@ void GlobalTruncRefitter::getFirstHits(const reco::Track& muon,
 			      <<", r = "<<(*(nexthit))->globalPosition().perp()
 			      <<", z = "<<(*(nexthit))->globalPosition().z() << ", ";
 	return;
-      }
-    }
+      } //end station1 not -999 and (station2 not -999 or station2 > station1) 
+    } //end nexthit isValid and not end
     else if ( (nexthit==all.end()) && (station1!=-999) ) {
       LogTrace(theCategory) << " station 1 = "<< station1
 			    << ", r = " << (*ihit)->globalPosition().perp()
 			    << ", z = " << (*ihit)->globalPosition().z() << ", "; 
       return;
-    }
-  }
+    } //end nexthit end and not -999
+  } //end forLoop over all hits
 
   // if none of the above is satisfied, return blank vector.
   first.clear();
@@ -663,7 +723,7 @@ vector<Trajectory> GlobalTruncRefitter::transform(const reco::Track& newTrack,
 //
 // Remove Selected Station Rec Hits
 //
-GlobalTruncRefitter::ConstRecHitContainer GlobalTruncRefitter::getRidOfSelectStationHits(ConstRecHitContainer hits) const
+GlobalTruncRefitter::ConstRecHitContainer GlobalTruncRefitter::getRidOfSelectStationHits(ConstRecHitContainer hits, const int theStopStation=-1) const
 {
   ConstRecHitContainer results;
   ConstRecHitContainer::const_iterator it = hits.begin();
@@ -709,7 +769,7 @@ GlobalTruncRefitter::ConstRecHitContainer GlobalTruncRefitter::getRidOfSelectSta
 	if (theTrackerSkipSection >= 0 && disk == theTrackerSkipSection) continue;
 	if (theTrackerSkipSection >= 0 && wheel == theTrackerSkipSection) continue;
       }
-    }
+    }//end if tracker
 
     if (id.det() == DetId::Muon && theSkipStation) {
       int station = -999;
@@ -726,9 +786,10 @@ GlobalTruncRefitter::ConstRecHitContainer GlobalTruncRefitter::getRidOfSelectSta
 	station = rpcid.station();
       }
       if(station == theSkipStation) continue;
-    }
+      if(theStopStation > 0 && station >= theStopStation) continue;
+    }//end if muon
     results.push_back(*it);
-  }
+  }//end loop over all hits
   return results;
 }
 

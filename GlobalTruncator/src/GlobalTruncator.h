@@ -9,7 +9,7 @@
  *   starting from a standalone reonstructed muon.
  *
  *
- *   $Date: 2008/05/13 03:31:44 $
+ *   $Date: 2008/12/18 18:04:16 $
  *   $Revision: 1.2 $
  *
  *   \author  R.Bellan - INFN TO
@@ -53,6 +53,7 @@ class GlobalTruncator : public edm::EDProducer {
   std::string theAlias;
   std::vector<std::string> theRefits;
   std::vector<int> theRefitIndex;
+  std::vector<int> theRefitSubIndex;
 
   void setAlias( std::string alias ){
     alias.erase( alias.size() - 1, alias.size() );

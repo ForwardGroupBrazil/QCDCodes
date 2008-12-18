@@ -4,8 +4,8 @@
 /** \class GlobalTruncRefitter
  *  class to build muon trajectory
  *
- *  $Date: 2008/11/12 09:40:01 $
- *  $Revision: 1.4 $
+ *  $Date: 2008/12/18 18:04:16 $
+ *  $Revision: 1.2 $
  *
  *  \author N. Neumeister 	 Purdue University
  *  \author C. Liu 		 Purdue University
@@ -68,7 +68,7 @@ class GlobalTruncRefitter {
     void setServices(const edm::EventSetup&);
 
     /// build combined trajectory from sta Track and tracker RecHits
-    std::vector<Trajectory> refit(const reco::Track& globalTrack, const int theMuonHitsOption) const;
+    std::vector<Trajectory> refit(const reco::Track& globalTrack, const int theMuonHitsOption, const int theMuonHitsSubOption) const;
 
     /// refit the track with a new set of RecHits
     std::vector<Trajectory> transform(const reco::Track& newTrack,
@@ -76,7 +76,7 @@ class GlobalTruncRefitter {
                                       TransientTrackingRecHit::ConstRecHitContainer recHitsForReFit) const;
 
     // get rid of selected station RecHits
-    ConstRecHitContainer getRidOfSelectStationHits(ConstRecHitContainer hits) const;
+    ConstRecHitContainer getRidOfSelectStationHits(ConstRecHitContainer hits,const int) const;
 
 
   protected:
@@ -89,7 +89,7 @@ class GlobalTruncRefitter {
 
     /// get the RecHits in the tracker and the first muon chamber with hits 
     void getFirstHits(const reco::Track&, ConstRecHitContainer&, 
-                       ConstRecHitContainer&) const;
+                       ConstRecHitContainer&, const int) const;
  
     /// select muon hits compatible with trajectory; check hits in chambers with showers
     ConstRecHitContainer selectMuonHits(const Trajectory&, 

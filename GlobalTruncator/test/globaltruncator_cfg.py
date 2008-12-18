@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-processName = "MuonSuite"
+processName = "globalTrunc"
 process = cms.Process(processName)
 
 readFiles = cms.untracked.vstring()
@@ -39,7 +39,7 @@ process.MessageLogger.cout = cms.untracked.PSet(
         limit = cms.untracked.int32(0)
     ),
     TrackValidator = cms.untracked.PSet(
-        limit = cms.untracked.int32(-1)
+        limit = cms.untracked.int32(0)
     )
 )
 process.MessageLogger.cerr = cms.untracked.PSet(
