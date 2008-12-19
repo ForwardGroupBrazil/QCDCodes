@@ -1,4 +1,4 @@
-TLegend * note_glb_pull_figures()
+TLegend * note_trk_pull_figures()
 {
   //----------------------------------------------------
   // General macro setup
@@ -20,9 +20,9 @@ TLegend * note_glb_pull_figures()
   // General setup for files and directories
   //----------------------------------------------------
 
-  TString dirName_("MultiTrack/globalMuons_tpToGlbAssociation");
-  TString figDirName_("global/glb");
-  TString figLongName_("Global Muons");
+  TString dirName_("MultiTrack/general_tpToTkmuAssociation");
+  TString figDirName_("tracker/tk");
+  TString figLongName_("General Tracks");
 
   TList * fileList = makeFileCollection("my2112FileList.txt");
 
