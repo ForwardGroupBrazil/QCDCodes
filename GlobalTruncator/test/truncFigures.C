@@ -55,6 +55,7 @@ TLegend * truncFigures()
     cout <<"line 52" <<endl;
     TList * barrel_collection = makeObjectCollection(dirList2,"ResPtBarrel");
     cout <<"line 54" <<endl;
+    /*
     const int nn_b = barrel_collection->GetSize();
     cout <<"line 56 " << nn_b <<endl;
     double *x_b = new double[nn_b];
@@ -81,10 +82,15 @@ TLegend * truncFigures()
   grWb->SetTitle( newDirectories[jj].Data());
   graphListb->Add(grWb);
   cout <<"line 80" <<endl;
-
+    */
+    TGraphErrors * grWb = makeTGraphFromTHCollection(barrel_collection,binCenter,2);
+    grWb->SetTitle( newDirectories[jj].Data());
+    graphListb->Add(grWb);
+    cout <<"line 80" <<endl;
   
 
   TList * overlap_collection = makeObjectCollection(dirList2,"ResPtOverlap");
+  /*
   const int nn_o = overlap_collection->GetSize();
   double *x_o = new double[nn_o];
   double *e_o = new double[nn_o];
@@ -110,8 +116,14 @@ TLegend * truncFigures()
   grWo->SetTitle( newDirectories[jj].Data());
   graphListo->Add(grWo);
   cout <<"line 109" <<endl;
+  */
+
+    TGraphErrors * grWo = makeTGraphFromTHCollection(overlap_collection,binCenter,2);
+    grWo->SetTitle( newDirectories[jj].Data());
+    graphListo->Add(grWo);
 
   TList * endcap_collection = makeObjectCollection(dirList2,"ResPtEndcap");
+  /*
   const int nn_e = endcap_collection->GetSize();
   double *x_e = new double[nn_e];
   double *e_e = new double[nn_e];
@@ -136,6 +148,10 @@ TLegend * truncFigures()
   TGraphErrors *grWe = new TGraphErrors(nn_e,x_e,yw_e,e_e,eyw_e);
   grWe->SetTitle( newDirectories[jj].Data());
   graphListe->Add(grWe);
+  */
+    TGraphErrors * grWe = makeTGraphFromTHCollection(endcap_collection,binCenter,2);
+    grWe->SetTitle( newDirectories[jj].Data());
+    graphListe->Add(grWe);
 
   cout <<"line 136" <<endl;
     
@@ -193,4 +209,33 @@ TLegend * truncFigures()
 
 }
 
+
+TGraph*
+makeTGraphFromTHCollection(TList * inlist_, double* binCenter, int type=2 )
+{
+const int nn_b = inlist_->GetSize();
+   double *x_b = new double[nn_b];
+    double *e_b = new double[nn_b];
+    double *yw_b = new double[nn_b];
+    double *eyw_b = new double[nn_b];
+
+  TIter iterGb(inlist_);
+  TH1* hb;
+  int jb =0;    cout <<"line 65 " << jb << endl;
+  while( (hb=(TH1*)iterGb()) ) {
+    cout <<"line 67 " << jb << endl;
+    std::pair<double,double> fitResultb = fit(hb,2);
+    yw_b[jb] = fitResultb.first;
+    eyw_b[jb] = fitResultb.second;
+    x_b[jb] = binCenter[jb];
+    e_b[jb] = 0.;
+    
+    jb++;
+  }
+
+  TGraphErrors *grWb = new TGraphErrors(nn_b,x_b,yw_b,e_b,eyw_b);
+
+  return grWb;
+
+}
 
