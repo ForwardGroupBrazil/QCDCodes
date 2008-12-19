@@ -1,17 +1,17 @@
 import FWCore.ParameterSet.Config as cms
 
-processName = "reTrunc"
+processName = "globalTrunc"
 process = cms.Process(processName)
 
 readFiles = cms.untracked.vstring()
 secFiles = cms.untracked.vstring()
 process.source = cms.Source ("PoolSource",fileNames = readFiles, secondaryFileNames = secFiles)
 readFiles.extend( (
-    'file:myTestCopy.root',
-#'/store/user/aeverett/noteReco220/SingleMuPt100-step2/step2-SingleMuPt100_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_2.root',
+'/store/user/aeverett/noteReco220/SingleMuPt100-step2/step2-SingleMuPt100_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_2.root',
+#'/store/user/aeverett/note220/SingleMuPt100/SingleMuPt100_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_2.root',
     ))
 secFiles.extend((
-#'/store/user/aeverett/note220/SingleMuPt100/SingleMuPt100_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_2.root',
+'/store/user/aeverett/note220/SingleMuPt100/SingleMuPt100_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_2.root',
     ))
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
@@ -21,7 +21,7 @@ process.load("Configuration.EventContent.EventContent_cff")
 
 process.out = cms.OutputModule(
     "PoolOutputModule",
-    process.RECOEventContent,
+    #    process.RECOEventContent,
     outputCommands = cms.untracked.vstring('drop *', "keep *_MEtoEDMConverter_*_"+processName),
     fileName = cms.untracked.string('validationEDM.root')
     )
@@ -38,7 +38,7 @@ process.MessageLogger.cout = cms.untracked.PSet(
         limit = cms.untracked.int32(0)
     ),
     TruncAnalyzer = cms.untracked.PSet(
-        limit = cms.untracked.int32(-1)
+        limit = cms.untracked.int32(0)
     ),
     TrackValidator = cms.untracked.PSet(
         limit = cms.untracked.int32(0)
@@ -57,22 +57,19 @@ process.load("Configuration.StandardSequences.Services_cff")
 process.load("Configuration.StandardSequences.Geometry_cff")
 process.load("Configuration.StandardSequences.MagneticField_38T_cff")
 process.load('Configuration/StandardSequences/RawToDigi_cff')
-#process.load("Configuration.StandardSequences.Reconstruction_cff")
+process.load("Configuration.StandardSequences.Reconstruction_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
-#process.load("RecoMuon.Configuration.RecoMuon_cff")
+process.load("RecoMuon.Configuration.RecoMuon_cff")
 process.load("UserCode.GlobalTruncator.globaltruncator_cfi")
 
-#process.p1 = cms.Path(process.RawToDigi*process.reconstruction)
-
-#process.p1 = cms.Path(process.RawToDigi*process.localreco*process.globalreco) #*process.globalTrunc)
+process.p1 = cms.Path(process.RawToDigi*process.localreco*process.globalreco*process.globalTrunc)
 
 #process.p1 = cms.Path(process.RawToDigi*process.tevMuons*process.globalTrunc)
 
-process.raw2digi_step = cms.Path(process.RawToDigi)
+#process.raw2digi_step = cms.Path(process.RawToDigi)
 
 #process.load("Geometry.CaloEventSetup.CaloTopology_cfi")
-#process.raw2digi_step = cms.Path(process.RawToDigi)
 
 
 process.load("Geometry.CommonDetUnit.globalTrackingGeometry_cfi")
@@ -92,12 +89,12 @@ process.truncAnalyzer.outputFileName = 'validationME.root'
 process.truncationV_step = cms.Path(process.truncAnalyzer)
 
 process.schedule = cms.Schedule(
-#    process.p1,
-    process.raw2digi_step,
+    process.p1,
+#    process.raw2digi_step,
 #    process.validation_step,
     process.muonValidation_step,
     process.truncationV_step,
     process.MEtoEDMConverter_step,
-#    process.outpath
+    process.outpath
     )
 

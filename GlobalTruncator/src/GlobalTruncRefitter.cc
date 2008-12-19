@@ -4,8 +4,8 @@
  *  Description:
  *
  *
- *  $Date: 2008/12/18 19:48:00 $
- *  $Revision: 1.3 $
+ *  $Date: 2008/12/18 20:16:01 $
+ *  $Revision: 1.4 $
  *
  *  Authors :
  *  P. Traczyk, SINS Warsaw
@@ -189,8 +189,9 @@ vector<Trajectory> GlobalTruncRefitter::refit(const reco::Track& globalTrack,
       }
     }
   }
-  
-  allRecHits = getRidOfSelectStationHits(allRecHitsTemp,theMuonHitsSubOption);
+
+  int getRid = (theMuonHitsOption==1 || theMuonHitsOption==3) ? theMuonHitsSubOption : -1;  
+  allRecHits = getRidOfSelectStationHits(allRecHitsTemp,getRid);
   //    printHits(allRecHits);
   LogTrace(theCategory) << " Hits size: " << allRecHits.size() << endl;
 

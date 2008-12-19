@@ -12,6 +12,8 @@
 <use name="TrackingTools/DetLayers">
 <use name=PhysicsTools/UtilAlgos>
 <use name=SimTracker/Records>
+<use name="DataFormats/Common">
+
 
 <use name=DQMServices/Core>
 <use name=Validation/Tools>
