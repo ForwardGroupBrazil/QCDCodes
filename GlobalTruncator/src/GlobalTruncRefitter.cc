@@ -4,8 +4,8 @@
  *  Description:
  *
  *
- *  $Date: 2008/12/18 20:16:01 $
- *  $Revision: 1.4 $
+ *  $Date: 2008/12/19 07:44:57 $
+ *  $Revision: 1.5 $
  *
  *  Authors :
  *  P. Traczyk, SINS Warsaw
@@ -485,7 +485,7 @@ void GlobalTruncRefitter::getFirstHits(const reco::Track& muon,
 			      <<", z = "<<(*(nexthit))->globalPosition().z() << ", ";
 	return;
       }
-      else if ( theMuonHitsOption != -1 && (station1 != -999) && (n_dt+n_csc > theMuonHitsSubOption) ) {
+      else if ( theMuonHitsSubOption != -1 && (n_dt+n_csc > theMuonHitsSubOption) ) {
 	LogTrace(theCategory) << " station 1 = "<<station1 
 			      <<", r = "<< (*ihit)->globalPosition().perp()
 			      <<", z = "<< (*ihit)->globalPosition().z() << ", "; 
@@ -772,7 +772,7 @@ GlobalTruncRefitter::ConstRecHitContainer GlobalTruncRefitter::getRidOfSelectSta
       }
     }//end if tracker
 
-    if (id.det() == DetId::Muon && theSkipStation) {
+    if (id.det() == DetId::Muon && (theSkipStation || theStopStation) ) {
       int station = -999;
       int wheel = -999;
       if ( id.subdetId() == MuonSubdetId::DT ) {
@@ -787,7 +787,7 @@ GlobalTruncRefitter::ConstRecHitContainer GlobalTruncRefitter::getRidOfSelectSta
 	station = rpcid.station();
       }
       if(station == theSkipStation) continue;
-      if(theStopStation > 0 && station >= theStopStation) continue;
+      if(theStopStation > 0 && station > theStopStation) continue;
     }//end if muon
     results.push_back(*it);
   }//end loop over all hits

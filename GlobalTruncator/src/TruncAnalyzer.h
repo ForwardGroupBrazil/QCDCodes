@@ -11,6 +11,7 @@
 
 #include "PhysicsTools/RecoAlgos/interface/TrackingParticleSelector.h"
 #include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
 
 class DQMStore;
 class MonitorElement;
@@ -27,8 +28,10 @@ class TruncAnalyzer : public edm::EDAnalyzer
   virtual void endJob();
   virtual void analyze(const edm::Event& event, const edm::EventSetup& eventSetup);
 
+  //int countStations(const reco::TrackRef&);
+
  private:
-  int countStations(const reco::Track*);
+
 
  protected:
 
