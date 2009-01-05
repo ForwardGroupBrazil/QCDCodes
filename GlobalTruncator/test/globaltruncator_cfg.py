@@ -7,8 +7,10 @@ readFiles = cms.untracked.vstring()
 secFiles = cms.untracked.vstring()
 process.source = cms.Source ("PoolSource",fileNames = readFiles, secondaryFileNames = secFiles)
 readFiles.extend( (
-    'file:myTestCopy.root',
+    #'file:myTestCopy.root',
+#    '/store/user/aeverett/truncStudy220/SingleMuPt1000-step2/step2-SingleMuPt1000_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_9.root',
 #'/store/user/aeverett/noteReco220/SingleMuPt100-step2/step2-SingleMuPt100_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_2.root',
+'/store/user/aeverett/truncStudy220FullEvt/SingleMuPt1000-step2//step2-SingleMuPt1000_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_4.root',
     ))
 secFiles.extend((
 #'/store/user/aeverett/note220/SingleMuPt100/SingleMuPt100_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_2.root',
@@ -60,6 +62,9 @@ process.load('Configuration/StandardSequences/RawToDigi_cff')
 #process.load("Configuration.StandardSequences.Reconstruction_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
+process.load("UserCode.L3Switches.TPLink_cfi")
+process.simParticle_step = cms.Path(process.TPLink)
+
 #process.load("RecoMuon.Configuration.RecoMuon_cff")
 process.load("UserCode.GlobalTruncator.globaltruncator_cfi")
 
@@ -93,11 +98,13 @@ process.truncationV_step = cms.Path(process.truncAnalyzer)
 
 process.schedule = cms.Schedule(
 #    process.p1,
+#    process.simParticle_step,
     process.raw2digi_step,
+
 #    process.validation_step,
     process.muonValidation_step,
     process.truncationV_step,
     process.MEtoEDMConverter_step,
-#    process.outpath
+    process.outpath
     )
 

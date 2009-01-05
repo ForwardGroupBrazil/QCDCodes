@@ -9,10 +9,10 @@ globalTrunc = cms.EDProducer(
     MuonTrackLoaderForGLB,
     #    InputTag MuonCollectionLabel = standAloneMuons:UpdatedAtVtx
     MuonServiceProxy,
-    RefitIndex    = cms.vint32( 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3),
-    RefitSubIndex = cms.vint32(-1,-1, 1, 2, 3, 4, 5,-1, 1, 2, 3, 4, 5,-1, 1, 2, 3, 4, 5),
-    Refits = cms.vstring('tracker',
-                         'global',
+    RefitIndex    = cms.vint32( 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3),
+    RefitSubIndex = cms.vint32(1, 2, 3, 4, 5,-1, 1, 2, 3, 4, 5,-1, 1, 2, 3, 4, 5),
+    Refits = cms.vstring(
+                         
                          'station1',
                          'station2',
                          'station3',

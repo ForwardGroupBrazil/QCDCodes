@@ -38,12 +38,13 @@ truncAnalyzer = cms.EDAnalyzer(
     cms.InputTag("globalTrunc:picky4"),
     cms.InputTag("globalTrunc:picky5"),
     ),
-    
+
+    minStations = cms.untracked.uint32(4),
     
     #
     # Histogram dimensions     #
     #
-    nBinRes = cms.untracked.uint32(25),
+    nBinRes = cms.untracked.uint32(100),
     
     # pT resolution     #
     minResPt = cms.untracked.double(-0.2),

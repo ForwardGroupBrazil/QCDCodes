@@ -36,6 +36,7 @@ class TruncAnalyzer : public edm::EDAnalyzer
  protected:
 
   unsigned int verbose_;
+  unsigned int minStations_;
 
   edm::InputTag simLabel_;
   edm::InputTag glbMuLabel_;

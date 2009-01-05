@@ -44,6 +44,11 @@ struct TruncAnalyzer::TruncME {
     hResPtBarrel_  = dqm->book1D("ResPtBarrel" , "#Delta(p_{T})/p_{T}", hDim.nBinRes, hDim.minResPt , hDim.maxResPt );
     hResPtOverlap_  = dqm->book1D("ResPtOverlap" , "#Delta(p_{T})/p_{T}", hDim.nBinRes, hDim.minResPt , hDim.maxResPt );
     hResPtEndcap_  = dqm->book1D("ResPtEndcap" , "#Delta(p_{T})/p_{T}", hDim.nBinRes, hDim.minResPt , hDim.maxResPt );
+
+    hResPBarrel_  = dqm->book1D("ResPBarrel" , "#Delta(p)/p", hDim.nBinRes, hDim.minResPt , hDim.maxResPt );
+    hResPOverlap_  = dqm->book1D("ResPOverlap" , "#Delta(p)/p", hDim.nBinRes, hDim.minResPt , hDim.maxResPt );
+    hResPEndcap_  = dqm->book1D("ResPEndcap" , "#Delta(p)/p", hDim.nBinRes, hDim.minResPt , hDim.maxResPt );
+
     hNStations_ = dqm->book1D("NStations","N Stations",10,0,10);
     hLastStation_ = dqm->book1D("LastStation","Last Station",10,0,10);
   };
@@ -51,15 +56,22 @@ struct TruncAnalyzer::TruncME {
   //void fill(const TrackingParticle* simRef, const reco::Track* recoRef)
   void fill(const TrackingParticle* simRef, const reco::TrackRef& recoRef)
   {
+    const double simP  = simRef->p();
     const double simPt  = simRef->pt();
     const double simEta  = simRef->eta();
+    const double recoP  = (recoRef->p());
     const double recoPt  = sqrt(recoRef->momentum().perp2());
 
+    const double errP  = (recoP-simP)/simP;
     const double errPt  = (recoPt-simPt)/simPt;
 
     if(simEta <= 0.8) hResPtBarrel_ ->Fill(errPt );
     if(simEta > 0.8 && simEta <= 1.2) hResPtOverlap_ ->Fill(errPt );
     if(simEta > 1.2 && simEta <= 2.4) hResPtEndcap_ ->Fill(errPt );
+
+    if(simEta <= 0.8) hResPBarrel_ ->Fill(errP );
+    if(simEta > 0.8 && simEta <= 1.2) hResPOverlap_ ->Fill(errP );
+    if(simEta > 1.2 && simEta <= 2.4) hResPEndcap_ ->Fill(errP );
 
     std::pair<int,int> nStation = countStations(recoRef);
     hNStations_->Fill(nStation.first);
@@ -142,6 +154,7 @@ std::pair<int,int> countStations(const reco::TrackRef& track)
   typedef MonitorElement* MEP;
 
   MEP hResPtBarrel_, hResPtOverlap_, hResPtEndcap_, hNStations_, hLastStation_;
+  MEP hResPBarrel_, hResPOverlap_, hResPEndcap_;
 
 };
 
@@ -150,6 +163,8 @@ TruncAnalyzer::TruncAnalyzer(const ParameterSet& pset)
   verbose_ = pset.getUntrackedParameter<unsigned int>("verbose", 0);
 
   outputFileName_ = pset.getUntrackedParameter<string>("outputFileName", "");
+
+  minStations_ = pset.getUntrackedParameter<unsigned int>("minStations",4);
 
   // Set histogram dimensions
   //HistoDimensions hDim;
@@ -287,7 +302,7 @@ void TruncAnalyzer::analyze(const Event& event, const EventSetup& eventSetup)
 	//
 	std::pair<int,int> count = V_truncME[0]->countStations(glbMuTrackRef);
 	//
-	if(count.first == 4)	
+	if(count.first >= minStations_)	
 	  for (unsigned int www=0;www<label.size();www++){
 	    
 	    edm::Handle<reco::TrackToTrackMap> truncAssoMap;
