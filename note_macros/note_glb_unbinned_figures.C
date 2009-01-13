@@ -21,6 +21,7 @@ TLegend * note_glb_unbinned_figures()
   //----------------------------------------------------
 
   TString dirName_("MultiTrack/general_tpToTkmuAssociation");
+  TString dirName_1("MultiTrack/good_TrackerOnly_tpToTkmutkAssociation");
   TString dirName_2("MultiTrack/standAloneMuons_UpdatedAtVtx_tpToStaAssociation");
   TString dirName_3("MultiTrack/globalMuons_tpToGlbAssociation");
   TString figDirName_("global/glb");
@@ -33,11 +34,12 @@ TLegend * note_glb_unbinned_figures()
 
   TString directories[] = {
     "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName_,
+    "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName_1,
     "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName_2,
     "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName_3
   }
 
-  TList * dirList = makeDirectoryCollection(fileList,directories,3);
+  TList * dirList = makeDirectoryCollection(fileList,directories,4);
 
   TString directoriesComposites[] = {
     "/DQMData/Run 1/RecoMuonV/Run summary/MultiTrack"
@@ -45,7 +47,7 @@ TLegend * note_glb_unbinned_figures()
 
   TList * dirListComposites = makeDirectoryCollection(fileList,directoriesComposites,1);
 
-  TString legendPt[] = {"General","Stand Alone","Global"}
+  TString legendPt[] = {"General Tracks","Tracker Muons","Stand Alone Muons","Global Muons"}
 
   //----------------------------------------------------
   // Now do each specific figure
