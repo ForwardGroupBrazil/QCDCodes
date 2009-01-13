@@ -166,9 +166,12 @@ fit(const TH1* histo, int fitType = 2)
     
     
     TF1 *fitFcn = new TF1(TString("g")+histo->GetName()+iString,"gaus",minfit,maxfit);
+    //TF1 *fitFcn = new TF1(TString("g")+histo->GetName()+iString,"gaus");
     double x1,x2;
     fitFcn->GetRange(x1,x2);
     histo->Fit(fitFcn,"QR0","",x1,x2);
+    //    histo->Fit(fitFcn,"QR","",x1,x2);
+    //histo->Fit(fitFcn,"Q","");
     double *par = fitFcn->GetParameters();
     double *err = fitFcn->GetParErrors();
     

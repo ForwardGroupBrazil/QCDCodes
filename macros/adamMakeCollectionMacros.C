@@ -61,6 +61,7 @@ makeFitCollection(TList * objectList_,int fitType = 2)
   TList * fitList = new TList();
 
   TGraph * fitGraph;
+  //pair<double,double> fitPair;
 
   TIter iter(objectList_);
   TObject * obj;
@@ -73,6 +74,13 @@ makeFitCollection(TList * objectList_,int fitType = 2)
       fitGraph = fit(h2,fitType);
       fitGraph->SetName(fitGraph->GetName()+iString);
       fitList->Add(fitGraph);
+    }
+    else if( obj->IsA()->InheritsFrom("TH1") ) {
+      TH1 * h1 = (TH1*)obj;
+      //fitPair = 
+      fit(h1,fitType);
+      //fitGraph->SetName(fitGraph->GetName()+iString);
+      //fitList->Add(fitGraph);
     }
   }
   fitList->SetOwner();
