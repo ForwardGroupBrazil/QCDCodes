@@ -56,6 +56,7 @@ TLegend * note_glb_figures()
   TString ec_quantity[] = {"sta_eff","tk_eff"};
   TString ec_quantity2[] = {"GlbSta","GlbTk"};
   TString ec_histo[] = {"Eff"};
+  //TString ec_xAxis[] = {"Eta_mabh","Hit_mabh","Pt_mabh"};
   TString ec_xAxis[] = {"Eta","Hit","Pt"};
   TString ec_xAxis2[] = {"_vs_eta","_vs_hit","_vs_pt"};
   TString ec_XAxis[] = {"|#eta|","n Hits","p_{T} (GeV)"};

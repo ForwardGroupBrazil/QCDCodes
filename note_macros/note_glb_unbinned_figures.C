@@ -77,7 +77,7 @@ TLegend * note_glb_unbinned_figures()
   for (int iLevel=0;iLevel < 1; ++iLevel) {
     for (int iQuantity=0;iQuantity < 2; ++iQuantity) {
       for (int iXaxis=0;iXaxis < 3; ++iXaxis) {
-	e_canvas = newCanvas(figDirName2_+"/efficiencies/"+ec_quantity[iQuantity]+ec_xAxis2[iXaxis],ec_levelName[iLevel]+" "+ec_histo[0]+" "+ec_quantity[iQuantity]+ec_xAxis2[iXaxis]);
+	e_canvas = newCanvas(figDirName2_+"/efficiencies/"+ec_quantity[iQuantity]+ec_xAxis2[iXaxis]+"_0_500",ec_levelName[iLevel]+" "+ec_histo[0]+" "+ec_quantity[iQuantity]+ec_xAxis2[iXaxis]);
 
 	ec_objCol =  makeObjectCollection(dirListComposites,ec_histo[0]+"_"+ec_quantity2[iQuantity]+"_"+ec_xAxis[iXaxis]);
 	drawObjectCollection(ec_objCol,false);
@@ -135,6 +135,8 @@ TLegend * note_glb_unbinned_figures()
     "/DQMData/Run 1/RecoMuonV/Run summary/"+dirNameRM_2,
     "/DQMData/Run 1/RecoMuonV/Run summary/"+dirNameRM_3
   }
+
+  TString legendPt[] = {"General Tracks","Stand Alone Muons","Global Muons"}
 
   TList * dirListRM = makeDirectoryCollection(fileList,directoriesRM,3);
 
