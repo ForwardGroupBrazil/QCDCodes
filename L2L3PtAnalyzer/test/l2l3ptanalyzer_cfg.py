@@ -38,6 +38,8 @@ process.source = cms.Source("PoolSource",
         'file:/home/ba01/u112/aeverett/scratch_rcac/muPt500_2112b.root'
     )
 )
+process.load("SimTracker.TrackAssociation.TrackAssociatorByHits_cfi")
+process.load("Validation.RecoTrack.MultiTrackValidator_cff")
 
 process.load("UserCode.L2L3PtAnalyzer.l2l3ptanalyzer_cfi")
 

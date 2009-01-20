@@ -3,6 +3,9 @@
 <use name=FWCore/ParameterSet>
 <use name=CLHEP>
 <use name=DataFormats/TrackReco>
+<use name=SimDataFormats/Track>
+<use name=SimTracker/TrackAssociation>
+<use name=SimTracker/Records>
 <flags EDM_PLUGIN=1>
 <export>
    <lib name=UserCodeL2L3PtAnalyzer>
