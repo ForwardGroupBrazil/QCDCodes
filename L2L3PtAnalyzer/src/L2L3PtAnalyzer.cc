@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Tue Jan 20 14:12:47 EST 2009
-// $Id: L2L3PtAnalyzer.cc,v 1.1.2.2 2009/01/20 21:14:18 aeverett Exp $
+// $Id: L2L3PtAnalyzer.cc,v 1.1.2.3 2009/01/20 21:23:58 aeverett Exp $
 //
 //
 
@@ -46,6 +46,8 @@
 #include "SimTracker/TrackAssociation/interface/TrackAssociatorByChi2.h"
 #include "SimTracker/TrackAssociation/interface/TrackAssociatorByHits.h"
 
+#include "PhysicsTools/Utilities/interface/PtComparator.h"
+
 //
 // class decleration
 //
@@ -60,7 +62,15 @@ class L2L3PtAnalyzer : public edm::EDAnalyzer {
       virtual void beginJob(const edm::EventSetup&) ;
       virtual void analyze(const edm::Event&, const edm::EventSetup&);
       virtual void endJob() ;
-  reco::TrackCollection getSeededTkCollection(const reco::TrackRef&, const edm::View<reco::Track>& ) ;
+  std::vector<edm::RefToBase<reco::Track> > getSeededTkCollection(const reco::TrackRef&, const edm::Handle<edm::View<reco::Track> >& ) ;
+
+  struct MyPtComparator {
+    bool operator()(const edm::RefToBase<reco::Track>& a,
+		    const edm::RefToBase<reco::Track>& b) const {
+      return a->pt() > b->pt(); 
+    }
+  };
+
       // ----------member data ---------------------------
   edm::InputTag L2Label_;
   edm::InputTag L3TkLabel_;
@@ -146,9 +156,30 @@ L2L3PtAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    
    for(TrackCollection::size_type i=0; i<L2Collection->size(); ++i){
      reco::TrackRef staTrack(L2Collection,i);     
-     TrackCollection seededTkCollection = getSeededTkCollection(staTrack,L3TkColl);     
+     vector<RefToBase<Track> > seededTkCollection = getSeededTkCollection(staTrack,L3TkCollection);     
      LogDebug("L2L3PtAnalyzer")<<"SeededTkCollection size "<< seededTkCollection.size();
-     
+
+     //sort by Pt
+     //GreaterByPt<RefToBase<Track> > compTracks;
+     stable_sort(seededTkCollection.begin(),seededTkCollection.end(),MyPtComparator());
+
+     //for each seededTk, get the associated TP
+     int iParticle = 0; 
+     for(vector<RefToBase<Track> >::const_iterator track = seededTkCollection.begin(); track != seededTkCollection.end(); ++track){
+       iParticle++;
+       std::vector<std::pair<TrackingParticleRef, double> > tp;
+       if(recSimColl.find(*track) != recSimColl.end()){
+	 tp = recSimColl[*track];
+	 if (tp.size()!=0) {
+	   edm::LogVerbatim("L2L3PtAnalyzer") << "reco::Track #" << iParticle << " with pt=" << (*track)->pt() 
+					      << " associated with quality:" << tp.begin()->second <<" to tpgId " << tp.begin()->first->pdgId() <<"\n";
+	 }
+       } else {
+	 edm::LogVerbatim("L2L3PtAnalyzer") << "reco::Track #" << iParticle << " with pt=" << (*track)->pt()
+					    << " NOT associated to any TrackingParticle" << "\n";		  
+       }
+       
+     }     
    }
    
 }
@@ -170,20 +201,20 @@ void
 L2L3PtAnalyzer::endJob() {
 }
 
-TrackCollection
-L2L3PtAnalyzer::getSeededTkCollection(const reco::TrackRef& staTrack, const View<Track>& L3TkCollection ) {
+vector<RefToBase<Track> >
+L2L3PtAnalyzer::getSeededTkCollection(const reco::TrackRef& staTrack, const Handle<View<Track> >& L3TkCollection ) {
   TrackCollection tkTrackCands;
-
-  for(View<Track>::const_iterator iTk=L3TkCollection.begin(); iTk != L3TkCollection.end() ; ++iTk) {
-
-    //reco::TrackRef tkTrack(L3TkCollection,j);
-    edm::Ref<L3MuonTrajectorySeedCollection> l3seedRef = iTk->seedRef().castTo<edm::Ref<L3MuonTrajectorySeedCollection> >() ;
+  vector<RefToBase<Track> > tkTrackRefs;
+  
+  for(View<Track>::size_type i=0; i<L3TkCollection->size(); ++i){
+    RefToBase<Track> track(L3TkCollection, i);
+    edm::Ref<L3MuonTrajectorySeedCollection> l3seedRef = track->seedRef().castTo<edm::Ref<L3MuonTrajectorySeedCollection> >() ;
     reco::TrackRef staTrack_2 = l3seedRef->l2Track();
     if(staTrack_2 == staTrack ) { 
-      tkTrackCands.push_back(*iTk);
+      tkTrackRefs.push_back(track);
     }
   }
-  return tkTrackCands;
+  return tkTrackRefs;
 }
 
 //define this as a plug-in
