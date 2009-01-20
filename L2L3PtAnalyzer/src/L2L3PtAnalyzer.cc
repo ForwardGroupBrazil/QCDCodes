@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Tue Jan 20 14:12:47 EST 2009
-// $Id: L2L3PtAnalyzer.cc,v 1.1.2.1 2009/01/20 20:46:34 aeverett Exp $
+// $Id: L2L3PtAnalyzer.cc,v 1.1.2.2 2009/01/20 21:14:18 aeverett Exp $
 //
 //
 
@@ -60,7 +60,7 @@ class L2L3PtAnalyzer : public edm::EDAnalyzer {
       virtual void beginJob(const edm::EventSetup&) ;
       virtual void analyze(const edm::Event&, const edm::EventSetup&);
       virtual void endJob() ;
-  reco::TrackCollection getSeededTkCollection(const reco::TrackRef&, const edm::Handle<reco::TrackCollection>& ) ;
+  reco::TrackCollection getSeededTkCollection(const reco::TrackRef&, const edm::View<reco::Track>& ) ;
       // ----------member data ---------------------------
   edm::InputTag L2Label_;
   edm::InputTag L3TkLabel_;
@@ -127,6 +127,7 @@ L2L3PtAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
    edm::Handle<View<Track> >  L3TkCollection;
    iEvent.getByLabel(L3TkLabel_, L3TkCollection);
+   View<Track> L3TkColl = *(L3TkCollection.product());
 
    LogDebug("L2L3PtAnalyzer")<<"L3TkCollection size "<< L3TkCollection->size();
 
@@ -145,8 +146,8 @@ L2L3PtAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    
    for(TrackCollection::size_type i=0; i<L2Collection->size(); ++i){
      reco::TrackRef staTrack(L2Collection,i);     
-     //TrackCollection seededTkCollection = getSeededTkCollection(staTrack,L3TkCollection);     
-     //LogDebug("L2L3PtAnalyzer")<<"SeededTkCollection size "<< seededTkCollection.size();
+     TrackCollection seededTkCollection = getSeededTkCollection(staTrack,L3TkColl);     
+     LogDebug("L2L3PtAnalyzer")<<"SeededTkCollection size "<< seededTkCollection.size();
      
    }
    
@@ -170,14 +171,16 @@ L2L3PtAnalyzer::endJob() {
 }
 
 TrackCollection
-L2L3PtAnalyzer::getSeededTkCollection(const reco::TrackRef& staTrack, const edm::Handle<TrackCollection>& L3TkCollection ) {
+L2L3PtAnalyzer::getSeededTkCollection(const reco::TrackRef& staTrack, const View<Track>& L3TkCollection ) {
   TrackCollection tkTrackCands;
-  for(TrackCollection::size_type j=0; j < L3TkCollection->size() ; ++j) {
-    reco::TrackRef tkTrack(L3TkCollection,j);
-    edm::Ref<L3MuonTrajectorySeedCollection> l3seedRef = tkTrack->seedRef().castTo<edm::Ref<L3MuonTrajectorySeedCollection> >() ;
+
+  for(View<Track>::const_iterator iTk=L3TkCollection.begin(); iTk != L3TkCollection.end() ; ++iTk) {
+
+    //reco::TrackRef tkTrack(L3TkCollection,j);
+    edm::Ref<L3MuonTrajectorySeedCollection> l3seedRef = iTk->seedRef().castTo<edm::Ref<L3MuonTrajectorySeedCollection> >() ;
     reco::TrackRef staTrack_2 = l3seedRef->l2Track();
     if(staTrack_2 == staTrack ) { 
-      tkTrackCands.push_back(*tkTrack);
+      tkTrackCands.push_back(*iTk);
     }
   }
   return tkTrackCands;
