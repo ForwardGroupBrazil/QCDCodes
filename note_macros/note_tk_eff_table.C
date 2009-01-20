@@ -3,7 +3,8 @@
 void note_tk_eff_table()
 {
   FILE * pFile;
-  pFile = fopen ("tab_tk_eff_inclusive.tex","w");
+  //  pFile = fopen ("FigGLB/efficiencies/tracker/tab_tk_eff_inclusive.tex","w");
+  pFile = fopen ("FigGLB/efficiencies/trackerMuons/tab_tkmu_eff_inclusive.tex","w");
 
   gROOT->LoadMacro("adamStyles.C");
   
@@ -17,12 +18,13 @@ void note_tk_eff_table()
   gROOT->LoadMacro("adamGetObjMacros.C");
   gROOT->LoadMacro("adamMakeCollectionMacros.C");
   
-  TList * fileList = makeFileCollection("my2112FileList2.txt");
+  TList * fileList = makeFileCollection("my2112FileList_high.txt");
   
   fileList->Print();
 
   TString directories[] = {
-    "/DQMData/Run 1/RecoMuonV/Run summary/MultiTrack/general_tpToTkmuAssociation"
+    //    "/DQMData/Run 1/RecoMuonV/Run summary/MultiTrack/general_tpToTkmuAssociation"
+    "/DQMData/Run 1/RecoMuonV/Run summary/MultiTrack/good_TrackerOnly_tpToTkmutkAssociation"
   }
   TList * dirList = makeDirectoryCollection(fileList,directories,1);
 
@@ -35,7 +37,7 @@ void note_tk_eff_table()
   TList * collection = makeObjectCollection(dirList,"efficPt");
   collection->Print();
 
-  double pt[] = {10.,100.,1000.};
+  double pt[] = {5.,10.,100.,200.,500.,1000.,2000.,3000.};
 
   TIter iterG(collection);
   TH1* h;

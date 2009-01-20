@@ -17,7 +17,7 @@ void note_glb_eff_table()
   gROOT->LoadMacro("adamGetObjMacros.C");
   gROOT->LoadMacro("adamMakeCollectionMacros.C");
   
-  TList * fileList = makeFileCollection("my2112FileList_all.txt");
+  TList * fileList = makeFileCollection("my2112FileList_high.txt");
   
   fileList->Print();
 
@@ -38,7 +38,7 @@ void note_glb_eff_table()
   }
 
   //  TList * collection = makeObjectCollection(dirList,"ptres_vs_eta_Sigma");
-  TList * collectionCompSta = makeObjectCollection(dirListComp,"Eff_GlbSta_Pt");
+  TList * collectionCompSta = makeObjectCollection(dirListComp,"Eff_GlbSta_Pt_mabh");
   collectionCompSta->Print();
 
   TList * collectionCompTk = makeObjectCollection(dirListComp,"Eff_GlbTk_Pt");

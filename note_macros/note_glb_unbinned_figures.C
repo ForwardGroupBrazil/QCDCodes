@@ -62,10 +62,10 @@ TLegend * note_glb_unbinned_figures()
   TString ec_quantity[] = {"sta_eff","tk_eff"};
   TString ec_quantity2[] = {"GlbSta","GlbTk"};
   TString ec_histo[] = {"Eff"};
-  TString ec_xAxis[] = {"Eta","Hit","Pt"};
-    //TString ec_xAxis[] = {"Eta_mabh","Hit_mabh","Pt_mabh"};
+  //TString ec_xAxis[] = {"Eta","Hit","Pt"};
+  TString ec_xAxis[] = {"Eta_mabh","Hit_mabh","Pt_mabh"};
   TString ec_xAxis2[] = {"_vs_eta","_vs_hit","_vs_pt"};
-  TString ec_XAxis[] = {"|#eta|","n Hits","p_{T} (GeV)"};
+  TString ec_XAxis[] = {"|#eta|","n Hits","p_{T} [GeV]"};
 
   int ec_canvasCounter = 01;
   TCanvas * ec_canvas;
@@ -75,9 +75,9 @@ TLegend * note_glb_unbinned_figures()
   TList * ec_graphCol;
 
   for (int iLevel=0;iLevel < 1; ++iLevel) {
-    for (int iQuantity=0;iQuantity < 2; ++iQuantity) {
+    for (int iQuantity=0;iQuantity < 1; ++iQuantity) {
       for (int iXaxis=0;iXaxis < 3; ++iXaxis) {
-	e_canvas = newCanvas(figDirName2_+"/efficiencies/"+ec_quantity[iQuantity]+ec_xAxis2[iXaxis]+"_0_500",ec_levelName[iLevel]+" "+ec_histo[0]+" "+ec_quantity[iQuantity]+ec_xAxis2[iXaxis]);
+	e_canvas = newCanvas(figDirName2_+"/efficiencies/"+ec_quantity[iQuantity]+ec_xAxis2[iXaxis]+"_0_500_mabh",ec_levelName[iLevel]+" "+ec_histo[0]+" "+ec_quantity[iQuantity]+ec_xAxis2[iXaxis]);
 
 	ec_objCol =  makeObjectCollection(dirListComposites,ec_histo[0]+"_"+ec_quantity2[iQuantity]+"_"+ec_xAxis[iXaxis]);
 	drawObjectCollection(ec_objCol,false);
@@ -101,7 +101,7 @@ TLegend * note_glb_unbinned_figures()
   TString e_histo[] = {"effic"};
   TString e_xAxis[] = {"","Pt","_vs_hit"};
   TString e_xAxis2[] = {"_vs_eta","_vs_pt","_vs_hit"};
-  TString e_XAxis[] = {"|#eta|","p_{T} (GeV)","n Hits"};
+  TString e_XAxis[] = {"|#eta|","p_{T} [GeV]","n Hits"};
 
   int e_canvasCounter = 01;
   TCanvas * e_canvas;
@@ -136,7 +136,7 @@ TLegend * note_glb_unbinned_figures()
     "/DQMData/Run 1/RecoMuonV/Run summary/"+dirNameRM_3
   }
 
-  TString legendPt[] = {"General Tracks","Stand Alone Muons","Global Muons"}
+  TString legendPtRM[] = {"General Tracks","Stand Alone Muons","Global Muons"}
 
   TList * dirListRM = makeDirectoryCollection(fileList,directoriesRM,3);
 
@@ -146,7 +146,7 @@ TLegend * note_glb_unbinned_figures()
   TString erm_histo[] = {"EffPhi","MisQProbPt","MisQProbEta"};
   TString erm_xAxis[] = {"phi","pt","eta"};
   TString erm_xAxis2[] = {"_vs_phi","_vs_misQPt","_vs_misQEta"};
-  TString erm_XAxis[] = {"#phi [rad]","p_{T} (GeV)","|#eta|"};
+  TString erm_XAxis[] = {"#phi [rad]","p_{T} [GeV]","|#eta|"};
 
   int erm_canvasCounter = 01;
   TCanvas * erm_canvas;
@@ -164,7 +164,7 @@ TLegend * note_glb_unbinned_figures()
 	erm_objCol =  makeObjectCollection(dirListRM,erm_histo[iQuantity]);
 	drawObjectCollection(erm_objCol,false);
 	erm_graphCol = makeTGfromTHCollection(erm_objCol);
-	drawObjectCollection(erm_graphCol,true,legendPt);
+	drawObjectCollection(erm_graphCol,true,legendPtRM);
 	((TGraph*)erm_graphCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.9,1.01);
 	((TGraph*)erm_graphCol->First())->GetHistogram()->GetYaxis()->SetTitle("Efficiency");
 	((TGraph*)erm_graphCol->First())->GetHistogram()->GetXaxis()->SetTitle(erm_XAxis[iQuantity]);

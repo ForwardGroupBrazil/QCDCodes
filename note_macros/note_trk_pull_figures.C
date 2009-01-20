@@ -69,7 +69,7 @@ TLegend * note_trk_pull_figures()
 		     
 		     };
   TString p_xAxis[]  = {"eta","phi"}; 
-  TString p_XAxis[]  = {"Eta","Phi"}; 
+  TString p_XAxis[]  = {"|#eta|","#phi [rad]"}; 
 
   TCanvas * p_canvas;
   TLegend * p_theLegend;
