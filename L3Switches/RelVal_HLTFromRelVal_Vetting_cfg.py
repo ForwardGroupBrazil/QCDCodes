@@ -14,10 +14,11 @@ process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(-1)
 )
 
-process.source = cms.Source("PoolSource",
+process.source = cms.Source(
+    "PoolSource",
     fileNames = cms.untracked.vstring(
-#    '/store/user/hyxu/TTbar-newStep3/newStep3-TTbar-0099.root',
-'/store/user/aeverett/note2112/SingleMuPt500/SingleMuPt500_cfi_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_7.root',
+    #    '/store/user/hyxu/TTbar-newStep3/newStep3-TTbar-0099.root',
+    '/store/user/aeverett/note2112/SingleMuPt500/SingleMuPt500_cfi_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_7.root',
     )
                             )
 
@@ -40,10 +41,23 @@ process.load("SimGeneral.HepPDTESSource.pythiapdt_cfi")
 process.load("HLTrigger.Configuration.HLT_2E30_cff")
 #process.schedule = process.HLTSchedule
 
-process.load("UserCode.L3Switches.SwitchToIOHit_cff")
+
+process.load("UserCode.L3Switches.SwitchToCombined_cff")
+#process.load("UserCode.L3Switches.SwitchToIOHit_cff")
 #process.load("UserCode.L3Switches.SwitchToOIHit_cff")
 #process.load("UserCode.L3Switches.SwitchToOIState_cff")
 
+process.DQMStore = cms.Service("DQMStore")
+process.TimerService = cms.Service("TimerService",
+                                   useCPUtime = cms.untracked.bool(True)
+                                   )
+process.TFileService = cms.Service("TFileService",
+                                   fileName = cms.string('TFS_timer.root')
+                                   )
+process.load("HLTrigger.Timer.timer_cfi")
+process.load("Analyzer.ModuleTimer.ModuleTimer_cfi")
+process.startTimer = cms.Path(process.myTimer)
+process.sumTimer = cms.Path(process.timerplot)
 
 # If you want to remake the TrackingParticle collection
 # redo the DigiLinks too
@@ -65,7 +79,19 @@ MuonHLTSchedule = cms.Schedule(
     process.HLT_L1MuOpen, process.HLT_L1Mu,
     )
 process.schedule = cms.Schedule()
+process.schedule.append(process.startTimer)
 process.schedule.extend( MuonHLTSchedule )
+process.schedule.append(process.sumTimer)
+
+process.load("Validation.RecoMuon.muonValidationHLT_cff")
+process.muonValidationHLT_step = cms.Path(process.recoMuonValidationHLT_seq)
+process.schedule.append(process.muonValidationHLT_step)
+
+#####
+#process.load("UserCode.L2L3PtAnalyzer.l2l3ptanalyzer_cfi")
+#process.pl2l3 = cms.Path(process.l2l3analyzer)
+#process.schedule.append(process.pl2l3)
+#####
 
 process.load("Validation.RecoMuon.muonValidationHLT_cff")
 process.muonValidationHLT_step = cms.Path(process.recoMuonValidationHLT_seq)
@@ -88,7 +114,7 @@ process.hltPoolOutput = cms.OutputModule("PoolOutputModule",
         dataTier = cms.untracked.string('RECO')
     ),
     basketSize = cms.untracked.int32(4096),
-    fileName = cms.untracked.string('file:HLTFromDigiRaw.root')
+    fileName = cms.untracked.string('file:validationEDM.root')
 )
 
 process.load("DQMServices.Components.MEtoEDMConverter_cfi")
@@ -96,10 +122,12 @@ process.MEtoEDMConverter_step = cms.Path(process.MEtoEDMConverter)
 
 process.schedule.append(process.MEtoEDMConverter_step)
 
+process.load("RecoMuon.TrackingTools.MuonServiceProxy_cff")
+
 # Bit Plotting
 process.bitSummary = cms.EDAnalyzer(
     "BitPlotting",
-    out = cms.untracked.string('file:bit.root'),
+    out = cms.untracked.string(''), #('file:bit.root'),
     HLTPaths = cms.vstring('HLT_L1MuOpen','HLT_L1Mu','HLT_L2Mu9',
                            'HLT_IsoMu15','HLT_IsoMu11','HLT_IsoMu9',
                            'HLT_Mu15','HLT_Mu13','HLT_Mu11','HLT_Mu9',
@@ -114,13 +142,15 @@ process.schedule.append( process.BitSummaryEndPath )
 # To include timing (via hltTimingSummary)
 process.PathTimerService = cms.Service( "PathTimerService" )
 process.timer = cms.EDProducer( "PathTimerInserter" )
-#process.hltPoolOutput.outputCommands.append('drop *')
+process.hltPoolOutput.outputCommands.append('drop *')
+process.hltPoolOutput.outputCommands.append('keep *_MEtoEDMConverter_*_*')
 process.hltPoolOutput.outputCommands.append('keep HLTPerformanceInfo_*_*_*')
 process.endp1 = cms.EndPath( process.timer + process.hltPoolOutput)
 
 process.schedule.append( process.endp1  )
 
 #process.muonCkfTrajectoryFilter.filterPset.maxNumberOfHits = 6
+
 process.mergedtruth.vertexDistanceCut = 1000
 process.muonTPSet.tip = 10000
 process.muonTPSet.lip = 10000
@@ -139,12 +169,14 @@ process.l3MuonMuTrackV.lipTP = 10000
 
 process.TrackAssociatorByPosDeltaR.method = 'posdr'
 process.TrackAssociatorByPosDeltaR.QCut = 0.1
+process.TrackAssociatorByPosDeltaR.propagator = 'SteppingHelixPropagatorAlong'
 
 import SimTracker.TrackAssociation.TrackAssociatorByPosition_cfi
 process.TrackAssociatorByPosDeltaR2 = SimTracker.TrackAssociation.TrackAssociatorByPosition_cfi.TrackAssociatorByPosition.clone()
 process.TrackAssociatorByPosDeltaR2.method = 'posdr'
 process.TrackAssociatorByPosDeltaR2.QCut = 0.2
 process.TrackAssociatorByPosDeltaR2.ComponentName = 'TrackAssociatorByDeltaR2'
-
+process.TrackAssociatorByPosDeltaR2.propagator = 'SteppingHelixPropagatorAlong'
+ 
 process.tpToL2TrackAssociation.associator = 'TrackAssociatorByDeltaR2'
 process.l2MuonTrackV.associators = 'TrackAssociatorByDeltaR2'

@@ -7,51 +7,51 @@ HLTConfigVersion = cms.PSet(
   tableName = cms.string('/dev/CMSSW_2_1_5/HLT/V11')
 )
 
-KFFittingSmoother = cms.ESProducer(
-    "KFFittingSmootherESProducer",
-    ComponentName = cms.string( "KFFittingSmoother" ),
-    Fitter = cms.string( "KFFitter" ),
-    Smoother = cms.string( "KFSmoother" ),
-    EstimateCut = cms.double( -1.0 ),
-    MinNumberOfHits = cms.int32( 5 ),
-    RejectTracks = cms.bool( True ),
-    BreakTrajWith2ConsecutiveMissing = cms.bool( False ),
-    NoInvalidHitsBeginEnd = cms.bool( False ),
-    appendToDataLabel = cms.string( "" )
-    )
-KFFitter = cms.ESProducer(
-    "KFTrajectoryFitterESProducer",
-    ComponentName = cms.string( "KFFitter" ),
-    Propagator = cms.string( "PropagatorWithMaterial" ),
-    Updator = cms.string( "KFUpdator" ),
-    Estimator = cms.string( "Chi2" ),
-    minHits = cms.int32( 3 ),
-    appendToDataLabel = cms.string( "" )
-    )
-KFSmoother = cms.ESProducer(
-    "KFTrajectorySmootherESProducer",
-    ComponentName = cms.string( "KFSmoother" ),
-    Propagator = cms.string( "PropagatorWithMaterial" ),
-    Updator = cms.string( "KFUpdator" ),
-    Estimator = cms.string( "Chi2" ),
-    errorRescaling = cms.double( 100.0 ),
-    minHits = cms.int32( 3 ),
-    appendToDataLabel = cms.string( "" )
-    )
+#KFFittingSmoother = cms.ESProducer(
+#    "KFFittingSmootherESProducer",
+#    ComponentName = cms.string( "KFFittingSmoother" ),
+#    Fitter = cms.string( "KFFitter" ),
+#    Smoother = cms.string( "KFSmoother" ),
+#    EstimateCut = cms.double( -1.0 ),
+#    MinNumberOfHits = cms.int32( 5 ),
+#    RejectTracks = cms.bool( True ),
+#    BreakTrajWith2ConsecutiveMissing = cms.bool( False ),
+#    NoInvalidHitsBeginEnd = cms.bool( False ),
+#    appendToDataLabel = cms.string( "" )
+#    )
+#KFFitter = cms.ESProducer(
+#    "KFTrajectoryFitterESProducer",
+#    ComponentName = cms.string( "KFFitter" ),
+#    Propagator = cms.string( "PropagatorWithMaterial" ),
+#    Updator = cms.string( "KFUpdator" ),
+#    Estimator = cms.string( "Chi2" ),
+#    minHits = cms.int32( 3 ),
+#    appendToDataLabel = cms.string( "" )
+#    )
+#KFSmoother = cms.ESProducer(
+#    "KFTrajectorySmootherESProducer",
+#    ComponentName = cms.string( "KFSmoother" ),
+#   Propagator = cms.string( "PropagatorWithMaterial" ),
+#    Updator = cms.string( "KFUpdator" ),
+#    Estimator = cms.string( "Chi2" ),
+#    errorRescaling = cms.double( 100.0 ),
+#    minHits = cms.int32( 3 ),
+#    appendToDataLabel = cms.string( "" )
+#    )
 
-hltL3TkTracksFromL2 = cms.EDProducer(
-     "TrackProducer",
-     TrajectoryInEvent = cms.bool( True ),
-     useHitsSplitting = cms.bool( False ),
-     clusterRemovalInfo = cms.InputTag( "" ),
-     alias = cms.untracked.string( "" ),
-     Fitter = cms.string( "KFFittingSmoother" ),
-     Propagator = cms.string( "PropagatorWithMaterial" ),
-     src = cms.InputTag( "hltL3TrackCandidateFromL2" ),
-     beamSpot = cms.InputTag( "hltOfflineBeamSpot" ),
-     TTRHBuilder = cms.string( "WithTrackAngle" ),
-     AlgorithmName = cms.string( "undefAlgorithm" )
-  )
+#hltL3TkTracksFromL2 = cms.EDProducer(
+#     "TrackProducer",
+#     TrajectoryInEvent = cms.bool( True ),
+#     useHitsSplitting = cms.bool( False ),
+#     clusterRemovalInfo = cms.InputTag( "" ),
+#     alias = cms.untracked.string( "" ),
+#     Fitter = cms.string( "KFFittingSmoother" ),
+#     Propagator = cms.string( "PropagatorWithMaterial" ),
+#     src = cms.InputTag( "hltL3TrackCandidateFromL2" ),
+#     beamSpot = cms.InputTag( "hltOfflineBeamSpot" ),
+#     TTRHBuilder = cms.string( "WithTrackAngle" ),
+#     AlgorithmName = cms.string( "undefAlgorithm" )
+#  )
  
 
 hltL3Muons = cms.EDProducer( "L3MuonProducer",
