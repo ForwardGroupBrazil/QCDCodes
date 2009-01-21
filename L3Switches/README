@@ -1,0 +1,18 @@
+For the combinedSeeder:
+
+1) in HLT_2E30_cff.py rename 
+	hltL3TrajectorySeed -> hltL3TrajectorySeedOrig
+
+2) in HLT_2E30_cff.py change the sequence 
+	HLTL3muonTkCandidateSequence = cms.Sequence(
+    	HLTDoLocalPixelSequence + HLTDoLocalStripSequence
+    	+ cms.SequencePlaceholder("comboSeeds_seq")
+    	+ cms.SequencePlaceholder("hltL3TrajectorySeed")
+    	+ hltL3TrackCandidateFromL2 )
+
+3) in HLT_2E30_cff.py comment out the module hltL3Muons
+
+4) in HLT_2E30_cff.py change the sequence
+	HLTL3muonrecoNocandSequence = cms.Sequence( 
+	HLTL3muonTkCandidateSequence + hltL3TkTracksFromL2 
+	+ cms.SequencePlaceholder('hltL3Muons') )
