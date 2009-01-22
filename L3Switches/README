@@ -1,5 +1,9 @@
 For the combinedSeeder:
 
+0) for CMSSW_2_2_3 use rev 1.90.2.19 of HLT_2E30_cff.py
+   V01-06-22 HLTrigger/Configuration
+   use V04-08-02 of RecoTracker/TkSeedGenerator
+
 1) in HLT_2E30_cff.py rename 
 	hltL3TrajectorySeed -> hltL3TrajectorySeedOrig
 

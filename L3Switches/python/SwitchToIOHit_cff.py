@@ -2,7 +2,8 @@ import FWCore.ParameterSet.Config as cms
 
 from HLTrigger.Configuration.HLT_2E30_cff import hltL3TrajectorySeedOrig
 
-from regularL3_cff import hltL3Muons
+#from regularL3_cff import hltL3Muons
+from regularL3_cff import *
 
 hltL3TrajectorySeed = cms.EDFilter("SeedCombiner",
     seedCollections = cms.VInputTag( 
