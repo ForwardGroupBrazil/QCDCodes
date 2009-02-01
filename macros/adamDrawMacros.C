@@ -12,12 +12,13 @@ TLegend *
 drawObjectCollection(TList * objectList_, bool draw_=true, TString * legend_ = 0)
 {
 
-  int color[] = { 1, 2, 4, 6, 8, 9,11,12,13,14,15,16,17,18,19,20,21};
+  //int color[] = { 1, 2, 3, 4, 6, 8, 9,11,12,13,14,15,16,17,18,19,20,21};
+  int color[] = { 1, 2, 4, 904, 419, 9,11,12,13,14,15,16,17,18,19,20,21};
   int style[] = {21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38};
   int lstyle[] ={ 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   int type = 0;
 
-  TLegend * myLegend = new TLegend(.35, .13, 0.65, .33, "");
+  TLegend * myLegend = new TLegend(.35, .15, 0.65, .35, "");
   myLegend->SetFillColor(0);
 
   TIter hIter(objectList_);
@@ -82,7 +83,7 @@ drawObjectCollection(TList * objectList_, bool draw_=true, TString * legend_ = 0
     }
     }
   }
-  if(draw_) myLegend->Draw("same");
+  //  if(draw_) myLegend->Draw("same");
   
   return myLegend;
 }
