@@ -21,7 +21,7 @@ TLegend * note_sta_noRPC_figures()
   //----------------------------------------------------
 
   TString dirName_("MultiTrack/standAloneMuons_UpdatedAtVtx_tpToStaAssociation");
-  TString dirName_2("MultiTrack/standAloneMuonsNoRPC_UpdatedAtVtx_tpToStaMuonNoUpAssociation");
+  TString dirName_2("MultiTrack/standAloneMuonsNoRPC_UpdatedAtVtx_tpToStaMuonNoRPCAssociation");
   TString figDirName_("standAlone/sta");
   TString figLongName_("Stand Alone Muons");
   TString figDirName2_("FigSTA");
@@ -77,10 +77,11 @@ TLegend * note_sta_noRPC_figures()
 	ec_objCol =  makeObjectCollection(dirListComposites,ec_histo[0]+"_"+ec_quantity2[iQuantity]+"_"+ec_xAxis[iXaxis]);
 	drawObjectCollection(ec_objCol,false);
 	ec_graphCol = makeTGfromTHCollection(ec_objCol);
-	drawObjectCollection(ec_graphCol,true,legendPt);
+	ec_theLegend = drawObjectCollection(ec_graphCol,true,legendPt);
 	((TGraph*)ec_graphCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.5,1.05);
 	((TGraph*)ec_graphCol->First())->GetHistogram()->GetYaxis()->SetTitle("Efficiency");
 	((TGraph*)ec_graphCol->First())->GetHistogram()->GetXaxis()->SetTitle(ec_XAxis[iXaxis]);
+	ec_theLegend->Draw("same");
       }
     }
   }
@@ -113,10 +114,11 @@ TLegend * note_sta_noRPC_figures()
 	e_objCol =  makeObjectCollection(dirList,e_histo[0]+e_xAxis[iXaxis]);
 	drawObjectCollection(e_objCol,false);
 	e_graphCol = makeTGfromTHCollection(e_objCol);
-	drawObjectCollection(e_graphCol,true,legendPt);
+	e_theLegend = drawObjectCollection(e_graphCol,true,legendPt);
 	((TGraph*)e_graphCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.5,1.05);
 	((TGraph*)e_graphCol->First())->GetHistogram()->GetYaxis()->SetTitle("Efficiency");
 	((TGraph*)e_graphCol->First())->GetHistogram()->GetXaxis()->SetTitle(e_XAxis[iXaxis]);
+	e_theLegend->Draw("same");
       }
     }
   }
@@ -155,11 +157,11 @@ TLegend * note_sta_noRPC_figures()
 	erm_objCol =  makeObjectCollection(dirListRM,erm_histo[iQuantity]);
 	drawObjectCollection(erm_objCol,false);
 	erm_graphCol = makeTGfromTHCollection(erm_objCol);
-	drawObjectCollection(erm_graphCol,true,legendPt);
+	erm_theLegend = drawObjectCollection(erm_graphCol,true,legendPt);
 	((TGraph*)erm_graphCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.5,1.05);
 	((TGraph*)erm_graphCol->First())->GetHistogram()->GetYaxis()->SetTitle("Efficiency");
 	((TGraph*)erm_graphCol->First())->GetHistogram()->GetXaxis()->SetTitle(erm_XAxis[iQuantity]);
-
+	erm_theLegend->Draw("same");
 	//      }
     }
   }

@@ -58,7 +58,7 @@ TLegend * note_sta_figures()
   TString ec_histo[] = {"Eff"};
   TString ec_xAxis[] = {"Eta","Hit","Pt"};
   TString ec_xAxis2[] = {"_vs_eta","_vs_hit","_vs_pt"};
-  TString ec_XAxis[] = {"|#eta|","n Hits","p_{T} [GeV]"};
+  TString ec_XAxis[] = {"|#eta|","n Hits","p_{T} [GeV/c]"};
 
   int ec_canvasCounter = 01;
   TCanvas * ec_canvas;
@@ -75,10 +75,11 @@ TLegend * note_sta_figures()
 	ec_objCol =  makeObjectCollection(dirListComposites,ec_histo[0]+"_"+ec_quantity2[iQuantity]+"_"+ec_xAxis[iXaxis]);
 	drawObjectCollection(ec_objCol,false);
 	ec_graphCol = makeTGfromTHCollection(ec_objCol);
-	drawObjectCollection(ec_graphCol,true,legendPt);
+	ec_theLegend = drawObjectCollection(ec_graphCol,true,legendPt);
 	((TGraph*)ec_graphCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.9,1.01);
 	((TGraph*)ec_graphCol->First())->GetHistogram()->GetYaxis()->SetTitle("Efficiency");
 	((TGraph*)ec_graphCol->First())->GetHistogram()->GetXaxis()->SetTitle(ec_XAxis[iXaxis]);
+	ec_theLegend->Draw("same");
       }
     }
   }
@@ -94,7 +95,7 @@ TLegend * note_sta_figures()
   TString e_histo[] = {"effic"};
   TString e_xAxis[] = {"","Pt","_vs_hit"};
   TString e_xAxis2[] = {"_vs_eta","_vs_pt","_vs_hit"};
-  TString e_XAxis[] = {"|#eta|","p_{T} [GeV]","n Hits"};
+  TString e_XAxis[] = {"|#eta|","p_{T} [GeV/c]","n Hits"};
 
   int e_canvasCounter = 01;
   TCanvas * e_canvas;
@@ -111,10 +112,11 @@ TLegend * note_sta_figures()
 	e_objCol =  makeObjectCollection(dirList,e_histo[0]+e_xAxis[iXaxis]);
 	drawObjectCollection(e_objCol,false);
 	e_graphCol = makeTGfromTHCollection(e_objCol);
-	drawObjectCollection(e_graphCol,true,legendPt);
+	e_theLegend = drawObjectCollection(e_graphCol,true,legendPt);
 	((TGraph*)e_graphCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.9,1.01);
 	((TGraph*)e_graphCol->First())->GetHistogram()->GetYaxis()->SetTitle("Efficiency");
 	((TGraph*)e_graphCol->First())->GetHistogram()->GetXaxis()->SetTitle(e_XAxis[iXaxis]);
+	e_theLegend->Draw("same");
       }
     }
   }
@@ -133,7 +135,7 @@ TLegend * note_sta_figures()
   TString erm_histo[] = {"EffPhi","MisQProbPt","MisQProbEta"};
   TString erm_xAxis[] = {"phi","pt","eta"};
   TString erm_xAxis2[] = {"_vs_phi","_vs_misQPt","_vs_misQEta"};
-  TString erm_XAxis[] = {"#phi [rad]","p_{T} [GeV]","|#eta|"};
+  TString erm_XAxis[] = {"#phi [rad]","p_{T} [GeV/c]","|#eta|"};
 
   int erm_canvasCounter = 01;
   TCanvas * erm_canvas;
@@ -151,11 +153,11 @@ TLegend * note_sta_figures()
 	erm_objCol =  makeObjectCollection(dirListRM,erm_histo[iQuantity]);
 	drawObjectCollection(erm_objCol,false);
 	erm_graphCol = makeTGfromTHCollection(erm_objCol);
-	drawObjectCollection(erm_graphCol,true,legendPt);
+	erm_theLegend = drawObjectCollection(erm_graphCol,true,legendPt);
 	((TGraph*)erm_graphCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.9,1.01);
 	((TGraph*)erm_graphCol->First())->GetHistogram()->GetYaxis()->SetTitle("Efficiency");
 	((TGraph*)erm_graphCol->First())->GetHistogram()->GetXaxis()->SetTitle(erm_XAxis[iQuantity]);
-
+	erm_theLegend->Draw("same");
 	//      }
     }
   }

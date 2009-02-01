@@ -82,10 +82,11 @@ TLegend * note_glb_unbinned_figures()
 	ec_objCol =  makeObjectCollection(dirListComposites,ec_histo[0]+"_"+ec_quantity2[iQuantity]+"_"+ec_xAxis[iXaxis]);
 	drawObjectCollection(ec_objCol,false);
 	ec_graphCol = makeTGfromTHCollection(ec_objCol);
-	drawObjectCollection(ec_graphCol,true);
+	ec_theLegend = drawObjectCollection(ec_graphCol,true);
 	((TGraph*)ec_graphCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.9,1.01);
 	((TGraph*)ec_graphCol->First())->GetHistogram()->GetYaxis()->SetTitle("Efficiency");
 	((TGraph*)ec_graphCol->First())->GetHistogram()->GetXaxis()->SetTitle(ec_XAxis[iXaxis]);
+	ec_theLegend->Draw("same");
       }
     }
   }
@@ -118,10 +119,11 @@ TLegend * note_glb_unbinned_figures()
 	e_objCol =  makeObjectCollection(dirList,e_histo[0]+e_xAxis[iXaxis]);
 	drawObjectCollection(e_objCol,false);
 	e_graphCol = makeTGfromTHCollection(e_objCol);
-	drawObjectCollection(e_graphCol,true,legendPt);
+	e_theLegend = drawObjectCollection(e_graphCol,true,legendPt);
 	((TGraph*)e_graphCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.9,1.01);
 	((TGraph*)e_graphCol->First())->GetHistogram()->GetYaxis()->SetTitle("Efficiency");
 	((TGraph*)e_graphCol->First())->GetHistogram()->GetXaxis()->SetTitle(e_XAxis[iXaxis]);
+	e_theLegend->Draw("same");
       }
     }
   }
@@ -164,11 +166,11 @@ TLegend * note_glb_unbinned_figures()
 	erm_objCol =  makeObjectCollection(dirListRM,erm_histo[iQuantity]);
 	drawObjectCollection(erm_objCol,false);
 	erm_graphCol = makeTGfromTHCollection(erm_objCol);
-	drawObjectCollection(erm_graphCol,true,legendPtRM);
+	erm_theLegend = drawObjectCollection(erm_graphCol,true,legendPtRM);
 	((TGraph*)erm_graphCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.9,1.01);
 	((TGraph*)erm_graphCol->First())->GetHistogram()->GetYaxis()->SetTitle("Efficiency");
 	((TGraph*)erm_graphCol->First())->GetHistogram()->GetXaxis()->SetTitle(erm_XAxis[iQuantity]);
-
+	erm_theLegend->Draw("same");
 	//      }
     }
   }

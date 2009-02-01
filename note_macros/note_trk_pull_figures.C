@@ -94,6 +94,7 @@ TLegend * note_trk_pull_figures()
 	p_theLegend->SetY1NDC(0.7);
 	p_theLegend->SetY2NDC(0.9);
 	p_theLegend->Modify();
+	p_theLegend->Draw("same");
 	p_canvas->Update();
       }
     }

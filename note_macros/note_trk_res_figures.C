@@ -70,7 +70,7 @@ TLegend * note_trk_res_figures()
 		     "ErrQPt"};
   TString xAxis[]  = {"eta","pt","phi"}; 
   TString xAxis2[]  = {"Eta","Pt","Phi"}; 
-  TString XAxis[]  = {"|#eta|","p_{T} (GeV/c)","#phi (rad)"}; 
+  TString XAxis[]  = {"|#eta|","p_{T}[GeV/c]","#phi[rad]"}; 
 
   int canvasCounter = 01;
   TCanvas * canvas;
@@ -99,6 +99,7 @@ TLegend * note_trk_res_figures()
 	theLegend->SetY1(0.7);
 	theLegend->SetY2(0.9);
 	theLegend->Modify();
+	theLegend->Draw("same");
 	canvas->Update();
       }
     }
@@ -132,6 +133,7 @@ TLegend * note_trk_res_figures()
 	theLegend->SetY1(0.7);
 	theLegend->SetY2(0.9);
 	theLegend->Modify();
+	theLegend->Draw("same");
 	canvas->Update();
       }
     }

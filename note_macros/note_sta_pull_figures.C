@@ -69,7 +69,7 @@ TLegend * note_sta_pull_figures()
 		     
 		     };
   TString p_xAxis[]  = {"eta","phi"}; 
-  TString p_XAxis[]  = {"Eta","Phi"}; 
+  TString p_XAxis[]  = {"|#eta|","#phi [rad]"}; 
 
   TCanvas * p_canvas;
   TLegend * p_theLegend;
@@ -94,6 +94,7 @@ TLegend * note_sta_pull_figures()
 	p_theLegend->SetY1NDC(0.7);
 	p_theLegend->SetY2NDC(0.9);
 	p_theLegend->Modify();
+	p_theLegend->Draw("same");
 	p_canvas->Update();
       }
     }

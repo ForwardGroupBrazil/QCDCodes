@@ -74,7 +74,7 @@ TLegend * note_glb_res_unbinned_figures()
 		     "ErrQPt"};
   TString xAxis[]  = {"eta","pt","phi"}; 
   TString xAxis2[]  = {"Eta","Pt","Phi"}; 
-  TString XAxis[]  = {"|#eta|","p_{T} (GeV/c)","#phi (rad)"}; 
+  TString XAxis[]  = {"|#eta|","p_{T}[GeV/c]","#phi[rad]"}; 
 
   int canvasCounter = 01;
   TCanvas * canvas;
@@ -103,6 +103,7 @@ TLegend * note_glb_res_unbinned_figures()
 	theLegend->SetY1(0.7);
 	theLegend->SetY2(0.9);
 	theLegend->Modify();
+	theLegend->Draw("same");
 	canvas->Update();
       }
     }
@@ -125,13 +126,12 @@ TLegend * note_glb_res_unbinned_figures()
       for (int iXaxis=0;iXaxis < 2; ++iXaxis) {
 	if(iXaxis>=1 && iQuantity==6) continue;
 
-	canvas = newCanvas("FigParam/resolutions/"+level[iLevel]+"_"+quantity[iQuantity]+"_vs_"+xAxis[iXaxis],"Resolutions "+levelName[iLevel]+" "+quantity[iQuantity]+"_vs_"+xAxis[iXaxis]);
+	canvas = newCanvas("FigParam/resolutions/"+level[iLevel]+"_"+quantity[iQuantity]+"_vs_"+xAxis[iXaxis]+"_unbinned","Resolutions "+levelName[iLevel]+" "+quantity[iQuantity]+"_vs_"+xAxis[iXaxis]);
 	
 	objCol = makeObjectCollection(dirList2,histo[iQuantity]+"_vs_"+xAxis2[iXaxis]);
 
 	fitCol = makeFitCollection(objCol,2);
 	((TGraph*)fitCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.00001,1.);
-	((TGraph*)fitCol->First())->GetHistogram()->GetYaxis()->SetRangeUser(0.,500.);
 	theLegend = drawObjectCollection(fitCol,true,legendPt);
 	((TGraph*)fitCol->First())->GetHistogram()->GetYaxis()->SetTitle(yTitle[iQuantity]);
 	((TGraph*)fitCol->First())->GetHistogram()->GetXaxis()->SetTitle(XAxis[iXaxis]);
@@ -141,6 +141,7 @@ TLegend * note_glb_res_unbinned_figures()
 	theLegend->SetY1(0.7);
 	theLegend->SetY2(0.9);
 	theLegend->Modify();
+	theLegend->Draw("same");
 	canvas->Update();
       }
     }

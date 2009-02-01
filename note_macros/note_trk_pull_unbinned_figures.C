@@ -91,7 +91,8 @@ TLegend * note_trk_pull_unbinned_figures()
 	p_theLegend->SetY1NDC(0.7);
 	p_theLegend->SetY2NDC(0.9);
 	p_theLegend->Modify();
-	p_theLegend->Delete();
+	//p_theLegend->Draw("same");
+	//p_theLegend->Delete();
 	p_canvas->Update();
 	//}
     }
