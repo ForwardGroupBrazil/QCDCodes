@@ -27,7 +27,7 @@ TGraph* fit(const TH2* histo, int fitType = 2){
   Int_t binx =  histo->GetXaxis()->GetNbins();
 
   //histo->RebinY(4);
-  //histo->RebinX(2);
+  //histo->RebinX(4);
 
   for (int i = 1; i <= binx ; i++) {
     TString iString(i);
@@ -44,6 +44,7 @@ TGraph* fit(const TH2* histo, int fitType = 2){
       //cout << "Range: " << x1 << " " << x2 << endl; 
 
       histoY->Fit(fitFcn,"QR0","",x1,x2);
+      //histoY->Fit(fitFcn,"Q0","");
 
 //      histoY->Fit(fitFcn->GetName(),"RME");
       double *par = fitFcn->GetParameters();
@@ -224,6 +225,76 @@ fit(const TH1* histo, int fitType = 2)
   if(yw) delete yw;
   if(eyw) delete eyw;
   if(yc) delete yc;
+  
+  return returnVal;
+}
+
+std::pair<double,double>
+fit(const TGraph* histo, int fitType = 1)
+{
+  static int i = 0;
+  i++;
+
+  vector<double> width;
+  vector<double> mass;
+
+  // Errors
+  vector<double> widthError;
+  vector<double> massError;
+  
+  // Chi2
+  vector<double> chi2;
+  
+  
+  if (true) {
+    
+    TString iString(i);   
+
+    float minFit = 0.0;
+    float maxFit = 0.8;
+
+    if (fitType==2) {
+      minFit = 0.8;
+      maxFit = 1.2;
+    }
+    if (fitType==3) {
+      minFit=1.2;
+      maxFit=2.4;
+    }
+
+    TF1 *fitFcn = new TF1(TString("l")+histo->GetName()+iString,"pol0",minFit,maxFit);
+
+    histo->Fit(fitFcn,"QR","");
+    double *par = fitFcn->GetParameters();
+    double *err = fitFcn->GetParErrors();
+    
+    // Values
+    mass.push_back(par[0]);
+
+    // Errors
+    massError.push_back(err[0]);
+    
+    if (fitFcn) delete fitFcn;
+  }
+  
+  const int nn= mass.size();
+
+  double *ym = new double[nn];
+  double *eym = new double[nn];
+
+  for (int j=0;j<nn;j++){
+    ym[j]=mass[j];
+    eym[j]=massError[j];
+  }
+  
+  if(nn>1) cout << "ERROR in fit macro: nn > 1 nn=" << nn << endl;
+  
+  std::pair<double,double> returnVal;
+  returnVal.first = ym[0]; 
+  returnVal.second = eym[0];
+
+  if(ym) delete ym;
+  if(eym) delete eym;
   
   return returnVal;
 }

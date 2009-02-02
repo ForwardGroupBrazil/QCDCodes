@@ -62,6 +62,7 @@ makeFitCollection(TList * objectList_,int fitType = 2)
 
   TGraph * fitGraph;
   //pair<double,double> fitPair;
+  TObjString * fitString;
 
   TIter iter(objectList_);
   TObject * obj;
@@ -81,6 +82,16 @@ makeFitCollection(TList * objectList_,int fitType = 2)
       fit(h1,fitType);
       //fitGraph->SetName(fitGraph->GetName()+iString);
       //fitList->Add(fitGraph);
+    }
+    else if( obj->IsA()->InheritsFrom("TGraph") ) {
+      TGraph * g1 = (TGraph*)obj;
+      std::pair<double,double> fitTest = fit(g1,fitType);
+      char buffer [50];
+      sprintf(buffer,"$%7.4f \\pm %4.2e $",100*fitTest.first,100*fitTest.second);
+      //printf("$%7.4f \\pm %4.2e $",100*fitTest.first,100*fitTest.second);
+
+      fitString = new TObjString(buffer);
+      fitList->Add(fitString);
     }
   }
   fitList->SetOwner();
