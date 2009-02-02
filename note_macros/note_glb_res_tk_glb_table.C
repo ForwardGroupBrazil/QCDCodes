@@ -3,8 +3,22 @@
 TLegend * note_glb_res_tk_glb_table()
 {
   FILE * pFile;
-  pFile = fopen ("FigParam/resolutions/global/tab_glb_res_pt_trk_glb_inclusive.tex","w");
-
+  //pFile = fopen ("tmpTable.tex","w");
+  pFile = fopen ("FigParam/resolutions/global/tab_glb_res_qpt_trk_glb_inclusive.tex","w");
+  fprintf(pFile,
+"\\begin{table}[!hb]
+  \\centering
+  \\caption[Comparison of the $q/\\pt$ resolution for the tracker system and the combined tracker and muon systems]{Resolution on $q/\\pt$ divided by pseudorapidity regions for
+    the different muon reconstruction steps. \\label{tab:qptcomparison}} 
+  \\tspace
+  \\resizebox*{1\\textwidth}{!}{
+    \\begin{tabular}{cccc}
+    \\toprule
+                        & \\multicolumn{3}{c}{$R(q/\\pt)$ (\\%)}  \\\\
+    \\pt{} (\\GeVc)       & \\multicolumn{3}{c}{Tracker/Global} \\\\
+                        &  Barrel & Overlap & End-caps \\\\
+    \\midrule \n"
+	  );
   //----------------------------------------------------
   // General macro setup
   //----------------------------------------------------
@@ -25,100 +39,127 @@ TLegend * note_glb_res_tk_glb_table()
   // General setup for files and directories
   //----------------------------------------------------
 
-  TString dirName_("RecoMuon_TrackAssoc/Trk");
-  TString dirName_2("RecoMuon_TrackAssoc/Glb");
-
   TList * fileList = makeFileCollection("my2112FileList_all.txt");
-
-  TString directoriesTrk[] = {
-    "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName_,
-  }
-
-  TString directoriesGlb[] = {
-    "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName_2,
-  }
-
-  TList * dirListTrk = makeDirectoryCollection(fileList,directoriesTrk,1);
-  TList * dirListGlb = makeDirectoryCollection(fileList,directoriesGlb,1);
-
-  TList * collectionBarrelTrk = makeObjectCollection(dirListTrk,"ErrPt_barrel");
-  TList * collectionOverlapTrk = makeObjectCollection(dirListTrk,"ErrPt_overlap");
-  TList * collectionEndcapTrk = makeObjectCollection(dirListTrk,"ErrPt_endcap");
-
-  TList * collectionBarrelGlb = makeObjectCollection(dirListGlb,"ErrPt_barrel");
-  TList * collectionOverlapGlb = makeObjectCollection(dirListGlb,"ErrPt_overlap");
-  TList * collectionEndcapGlb = makeObjectCollection(dirListGlb,"ErrPt_endcap");
-
-  //collectionBarrelTrk->Print();
 
   double pt[] = {1.,5.,10.,100.,200.,500.,1000.,2000.,3000.};
 
+  TString dirName_("MultiTrack/globalMuons_tpToGlbAssociation");
+  TString dirName2_("MultiTrack/general_tpToTkmuAssociation");
 
-  TIter iterBTrk(collectionBarrelTrk);
-  TH1 * hBTrk;
-  TIter iterOTrk(collectionOverlapTrk);
-  TH1 * hOTrk;
-  TIter iterETrk(collectionEndcapTrk);
-  TH1 * hETrk;
+  TString dirName3_("RecoMuon_TrackAssoc/Glb");
+  TString dirName4_("RecoMuon_TrackAssoc/Trk");
 
-  TIter iterBGlb(collectionBarrelGlb);
-  TH1 * hBGlb;
-  TIter iterOGlb(collectionOverlapGlb);
-  TH1 * hOGlb;
-  TIter iterEGlb(collectionEndcapGlb);
-  TH1 * hEGlb;
+  TString directories[] = {
+    "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName_
+  }
 
-  fprintf(pFile,
-"\\begin{table}[!hb]
-  \\centering
-  \\caption[Comparison of the $q/\\pt$ resolution for the tracker system and the combined tracker and muon systems]{Resolution on $q/\\pt$ divided by pseudorapidity regions for
-    the different muon reconstruction steps. \\label{tab:qptcomparison}} 
-  \\tspace
-  \\resizebox*{1\\textwidth}{!}{
-    \\begin{tabular}{cccc}
-    \\toprule
-                        & \\multicolumn{3}{c}{$R(q/\\pt)$ (\\%)}  \\\\
-    \\pt{} (\\GeVc)       & \\multicolumn{3}{c}{Tracker/Global} \\\\
-                        &  Barrel & Overlap & End-caps \\\\
-    \\midrule \n"
-	  );
+  TString directories2[] = {
+    "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName2_
+  }
+
+  TString directoriesRM3[] = {
+    "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName3_
+  }
+
+  TString directoriesRM4[] = {
+    "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName4_
+  }
+
+  TList * dirList = makeDirectoryCollection(fileList,directories,1);
+  TList * dirList2 = makeDirectoryCollection(fileList,directories2,1);
+  TList * dirList3 = makeDirectoryCollection(fileList,directoriesRM3,1);
+  TList * dirList4 = makeDirectoryCollection(fileList,directoriesRM4,1);
+
+  //----------------------------------------------------
+  // Now do each specific figure
+  //----------------------------------------------------
+
+  //----------------------------------------------------
+  // Resolutions
+  //----------------------------------------------------
+  
+  TString histo[] = {
+		     "ptres",
+		     "ErrP",
+		     "ErrQPt",
+		     "ErrPt"};
+
+  int jj = 2;
+
+  TList * glbCol;
+  TList * trkCol;
+
+  if(jj==0){
+    glbCol = makeObjectCollection(dirList,"ptres_vs_eta");
+    trkCol = makeObjectCollection(dirList2,"ptres_vs_eta");
+  }
+
+  if(jj==1) {
+    glbCol = makeObjectCollection(dirList3,"ErrP_vs_Eta");
+    trkCol = makeObjectCollection(dirList4,"ErrP_vs_Eta");
+  }
+
+  if(jj==2) {
+    glbCol = makeObjectCollection(dirList3,"ErrQPt_vs_Eta");
+    trkCol = makeObjectCollection(dirList4,"ErrQPt_vs_Eta");
+  }
+
+  if(jj==3) {
+    glbCol = makeObjectCollection(dirList3,"ErrPt_vs_Eta");
+    trkCol = makeObjectCollection(dirList4,"ErrPt_vs_Eta");
+  }
+
+  TList * fitColGlb = makeFitCollection(glbCol,2);
+  TList * fitColTrk = makeFitCollection(trkCol,2);
+
+  TList * trackerBuffer_B = makeFitCollection(fitColTrk,1);
+  TList * trackerBuffer_O = makeFitCollection(fitColTrk,2);
+  TList * trackerBuffer_E = makeFitCollection(fitColTrk,3);
+
+  TList * globalBuffer_B = makeFitCollection(fitColGlb,1);
+  TList * globalBuffer_O = makeFitCollection(fitColGlb,2);
+  TList * globalBuffer_E = makeFitCollection(fitColGlb,3);
+
+  trackerBuffer_B->Print();
+  globalBuffer_B->Print();
+  
+  TIter tkIter_B(trackerBuffer_B);
+  TIter glbIter_B(globalBuffer_B);
+  TIter tkIter_O(trackerBuffer_O);
+  TIter glbIter_O(globalBuffer_O);
+  TIter tkIter_E(trackerBuffer_E);
+  TIter glbIter_E(globalBuffer_E);
+
+  TObjString * Tk_B;
+  TObjString * Glb_B;
+  TObjString * Tk_O;
+  TObjString * Glb_O;
+  TObjString * Tk_E;
+  TObjString * Glb_E;
 
   int i = 0;
-  while ( (hBTrk = (TH1 *)iterBTrk() ) )  {
+
+  while( (Tk_B=(TObjString*)tkIter_B())) {
+    Glb_B = (TObjString*)glbIter_B();
+    Tk_O = (TObjString*)tkIter_O();
+    Glb_O = (TObjString*)glbIter_O();
+    Tk_E = (TObjString*)tkIter_E();
+    Glb_E = (TObjString*)glbIter_E();
     
-    hOTrk = (TH1*)iterOTrk();
-    hETrk = (TH1*)iterETrk();
+    fprintf(pFile,"$%d$ & %s / %s",pt[i],Tk_B->GetString().Data(),Glb_B->GetString().Data());
+    fprintf(pFile," & %s / %s",Tk_O->GetString().Data(),Glb_O->GetString().Data());
+    fprintf(pFile," & %s / %s",Tk_E->GetString().Data(),Glb_E->GetString().Data());
 
-    hBGlb = (TH1*)iterBGlb();
-    hOGlb = (TH1*)iterOGlb();
-    hEGlb = (TH1*)iterEGlb();
-
-    std::pair<double,double> fitPairBTrk = fit(hBTrk,2);
-    std::pair<double,double> fitPairOTrk = fit(hOTrk,2);
-    std::pair<double,double> fitPairETrk = fit(hETrk,2);
-
-    std::pair<double,double> fitPairBGlb = fit(hBGlb,2);
-    std::pair<double,double> fitPairOGlb = fit(hOGlb,2);
-    std::pair<double,double> fitPairEGlb = fit(hEGlb,2);
-
-    fprintf(pFile,"$%d$ & $%7.4f \\pm %4.2e $",pt[i],100*fitPairBTrk.first,100*fitPairBTrk.second);
-    fprintf(pFile," / $%7.4f \\pm %4.2e $",100*fitPairBGlb.first,100*fitPairBGlb.second);
-
-    fprintf(pFile," & $%7.4f \\pm %4.2e $",100*fitPairOTrk.first,100*fitPairOTrk.second);
-    fprintf(pFile," / $%7.4f \\pm %4.2e $",100*fitPairOGlb.first,100*fitPairOGlb.second);
-
-    fprintf(pFile," & $%7.4f \\pm %4.2e $",100*fitPairETrk.first,100*fitPairETrk.second);
-    fprintf(pFile," / $%7.4f \\pm %4.2e $",100*fitPairEGlb.first,100*fitPairEGlb.second);
-    fprintf(pFile,"\\\\ \n");
+   fprintf(pFile,"\\\\ \n");
     
     i++;
+    
   }
 
   fprintf(pFile,"    \\bottomrule
   \\end{tabular}
 }
 \\end{table}");
-
-    fclose(pFile);
-  //printCanvasesType(".eps");
+  
+  fclose(pFile);  
 }
