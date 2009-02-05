@@ -11,7 +11,7 @@ process.options = cms.untracked.PSet(
 #process.load("RecoMuon.Configuration.MessageLogger_cfi")
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(-1)
+    input = cms.untracked.int32(10)
 )
 
 process.source = cms.Source(
@@ -88,14 +88,10 @@ process.muonValidationHLT_step = cms.Path(process.recoMuonValidationHLT_seq)
 process.schedule.append(process.muonValidationHLT_step)
 
 #####
-#process.load("UserCode.L2L3PtAnalyzer.l2l3ptanalyzer_cfi")
-#process.pl2l3 = cms.Path(process.l2l3analyzer)
-#process.schedule.append(process.pl2l3)
+process.load("UserCode.L2L3PtAnalyzer.l2l3ptanalyzer_cfi")
+process.pl2l3 = cms.Path(process.l2l3analyzer)
+process.schedule.append(process.pl2l3)
 #####
-
-process.load("Validation.RecoMuon.muonValidationHLT_cff")
-process.muonValidationHLT_step = cms.Path(process.recoMuonValidationHLT_seq)
-process.schedule.append(process.muonValidationHLT_step)
 
 process.hltL1gtTrigReport = cms.EDAnalyzer( "L1GtTrigReport",
     UseL1GlobalTriggerRecord = cms.bool( False ),
@@ -152,8 +148,8 @@ process.schedule.append( process.endp1  )
 #process.muonCkfTrajectoryFilter.filterPset.maxNumberOfHits = 6
 
 process.mergedtruth.vertexDistanceCut = 1000
-process.muonTPSet.tip = 10000
-process.muonTPSet.lip = 10000
+#process.muonTPSet.tip = 10000
+#process.muonTPSet.lip = 10000
 process.l2MuonTrackV.tipTP = 10000
 process.l2MuonTrackV.lipTP = 10000
 process.l3MuonTrackV.tipTP = 10000
