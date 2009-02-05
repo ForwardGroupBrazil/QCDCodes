@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Tue Jan 20 14:12:47 EST 2009
-// $Id: L2L3PtAnalyzer.cc,v 1.1.2.5 2009/01/21 03:58:20 aeverett Exp $
+// $Id: L2L3PtAnalyzer.cc,v 1.2 2009/01/21 15:56:37 aeverett Exp $
 //
 //
 
@@ -36,6 +36,9 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ParameterSet/interface/InputTag.h"
+
+#include "DQMServices/Core/interface/DQMStore.h"
+#include "DQMServices/Core/interface/MonitorElement.h"
 
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
@@ -80,6 +83,9 @@ class L2L3PtAnalyzer : public edm::EDAnalyzer {
   edm::InputTag TPLabel_;
   edm::InputTag trkMuAssocLabel_;
 
+  std::string out;
+
+  DQMStore * theDQM;
   TrackAssociatorBase* trkMuAssociator_;
 
   TH1 * h_pdg_1;
@@ -123,7 +129,7 @@ L2L3PtAnalyzer::L2L3PtAnalyzer(const edm::ParameterSet& iConfig)
   L3TkLabel_ = iConfig.getParameter<InputTag>("L3TkLabel");
   TPLabel_ = iConfig.getParameter<InputTag>("TPLabel");
   trkMuAssocLabel_ = iConfig.getParameter<InputTag>("trkMuAssocLabel");
-
+  out = iConfig.getUntrackedParameter<std::string>("out");
 }
 
 
@@ -239,12 +245,16 @@ L2L3PtAnalyzer::beginJob(const edm::EventSetup& eventSetup)
   ESHandle<TrackAssociatorBase> trkMuAssocHandle;
   eventSetup.get<TrackAssociatorRecord>().get(trkMuAssocLabel_.label(), trkMuAssocHandle);
   trkMuAssociator_ = const_cast<TrackAssociatorBase*>(trkMuAssocHandle.product());
+
+  theDQM = 0;
+  theDQM = Service<DQMStore>().operator->();
+  edm::Service<DQMStore>()->setCurrentFolder("L2L3Pt");
   
   edm::Service<TFileService> fs;
   h_pdg_1 = fs->make<TH1F>("h_pdg_1","PDGId of Track 1",501,-0.5,500.5);
-  h_pdg_2 = fs->make<TH1F>("h_pdg_2","PDGId of Track 1",501,-0.5,500.5);
-  h_pdg_3 = fs->make<TH1F>("h_pdg_3","PDGId of Track 1",501,-0.5,500.5);
-  h_pdg_4 = fs->make<TH1F>("h_pdg_4","PDGId of Track 1",501,-0.5,500.5);
+  h_pdg_2 = fs->make<TH1F>("h_pdg_2","PDGId of Track 2",501,-0.5,500.5);
+  h_pdg_3 = fs->make<TH1F>("h_pdg_3","PDGId of Track 3",501,-0.5,500.5);
+  h_pdg_4 = fs->make<TH1F>("h_pdg_4","PDGId of Track 4",501,-0.5,500.5);
 
   h_Pt_sta=fs->make<TH1F>("h_Pt_sta","p_{T}^{#mu}",100,0.,1000.);
 
@@ -263,6 +273,7 @@ L2L3PtAnalyzer::beginJob(const edm::EventSetup& eventSetup)
 // ------------ method called once each job just after ending the event loop  ------------
 void 
 L2L3PtAnalyzer::endJob() {
+  if( out.size() != 0 ) edm::Service<DQMStore>()->save(out);
 }
 
 vector<RefToBase<Track> >
