@@ -17,8 +17,7 @@ process.maxEvents = cms.untracked.PSet(
 process.source = cms.Source(
     "PoolSource",
     fileNames = cms.untracked.vstring(
-    #    '/store/user/hyxu/TTbar-newStep3/newStep3-TTbar-0099.root',
-    '/store/user/aeverett/note2112/SingleMuPt500/SingleMuPt500_cfi_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_7.root',
+    '/store/relval/CMSSW_3_0_0_pre7/RelValTTbar/GEN-SIM-DIGI-RAW-HLTDEBUG/IDEAL_30X_v1/0006/0C412A42-42E8-DD11-BF69-001D09F2A690.root',
     )
                             )
 
@@ -28,7 +27,7 @@ process.load("Configuration.StandardSequences.MagneticField_cff")
 # Conditions: fake or frontier
 # process.load("Configuration.StandardSequences.FakeConditions_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
-process.GlobalTag.globaltag = 'IDEAL_V9::All'
+process.GlobalTag.globaltag = 'IDEAL_30X::All'
 
 process.load("Configuration.StandardSequences.L1Emulator_cff")
 # Choose a menu/prescale/mask from one of the choices
