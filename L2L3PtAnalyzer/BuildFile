@@ -8,7 +8,7 @@
 <use name=SimTracker/Records>
 <use name=PhysicsTools/UtilAlgos>
 <use name=FWCore/ServiceRegistry>
-<use name=PhysicsTools/UtilAlgos>
+#<use name=PhysicsTools/UtilAlgos>
 <use name=DQMServices/Core>
 <flags EDM_PLUGIN=1>
 <export>

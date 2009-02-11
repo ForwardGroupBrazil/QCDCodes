@@ -7,4 +7,6 @@ l2l3analyzer = cms.EDAnalyzer(
     L3TkLabel = cms.InputTag('hltL3TkTracksFromL2'),
     TPLabel = cms.InputTag('mergedtruth:MergedTrackTruth'),
     trkMuAssocLabel = cms.InputTag('TrackAssociatorByHits'),
+    ignoremissingl2collection=cms.untracked.bool(True),
+    ignoremissingl3tkcollection=cms.untracked.bool(True),
 )

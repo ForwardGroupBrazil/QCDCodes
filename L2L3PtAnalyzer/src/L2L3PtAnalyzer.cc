@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Tue Jan 20 14:12:47 EST 2009
-// $Id: L2L3PtAnalyzer.cc,v 1.2 2009/01/21 15:56:37 aeverett Exp $
+// $Id: L2L3PtAnalyzer.cc,v 1.3 2009/02/05 21:48:00 aeverett Exp $
 //
 //
 
@@ -83,6 +83,9 @@ class L2L3PtAnalyzer : public edm::EDAnalyzer {
   edm::InputTag TPLabel_;
   edm::InputTag trkMuAssocLabel_;
 
+  bool ignoremissingl2collection;
+  bool ignoremissingl3tkcollection;
+
   std::string out;
 
   DQMStore * theDQM;
@@ -129,7 +132,9 @@ L2L3PtAnalyzer::L2L3PtAnalyzer(const edm::ParameterSet& iConfig)
   L3TkLabel_ = iConfig.getParameter<InputTag>("L3TkLabel");
   TPLabel_ = iConfig.getParameter<InputTag>("TPLabel");
   trkMuAssocLabel_ = iConfig.getParameter<InputTag>("trkMuAssocLabel");
-  out = iConfig.getUntrackedParameter<std::string>("out");
+  out = iConfig.getParameter<std::string>("out");
+  ignoremissingl2collection = iConfig.getUntrackedParameter<bool>("ignoremissingtrackcollection",false);
+  ignoremissingl3tkcollection = iConfig.getUntrackedParameter<bool>("ignoremissingtrackcollection",false);
 }
 
 
@@ -157,19 +162,22 @@ L2L3PtAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    const TrackingParticleCollection tPC = *(TPCollectionH.product());
    
    edm::Handle<TrackCollection>  L2Collection;
-   iEvent.getByLabel(L2Label_, L2Collection);
+   bool l2Available = iEvent.getByLabel(L2Label_, L2Collection);
 
    LogDebug("L2L3PtAnalyzer")<<"L2Collection size "<< L2Collection->size();
 
    edm::Handle<View<Track> >  L3TkCollection;
-   iEvent.getByLabel(L3TkLabel_, L3TkCollection);
-   View<Track> L3TkColl = *(L3TkCollection.product());
+   bool l3TkAvailable = iEvent.getByLabel(L3TkLabel_, L3TkCollection);
 
+   if (!l2Available || !l3TkAvailable) return;
+
+   View<Track> L3TkColl = *(L3TkCollection.product());
    LogDebug("L2L3PtAnalyzer")<<"L3TkCollection size "<< L3TkCollection->size();
 
    reco::RecoToSimCollection recSimColl;
    reco::SimToRecoCollection simRecColl;
    
+   if(l3TkAvailable) {
    LogTrace("L2L3PtAnalyzer") << "Calling associateRecoToSim method" << "\n";
    recSimColl=trkMuAssociator_->associateRecoToSim(L3TkCollection,
 						   TPCollectionH,
@@ -179,7 +187,8 @@ L2L3PtAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    simRecColl=trkMuAssociator_->associateSimToReco(L3TkCollection,
 						   TPCollectionH, 
 						   &iEvent);
-   
+   }
+
    for(TrackCollection::size_type i=0; i<L2Collection->size(); ++i){
      reco::TrackRef staTrack(L2Collection,i);
      vector<RefToBase<Track> > seededTkCollection = getSeededTkCollection(staTrack,L3TkCollection);     
