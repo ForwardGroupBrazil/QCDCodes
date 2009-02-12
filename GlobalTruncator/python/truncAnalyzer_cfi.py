@@ -2,13 +2,25 @@ import FWCore.ParameterSet.Config as cms
 from RecoMuon.TrackingTools.MuonServiceProxy_cff import MuonServiceProxy
 
 from Validation.RecoTrack.TrackingParticleSelectionForEfficiency_cfi import *
+
 truncAnalyzer = cms.EDAnalyzer(
     "TruncAnalyzer",
     MuonServiceProxy,
-    TrackingParticleSelectionForEfficiency,
+    #TrackingParticleSelectionForEfficiency,
+    src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
+    pdgIdTP = cms.vint32(13, -13),
+    tipTP = cms.double(3.5),
+    lipTP = cms.double(30.0),
+    minHitTP = cms.int32(0),
+    ptMinTP = cms.double(0.9),
+    minRapidityTP = cms.double(-2.4),
+    maxRapidityTP = cms.double(2.4),
+    signalOnlyTP = cms.bool(True),
+    chargedOnlyTP = cms.bool(True),
 
     
-    simLabel = cms.InputTag("mergedtruth","MergedTrackTruth"),
+    #simLabel = cms.InputTag("mergedtruth","MergedTrackTruth"),
+    simLabel = cms.InputTag("muonTP"),
     glbMuLabel = cms.InputTag("globalMuons"),
     
     glbMuAssocLabel = cms.InputTag("tpToGlbTrackAssociation"),
@@ -37,6 +49,14 @@ truncAnalyzer = cms.EDAnalyzer(
     cms.InputTag("globalTrunc:picky3"),
     cms.InputTag("globalTrunc:picky4"),
     cms.InputTag("globalTrunc:picky5"),
+    cms.InputTag("globalTrunc:picky5"),
+    cms.InputTag("globalTrunc:hit"),
+    cms.InputTag("globalTrunc:hit0"),
+    cms.InputTag("globalTrunc:hit1"),
+    cms.InputTag("globalTrunc:hit2"),
+    cms.InputTag("globalTrunc:hit3"),
+    cms.InputTag("globalTrunc:hit4"),
+    cms.InputTag("globalTrunc:hit5"),    
     ),
 
     minStations = cms.untracked.uint32(4),
