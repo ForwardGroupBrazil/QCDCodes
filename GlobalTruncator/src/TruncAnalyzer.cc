@@ -74,6 +74,7 @@ struct TruncAnalyzer::TruncME {
     if(simEta > 1.2 && simEta <= 2.4) hResPEndcap_ ->Fill(errP );
 
     std::pair<int,int> nStation = countStations(recoRef);
+    LogDebug("TruncAnalyzer")<<nStation.first<<" " <<nStation.second;
     hNStations_->Fill(nStation.first);
     hLastStation_->Fill(nStation.second);
   };
@@ -265,7 +266,7 @@ void TruncAnalyzer::analyze(const Event& event, const EventSetup& eventSetup)
   Handle<TrackingParticleCollection> simHandle;
   event.getByLabel(simLabel_, simHandle);
   const TrackingParticleCollection simColl = *(simHandle.product());
-  
+
   // Get Muon Tracks
   Handle<View<Track> > glbColl;
   event.getByLabel(glbMuLabel_, glbColl);
@@ -282,32 +283,35 @@ void TruncAnalyzer::analyze(const Event& event, const EventSetup& eventSetup)
   Handle<RecoToSimCollection> glbMuToSimHandle;
   event.getByLabel(glbMuAssocLabel_, glbMuToSimHandle);
   glbToSimColl = *(glbMuToSimHandle.product());
-  
+  LogDebug("TruncAnalyzer") << simColl.size();
+  LogDebug("TruncAnalyzer") << simToGlbColl.size();
   for(TrackingParticleCollection::size_type i=0; i<simColl.size(); i++) {
     TrackingParticleRef simRef(simHandle, i);
     const TrackingParticle* simTP = simRef.get();
+
     if ( ! tpSelector_(*simTP) ) continue;
-    
     //const double simPt  = simRef->pt();
-    
+
     // Get sim-reco association for a simRef
     vector<pair<RefToBase<Track>, double> > glbMuRefV;
-    
+
     if ( simToGlbColl.find(simRef) != simToGlbColl.end() ) {
+
       glbMuRefV = simToGlbColl[simRef];
-      
+
       if ( ! glbMuRefV.empty() ) {
 	const reco::TrackRef glbMuTrackRef = glbMuRefV.begin()->first.castTo<TrackRef >();
 
 	//
 	std::pair<int,int> count = V_truncME[0]->countStations(glbMuTrackRef);
 	//
+
 	if(count.first >= minStations_)	
 	  for (unsigned int www=0;www<label.size();www++){
 	    
 	    edm::Handle<reco::TrackToTrackMap> truncAssoMap;
 	    bool map = event.getByLabel(label[www],truncAssoMap);
-	    
+	    //LogDebug("TruncAnalyzer")<<label[www]<<" " <<map;
 	    reco::TrackToTrackMap::const_iterator iEnd;
 	    reco::TrackToTrackMap::const_iterator iii;
 	    if(map) {
