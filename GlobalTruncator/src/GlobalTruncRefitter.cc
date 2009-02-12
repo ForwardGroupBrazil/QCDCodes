@@ -4,8 +4,8 @@
  *  Description:
  *
  *
- *  $Date: 2008/12/19 07:44:57 $
- *  $Revision: 1.5 $
+ *  $Date: 2008/12/19 20:48:27 $
+ *  $Revision: 1.6 $
  *
  *  Authors :
  *  P. Traczyk, SINS Warsaw
@@ -219,10 +219,13 @@ vector<Trajectory> GlobalTruncRefitter::refit(const reco::Track& globalTrack,
       outputTraj = transform(globalTrack, track, selectedRecHits);
     }     
   } else if (theMuonHitsOption == 2 )  {
-      getFirstHits(globalTrack, allRecHits, fmsRecHits, theMuonHitsSubOption);
-      outputTraj = transform(globalTrack, track, fmsRecHits);
-    } 
-
+    getFirstHits(globalTrack, allRecHits, fmsRecHits, theMuonHitsSubOption);
+    outputTraj = transform(globalTrack, track, fmsRecHits);
+  }  else if (theMuonHitsOption == 5 )  {
+    getFirstHits(globalTrack, allRecHits, fmsRecHits, theMuonHitsSubOption);
+    outputTraj = transform(globalTrack, track, fmsRecHits);
+  } 
+  
   if (outputTraj.size()) {
     LogTrace(theCategory) << "Refitted pt: " << outputTraj.front().firstMeasurement().updatedState().globalParameters().momentum().perp() << endl;
     return outputTraj;
@@ -392,12 +395,14 @@ void GlobalTruncRefitter::getFirstHits(const reco::Track& muon,
   bool csc_2 = false;
   bool csc_3 = false;
   bool csc_4 = false;
+  int nHits=0;
   for (ConstRecHitContainer::const_iterator ihit = all.begin(); ihit != all.end(); ihit++ ) {
 
     if ( !(*ihit)->isValid() ) continue;
     station1 = -999; station2 = -999;
     DT_station = -999; CSC_station = -999;
     // store muon hits one at a time.
+    nHits++;
     first.push_back(*ihit);
     DetId id = (*ihit)->geographicalId();
 
@@ -475,7 +480,7 @@ void GlobalTruncRefitter::getFirstHits(const reco::Track& muon,
       
       // 1st hit is in station 1 and second hit is in a different station
       // or an rpc (if station = -999 it could be an rpc hit)
-      if( theMuonHitsSubOption == -1 && ( (station1 != -999) && ((station2 == -999) || (station2 > station1)) ) ) { 
+      if( theMuonHitsOption ==2 && theMuonHitsSubOption == -1 && ( (station1 != -999) && ((station2 == -999) || (station2 > station1)) ) ) { 
 	LogTrace(theCategory) << " station 1 = "<<station1 
 			      <<", r = "<< (*ihit)->globalPosition().perp()
 			      <<", z = "<< (*ihit)->globalPosition().z() << ", "; 
@@ -485,7 +490,7 @@ void GlobalTruncRefitter::getFirstHits(const reco::Track& muon,
 			      <<", z = "<<(*(nexthit))->globalPosition().z() << ", ";
 	return;
       }
-      else if ( theMuonHitsSubOption != -1 && (n_dt+n_csc > theMuonHitsSubOption) ) {
+      else if ( theMuonHitsOption == 2 && theMuonHitsSubOption != -1 && (n_dt+n_csc > theMuonHitsSubOption) ) {
 	LogTrace(theCategory) << " station 1 = "<<station1 
 			      <<", r = "<< (*ihit)->globalPosition().perp()
 			      <<", z = "<< (*ihit)->globalPosition().z() << ", "; 
@@ -495,6 +500,9 @@ void GlobalTruncRefitter::getFirstHits(const reco::Track& muon,
 			      <<", z = "<<(*(nexthit))->globalPosition().z() << ", ";
 	return;
       } //end station1 not -999 and (station2 not -999 or station2 > station1) 
+      else if (theMuonHitsOption == 5 && theMuonHitsSubOption != -1 && nHits > theMuonHitsSubOption ) {
+	return;
+      }
     } //end nexthit isValid and not end
     else if ( (nexthit==all.end()) && (station1!=-999) ) {
       LogTrace(theCategory) << " station 1 = "<< station1
