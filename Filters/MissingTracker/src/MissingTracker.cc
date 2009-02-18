@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam EVERETT
 //         Created:  Fri May 30 14:00:49 CEST 2008
-// $Id$
+// $Id: MissingTracker.cc,v 1.1 2008/10/20 20:44:13 aeverett Exp $
 //
 //
 
@@ -24,6 +24,7 @@
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
+//#include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -48,6 +49,16 @@
 #include "DQMServices/Core/interface/MonitorElement.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 
+#include "RecoMuon/TrackingTools/interface/MuonServiceProxy.h"
+
+#include "TrackingTools/TransientTrackingRecHit/interface/TransientTrackingRecHitBuilder.h"
+#include "TrackingTools/TransientTrackingRecHit/interface/TransientTrackingRecHit.h"
+#include "TrackingTools/TrajectoryState/interface/TrajectoryStateTransform.h"
+#include "TrackingTools/Records/interface/TrackingComponentsRecord.h"
+#include "TrackingTools/Records/interface/TransientRecHitRecord.h"
+
+
+
 #include <TH1F.h>
 #include <TH2F.h>
 
@@ -69,10 +80,26 @@ private:
   virtual void beginJob(const edm::EventSetup&) ;
   virtual void analyze(const edm::Event&, const edm::EventSetup&);
   virtual void endJob() ;
-  //  void printHits(const TrackingRecHit::TrackingRecHitCollection& hits) const;
+  virtual void setEvent(const edm::Event& event);
+  virtual int countTrackerHits(const reco::Track& track) const;
+  virtual int countMuonHits(const reco::Track& track) const;
+  virtual TransientTrackingRecHit::ConstRecHitContainer getTransientRecHits(const reco::Track& track) const;
+  virtual void printHits(const TransientTrackingRecHit::ConstRecHitContainer& hits) const;
   // ----------member data ---------------------------
   edm::InputTag muonLabel_;
   edm::InputTag glbTrackLabel_;
+
+  MuonServiceProxy * theService;
+  std::string theTrackerRecHitBuilderName;
+  edm::ESHandle<TransientTrackingRecHitBuilder> theTrackerRecHitBuilder;
+  
+  std::string theMuonRecHitBuilderName;
+  edm::ESHandle<TransientTrackingRecHitBuilder> theMuonRecHitBuilder;
+
+  std::string theTrackerPropagatorName;
+  
+  unsigned long long theCacheId_TRH;
+  bool theRPCInTheFit;
 
   double  min, max;
   int nint;
@@ -121,6 +148,20 @@ MissingTracker::MissingTracker(const edm::ParameterSet& iConfig) :
   out = iConfig.getParameter<std::string>("out");
   dirName_ = iConfig.getParameter<std::string>("dirName");
   
+  // the service parameters
+  edm::ParameterSet serviceParameters 
+    = iConfig.getParameter<edm::ParameterSet>("ServiceParameters");
+  theService = new MuonServiceProxy(serviceParameters);
+
+  theRPCInTheFit = iConfig.getParameter<bool>("RefitRPCHits");
+
+  theTrackerPropagatorName = iConfig.getParameter<std::string>("TrackerPropagator");
+
+  theTrackerRecHitBuilderName = iConfig.getParameter<std::string>("TrackerRecHitBuilder");
+  theMuonRecHitBuilderName = iConfig.getParameter<std::string>("MuonRecHitBuilder");  
+
+  theCacheId_TRH = 0;
+
 }
 
 
@@ -129,7 +170,7 @@ MissingTracker::~MissingTracker()
  
    // do anything here that needs to be done at desctruction time
    // (e.g. close files, deallocate resources etc.)
-
+  if ( theService ) delete theService;
 }
 
 
@@ -144,17 +185,7 @@ MissingTracker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    using namespace edm;
    using namespace std;
 
-
-
-#ifdef THIS_IS_AN_EVENT_EXAMPLE
-   Handle<ExampleData> pIn;
-   iEvent.getByLabel("example",pIn);
-#endif
-   
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-   ESHandle<SetupData> pSetup;
-   iSetup.get<SetupRecord>().get(pSetup);
-#endif
+   setEvent(iEvent);
 
    LogTrace("MissingTracker")<<"Event number: " << iEvent.id().event();
 
@@ -163,39 +194,39 @@ MissingTracker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    iEvent.getByLabel(muonLabel_,muons);
    //   const reco::TrackCollection muons = *(muonHandle.product());
 
-   reco::TrackRef ttrk;
-   reco::TrackRef strk;
-   reco::TrackRef gtrk;
-   
-   int hitTk = 0;
-   int hitGlbTk = 0;
-   int hitSta = 0;
-   int hitGlbSta = 0;
-   int hitGlb = 0;
 
+   
    for (reco::MuonCollection::const_iterator muon = muons->begin(); muon != muons->end(); ++muon) {
+     reco::TrackRef ttrk;
+     reco::TrackRef strk;
+     reco::TrackRef gtrk;
+     
      if(muon->isGlobalMuon()) {
+       int hitTk = 0;
+       int hitGlbTk = 0;
+       int hitSta = 0;
+       int hitGlbSta = 0;
+       int hitGlb = 0;
+       
        ttrk = muon->track();
        strk = muon->standAloneMuon();
        gtrk = muon->combinedMuon();
-       //
        
        if( ttrk.isAvailable() ) { 	
-	 hitTk = ttrk.get()->hitPattern().numberOfValidTrackerHits();
+	 hitTk = countTrackerHits(*ttrk);
        } else  edm::LogWarning("MissingTracker")<<"No ttrk";     
        
        if( strk.isAvailable() ) { 
-	 hitSta = strk.get()->hitPattern().numberOfValidMuonHits();
+	 hitSta = countMuonHits(*strk);
        } else  edm::LogWarning("MissingTracker")<<"No strk";     
        
        if( gtrk.isAvailable() ) { 
-	 hitGlbTk = gtrk.get()->hitPattern().numberOfValidTrackerHits();
-	 hitGlbSta = gtrk.get()->hitPattern().numberOfValidMuonHits();
-	 hitGlb = gtrk.get()->hitPattern().numberOfValidHits();
+	 hitGlbTk = countTrackerHits(*gtrk);
+	 hitGlbSta = countMuonHits(*gtrk);
+	 hitGlb = gtrk->recHitsSize();
+	 //gtrk.get()->hitPattern().print();
        } else  edm::LogWarning("MissingTracker")<<"No gtrk";     
 
-       ////-----
-       
        h_hitsTk->Fill(hitTk);
        h_hitsGlbTk->Fill(hitGlbTk);
        h_hitsSta->Fill(hitSta);
@@ -213,111 +244,40 @@ MissingTracker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
        
        h_lostHitsTk_eta->Fill(muon->eta(),hitTk-hitGlbTk);
        h_lostHitsSta_eta->Fill(muon->eta(),hitSta-hitGlbSta);
-       
-       
-       LogTrace("MissingTracker")<<"Slava    Tk  " << hitTk;
-       LogTrace("MissingTracker")<<"Slava GlbTk  " << hitGlbTk;
+              
+       LogTrace("MissingTracker")<<"Slava      Tk  " << hitTk;
+       LogTrace("MissingTracker")<<"Slava   GlbTk  " << hitGlbTk;
        LogTrace("MissingTracker")<<"Slava deltaTk  " << hitTk - hitGlbTk;
-       LogTrace("MissingTracker")<<"Slava    Mu  " << hitSta;
-       LogTrace("MissingTracker")<<"Slava GlbMu  " << hitGlbSta;
+       LogTrace("MissingTracker")<<"Slava      Mu  " << hitSta;
+       LogTrace("MissingTracker")<<"Slava   GlbMu  " << hitGlbSta;
        LogTrace("MissingTracker")<<"Slava deltaMu  " << hitSta - hitGlbSta;
-     }
-
-     //}
-     // ADAM
-     
-     
-     if(gtrk.isAvailable()) LogTrace("MissingTracker") << "Number of Glb Hits: " << gtrk->recHitsSize() << std::endl;
-     //     ConstRecHitContainer muonRecHits;
-     for (trackingRecHit_iterator hit = muon->combinedMuon()->recHitsBegin();  hit != muon->combinedMuon()->recHitsEnd();  ++hit) {
-       //       muonRecHits.push_back(*hit);
-       //       const GlobalPoint& pos = (*hit)->globalPosition();
-       int idNum =  (*hit)->geographicalId();
-       if((*hit)->isValid()) LogTrace("MissingTracker")
-			       //	 << "r = " << sqrt(pos.x() * pos.x() + pos.y() * pos.y())
-			       //	 << "  z = " << pos.z()
-       	 << "  dimension = " << (*hit)->dimension()
-	 << "  " << idNum
-	 << "  " << (*hit)->geographicalId().det()
-	 << "  " << (*hit)->geographicalId().subdetId();
-     }    
-     
-     if(strk.isAvailable()) LogTrace("MissingTracker") << "Number of Sta Hits: " << strk->recHitsSize() << std::endl;
-     for (trackingRecHit_iterator hit = muon->standAloneMuon()->recHitsBegin();  hit != muon->standAloneMuon()->recHitsEnd();  ++hit) {
-       //       muonRecHits.push_back(*hit);
-       //       const GlobalPoint& pos = (*hit)->globalPosition();
-       int idNum =  (*hit)->geographicalId();
-       if((*hit)->isValid()) LogTrace("MissingTracker")
-	 //	 << "r = " << sqrt(pos.x() * pos.x() + pos.y() * pos.y())
-	 //	 << "  z = " << pos.z()
-       	 << "  dimension = " << (*hit)->dimension()
-	 << "  " << idNum
-	 << "  " << (*hit)->geographicalId().det()
-	 << "  " << (*hit)->geographicalId().subdetId();
-     }
-     //     printHits(muonRecHits);
-
-     if(ttrk.isAvailable()) LogTrace("MissingTracker") << "Number of Tk Hits: " << ttrk->recHitsSize() << std::endl;
-     for (trackingRecHit_iterator hit = muon->track()->recHitsBegin();  hit != muon->track()->recHitsEnd();  ++hit) {
-       //       const GlobalPoint& pos = (*hit)->globalPosition();
-       int idNum =  (*hit)->geographicalId();
-       if((*hit)->isValid()) LogTrace("MissingTracker") 
-	 //	 << "r = " << sqrt(pos.x() * pos.x() + pos.y() * pos.y())
-	 //	 << "  z = " << pos.z()
-       	 << "  dimension = " << (*hit)->dimension()
-       	 << "  " << idNum
-       	 << "  " << (*hit)->geographicalId().det()
-       	 << "  " << (*hit)->geographicalId().subdetId();
-       else LogTrace("MissingTracker") << "invalid hit";
-     }
-     //LogDebug("MissingTracker");  
-     // end ADAM
-   }
-
-   ///-----
-   /*
-
-   //LogDebug("MissingTracker");  
-   //
-   // Jim's code
-   //
-   edm::Handle<reco::TrackCollection> tracks;
-   iEvent.getByLabel(glbTrackLabel_, tracks);
-   //LogDebug("MissingTracker");  
-   for (reco::TrackCollection::const_iterator track = tracks->begin();  track != tracks->end();  ++track) {   //LogDebug("MissingTracker");  
-     //LogTrace("MissingTracker") << "track eta = " << track->eta();
-     bool trackerhits = false;
-     for (trackingRecHit_iterator hit = track->recHitsBegin();  hit != track->recHitsEnd();  ++hit) {
-       if ((*hit)->geographicalId().det() == DetId::Tracker) {
-	 trackerhits = true;
+       LogTrace("MissingTracker")<<"Slava     Glb  " << hitGlb;
+ 
+       if(ttrk.isAvailable()) {
+	 LogTrace("MissingTracker") << "Number of Tk Hits: " << ttrk->recHitsSize() << std::endl;
+	 printHits(getTransientRecHits(*ttrk));
        }
-       
-       //       std::cout << "    hit id = " << (*hit)->geographicalId() << " pos = " << (*hit)->localPosition() << std::endl;
-     }
-     //LogDebug("MissingTracker");  
-     if (!trackerhits) {
-       edm::LogWarning("MissingTracker") << "This one!!!" << std::endl;
-          //LogDebug("MissingTracker");  
-       for (trackingRecHit_iterator hit = track->recHitsBegin();  hit != track->recHitsEnd();  ++hit) {   //LogDebug("MissingTracker");  
-	 int idNum = (*hit)->geographicalId();
-         LogTrace("MissingTracker") << "    hit id = " << idNum ;
+       if(strk.isAvailable()) {
+	 LogTrace("MissingTracker") << "Number of Sta Hits: " << strk->recHitsSize() << std::endl;
+	 printHits(getTransientRecHits(*strk));     
        }
-     }
-        //LogDebug("MissingTracker");  
-   }
-*/
-   //
-   // end Jim's code
-   //
-   //LogDebug("MissingTracker");  
+       if(gtrk.isAvailable()) {
+	 LogTrace("MissingTracker") << "Number of Glb Hits: " << gtrk->recHitsSize() << std::endl;
+	 printHits(getTransientRecHits(*gtrk));     
+       }
+     } //end isGlobalMuon
+
+
+   }// end loop over muon collection
+
 }
 
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
-MissingTracker::beginJob(const edm::EventSetup&)
+MissingTracker::beginJob(const edm::EventSetup& eventSetup)
 {
-
+  if ( theService ) theService->update(eventSetup);
   dbe_->cd();
   //InputTag algo = theTracksLabel;
   std::string dirName=dirName_;
@@ -362,27 +322,104 @@ MissingTracker::endJob() {
   if ( out.size() != 0 && dbe_ ) dbe_->save(out);
   
 }
-/*
-  void MissingTracker::printHits(const TrackingRecHit::TrackingRecHitCollection& hits) const {
+
+void MissingTracker::printHits(const TransientTrackingRecHit::ConstRecHitContainer& hits) const {
   
-  LogTrace(theCategory) << "Used RecHits: " << hits.size();
-  for (ConstRecHitContainer::const_iterator ir = hits.begin(); ir != hits.end(); ir++ ) {
-  if ( !(*ir)->isValid() ) {
-      LogTrace(theCategory) << "invalid RecHit";
+  LogTrace("MissingTracker") << "Used RecHits: " << hits.size();
+  for (TransientTrackingRecHit::ConstRecHitContainer::const_iterator ir = hits.begin(); ir != hits.end(); ir++ ) {
+    if ( !(*ir)->isValid() ) {
+      LogTrace("MissingTracker") << "invalid RecHit";
       continue; 
     }
     
     const GlobalPoint& pos = (*ir)->globalPosition();
     
-    LogTrace(theCategory) 
+    LogTrace("MissingTracker") 
       << "r = " << sqrt(pos.x() * pos.x() + pos.y() * pos.y())
       << "  z = " << pos.z()
+      << "  R = " << sqrt(pos.x() * pos.x() + pos.y() * pos.y() + pos.z() * pos.z())
+      << " type = " << (*ir)->type()
       << "  dimension = " << (*ir)->dimension()
       << "  " << (*ir)->det()->geographicalId().det()
       << "  " << (*ir)->det()->subDetector();
+  } 
+} 
+
+
+int
+MissingTracker::countMuonHits(const reco::Track& track) const {
+  TransientTrackingRecHit::ConstRecHitContainer result;
+  
+  int count = 0;
+
+  for (trackingRecHit_iterator hit = track.recHitsBegin(); hit != track.recHitsEnd(); ++hit) {
+    if((*hit)->isValid()) {
+      DetId recoid = (*hit)->geographicalId();
+      if ( recoid.det() == DetId::Muon ) count++;
+    }
+  }
+  return count;
+}
+
+int
+MissingTracker::countTrackerHits(const reco::Track& track) const {
+  TransientTrackingRecHit::ConstRecHitContainer result;
+  
+  int count = 0;
+
+  for (trackingRecHit_iterator hit = track.recHitsBegin(); hit != track.recHitsEnd(); ++hit) {
+    if((*hit)->isValid()) {
+      DetId recoid = (*hit)->geographicalId();
+      if ( recoid.det() == DetId::Tracker ) count++;
+    }
+  }
+  return count;
+}
+
+TransientTrackingRecHit::ConstRecHitContainer
+MissingTracker::getTransientRecHits(const reco::Track& track) const {
+
+  TransientTrackingRecHit::ConstRecHitContainer result;
+  
+  TrajectoryStateTransform tsTrans;
+
+  TrajectoryStateOnSurface currTsos = tsTrans.innerStateOnSurface(track, *theService->trackingGeometry(), &*theService->magneticField());
+
+  for (trackingRecHit_iterator hit = track.recHitsBegin(); hit != track.recHitsEnd(); ++hit) {
+    if((*hit)->isValid()) {
+      DetId recoid = (*hit)->geographicalId();
+      if ( recoid.det() == DetId::Tracker ) {
+	TransientTrackingRecHit::RecHitPointer ttrhit = theTrackerRecHitBuilder->build(&**hit);
+	TrajectoryStateOnSurface predTsos =  theService->propagator(theTrackerPropagatorName)->propagate(currTsos, theService->trackingGeometry()->idToDet(recoid)->surface());
+	//LogTrace(theCategory)<<"predtsos "<<predTsos.isValid();
+	if ( predTsos.isValid() ) currTsos = predTsos;
+	TransientTrackingRecHit::RecHitPointer preciseHit = ttrhit->clone(predTsos);
+	result.push_back(preciseHit);
+      } else if ( recoid.det() == DetId::Muon ) {
+	if ( (*hit)->geographicalId().subdetId() == 3 && !theRPCInTheFit) {
+	  //LogDebug(theCategory) << "RPC Rec Hit discarded"; 
+	  continue;
+	}
+	result.push_back(theMuonRecHitBuilder->build(&**hit));
+      }
+    }
+  }
+  
+  return result;
+
+  }
+
+void MissingTracker::setEvent(const edm::Event& event) {
+
+  unsigned long long newCacheId_TRH = theService->eventSetup().get<TransientRecHitRecord>().cacheIdentifier();
+  if ( newCacheId_TRH != theCacheId_TRH ) {
+    theCacheId_TRH = newCacheId_TRH;
+    theService->eventSetup().get<TransientRecHitRecord>().get(theTrackerRecHitBuilderName,theTrackerRecHitBuilder);
+    theService->eventSetup().get<TransientRecHitRecord>().get(theMuonRecHitBuilderName,theMuonRecHitBuilder);
+
   }
 
 }
-*/
+
 //define this as a plug-in
 DEFINE_FWK_MODULE(MissingTracker);

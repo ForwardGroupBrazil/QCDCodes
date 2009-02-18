@@ -7,6 +7,7 @@
 <use name=Geometry/CSCGeometry>
 <use name=Geometry/Records>
 <use name=FWCore/MessageLogger>
+<use name=RecoMuon/TrackingTools>
 <flags EDM_PLUGIN=1>
 <use name=CLHEP>
 <use name=ROOT>
