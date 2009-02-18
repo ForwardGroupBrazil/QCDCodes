@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Wed Sep 24 13:00:00 EDT 2008
-// $Id$
+// $Id: ChiFilter.cc,v 1.1 2008/10/21 17:44:12 aeverett Exp $
 //
 //
 
@@ -52,7 +52,7 @@ class ChiFilter : public edm::EDFilter {
       
       // ----------member data ---------------------------
   edm::InputTag muonLabel_;
-  int chi2Cut_;
+  double chi2Cut_;
 };
 
 //
@@ -70,7 +70,7 @@ ChiFilter::ChiFilter(const edm::ParameterSet& iConfig)
 {
    //now do what ever initialization is needed
   muonLabel_ = iConfig.getParameter<edm::InputTag>("muLabel");
-  chi2Cut_ =  iConfig.getParameter<int>("chi2Cut");
+  chi2Cut_ =  iConfig.getParameter<double>("chi2Cut");
 }
 
 
@@ -101,23 +101,26 @@ ChiFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
    ESHandle<SetupData> pSetup;
    iSetup.get<SetupRecord>().get(pSetup);
 #endif
-
+   LogDebug("ChiFilter")<<"ChiFilter new event1 " << chi2Cut_;
    Handle<reco::MuonCollection> muons;
    iEvent.getByLabel(muonLabel_,muons);
    
    bool returnVal = false;
-
+   LogDebug("ChiFilter")<<"ChiFilter new event2";
    for (reco::MuonCollection::const_iterator muon = muons->begin(); muon != muons->end(); ++muon) {
+     LogDebug("ChiFilter")<<"ChiFilter new muon";
      if(muon->isGlobalMuon()) {
+       LogDebug("ChiFilter")<<"ChiFilter isGlobalMuon";
        double chiVal = muon->combinedMuon().get()->normalizedChi2();
-       if (chi2Cut_ > 0) { 
-	 if(chiVal < fabs(chi2Cut_) ) returnVal = true;
+       LogDebug("ChiFilter")<<"ChiFilter chiVal " << chiVal;
+       if (chi2Cut_ > 0.) { 
+	 if(chiVal <= fabs(chi2Cut_) ) returnVal = true;
        } else {
-	 if(chiVal > fabs(chi2Cut_) ) returnVal = true;
+	 if(chiVal >= fabs(chi2Cut_) ) returnVal = true;
        }
      }
    }
-
+   LogDebug("ChiFilter")<<"ChiFilter returnVal " << returnVal;
    return returnVal;
 }
 
