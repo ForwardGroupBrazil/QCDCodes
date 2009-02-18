@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Wed Sep 10 15:08:42 EDT 2008
-// $Id: MissingHitsFilter.cc,v 1.2 2008/10/31 19:44:43 aeverett Exp $
+// $Id: MissingHitsFilter.cc,v 1.3 2008/11/07 16:03:34 aeverett Exp $
 //
 //
 
@@ -36,6 +36,8 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 
+#include "TrackingTools/TransientTrackingRecHit/interface/TransientTrackingRecHit.h"
+
 //
 // class declaration
 //
@@ -49,11 +51,11 @@ class MissingHitsFilter : public edm::EDFilter {
       virtual void beginJob(const edm::EventSetup&) ;
       virtual bool filter(edm::Event&, const edm::EventSetup&);
       virtual void endJob() ;
-      
+      virtual int countMuonHits(const reco::Track& track) const;
+      virtual int countTrackerHits(const reco::Track& track) const;
       // ----------member data ---------------------------
   edm::InputTag muonLabel_;
   int hitCut_;
-  double fractionCut_;
 };
 
 //
@@ -72,7 +74,6 @@ MissingHitsFilter::MissingHitsFilter(const edm::ParameterSet& iConfig)
    //now do what ever initialization is needed
   muonLabel_ = iConfig.getParameter<edm::InputTag>("muLabel");
   hitCut_ =  iConfig.getParameter<int>("hitCut");
-  fractionCut_ = iConfig.getParameter<double>("hitFraction");
 }
 
 
@@ -94,57 +95,42 @@ bool
 MissingHitsFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
-#ifdef THIS_IS_AN_EVENT_EXAMPLE
-   Handle<ExampleData> pIn;
-   iEvent.getByLabel("example",pIn);
-#endif
-
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-   ESHandle<SetupData> pSetup;
-   iSetup.get<SetupRecord>().get(pSetup);
-#endif
-
-   using namespace edm;
 
    Handle<reco::MuonCollection> muons;
    iEvent.getByLabel(muonLabel_,muons);
    
    bool returnVal = false;
 
-   
    for (reco::MuonCollection::const_iterator muon = muons->begin(); muon != muons->end(); ++muon) {
-     if( !muon->isGlobalMuon() && muon->isStandAloneMuon() ) {
-       if(muon->pt() > 300) returnVal = true;
+     int hitTk =0;
+     int hitSta =0;
+     int hitGlbTk = 0;
+     int hitGlbMu = 0;
+     int hitGlb = 0;
+     if ( muon->isTrackerMuon() ) {
+       hitTk = countTrackerHits(*muon->track());
      }
-   }
-
-   return returnVal;
-   
-
-   
-   for (reco::MuonCollection::const_iterator muon = muons->begin(); muon != muons->end(); ++muon) {
-     if(muon->isGlobalMuon()) {
-       //returnVal = false;
-       int hitTk = muon->track().get()->recHitsSize();
-       int hitGlbTk =   muon->combinedMuon().get()->hitPattern().numberOfValidTrackerHits();
-       int hitSta =  muon->standAloneMuon().get()->recHitsSize();
-       int hitGlbSta = muon->combinedMuon().get()->hitPattern().numberOfValidMuonHits();
-       int hitGlb =  muon->combinedMuon().get()->hitPattern().numberOfValidHits(
-);
-
-       int missingSta = hitSta-hitGlbSta;
-       double fractionSta = (hitSta > 0) ? (hitSta-hitGlbSta)/hitSta : 0;
+     if ( muon->isStandAloneMuon() ) {
+       hitSta =  countMuonHits(*muon->standAloneMuon());
+     }
+     if ( muon->isGlobalMuon() ) {
+       hitGlbTk = countTrackerHits(*muon->combinedMuon());       
+       hitGlbMu = countMuonHits(*muon->combinedMuon());
+       hitGlb =  muon->combinedMuon().get()->recHitsSize();
+       
+       int missingSta = hitSta-hitGlbMu;
        int missingTk = hitTk-hitGlbTk;
-       double fractionTk = (hitTk > 0) ? (hitTk-hitGlbTk)/hitTk : 0;
        
        if(hitCut_ > 0) {
-	 if(missingSta >= hitCut_ || missingTk >= hitCut_) returnVal = true;
+	 if( (missingSta >= hitCut_) || (missingTk >= hitCut_) ) {
+	   returnVal = true;
+	 }
+       } else if (hitCut_ < 0) { 
+	 if( (missingSta <= hitCut_) || (missingTk <= hitCut_) ) {
+	   returnVal = true; 
+	 }
        }
-
-       //if(fabs(muon->combinedMuon().get()->outerZ()) > 1100) returnVal = true;
-
-       //else if( fractionSta >= fractionCut_ || fractionTk >= fractionCut_) returnVal = true;
-
+       
      }
    }
 
@@ -161,6 +147,36 @@ MissingHitsFilter::beginJob(const edm::EventSetup&)
 // ------------ method called once each job just after ending the event loop  ------------
 void 
 MissingHitsFilter::endJob() {
+}
+
+int
+MissingHitsFilter::countMuonHits(const reco::Track& track) const {
+  TransientTrackingRecHit::ConstRecHitContainer result;
+  
+  int count = 0;
+
+  for (trackingRecHit_iterator hit = track.recHitsBegin(); hit != track.recHitsEnd(); ++hit) {
+    if((*hit)->isValid()) {
+      DetId recoid = (*hit)->geographicalId();
+      if ( recoid.det() == DetId::Muon ) count++;
+    }
+  }
+  return count;
+}
+
+int
+MissingHitsFilter::countTrackerHits(const reco::Track& track) const {
+  TransientTrackingRecHit::ConstRecHitContainer result;
+  
+  int count = 0;
+
+  for (trackingRecHit_iterator hit = track.recHitsBegin(); hit != track.recHitsEnd(); ++hit) {
+    if((*hit)->isValid()) {
+      DetId recoid = (*hit)->geographicalId();
+      if ( recoid.det() == DetId::Tracker ) count++;
+    }
+  }
+  return count;
 }
 
 //define this as a plug-in
