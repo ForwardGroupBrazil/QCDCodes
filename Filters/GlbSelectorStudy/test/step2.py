@@ -58,7 +58,7 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.99.2.3 $'),
+    version = cms.untracked.string('$Revision: 1.1 $'),
     annotation = cms.untracked.string('step2 nevts:1'),
     name = cms.untracked.string('PyReleaseValidation')
 )
@@ -70,13 +70,14 @@ process.options = cms.untracked.PSet(
 )
 # Input source
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('/store/user/aeverett/SingleMuPt100_CMSSW_2_2_5_IDEAL_step1//SingleMuPt100_CMSSW_2_2_5_IDEAL_step1//80cbcc42f4d41835dd2128ac999dbd1b//SingleMuPt100_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_16.root')
+    fileNames = cms.untracked.vstring(#'/store/user/aeverett/SingleMuPt100_CMSSW_2_2_5_IDEAL_step1//SingleMuPt100_CMSSW_2_2_5_IDEAL_step1//80cbcc42f4d41835dd2128ac999dbd1b//SingleMuPt100_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_16.root',
+                                      '/store/user/aeverett//SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1//SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1//abc92f2ca79c035bec8931c1df74b704//SingleKPt2_200_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_446.root',)
 )
 
 # Output definition
 process.output = cms.OutputModule("PoolOutputModule",
     outputCommands = process.RECOSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('step2_RAW2DIGI_RECO_POSTRECO_ALCA_VALIDATION.root'),
+    fileName = cms.untracked.string('step2K_RAW2DIGI_RECO_POSTRECO_ALCA_VALIDATION.root'),
     dataset = cms.untracked.PSet(
         dataTier = cms.untracked.string('GEN-SIM-RECO'),
         filterName = cms.untracked.string('')

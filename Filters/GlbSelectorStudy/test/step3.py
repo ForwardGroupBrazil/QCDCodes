@@ -7,39 +7,59 @@ import FWCore.ParameterSet.Config as cms
 
 process = cms.Process('VAL3')
 
-process.MessageLogger = cms.Service("MessageLogger",
-    detailedInfo = cms.untracked.PSet(
-        threshold = cms.untracked.string('INFO'),
-        INFO = cms.untracked.PSet(
-            limit = cms.untracked.int32(-1)
-        ),
-        extension = cms.untracked.string('.txt')
+## process.MessageLogger = cms.Service("MessageLogger",
+##     detailedInfo = cms.untracked.PSet(
+##         threshold = cms.untracked.string('INFO'),
+##         INFO = cms.untracked.PSet(
+##             limit = cms.untracked.int32(0)
+##         ),
+##         extension = cms.untracked.string('.txt')
+##     ),
+##     debug = cms.untracked.PSet(
+##         threshold = cms.untracked.string('DEBUG'),
+##         INFO = cms.untracked.PSet(
+##             limit = cms.untracked.int32(0)
+##         ),
+##         SimLevelParent = cms.untracked.PSet(
+##             limit = cms.untracked.int32(1000000)
+##         ),
+##         DEBUG = cms.untracked.PSet(
+##             limit = cms.untracked.int32(0)
+##         ),
+##         MotherSearch = cms.untracked.PSet(
+##             limit = cms.untracked.int32(1000000)
+##         ),
+##         GlbSelectorStudy = cms.untracked.PSet(
+##             limit = cms.untracked.int32(1000000)
+##         )
+##     ),
+##     debugModules  = cms.untracked.vstring('glbSelStudy',),
+##     categories = cms.untracked.vstring('SimHitsAnlzrImproved', 
+##         'GlbSelectorStudy', 
+##         'MotherSearch', 
+##         'SimLevelParent'),
+##     destinations = cms.untracked.vstring('detailedInfo3')
+## )
+
+process.load('FWCore/MessageService/MessageLogger_cfi')
+process.MessageLogger.categories = ['MotherSearch', 'GlbSelectorStudy']
+process.MessageLogger.debugModules = ['glbSelStudy']
+process.MessageLogger.cout = cms.untracked.PSet(
+    threshold = cms.untracked.string('DEBUG'),
+    default = cms.untracked.PSet(
+        limit = cms.untracked.int32(0)
     ),
-    debug = cms.untracked.PSet(
-        threshold = cms.untracked.string('DEBUG'),
-        INFO = cms.untracked.PSet(
-            limit = cms.untracked.int32(0)
-        ),
-        SimLevelParent = cms.untracked.PSet(
-            limit = cms.untracked.int32(1000000)
-        ),
-        DEBUG = cms.untracked.PSet(
-            limit = cms.untracked.int32(0)
-        ),
-        MotherSearch = cms.untracked.PSet(
-            limit = cms.untracked.int32(1000000)
-        ),
-        GlbSelectorStudy = cms.untracked.PSet(
-            limit = cms.untracked.int32(1000000)
-        )
+    MotherSearch = cms.untracked.PSet(
+        limit = cms.untracked.int32(-1)
     ),
-    debugModules  = cms.untracked.vstring('glbSelStudy',),
-    categories = cms.untracked.vstring('SimHitsAnlzrImproved', 
-        'GlbSelectorStudy', 
-        'MotherSearch', 
-        'SimLevelParent'),
-    destinations = cms.untracked.vstring('detailedInfo3')
+    GlbSelectorStudy = cms.untracked.PSet(
+        limit = cms.untracked.int32(-1)
+    ),
 )
+process.MessageLogger.cerr = cms.untracked.PSet(
+    placeholder = cms.untracked.bool(True)
+)
+
 
 
 # import of standard configurations
@@ -58,7 +78,7 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.99.2.3 $'),
+    version = cms.untracked.string('$Revision: 1.1 $'),
     annotation = cms.untracked.string('step2 nevts:1'),
     name = cms.untracked.string('PyReleaseValidation')
 )

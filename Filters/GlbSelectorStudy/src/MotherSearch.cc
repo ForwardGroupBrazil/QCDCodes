@@ -6,7 +6,7 @@ MotherSearch::MotherSearch(const SimTrack * isimtk,
 			   edm::Handle<edm::HepMCProduct> & hepmc):
   Sim_vertex(0), Sim_mother(0), Gen_vertex(0), Gen_mother(0) 
 {
-  const std::string theCategory = "MotherSearch::MotherSearch";
+  const std::string theCategory = "MotherSearch";
   
   simtrack = isimtk;
   const math::XYZTLorentzVectorD momentum = isimtk->momentum();
@@ -17,6 +17,7 @@ MotherSearch::MotherSearch(const SimTrack * isimtk,
   if(isimtk->vertIndex()>=0 && isimtk->vertIndex()<SimVtx->size()){
     //access the vertex
     Sim_vertex = &(*SimVtx)[isimtk->vertIndex()];
+    LogTrace(theCategory)<< "SimVertex position " << Sim_vertex->position().Rho() << " " <<  Sim_vertex->position().z();
     if (!Sim_vertex->noParent()){
       LogDebug(theCategory)<<"I am here 3";
       
@@ -25,13 +26,13 @@ MotherSearch::MotherSearch(const SimTrack * isimtk,
 	      <<"\nThis sim vertex magnitude is :"<<position.v().mag()
 	      <<"\nThis sim vertex magnitude is :"<<position.mag(); */
       
-      LogDebug(theCategory)<<"I am here 4";      
+      //LogDebug(theCategory)<<"I am here 4";      
       
       int parentTrkNum = Sim_vertex->parentIndex();
       edm::LogVerbatim(theCategory)<<"This track ID is: "<<isimtk->type()
 				   <<"\nThe mother track number is: "<<parentTrkNum; 
       int num_matches = 0; 
-      LogDebug(theCategory)<<"I am here 5";
+      //LogDebug(theCategory)<<"I am here 5";
       //now loop the simtracks and find the parent
       for (std::vector<SimTrack>::const_iterator isimtk_parent = SimTk->begin();isimtk_parent!=SimTk->end();++isimtk_parent){
 	if(isimtk_parent->trackId()==parentTrkNum){
@@ -42,26 +43,27 @@ MotherSearch::MotherSearch(const SimTrack * isimtk,
 	    Sim_mother = &(*isimtk_parent);
 	  }
 	  else{edm::LogError(theCategory)<<"The mother of the SimTrack is a SimTrack of same type. skipping";break;}
-	  LogDebug(theCategory)<<"I am here 6";      
+	  //LogDebug(theCategory)<<"I am here 6";      
 	}//matching trackId
       }//second SimTrack loop
     }
     else {//the SimVertex has no parent
       useGen=true;
+      LogDebug(theCategory)<<"SimVertex has no parent....";      
     }
     
   }//the simtrack has no vertex
   else{useGen=true;}
   
   if (useGen){ 
-    LogDebug(theCategory)<<"I am here 7";      
+    //LogDebug(theCategory)<<"I am here 7";      
     //get corresponding gen particle
     int IndexGenPart = isimtk->genpartIndex();
     edm::LogVerbatim(theCategory)<<"The Gen Part index is: "<<IndexGenPart; 
     //do all the stuff to get the parent of mu from HEPMCproduct
     
     const HepMC::GenEvent *evt = hepmc->GetEvent();
-    LogDebug(theCategory)<<"I am here 8";      
+    //LogDebug(theCategory)<<"I am here 8";      
     
     edm::LogVerbatim(theCategory)<<"The gen particle index is: "<<IndexGenPart;      
     
@@ -80,24 +82,29 @@ MotherSearch::MotherSearch(const SimTrack * isimtk,
       {
 	HepMC::FourVector momentum_MC = part->momentum();
 	edm::LogVerbatim(theCategory)<<"The Gen Part momentum is: "<<momentum_MC.perp(); 
-	LogDebug(theCategory)<<"I am here 8.1";      
+	//LogDebug(theCategory)<<"I am here 8.1";      
 	
 	if(!part->production_vertex()){
-	  edm::LogError(theCategory)<<"there is no vertex to this Gen "<<selfID;
+	  edm::LogError(theCategory)<<"there is no vertex to this Gen (a)"<<selfID;
 	  return;}
 	
 	const HepMC::GenVertex * gvertex = part->production_vertex();
 	if(part->production_vertex()->particles_in_size()==0){
-	  edm::LogError(theCategory)<<"there is no incoming partticle to this "<<selfID<<" Gen vertex.";
+	  edm::LogError(theCategory)<<"there is no incoming partticle to this (a) "<<selfID<<" Gen vertex.";
+	  LogTrace(theCategory)<< "GenVertex position " << 0.1*gvertex->position().perp() << " " << 0.1*gvertex->position().z();
+	  //adam
+	  Gen_vertex =gvertex;
+	  //Gen_mother=part;
+	  //end adam
 	  return;}
 	
 	const HepMC::GenParticle *mother = *(part->production_vertex()->particles_in_const_begin());
 	
-	LogDebug(theCategory)<<"I am here 8.2";		   
+	//LogDebug(theCategory)<<"I am here 8.2";		   
 	while (abs(mother->pdg_id())==selfID)
 	  {
 	    if(!mother->production_vertex()){
-	      edm::LogError(theCategory)<<"there is no vertex to this Gen "<<selfID<<". while looking recursively.";mother=0;break;}
+	      edm::LogError(theCategory)<<"there is no vertex to this Gen (b)"<<selfID<<". while looking recursively.";mother=0;break;}
 	    gvertex = mother->production_vertex();
 	    if(mother->production_vertex()->particles_in_size()==0){
 	      edm::LogError(theCategory)<<"there is no incoming partticle to this muon Gen vertex. while looking recursively.";mother=0;break;}
