@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Tue Mar 31 16:20:19 EDT 2009
-// $Id: GlbSelectorStudy.cc,v 1.1 2009/04/01 19:03:48 aeverett Exp $
+// $Id: GlbSelectorStudy.cc,v 1.2 2009/04/02 16:26:32 aeverett Exp $
 //
 //
 
@@ -59,6 +59,15 @@
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
 #include "DataFormats/MuonDetId/interface/RPCDetId.h"
 
+#include <TrackingTools/PatternTools/interface/TrajectoryMeasurement.h>
+#include "TrackingTools/TrackRefitter/interface/TrackTransformer.h"
+#include <TrackingTools/PatternTools/interface/Trajectory.h>
+#include "TrackingTools/Records/interface/TransientRecHitRecord.h"
+#include "RecoMuon/TransientTrackingRecHit/interface/MuonTransientTrackingRecHit.h"
+#include <DataFormats/TrackingRecHit/interface/TrackingRecHit.h>
+#include "Geometry/CommonDetUnit/interface/GeomDetType.h"
+#include "DataFormats/DetId/interface/DetId.h"
+
 #include "TH1.h"
 #include "TH2.h"
 #include "TFile.h"
@@ -71,13 +80,15 @@ class GlbSelectorStudy : public edm::EDAnalyzer {
    public:
       explicit GlbSelectorStudy(const edm::ParameterSet&);
       ~GlbSelectorStudy();
+ 
 
 
    private:
       virtual void beginJob(const edm::EventSetup&) ;
       virtual void analyze(const edm::Event&, const edm::EventSetup&);
       virtual void endJob() ;
-
+  virtual double kink(const reco::TrackRef& muon) const ;
+  virtual void addTraj(const reco::Track& candIn);
       // ----------member data ---------------------------
   bool inTrackerBound_;
   bool inMuonBound_;
@@ -108,13 +119,15 @@ class GlbSelectorStudy : public edm::EDAnalyzer {
 
   TrackAssociatorBase* trkMuAssociator_, * staMuAssociator_, * glbMuAssociator_;
 
+  TrackTransformer *theTrackTransformer;
+
   //TFileDirectory * prompt; //, *promptSta, *promptTk, *promptGlb;
   //TFileDirectory decay;//, *decaySta, *decayTk, *decayGlb;
   //TFileDirectory outside;//, *outsideSta, *outsideTk, *outsideGlb;
 
   struct MuonME;
   MuonME *aME_,*bME_,*cME_;  
-  MuonME *dME_,*eME_,*fME_;  
+  MuonME *dME_,*eME_,*fME_, *gME_;  
 
 
 };
@@ -176,18 +189,27 @@ struct GlbSelectorStudy::MuonME {
     hg_NTrksPt_ = GlbDir->make<TH1F>("hg_NTrksPt", "Number of reco tracks vs p_{T}", 100, 0., 500.);
     hg_NTrksPt_St1_ = GlbDir->make<TH1F>("hg_NTrksPt_St1", "Number of reco tracks vs p_{T} only in Station1", 100, 0., 500.);
 
-    hm_nChamber = MuDir->make<TH1F>("hm_nChamber","nChamber",100,0,100);
-    hm_nChamberMatch_no = MuDir->make<TH1F>("hm_nChamberMatch_no","nChamberMatch No Arbitration",100,0,100);
-    hm_nChamberMatch_seg = MuDir->make<TH1F>("hm_nChamberMatch_seg","nChamberMatch Segment Arbitration",100,0,100);
-    hm_nChamberMatch_segTrack = MuDir->make<TH1F>("hm_nChamberMatch_segTrack","nChamberMatch Segment and Track Arbitration",100,0,100);
+    hm_nChamber = MuDir->make<TH1F>("hm_nChamber","nChamber",20,0,20);
+    hm_nChamberMatch_no = MuDir->make<TH1F>("hm_nChamberMatch_no","nChamberMatch No Arbitration",20,0,20);
+    hm_nChamberMatch_seg = MuDir->make<TH1F>("hm_nChamberMatch_seg","nChamberMatch Segment Arbitration",20,0,20);
+    hm_nChamberMatch_segTrack = MuDir->make<TH1F>("hm_nChamberMatch_segTrack","nChamberMatch Segment and Track Arbitration",20,0,20);
 
     hm_caloComp = MuDir->make<TH1F>("hm_caloComp","caloComp",50,0.,1.);
     hm_segComp = MuDir->make<TH1F>("hm_segComp","segComp",50,0.,1.);
+    hm_2DComp = MuDir->make<TH2F>("hm_2DComp","Seg/Calo Comp",50,0.,1.,50,0.,1.);
 
     hm_tm_sel = MuDir->make<TH1F>("hm_tm_sel","TM Selectors",11,-0.5,10.5);
 
-    hm_outerPosition = MuDir->make<TH2F>("hm_outerPosition","OuterMost Position",1200,0.,1200.,800,0.,800.);
-    hm_motherVtxPos = MuDir->make<TH2F>("hm_motherVtxPos","Mother Vtx Position",1201,-1.,1200.,801,-1.,800.);
+    hm_outerPosition = MuDir->make<TH2F>("hm_outerPosition","OuterMost Position",1200,0.,1200.,1000,0.,1000.);
+    hm_motherVtxPos = MuDir->make<TH2F>("hm_motherVtxPos","Mother Vtx Position",1201,-1.,1200.,1001,-1.,1000.);
+
+    hg_kink = GlbDir->make<TH1F>("hg_kink","Kink",100,0.,10.);
+    ht_kink = GlbDir->make<TH1F>("ht_kink","Kink",100,0.,10.);
+
+    hm_tpType = MuDir->make<TH1F>("hm_tpType","TP Type",501,-0.5,500.5);
+    hm_motherType = MuDir->make<TH1F>("hm_motherType","Mother Type",501,-0.5,500.5);
+
+    hm_trackerMu = MuDir->make<TH1F>("hm_TM","isTrackerMuon",3,-1.5,1.5);
 
   };
   void fill(const reco::Muon& iMuon,const GlobalPoint pos) {
@@ -198,6 +220,8 @@ struct GlbSelectorStudy::MuonME {
     hg_nHit->Fill(glbTrack->numberOfValidHits());
     hg_chi2->Fill(glbTrack->chi2());
     hg_nchi2->Fill(glbTrack->normalizedChi2());
+
+    hm_trackerMu->Fill(iMuon.isTrackerMuon());
 
     hg_NTrksEta_->Fill(glbTrack->eta());
     hg_NTrksPt_->Fill(glbTrack->pt());
@@ -249,6 +273,8 @@ struct GlbSelectorStudy::MuonME {
     ht_chi2->Fill(trkTrack->chi2());
     ht_nchi2->Fill(trkTrack->normalizedChi2());
 
+
+
     if(iMuon.isEnergyValid()) hm_hcal->Fill(iMuon.calEnergy().had);
     if(iMuon.isEnergyValid()) hm_ecal->Fill(iMuon.calEnergy().em);
 
@@ -259,6 +285,11 @@ struct GlbSelectorStudy::MuonME {
 
     if(iMuon.isCaloCompatibilityValid()) hm_caloComp->Fill(iMuon.caloCompatibility());
     hm_segComp->Fill(iMuon.segmentCompatibility());
+    if(iMuon.isCaloCompatibilityValid()) 
+      hm_2DComp->Fill(iMuon.caloCompatibility(),iMuon.segmentCompatibility());
+    else
+      hm_2DComp->Fill(0.,iMuon.segmentCompatibility());
+
     
     hm_tm_sel->Fill(0);
     if(iMuon.isGood(reco::Muon::TMLastStationLoose)) hm_tm_sel->Fill(1);
@@ -282,6 +313,7 @@ struct GlbSelectorStudy::MuonME {
 
   };
 
+
   TH1F *ht_dxy, *ht_dz, *ht_nHit, *ht_chi2, *ht_nchi2;
   TH1F *hs_dxy, *hs_dz, *hs_nHit, *hs_chi2, *hs_nchi2;
   TH1F *hg_dxy, *hg_dz, *hg_nHit, *hg_chi2, *hg_nchi2;
@@ -299,7 +331,12 @@ struct GlbSelectorStudy::MuonME {
 
   TH2F *hm_outerPosition;
   TH2F *hm_motherVtxPos;
+  TH2F *hm_2DComp;
 
+  TH1F *hg_kink;
+  TH1F *ht_kink;
+
+  TH1F *hm_tpType, *hm_motherType, *hm_trackerMu;
 };
 
 //
@@ -338,6 +375,9 @@ GlbSelectorStudy::GlbSelectorStudy(const edm::ParameterSet& iConfig):
   staMuAssocLabel_ = iConfig.getParameter<InputTag>("staMuAssocLabel");
   glbMuAssocLabel_ = iConfig.getParameter<InputTag>("glbMuAssocLabel");
 
+  ParameterSet trackTransformerPSet = iConfig.getParameter<ParameterSet>("TrackTransformer");
+  //trackTransformerPSet.addParameter<string>("Propagator",TransformerOutPropagator);
+  //theTrackTransformer = new TrackTransformer(trackTransformerPSet);
 
 }
 
@@ -462,7 +502,9 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     
     bool inTracker = false;
     bool inMuon = false;
-    bool probablyPrompt = false;
+    bool validMother = false;
+    bool validSimMother = false;
+    bool validGenMother = false;
         
     double x = -1.0;
     double y = -1.0;
@@ -494,9 +536,12 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	for(TrackingParticle::g4t_iterator isimtk = trp->g4Track_begin();isimtk!=trp->g4Track_end();isimtk++) {//loop over sim in TP
 	  LogTrace(theCategory)<<"... now going to look for mother ....";
 	  MotherSearch mother(&*isimtk, simTracks, simVertexs, hepmc);
-	  
-	  if (mother.IsValid()){
-	    if (mother.SimIsValid()){
+
+	  validMother = mother.IsValid();	  
+	  if (validMother){
+	    validSimMother = mother.SimIsValid();
+	    validGenMother = mother.GenIsValid();
+	    if (validSimMother){
 	      LogTrace(theCategory)<<"motherFromSim " << mother.Sim_mother->type();
 	      LogTrace(theCategory)<<"     vertex " << mother.Sim_vertex->position().Rho() << " " <<  mother.Sim_vertex->position().z();
 	      x = mother.Sim_vertex->position().x();
@@ -505,8 +550,7 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	      motherType = mother.Sim_mother->type();
 	      //(*l3ParentID).push_back(mother.Sim_mother->type());
 	      //(*l3MotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Sim_mother->type()));
-	    }
-	    else {
+	    } else {
 	      LogTrace(theCategory)<<"motherFromGen " << mother.Gen_mother->pdg_id();
 	      LogTrace(theCategory)<<"     vertex " << mother.Gen_vertex->position().perp() << " " <<  mother.Gen_vertex->position().z();
 	      x = 0.1 * mother.Gen_vertex->position().x();
@@ -521,7 +565,6 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	  } else{
 	    //this is a "prompt" TrackingParticle
 	    edm::LogError(theCategory)<<"tricky muon from TrackingParticle.";
-	    probablyPrompt = true;
 	  }
 	}//loop over sim in TP
       }//get TP
@@ -530,22 +573,49 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       if(TrackerBounds::isInside(pos)) inTracker = true;
       if(MuonBounds::isInside(pos)) inMuon = true;
       LogTrace(theCategory) << "***TP is inMuon " << inMuon << " and inTracker " << inTracker;
-      if(abs(tpType)==13 && abs(motherType)==13) {muClass = 1;} //prompt
-      else if(abs(tpType)==13 && abs(motherType)!=13) {
-	if(probablyPrompt) muClass = 2; //prompt?
-	if(inTracker) muClass = 3; //decay
-	if(!inTracker) muClass =4; //shower
+
+      if(!validMother) {
+	if(abs(tpType)==13) muClass = 1; //prompt mu
+	else muClass = 2; //prompt other (punch-through)
+      } else {
+	if(abs(tpType)==13 && abs(motherType)!=13) {
+	  if(inTracker) muClass = 3; //decay to muon
+	  else muClass = 4; //shower to muon
+	} else if (abs(tpType)==13 && abs(motherType)==13) {
+	  muClass = 5; //muon decay to muon
+	} else if (abs(tpType)!=13) {
+	  if(inTracker) muClass = 6; //othr (prompt other? : punch-through?)
+	  else muClass = 7;
+	}
       }
-      else if(abs(tpType)!=13 && abs(motherType)!=13) {muClass = 5;} //punch-through
-      else {muClass = 6;}
+
       LogTrace(theCategory)<<"MuClass " << muClass;
 
+      /*
       if(muClass==1) aME_->fill(*iMuon,pos);
       if(muClass==2) bME_->fill(*iMuon,pos);
       if(muClass==3) cME_->fill(*iMuon,pos);
       if(muClass==4) dME_->fill(*iMuon,pos);
       if(muClass==5) eME_->fill(*iMuon,pos);
       if(muClass==6) fME_->fill(*iMuon,pos);
+      */
+
+      MuonME * thisME = 0;
+
+      if(muClass==1) thisME = aME_;
+      if(muClass==2) thisME = bME_;
+      if(muClass==3) thisME = cME_;
+      if(muClass==4) thisME = dME_;
+      if(muClass==5) thisME = eME_;
+      if(muClass==6) thisME = fME_;
+      if(muClass==7) thisME = gME_;
+
+      thisME->fill(*iMuon,pos);
+      //thisME->hg_kink->Fill(kink(iMuon->combinedMuon()));
+      //thisME->ht_kink->Fill(kink(iMuon->innerTrack()));
+      thisME->hm_tpType->Fill(abs(tpType));
+      thisME->hm_motherType->Fill(abs(motherType));
+
     }// isGlobal()
   }// loop over muon
   
@@ -569,6 +639,7 @@ edm::Service<TFileService> fs;
  dME_ = new MuonME;
  eME_ = new MuonME;
  fME_ = new MuonME;
+ gME_ = new MuonME;
  // decayME_ = new MuonME;
  // outsideME_ = new MuonME;
  //
@@ -578,6 +649,7 @@ edm::Service<TFileService> fs;
  dME_->bookHistograms(fs,"D");
  eME_->bookHistograms(fs,"E");
  fME_->bookHistograms(fs,"F");
+ gME_->bookHistograms(fs,"G");
 
 
 
@@ -587,6 +659,94 @@ edm::Service<TFileService> fs;
 void 
 GlbSelectorStudy::endJob() {
 }
+
+
+//
+// kink finder
+//
+void GlbSelectorStudy::addTraj(const reco::Track& candIn) {
+
+  //if ( candIn.first == 0 ) {
+  
+  //Trajectory *returnTrajectory = 0;
+  typedef std::vector<Trajectory> TC;
+  
+  TC staTrajs = theTrackTransformer->transform(candIn);
+
+  if (staTrajs.empty()) {
+    LogTrace(theCategory) << "Transformer: Add Traj failed!";
+    //candIn = TrackCand(0,candIn.second); 
+  } else {
+    //return staTrajs.front();
+    //Trajectory * tmpTrajectory = new Trajectory(staTrajs.front());
+    //tmpTrajectory->setSeedRef(candIn.second->seedRef());
+    //candIn = TrackCand(tmpTrajectory,candIn.second);
+  }
+  //}
+}
+
+double GlbSelectorStudy::kink(const reco::TrackRef& muonIn) const {
+    
+    typedef std::vector<Trajectory> TC;
+    
+    TC staTrajs = theTrackTransformer->transform(muonIn);
+    
+    if (staTrajs.empty()) {
+      LogTrace(theCategory) << "Transformer: Add Traj failed!";
+      return 0.;
+    } 
+      Trajectory muon(staTrajs.front());
+    
+    
+    double result = 0.0;
+    
+    typedef TransientTrackingRecHit::ConstRecHitPointer 	ConstRecHitPointer;
+    typedef ConstRecHitPointer RecHit;
+    typedef vector<TrajectoryMeasurement>::const_iterator TMI;
+    
+    vector<TrajectoryMeasurement> meas = muon.measurements();
+    
+    for ( TMI m = meas.begin(); m != meas.end(); m++ ) {
+      RecHit rhit = (*m).recHit();
+      bool ok = false;
+      if ( rhit->isValid() ) {
+	//const GeomDetType& type = rhit->det()->detUnits().front()->type();
+	//if ( type.module() == pixel || type.module() == silicon ) ok = true;
+	
+	if(DetId::Tracker == rhit->geographicalId().det()) ok = true;
+	
+      }
+      if ( !ok ) continue;
+      
+      const TrajectoryStateOnSurface& tsos = (*m).predictedState();
+      if ( tsos.isValid() ) {
+	double phi1 = tsos.globalPosition().phi();
+	if ( phi1 < 0 ) phi1 = 2*M_PI + phi1;
+	
+	double phi2 = rhit->globalPosition().phi();
+	if ( phi2 < 0 ) phi2 = 2*M_PI + phi2;
+	
+	double diff = fabs(phi1 - phi2);
+	if ( diff > M_PI ) diff = 2*M_PI - diff;
+	
+	//GlobalPoint hitPos = rhit->det()->toGlobal(rhit->localPosition());
+	//GlobalError hitErr = rhit->det()->toGlobal(rhit->localPositionError());
+	GlobalPoint hitPos = rhit->globalPosition();
+	GlobalError hitErr = rhit->globalPositionError();
+	
+	double error = hitErr.phierr(hitPos);  // error squared
+	
+	double s = ( error > 0.0 ) ? (diff*diff)/error : (diff*diff);
+	result += s;
+	
+      }
+    }
+    
+    return result;
+    
+  }
+
+
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(GlbSelectorStudy);

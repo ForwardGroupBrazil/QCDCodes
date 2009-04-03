@@ -5,6 +5,7 @@
 <use name=SimTracker/TrackAssociation>
 <use name=SimTracker/Records>
 <use name=DataFormats/MuonReco>
+<use name=TrackingTools/TrackRefitter>
 
 <use name=PhysicsTools/UtilAlgos>
 <use name=FWCore/ServiceRegistry> # GF: Not sure whether really needed...

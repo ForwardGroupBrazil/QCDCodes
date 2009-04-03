@@ -1,4 +1,5 @@
 import FWCore.ParameterSet.Config as cms
+from TrackingTools.TrackRefitter.TracksToTrajectories_cff import *
 
 glbSelStudy = cms.EDAnalyzer(
     'GlbSelectorStudy',
@@ -13,6 +14,18 @@ glbSelStudy = cms.EDAnalyzer(
     staMuAssocLabel = cms.InputTag("TrackAssociatorByDeltaR"),
     glbMuAssocLabel = cms.InputTag("TrackAssociatorByDeltaR"),
     doAssoc = cms.untracked.bool(True),
+
+    TrackTransformer = cms.PSet(DoPredictionsOnly = cms.bool(False),
+                                Fitter = cms.string('KFFitterForRefitInsideOut'),
+                                #        TrackerRecHitBuilder = cms.string('WithTrackAngleAndTemplate'),
+                                TrackerRecHitBuilder = cms.string('WithTrackAngle'),
+                                Smoother = cms.string('KFSmootherForRefitInsideOut'),
+                                MuonRecHitBuilder = cms.string('MuonRecHitBuilder'),
+                                RefitDirection = cms.string('alongMomentum'),
+                                RefitRPCHits = cms.bool(True),
+                                Propagator = cms.string('SmartPropagatorAnyRKOpposite')
+                                ),
+    
     
     IDconverttoBinNum = cms.PSet(
     ranges = cms.VPSet(cms.PSet(

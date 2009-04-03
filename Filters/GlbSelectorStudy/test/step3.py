@@ -68,7 +68,7 @@ process.load('Configuration/StandardSequences/Services_cff')
 process.load('Configuration/StandardSequences/MixingNoPileUp_cff')
 process.load('Configuration/StandardSequences/GeometryPilot2_cff')
 process.load('Configuration/StandardSequences/MagneticField_38T_cff')
-#process.load('Configuration/StandardSequences/RawToDigi_cff')
+process.load('Configuration/StandardSequences/RawToDigi_cff')
 process.load('Configuration/StandardSequences/Reconstruction_cff')
 process.load('Configuration/StandardSequences/PostRecoGenerator_cff')
 #process.load('Configuration/StandardSequences/AlCaRecoStreams_cff')
@@ -78,7 +78,7 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.1 $'),
+    version = cms.untracked.string('$Revision: 1.2 $'),
     annotation = cms.untracked.string('step2 nevts:1'),
     name = cms.untracked.string('PyReleaseValidation')
 )
@@ -121,7 +121,7 @@ process.p = cms.Path(process.glbSelStudy)
 
 
 # Path and EndPath definitions
-#process.raw2digi_step = cms.Path(process.RawToDigi)
+process.raw2digi_step = cms.Path(process.RawToDigi)
 process.reconstruction_step = cms.Path(process.reconstruction)
 process.postreco_step = cms.Path(process.postreco_generator)
 
@@ -130,5 +130,5 @@ process.endjob_step = cms.Path(process.endOfProcess)
 process.out_step = cms.EndPath(process.output)
 
 # Schedule definition
-#process.schedule = cms.Schedule(process.raw2digi_step,process.reconstruction_step,process.postreco_step,process.pathALCARECORpcCalHLT,process.pathALCARECOMuAlCalIsolatedMu,process.validation_step,process.p,process.endjob_step,process.out_step)
-process.schedule = cms.Schedule(process.p)
+process.schedule = cms.Schedule(process.raw2digi_step,process.reconstruction_step,process.postreco_step,process.validation_step,process.p,process.endjob_step,process.out_step)
+#process.schedule = cms.Schedule(process.validation_step,process.p)
