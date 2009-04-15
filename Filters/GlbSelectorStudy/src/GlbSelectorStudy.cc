@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Tue Mar 31 16:20:19 EDT 2009
-// $Id: GlbSelectorStudy.cc,v 1.2 2009/04/02 16:26:32 aeverett Exp $
+// $Id: GlbSelectorStudy.cc,v 1.3 2009/04/03 20:24:51 aeverett Exp $
 //
 //
 
@@ -67,6 +67,14 @@
 #include <DataFormats/TrackingRecHit/interface/TrackingRecHit.h>
 #include "Geometry/CommonDetUnit/interface/GeomDetType.h"
 #include "DataFormats/DetId/interface/DetId.h"
+
+#include "PhysicsTools/RecoAlgos/interface/TrackingParticleSelector.h"
+
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingVertex.h"
+
+#include "SimGeneral/HepPDTRecord/interface/ParticleDataTable.h"
+#include "SimTracker/TrackHistory/interface/TrackClassifier.h"
+#include "SimTracker/TrackHistory/interface/TrackCategories.h"
 
 #include "TH1.h"
 #include "TH2.h"
@@ -129,12 +137,19 @@ class GlbSelectorStudy : public edm::EDAnalyzer {
   MuonME *aME_,*bME_,*cME_;  
   MuonME *dME_,*eME_,*fME_, *gME_;  
 
+  TrackingParticleSelector tpSelector_;
+  TrackClassifier classifier_;
 
 };
 
 //
 // constants, enums and typedefs
 //
+typedef std::vector<TrackingVertex>                TrackingVertexCollection;
+typedef edm::Ref<TrackingVertexCollection>         TrackingVertexRef;
+typedef edm::RefVector<TrackingVertexCollection>   TrackingVertexRefVector;
+typedef TrackingVertexRefVector::iterator          tv_iterator;
+
 using namespace std;
 using namespace edm;
 using namespace reco;
@@ -202,6 +217,7 @@ struct GlbSelectorStudy::MuonME {
 
     hm_outerPosition = MuDir->make<TH2F>("hm_outerPosition","OuterMost Position",1200,0.,1200.,1000,0.,1000.);
     hm_motherVtxPos = MuDir->make<TH2F>("hm_motherVtxPos","Mother Vtx Position",1201,-1.,1200.,1001,-1.,1000.);
+    hm_motherDecayPos = MuDir->make<TH2F>("hm_motherDecayPos","Mother Decay Position",1201,-1.,1200.,1001,-1.,1000.);
 
     hg_kink = GlbDir->make<TH1F>("hg_kink","Kink",100,0.,10.);
     ht_kink = GlbDir->make<TH1F>("ht_kink","Kink",100,0.,10.);
@@ -212,7 +228,7 @@ struct GlbSelectorStudy::MuonME {
     hm_trackerMu = MuDir->make<TH1F>("hm_TM","isTrackerMuon",3,-1.5,1.5);
 
   };
-  void fill(const reco::Muon& iMuon,const GlobalPoint pos) {
+  void fill(const reco::Muon& iMuon,const GlobalPoint pos,const GlobalPoint decayPos) {
     //
     const TrackRef glbTrack = iMuon.combinedMuon();
     hg_dxy->Fill(glbTrack->dxy());
@@ -309,6 +325,7 @@ struct GlbSelectorStudy::MuonME {
     float outerR = sqrt( outerX*outerX +outerY*outerY);
     hm_outerPosition->Fill(outerZ,outerR);
     hm_motherVtxPos->Fill(abs(pos.z()),pos.perp());
+    hm_motherDecayPos->Fill(abs(decayPos.z()),decayPos.perp());
 
 
   };
@@ -330,7 +347,7 @@ struct GlbSelectorStudy::MuonME {
   TH1F *hm_tm_sel;
 
   TH2F *hm_outerPosition;
-  TH2F *hm_motherVtxPos;
+  TH2F *hm_motherVtxPos,*hm_motherDecayPos;
   TH2F *hm_2DComp;
 
   TH1F *hg_kink;
@@ -347,7 +364,8 @@ struct GlbSelectorStudy::MuonME {
 // constructors and destructor
 //
 GlbSelectorStudy::GlbSelectorStudy(const edm::ParameterSet& iConfig):
-  wantMotherBin(iConfig.getParameter<edm::ParameterSet>("IDconverttoBinNum"))
+  wantMotherBin(iConfig.getParameter<edm::ParameterSet>("IDconverttoBinNum")),
+  classifier_(iConfig)
 {
   theCategory = "GlbSelectorStudy";
 
@@ -379,6 +397,17 @@ GlbSelectorStudy::GlbSelectorStudy(const edm::ParameterSet& iConfig):
   //trackTransformerPSet.addParameter<string>("Propagator",TransformerOutPropagator);
   //theTrackTransformer = new TrackTransformer(trackTransformerPSet);
 
+  ParameterSet tpset = iConfig.getParameter<ParameterSet>("tpSelector");
+  tpSelector_ = TrackingParticleSelector(tpset.getParameter<double>("ptMin"),
+                                         tpset.getParameter<double>("minRapidity"),
+                                         tpset.getParameter<double>("maxRapidity"),
+                                         tpset.getParameter<double>("tip"),
+                                         tpset.getParameter<double>("lip"),
+                                         tpset.getParameter<int>("minHit"),
+                                         tpset.getParameter<bool>("signalOnly"),
+                                         tpset.getParameter<bool>("chargedOnly"),
+                                         tpset.getParameter<std::vector<int> >("pdgId"));
+
 }
 
 
@@ -403,6 +432,8 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
   using namespace edm;
   using namespace reco;
+
+  classifier_.newEvent(iEvent, iSetup);
 
 
   Handle<edm::SimTrackContainer> simTracks;
@@ -484,7 +515,44 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     iEvent.getByLabel(glbMuAssocLabel_, glbMuToSimHandle);
     glbMuToSimColl = *(glbMuToSimHandle.product());
   }
+
+  ///////////////////////
+  LogDebug(theCategory)<<"SimColl size " << simColl.size();
+  const TrackingParticleCollection::size_type nSim = simColl.size();
+  for(TrackingParticleCollection::size_type i=0; i<nSim; i++) {
+    TrackingParticleRef simRef(simHandle, i);
+    const TrackingParticle* simTP = simRef.get();
+    //if ( ! tpSelector_(*simTP) ) continue;
   
+    classifier_.evaluate( simRef );
+  
+    LogTrace(theCategory)<<"TP " << i << " with pdgID " << simTP->pdgId();
+    LogTrace(theCategory) <<"     with GenSize " << simTP->genParticle().size();
+    LogTrace(theCategory) <<"     with GeantSize " << simTP->g4Tracks().size();
+    LogTrace(theCategory) <<"     with Pt      " << simTP->pt();
+    LogTrace(theCategory) <<"     with Eta     " << simTP->eta();
+    LogTrace(theCategory) <<"     with Phi     " << simTP->phi();
+    LogTrace(theCategory) <<"     with Vtx Pos " << simTP->parentVertex()->position();
+
+    for(tv_iterator dv = simTP->decayVertices_begin(); dv != simTP->decayVertices_end(); ++dv) {
+      LogTrace(theCategory)<<"     DecayVertex "<<(*dv)->position();
+    }
+
+    LogTrace(theCategory) <<"      with flags "; 
+    for (std::size_t index = 0; index < classifier_.flags().size(); ++index){
+      if (classifier_.flags()[index])
+	LogTrace(theCategory) <<"                 " 
+			      <<  TrackCategories::Names[index]; 
+    }
+
+    //    if(abs(simTP->pdgId()) == 13)
+    //      for(TrackingParticle::g4t_iterator isimtk = simTP->g4Track_begin();isimtk!=simTP->g4Track_end();isimtk++) {//loop over sim in TP
+    //	LogTrace(theCategory)<<"... look for SimMu MOTHER ....";
+    //	MotherSearch mother(&*isimtk, simTracks, simVertexs, hepmc);
+    //      }
+    
+  }
+  ///////////////////////  
 
 
   LogDebug(theCategory)<<"MuonColl size " << muonColl.size();  
@@ -506,9 +574,13 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     bool validSimMother = false;
     bool validGenMother = false;
         
-    double x = -1.0;
-    double y = -1.0;
-    double z = -1.0; 
+    double x = 999.0;
+    double y = 0.0;
+    double z = 1199.0; 
+
+    double decayx = 999.0;
+    double decayy = 0.0;
+    double decayz = 1199.0; 
 
     LogTrace(theCategory)<<"Looking at a new muon.....";
     if ( iMuon->isGlobalMuon() ) {      
@@ -519,6 +591,16 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       
       LogTrace(theCategory)<<"that is available " <<  glbTrack.isAvailable();
       
+      classifier_.evaluate( glbTrackRB );
+      //std::cout << classifier_.flags();
+      
+      LogTrace(theCategory) <<"      with flags "; 
+      for (std::size_t index = 0; index < classifier_.flags().size(); ++index){
+	if (classifier_.flags()[index])
+	  LogTrace(theCategory) <<"                 " 
+				<<  TrackCategories::Names[index]; 
+      }
+
       std::vector<std::pair<TrackingParticleRef,double> > tpRefV;
       if ( glbTrack.isAvailable() && glbMuToSimColl.find(glbTrackRB) != glbMuToSimColl.end() ) {//get TP
 	tpRefV = glbMuToSimColl[glbTrackRB];
@@ -527,11 +609,22 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
 	const TrackingParticleRef & trp = tpRefV.begin()->first;
 
+	if( tpSelector_(*trp)  ) simMuon = true;
+
 	int particle_ID = trp->pdgId();
 	tpType = particle_ID;
 	int myBin = wantMotherBin.GetBinNum(particle_ID);
 
 	LogTrace(theCategory)<<"with the leading TP ID " << particle_ID;
+
+	tv_iterator dv = trp->decayVertices_begin();
+	decayx = (*dv)->position().x();
+	decayy = (*dv)->position().y();
+	decayz = (*dv)->position().z();
+
+	x =  trp->parentVertex()->position().x();
+	y =  trp->parentVertex()->position().y();
+	z =  trp->parentVertex()->position().z();
 	
 	for(TrackingParticle::g4t_iterator isimtk = trp->g4Track_begin();isimtk!=trp->g4Track_end();isimtk++) {//loop over sim in TP
 	  LogTrace(theCategory)<<"... now going to look for mother ....";
@@ -569,6 +662,7 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	}//loop over sim in TP
       }//get TP
       GlobalPoint pos(x,y,z);
+      GlobalPoint decayPos(decayx,decayy,decayz);
 
       if(TrackerBounds::isInside(pos)) inTracker = true;
       if(MuonBounds::isInside(pos)) inMuon = true;
@@ -584,8 +678,8 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	} else if (abs(tpType)==13 && abs(motherType)==13) {
 	  muClass = 5; //muon decay to muon
 	} else if (abs(tpType)!=13) {
-	  if(inTracker) muClass = 6; //othr (prompt other? : punch-through?)
-	  else muClass = 7;
+	  if(inTracker) muClass = 6; //other (punch-through? (decay to other) )
+	  else muClass = 7; //other (shower to other?)
 	}
       }
 
@@ -610,7 +704,7 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       if(muClass==6) thisME = fME_;
       if(muClass==7) thisME = gME_;
 
-      thisME->fill(*iMuon,pos);
+      thisME->fill(*iMuon,pos,decayPos);
       //thisME->hg_kink->Fill(kink(iMuon->combinedMuon()));
       //thisME->ht_kink->Fill(kink(iMuon->innerTrack()));
       thisME->hm_tpType->Fill(abs(tpType));

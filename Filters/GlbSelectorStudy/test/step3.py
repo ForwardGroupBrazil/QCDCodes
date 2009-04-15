@@ -5,7 +5,7 @@
 # with command line options: step2 -s RAW2DIGI,RECO,POSTRECO,ALCA:MuAlCalIsolatedMu+RpcCalHLT,VALIDATION --relval 25000,100 --datatier GEN-SIM-RECO --eventcontent RECOSIM --conditions FrontierConditions_GlobalTag,IDEAL_V9::All --filein file:XXX --no_exec
 import FWCore.ParameterSet.Config as cms
 
-process = cms.Process('VAL3')
+process = cms.Process('VAL3a')
 
 ## process.MessageLogger = cms.Service("MessageLogger",
 ##     detailedInfo = cms.untracked.PSet(
@@ -42,8 +42,8 @@ process = cms.Process('VAL3')
 ## )
 
 process.load('FWCore/MessageService/MessageLogger_cfi')
-process.MessageLogger.categories = ['MotherSearch', 'GlbSelectorStudy']
-process.MessageLogger.debugModules = ['glbSelStudy']
+process.MessageLogger.categories = ['MotherSearch', 'GlbSelectorStudy','MuonIdentification']
+process.MessageLogger.debugModules = ['glbSelStudy','muons']
 process.MessageLogger.cout = cms.untracked.PSet(
     threshold = cms.untracked.string('DEBUG'),
     default = cms.untracked.PSet(
@@ -55,6 +55,9 @@ process.MessageLogger.cout = cms.untracked.PSet(
     GlbSelectorStudy = cms.untracked.PSet(
         limit = cms.untracked.int32(-1)
     ),
+        MuonIdentification = cms.untracked.PSet(
+        limit = cms.untracked.int32(-1)
+        ),
 )
 process.MessageLogger.cerr = cms.untracked.PSet(
     placeholder = cms.untracked.bool(True)
@@ -78,19 +81,22 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.2 $'),
+    version = cms.untracked.string('$Revision: 1.3 $'),
     annotation = cms.untracked.string('step2 nevts:1'),
     name = cms.untracked.string('PyReleaseValidation')
 )
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(10)
+    input = cms.untracked.int32(50)
 )
 process.options = cms.untracked.PSet(
     Rethrow = cms.untracked.vstring('ProductNotFound')
 )
 # Input source
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('file:step2_RAW2DIGI_RECO_POSTRECO_ALCA_VALIDATION.root')
+                            skipEvents = cms.untracked.uint32(0),         
+                            #    fileNames = cms.untracked.vstring('file:step2K_RAW2DIGI_RECO_POSTRECO_ALCA_VALIDATION.root')
+                            fileNames = cms.untracked.vstring('file:/home/ba01/u112/aeverett/scratch_rcac/fullOutput.QCDpt800.root')
+                            #   fileNames = cms.untracked.vstring('file:/home/ba01/u112/aeverett/scratch_rcac/step3.root')
 )
 
 # Output definition
@@ -117,6 +123,8 @@ process.glbSelStudy.doAssoc = False
 process.glbSelStudy.trkMuAssocLabel = "tpToTkmuTrackAssociation"
 process.glbSelStudy.staMuAssocLabel = "tpToStaTrackAssociation"
 process.glbSelStudy.glbMuAssocLabel = "tpToGlbTrackAssociation"
+#process.glbSelStudy.tpSelector.tip = 10000
+#process.glbSelStudy.tpSelector.lip = 10000
 process.p = cms.Path(process.glbSelStudy)
 
 
@@ -129,6 +137,46 @@ process.validation_step = cms.Path(process.validation)
 process.endjob_step = cms.Path(process.endOfProcess)
 process.out_step = cms.EndPath(process.output)
 
+process.load("SimGeneral.MixingModule.mixNoPU_cfi")
+process.load("SimGeneral.TrackingAnalysis.trackingParticles_cfi")
+#process.mergedtruth.vertexDistanceCut = 2000
+process.mergedtruth.volumeRadius = 1200.0 # 1200.0 4K
+process.mergedtruth.volumeZ = 3000.0 # 3000.0 6K
+
+process.reTP_step = cms.Path(process.mix*process.trackingParticles)
+
+
+process.load("SimTracker.TrackHistory.TrackClassifier_cff")
+
+process.trackHistoryAnalyzer = cms.EDAnalyzer("TrackHistoryAnalyzer",
+    process.trackClassifier
+)
+#process.trackHistoryAnalyzer.trackProducer = 'globalMuon'
+process.trackHistoryAnalyzer.trackAssociator = 'TrackAssociatorByHits'
+process.history = cms.Path(process.trackHistoryAnalyzer)
+
+process.add_( 
+  cms.Service("TFileService",
+      fileName = cms.string("test.root")
+  )
+)
+process.trackCategoriesAnalyzer = cms.EDFilter("TrackCategoriesAnalyzer",
+    process.trackClassifier,
+    minimumNumberOfHits = cms.untracked.int32(8),
+    minimumTransverseMomentum = cms.untracked.double(1.),
+    minimumNumberOfPixelHits = cms.untracked.int32(2),
+    maximumChiSquared = cms.untracked.double(5.),
+    trackQualityClass = cms.untracked.string('loose')
+)
+
+process.p2 = cms.Path(process.trackCategoriesAnalyzer)
+
+
+
 # Schedule definition
-process.schedule = cms.Schedule(process.raw2digi_step,process.reconstruction_step,process.postreco_step,process.validation_step,process.p,process.endjob_step,process.out_step)
+#process.schedule = cms.Schedule(process.reTP_step,process.raw2digi_step,process.reconstruction_step,process.p) #,process.postreco_step,process.validation_step,process.endjob_step,process.out_step)
+
 #process.schedule = cms.Schedule(process.validation_step,process.p)
+
+process.schedule = cms.Schedule(process.reTP_step,process.raw2digi_step,process.reconstruction_step,process.p,process.endjob_step,process.out_step)
+#process.schedule = cms.Schedule(process.p)

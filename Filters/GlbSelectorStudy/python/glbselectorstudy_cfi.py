@@ -1,8 +1,11 @@
 import FWCore.ParameterSet.Config as cms
 from TrackingTools.TrackRefitter.TracksToTrajectories_cff import *
+from SimTracker.TrackHistory.TrackClassifier_cff import *
 
 glbSelStudy = cms.EDAnalyzer(
     'GlbSelectorStudy',
+
+    trackClassifier,
 
     simLabel = cms.InputTag("mergedtruth","MergedTrackTruth"),
     trkMuLabel = cms.InputTag("generalTracks"),
@@ -26,6 +29,18 @@ glbSelStudy = cms.EDAnalyzer(
                                 Propagator = cms.string('SmartPropagatorAnyRKOpposite')
                                 ),
     
+    tpSelector = cms.PSet(
+       src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
+       pdgId = cms.vint32(13, -13),
+       tip = cms.double(3.5),
+       lip = cms.double(30.0),
+       minHit = cms.int32(0),
+       ptMin = cms.double(0.9),
+       minRapidity = cms.double(-2.4),
+       maxRapidity = cms.double(2.4),
+       signalOnly = cms.bool(True),
+       chargedOnly = cms.bool(True)
+       ),
     
     IDconverttoBinNum = cms.PSet(
     ranges = cms.VPSet(cms.PSet(
