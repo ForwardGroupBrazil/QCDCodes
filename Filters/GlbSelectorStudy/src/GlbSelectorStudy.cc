@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Tue Mar 31 16:20:19 EDT 2009
-// $Id: GlbSelectorStudy.cc,v 1.3 2009/04/03 20:24:51 aeverett Exp $
+// $Id: GlbSelectorStudy.cc,v 1.4 2009/04/15 19:24:55 aeverett Exp $
 //
 //
 
@@ -76,6 +76,8 @@
 #include "SimTracker/TrackHistory/interface/TrackClassifier.h"
 #include "SimTracker/TrackHistory/interface/TrackCategories.h"
 
+#include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
+
 #include "TH1.h"
 #include "TH2.h"
 #include "TFile.h"
@@ -85,59 +87,83 @@
 //
 
 class GlbSelectorStudy : public edm::EDAnalyzer {
-   public:
-      explicit GlbSelectorStudy(const edm::ParameterSet&);
-      ~GlbSelectorStudy();
- 
-
-
-   private:
-      virtual void beginJob(const edm::EventSetup&) ;
-      virtual void analyze(const edm::Event&, const edm::EventSetup&);
-      virtual void endJob() ;
+public:
+  explicit GlbSelectorStudy(const edm::ParameterSet&);
+  ~GlbSelectorStudy();
+  
+  static const unsigned int primaryMuon       =  1<<1;
+  static const unsigned int siliconMuon       =  1<<2;
+  static const unsigned int calConversionMuon =  1<<3;
+  static const unsigned int otherMuon         =  1<<4;
+  static const unsigned int punchThrough      =  1<<5;
+  
+  //void setType( unsigned int type ) { type_ = type; }
+  //unsigned int type() const { return type_; }
+  
+  bool isPrimaryMuon(unsigned int inType_)     const { return  inType_ & primaryMuon; }
+  bool isSiliconMuon(unsigned int inType_)    const { return  inType_ & siliconMuon; }
+  bool isCalConversionMuon(unsigned int inType_) const { return  inType_ & calConversionMuon; }
+  bool isOtherMuon(unsigned int inType_) const { return  inType_ & otherMuon; }
+  bool isPunchThrough(unsigned int inType_) const { return  inType_ & punchThrough; }
+  
+  
+private:
+  virtual void beginJob(const edm::EventSetup&) ;
+  virtual void analyze(const edm::Event&, const edm::EventSetup&);
+  virtual void endJob() ;
   virtual double kink(const reco::TrackRef& muon) const ;
   virtual void addTraj(const reco::Track& candIn);
-      // ----------member data ---------------------------
+  virtual void printTruth(TrackingParticleRef & simRef, int i);
+  virtual unsigned int getBit(const TrackingParticleRef&) const;
+  virtual std::string particleString(int pdgId) const;
+  virtual std::string vertexString(TrackingParticleRefVector in, TrackingParticleRefVector out ) const;
+  // ----------member data ---------------------------
+  //unsigned int type_;
+  
   bool inTrackerBound_;
   bool inMuonBound_;
   bool inCal_;
   bool simMuon_;
-
+  
   bool doAssoc_;
 
+    edm::ESHandle<ParticleDataTable> pdt_;
+  
   std::string theCategory;
-
+  
   IDconverttoBinNum wantMotherBin;
-
+  
   //edm::InputTag simLabel_;
   //edm::InputTag trackingParticleLabel_;
   //edm::InputTag glbMuLabel_;
-
+  
   //edm::InputTag glbMuAssocLabel_;
-
+  
   edm::InputTag simLabel_;
   edm::InputTag trkMuLabel_;
   edm::InputTag staMuLabel_;
   edm::InputTag glbMuLabel_;
   edm::InputTag muonLabel_;
-
+  
   edm::InputTag trkMuAssocLabel_;
   edm::InputTag staMuAssocLabel_;
   edm::InputTag glbMuAssocLabel_;
-
+  
   TrackAssociatorBase* trkMuAssociator_, * staMuAssociator_, * glbMuAssociator_;
-
+  
   TrackTransformer *theTrackTransformer;
-
+  
   //TFileDirectory * prompt; //, *promptSta, *promptTk, *promptGlb;
   //TFileDirectory decay;//, *decaySta, *decayTk, *decayGlb;
   //TFileDirectory outside;//, *outsideSta, *outsideTk, *outsideGlb;
-
+  
   struct MuonME;
   MuonME *aME_,*bME_,*cME_;  
   MuonME *dME_,*eME_,*fME_, *gME_;  
 
-  TrackingParticleSelector tpSelector_;
+  TrackingParticleSelector tpSelector_primary;
+  TrackingParticleSelector tpSelector_silicon;
+  TrackingParticleSelector tpSelector_calConversion;
   TrackClassifier classifier_;
 
 };
@@ -149,6 +175,10 @@ typedef std::vector<TrackingVertex>                TrackingVertexCollection;
 typedef edm::Ref<TrackingVertexCollection>         TrackingVertexRef;
 typedef edm::RefVector<TrackingVertexCollection>   TrackingVertexRefVector;
 typedef TrackingVertexRefVector::iterator          tv_iterator;
+
+typedef edm::AssociationMap<edm::OneToValue<TrackingParticleCollection, unsigned int, unsigned int > > tpBitMap;
+typedef edm::AssociationMap<edm::OneToValue<reco::TrackCollection, unsigned int, unsigned int > > recoBitMap;
+typedef edm::AssociationMap<edm::OneToOne<reco::TrackCollection, TrackingParticleCollection, unsigned int > > recoTpMap;
 
 using namespace std;
 using namespace edm;
@@ -178,18 +208,21 @@ struct GlbSelectorStudy::MuonME {
     ht_nHit = TkDir->make<TH1F>("ht_nHit","nHit",100,0.,100.);
     ht_chi2 = TkDir->make<TH1F>("ht_chi2","chi2",100,0.,100.);
     ht_nchi2 = TkDir->make<TH1F>("ht_nchi2","nchi2",100,0.,100.);
+    ht_nchi2Prob = TkDir->make<TH1F>("ht_nchi2Prob","nchi2 Probability",100,0.,100.);
 
     hs_dxy = StaDir->make<TH1F>("hs_dxy","d_{xy}",100,0.,1.);
     hs_dz = StaDir->make<TH1F>("hs_dz","d_{z}",100,0.,10.);
     hs_nHit = StaDir->make<TH1F>("hs_nHit","nHit",100,0.,100.);
     hs_chi2 = StaDir->make<TH1F>("hs_chi2","chi2",100,0.,100.);
     hs_nchi2 = StaDir->make<TH1F>("hs_nchi2","nchi2",100,0.,100.);
+    hs_nchi2Prob = StaDir->make<TH1F>("hs_nchi2Prob","nchi2 Probability",100,0.,100.);
 
     hg_dxy = GlbDir->make<TH1F>("hg_dxy","d_{xy}",100,0.,1.);
     hg_dz = GlbDir->make<TH1F>("hg_dz","d_{z}",100,0.,10.);
     hg_nHit = GlbDir->make<TH1F>("hg_nHit","nHit",100,0.,100.);
     hg_chi2 = GlbDir->make<TH1F>("hg_chi2","chi2",100,0.,100.);
     hg_nchi2 = GlbDir->make<TH1F>("hg_nchi2","nchi2",100,0.,100.);
+    hg_nchi2Prob = GlbDir->make<TH1F>("hg_nchi2Prob","nchi2 Probability",100,0.,100.);
 
     hm_hcal = MuDir->make<TH1F>("hm_hcal","E_{HCAL}",100,0.,10.);
     hm_ecal = MuDir->make<TH1F>("hm_ecal","E_{ECAL}",100,0.,10.);
@@ -215,12 +248,22 @@ struct GlbSelectorStudy::MuonME {
 
     hm_tm_sel = MuDir->make<TH1F>("hm_tm_sel","TM Selectors",11,-0.5,10.5);
 
+    hm_NSt_tot_ =MuDir->make<TH1F>("hm_NSt_tot","nStation total",11,-0.5,10.5);
+    hm_NSt_rpc_ =MuDir->make<TH1F>("hm_NSt_rpc","nStation RPC",11,-0.5,10.5);
+    hm_NSt_csc_ =MuDir->make<TH1F>("hm_NSt_csc","nStation CSC",11,-0.5,10.5);
+    hm_NSt_dt_ =MuDir->make<TH1F>("hm_NSt_dt","nStation DT",11,-0.5,10.5);
+
+    hm_noDepth1_ = MuDir->make<TH1F>("hm_noDepth1","no depth (1)",3,-1.5,1.5);
+    hm_noDepth2_ = MuDir->make<TH1F>("hm_noDepth2","no depth (2)",3,-1.5,1.5);
+
     hm_outerPosition = MuDir->make<TH2F>("hm_outerPosition","OuterMost Position",1200,0.,1200.,1000,0.,1000.);
     hm_motherVtxPos = MuDir->make<TH2F>("hm_motherVtxPos","Mother Vtx Position",1201,-1.,1200.,1001,-1.,1000.);
     hm_motherDecayPos = MuDir->make<TH2F>("hm_motherDecayPos","Mother Decay Position",1201,-1.,1200.,1001,-1.,1000.);
+    hm_motherMuVtxPos = MuDir->make<TH2F>("hm_motherMuVtxPos","MotherMu Vtx Position",1201,-1.,1200.,1001,-1.,1000.);
+    hm_motherMuDecayPos = MuDir->make<TH2F>("hm_motherMuDecayPos","MotherMu Decay Position",1201,-1.,1200.,1001,-1.,1000.);
 
     hg_kink = GlbDir->make<TH1F>("hg_kink","Kink",100,0.,10.);
-    ht_kink = GlbDir->make<TH1F>("ht_kink","Kink",100,0.,10.);
+    ht_kink = TkDir->make<TH1F>("ht_kink","Kink",100,0.,10.);
 
     hm_tpType = MuDir->make<TH1F>("hm_tpType","TP Type",501,-0.5,500.5);
     hm_motherType = MuDir->make<TH1F>("hm_motherType","Mother Type",501,-0.5,500.5);
@@ -228,14 +271,19 @@ struct GlbSelectorStudy::MuonME {
     hm_trackerMu = MuDir->make<TH1F>("hm_TM","isTrackerMuon",3,-1.5,1.5);
 
   };
-  void fill(const reco::Muon& iMuon,const GlobalPoint pos,const GlobalPoint decayPos) {
+  //void fill(const reco::Muon& iMuon,const GlobalPoint pos,const GlobalPoint decayPos) {
+  void fill(const reco::Muon& iMuon,const TrackingParticleRef& pos, const TrackingParticleRef& muTp) {
     //
+    hm_tpType->Fill(pos->pdgId());
+
     const TrackRef glbTrack = iMuon.combinedMuon();
     hg_dxy->Fill(glbTrack->dxy());
     hg_dz->Fill(glbTrack->dz());
     hg_nHit->Fill(glbTrack->numberOfValidHits());
     hg_chi2->Fill(glbTrack->chi2());
     hg_nchi2->Fill(glbTrack->normalizedChi2());
+    hg_nchi2Prob->Fill(-LnChiSquaredProbability(glbTrack->chi2(), glbTrack->ndof()));
+
 
     hm_trackerMu->Fill(iMuon.isTrackerMuon());
 
@@ -263,6 +311,7 @@ struct GlbSelectorStudy::MuonME {
     hs_nHit->Fill(staTrack->numberOfValidHits());
     hs_chi2->Fill(staTrack->chi2());
     hs_nchi2->Fill(staTrack->normalizedChi2());
+    hs_nchi2Prob->Fill(-LnChiSquaredProbability(staTrack->chi2(), staTrack->ndof()));
 
     hs_NTrksEta_->Fill(staTrack->eta());
     hs_NTrksPt_->Fill(staTrack->pt());
@@ -281,6 +330,32 @@ struct GlbSelectorStudy::MuonME {
     
     if(station == 1) hs_NTrksEta_St1_->Fill(staTrack->eta());
     if(station == 1) hs_NTrksPt_St1_->Fill(staTrack->pt());
+
+    std::pair<std::pair<int,int>,std::pair<int,int> > nStat = countStations(iMuon.combinedMuon());
+
+    hm_NSt_tot_->Fill(nStat.first.first);
+    hm_NSt_rpc_->Fill(nStat.first.second);
+    hm_NSt_dt_->Fill(nStat.second.first);
+    hm_NSt_csc_->Fill(nStat.second.second);
+
+    bool noDepth = (nStat.first.second == 1 && (nStat.second.first == 1 || nStat.second.second == 1) ) ? 1 : 0;
+
+    int nCSCSeg[4];
+    int nDTSeg[4];
+    int nRPCSeg[4];
+    for(int station = 0; station < 4; ++station) {
+      nCSCSeg[station] = iMuon.numberOfSegments(station+1, MuonSubdetId::CSC, Muon::NoArbitration);
+      nDTSeg[station] = iMuon.numberOfSegments(station+1, MuonSubdetId::DT, Muon::NoArbitration);
+      nRPCSeg[station] = iMuon.numberOfSegments(station+1, MuonSubdetId::RPC, Muon::NoArbitration);
+    }
+
+    bool noDepth2 =  ( (nCSCSeg[0] > 1 && nCSCSeg[1] == 0 && nCSCSeg[2] == 0 && nCSCSeg[3] == 0 && nRPCSeg[0] >= 1) ||
+	 (nDTSeg[0] > 1 && nDTSeg[1] == 0 && nDTSeg[2] == 0 && nDTSeg[3] == 0 && nRPCSeg[0] >= 1) ) ? 1 : 0;
+
+    hm_noDepth1_->Fill(noDepth);
+    hm_noDepth2_->Fill(noDepth2);
+
+
     
     const TrackRef trkTrack = iMuon.track();
     ht_dxy->Fill(trkTrack->dxy());
@@ -288,7 +363,7 @@ struct GlbSelectorStudy::MuonME {
     ht_nHit->Fill(trkTrack->numberOfValidHits());
     ht_chi2->Fill(trkTrack->chi2());
     ht_nchi2->Fill(trkTrack->normalizedChi2());
-
+    ht_nchi2Prob->Fill(-LnChiSquaredProbability(trkTrack->chi2(), trkTrack->ndof()));
 
 
     if(iMuon.isEnergyValid()) hm_hcal->Fill(iMuon.calEnergy().had);
@@ -324,16 +399,132 @@ struct GlbSelectorStudy::MuonME {
     float outerZ = glbTrack->outerZ();
     float outerR = sqrt( outerX*outerX +outerY*outerY);
     hm_outerPosition->Fill(outerZ,outerR);
-    hm_motherVtxPos->Fill(abs(pos.z()),pos.perp());
-    hm_motherDecayPos->Fill(abs(decayPos.z()),decayPos.perp());
 
+    if(pos.isAvailable()) {
+      tv_iterator dv = pos->decayVertices_begin();
+      float decayx = (*dv)->position().x();
+      float decayy = (*dv)->position().y();
+      float decayz = (*dv)->position().z();
+      
+      hm_motherVtxPos->Fill(abs(pos->vertex().z()),sqrt(pos->vertex().perp2()));
+      hm_motherDecayPos->Fill(abs(decayz),sqrt(decayx*decayx + decayy*decayy) );
+
+    }
+
+    if(muTp.isAvailable()) {
+      tv_iterator dv = muTp->decayVertices_begin();
+      float decayx = (*dv)->position().x();
+      float decayy = (*dv)->position().y();
+      float decayz = (*dv)->position().z();
+      
+      hm_motherMuVtxPos->Fill(abs(muTp->vertex().z()),sqrt(muTp->vertex().perp2()));
+      hm_motherMuDecayPos->Fill(abs(decayz),sqrt(decayx*decayx + decayy*decayy) );
+
+    }
 
   };
 
+std::pair< std::pair<int,int>,std::pair<int,int> > countStations(const reco::TrackRef& track)
+{
+  bool dt_1 = false;
+  bool dt_2 = false;
+  bool dt_3 = false;
+  bool dt_4 = false;
+  bool csc_1 = false;
+  bool csc_2 = false;
+  bool csc_3 = false;
+  bool csc_4 = false;
+  bool rpc_1 = false;
+  bool rpc_2 = false;
+  bool rpc_3 = false;
+  bool rpc_4 = false;
 
-  TH1F *ht_dxy, *ht_dz, *ht_nHit, *ht_chi2, *ht_nchi2;
-  TH1F *hs_dxy, *hs_dz, *hs_nHit, *hs_chi2, *hs_nchi2;
-  TH1F *hg_dxy, *hg_dz, *hg_nHit, *hg_chi2, *hg_nchi2;
+  for (trackingRecHit_iterator iall = track->recHitsBegin(); iall != track->recHitsEnd(); ++iall) {
+    
+    //    if( (*iall)->det()->geographicalId().det()==2 && (*iall)->det()->geographicalId().subdetId()==3) continue;
+
+    if((*iall)->isValid()){
+      int DT_station = 0;
+      int CSC_station = 0;
+      int RPC_station = 0;
+      
+      switch((*iall)->geographicalId().det()) {      
+      case DetId::Tracker:
+        break;
+      case DetId::Muon:      
+        switch((*iall)->geographicalId().subdetId()) {  
+        case MuonSubdetId::DT:
+          {
+          DTChamberId detId_dt((*iall)->geographicalId().rawId());
+          DT_station = detId_dt.station();
+          break;
+          }
+        case MuonSubdetId::CSC:
+          {
+	    CSCDetId detId_csc((*iall)->geographicalId().rawId());
+	    CSC_station = detId_csc.station();
+	    break;
+          }
+	case MuonSubdetId::RPC:
+	  {
+	    RPCDetId rpcid((*iall)->geographicalId().rawId());
+	    RPC_station = rpcid.station();	    
+	    break;
+	  }
+        default: ;
+        }
+        break;
+      default: ;
+      }
+      
+      if(DT_station == 1) dt_1 = true;
+      if(DT_station == 2) dt_2 = true;
+      if(DT_station == 3) dt_3 = true;
+      if(DT_station == 4) dt_4 = true;
+      
+      if(CSC_station == 1) csc_1 = true;
+      if(CSC_station == 2) csc_2 = true;
+      if(CSC_station == 3) csc_3 = true;
+      if(CSC_station == 4) csc_4 = true;
+
+      if(RPC_station == 1) rpc_1 = true;
+      if(RPC_station == 2) rpc_2 = true;
+      if(RPC_station == 3) rpc_3 = true;
+      if(RPC_station == 4) rpc_4 = true;
+      
+    }
+  }
+  int last = 0;
+  int n_dt = 0;
+  if (dt_1) {n_dt++;last=1;}
+  if (dt_2) {n_dt++;last=2;}
+  if (dt_3) {n_dt++;last=3;}
+  if (dt_4) {n_dt++;last=4;}
+
+  int n_csc = 0;
+  if (csc_1) {n_csc++;last=5;}
+  if (csc_2) {n_csc++;last=6;}
+  if (csc_3) {n_csc++;last=7;}
+  if (csc_4) {n_csc++;last=8;}
+
+  int n_rpc = 0;
+  if (rpc_1) {n_rpc++;last=9;}
+  if (rpc_2) {n_rpc++;last=10;}
+  if (rpc_3) {n_rpc++;last=11;}
+  if (rpc_4) {n_rpc++;last=12;}
+  
+  int nTot = (n_dt+n_csc+n_rpc);
+
+  std::pair<int,int> p1(nTot,n_rpc);
+  std::pair<int,int> p2(n_dt,n_csc);
+ 
+  return std::pair<std::pair<int,int>,std::pair<int,int> >(p1,p2);
+};
+
+
+  TH1F *ht_dxy, *ht_dz, *ht_nHit, *ht_chi2, *ht_nchi2, *ht_nchi2Prob;
+  TH1F *hs_dxy, *hs_dz, *hs_nHit, *hs_chi2, *hs_nchi2, *hs_nchi2Prob;
+  TH1F *hg_dxy, *hg_dz, *hg_nHit, *hg_chi2, *hg_nchi2, *hg_nchi2Prob;
 
   TH1F *hm_hcal, *hm_ecal;
 
@@ -348,12 +539,16 @@ struct GlbSelectorStudy::MuonME {
 
   TH2F *hm_outerPosition;
   TH2F *hm_motherVtxPos,*hm_motherDecayPos;
+  TH2F *hm_motherMuVtxPos,*hm_motherMuDecayPos;
   TH2F *hm_2DComp;
 
   TH1F *hg_kink;
   TH1F *ht_kink;
 
   TH1F *hm_tpType, *hm_motherType, *hm_trackerMu;
+
+  TH1F *hm_NSt_tot_, *hm_NSt_rpc_, *hm_NSt_csc_, *hm_NSt_dt_;
+  TH1F *hm_noDepth1_, *hm_noDepth2_;
 };
 
 //
@@ -395,19 +590,40 @@ GlbSelectorStudy::GlbSelectorStudy(const edm::ParameterSet& iConfig):
 
   ParameterSet trackTransformerPSet = iConfig.getParameter<ParameterSet>("TrackTransformer");
   //trackTransformerPSet.addParameter<string>("Propagator",TransformerOutPropagator);
-  //theTrackTransformer = new TrackTransformer(trackTransformerPSet);
+  theTrackTransformer = new TrackTransformer(trackTransformerPSet);
 
-  ParameterSet tpset = iConfig.getParameter<ParameterSet>("tpSelector");
-  tpSelector_ = TrackingParticleSelector(tpset.getParameter<double>("ptMin"),
-                                         tpset.getParameter<double>("minRapidity"),
-                                         tpset.getParameter<double>("maxRapidity"),
-                                         tpset.getParameter<double>("tip"),
-                                         tpset.getParameter<double>("lip"),
-                                         tpset.getParameter<int>("minHit"),
-                                         tpset.getParameter<bool>("signalOnly"),
-                                         tpset.getParameter<bool>("chargedOnly"),
-                                         tpset.getParameter<std::vector<int> >("pdgId"));
+  ParameterSet tpset_primary = iConfig.getParameter<ParameterSet>("tpSelector_primary");
+  tpSelector_primary = TrackingParticleSelector(					       tpset_primary.getParameter<double>("ptMin"),
+											       tpset_primary.getParameter<double>("minRapidity"),
+											       tpset_primary.getParameter<double>("maxRapidity"),
+											       tpset_primary.getParameter<double>("tip"),
+											       tpset_primary.getParameter<double>("lip"),
+											       tpset_primary.getParameter<int>("minHit"),
+											       tpset_primary.getParameter<bool>("signalOnly"),
+											       tpset_primary.getParameter<bool>("chargedOnly"),
+											       tpset_primary.getParameter<std::vector<int> >("pdgId"));
+  
+  ParameterSet tpset_silicon = iConfig.getParameter<ParameterSet>("tpSelector_silicon");
+  tpSelector_silicon = TrackingParticleSelector(tpset_silicon.getParameter<double>("ptMin"),
+                                         tpset_silicon.getParameter<double>("minRapidity"),
+                                         tpset_silicon.getParameter<double>("maxRapidity"),
+                                         tpset_silicon.getParameter<double>("tip"),
+                                         tpset_silicon.getParameter<double>("lip"),
+                                         tpset_silicon.getParameter<int>("minHit"), 
+                                         tpset_silicon.getParameter<bool>("signalOnly"),
+                                         tpset_silicon.getParameter<bool>("chargedOnly"),
+                                         tpset_silicon.getParameter<std::vector<int> >("pdgId"));
 
+  ParameterSet tpset_calConversion = iConfig.getParameter<ParameterSet>("tpSelector_calConversion");
+  tpSelector_calConversion = TrackingParticleSelector(tpset_calConversion.getParameter<double>("ptMin"),
+                                         tpset_calConversion.getParameter<double>("minRapidity"),
+                                         tpset_calConversion.getParameter<double>("maxRapidity"),
+                                         tpset_calConversion.getParameter<double>("tip"),
+                                         tpset_calConversion.getParameter<double>("lip"),
+                                         tpset_calConversion.getParameter<int>("minHit"),
+                                         tpset_calConversion.getParameter<bool>("signalOnly"),
+                                         tpset_calConversion.getParameter<bool>("chargedOnly"),
+                                         tpset_calConversion.getParameter<std::vector<int> >("pdgId"));
 }
 
 
@@ -434,6 +650,7 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   using namespace reco;
 
   classifier_.newEvent(iEvent, iSetup);
+
 
 
   Handle<edm::SimTrackContainer> simTracks;
@@ -516,40 +733,72 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     glbMuToSimColl = *(glbMuToSimHandle.product());
   }
 
+  ////////////////////////////////
+
+
+
+  ////typedef  std::map< reco::TrackCollection, unsigned int > myMap1;
+  //typedef  std::map< unsigned int, unsigned int > myMap2;
+  
+  //typedef edm::AssociationMap<
+  //edm::OneToOne<reco::TrackCollection,
+  //reco::TrackCollection> > myOtherMap;
+  
+  
+  tpBitMap   tpBitMap_;
+  recoBitMap recoBitMap_;
+  recoTpMap recoTpMap_;
+  //myMap2 testMap2;
+  //myOtherMap testMap3;
+  
+    //typedef std::vector<int> CKey;
+    //typedef std::vector<double> CVal;
+    //typedef edm::AssociationMap<edm::OneToOne<CKey, CVal, unsigned char> > Assoc;
+
+
   ///////////////////////
   LogDebug(theCategory)<<"SimColl size " << simColl.size();
   const TrackingParticleCollection::size_type nSim = simColl.size();
   for(TrackingParticleCollection::size_type i=0; i<nSim; i++) {
     TrackingParticleRef simRef(simHandle, i);
     const TrackingParticle* simTP = simRef.get();
-    //if ( ! tpSelector_(*simTP) ) continue;
-  
-    classifier_.evaluate( simRef );
-  
-    LogTrace(theCategory)<<"TP " << i << " with pdgID " << simTP->pdgId();
-    LogTrace(theCategory) <<"     with GenSize " << simTP->genParticle().size();
-    LogTrace(theCategory) <<"     with GeantSize " << simTP->g4Tracks().size();
-    LogTrace(theCategory) <<"     with Pt      " << simTP->pt();
-    LogTrace(theCategory) <<"     with Eta     " << simTP->eta();
-    LogTrace(theCategory) <<"     with Phi     " << simTP->phi();
-    LogTrace(theCategory) <<"     with Vtx Pos " << simTP->parentVertex()->position();
+    
+    unsigned int thisBit = getBit(simRef);
 
-    for(tv_iterator dv = simTP->decayVertices_begin(); dv != simTP->decayVertices_end(); ++dv) {
-      LogTrace(theCategory)<<"     DecayVertex "<<(*dv)->position();
+    if ( ! (isPrimaryMuon(thisBit) || isSiliconMuon(thisBit) || isCalConversionMuon(thisBit) ) ) continue;
+
+    printTruth(simRef, i);
+    
+    std::vector<std::pair<RefToBase<Track>, double> > rt;
+    
+    if(simToGlbMuColl.find(simRef) != simToGlbMuColl.end()){
+      //rt = (std::vector<std::pair<RefToBase<Track>, double> >) simToGlbMuColl[simRef];
+      rt = simToGlbMuColl[simRef];
+      if (rt.size()!=0) {
+	LogTrace(theCategory) << "\nTrackingParticle #" << i 
+			      << " with pt=" << sqrt(simRef->momentum().perp2()) 
+			      << " associated with quality:" << rt.begin()->second <<"\n";
+      }
+    }else{
+      LogTrace(theCategory) 
+	<< "TrackingParticle #" << i
+	<< " with pt,eta,phi: " 
+	<< sqrt(simRef->momentum().perp2()) << " , "
+	<< simRef->momentum().eta() << " , "
+	<< simRef->momentum().phi() << " , "
+	<< " NOT associated to any reco::Track" << "\n";
     }
 
-    LogTrace(theCategory) <<"      with flags "; 
-    for (std::size_t index = 0; index < classifier_.flags().size(); ++index){
-      if (classifier_.flags()[index])
-	LogTrace(theCategory) <<"                 " 
-			      <<  TrackCategories::Names[index]; 
-    }
+    if (rt.size()==0) continue;
 
-    //    if(abs(simTP->pdgId()) == 13)
-    //      for(TrackingParticle::g4t_iterator isimtk = simTP->g4Track_begin();isimtk!=simTP->g4Track_end();isimtk++) {//loop over sim in TP
-    //	LogTrace(theCategory)<<"... look for SimMu MOTHER ....";
-    //	MotherSearch mother(&*isimtk, simTracks, simVertexs, hepmc);
-    //      }
+    reco::TrackRef glbMuTrackRef = rt.begin()->first.castTo<TrackRef >();
+    //edm::RefToBase<reco::Track> recoRef = rt.begin()->first; 
+
+    tpBitMap_.insert(simRef,thisBit);
+    recoBitMap_.insert( glbMuTrackRef, thisBit );
+    recoTpMap_.insert( glbMuTrackRef, simRef );
+    //unsigned int thisBit2;   
+    //testMap2.insert(std::make_pair(thisBit,thisBit2) );   
     
   }
   ///////////////////////  
@@ -561,38 +810,22 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       iMuon != muonColl.end(); ++iMuon) {
 
     int muClass = 0;
-    int tpType = 0;
-    int motherType = 0;
-    bool simMuon = false;
-    
-    double decayR = 0;
-    double decayZ = 0;
-    
-    bool inTracker = false;
-    bool inMuon = false;
-    bool validMother = false;
-    bool validSimMother = false;
-    bool validGenMother = false;
-        
-    double x = 999.0;
-    double y = 0.0;
-    double z = 1199.0; 
-
-    double decayx = 999.0;
-    double decayy = 0.0;
-    double decayz = 1199.0; 
 
     LogTrace(theCategory)<<"Looking at a new muon.....";
     if ( iMuon->isGlobalMuon() ) {      
       LogTrace(theCategory)<<"which isGlobalMuon";
 
+      //TrackingParticleRef & theTrp ;
+
       const TrackRef glbTrack = iMuon->combinedMuon();
       const RefToBase<Track> glbTrackRB(glbTrack);
+
+      unsigned int theBit = recoBitMap_[glbTrack];
+      TrackingParticleRef muTp = recoTpMap_[glbTrack];
       
-      LogTrace(theCategory)<<"that is available " <<  glbTrack.isAvailable();
+      LogTrace(theCategory)<<"that is available " <<  glbTrack.isAvailable() << " with bit " << theBit;
       
       classifier_.evaluate( glbTrackRB );
-      //std::cout << classifier_.flags();
       
       LogTrace(theCategory) <<"      with flags "; 
       for (std::size_t index = 0; index < classifier_.flags().size(); ++index){
@@ -601,114 +834,55 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 				<<  TrackCategories::Names[index]; 
       }
 
+      //LogTrace(theCategory) << "  and kink " << kink(glbTrack);
+
       std::vector<std::pair<TrackingParticleRef,double> > tpRefV;
       if ( glbTrack.isAvailable() && glbMuToSimColl.find(glbTrackRB) != glbMuToSimColl.end() ) {//get TP
 	tpRefV = glbMuToSimColl[glbTrackRB];
 
 	LogTrace(theCategory)<<"Found tpRefV of size " << tpRefV.size();
 
+	///
+	if (theBit == 0) {
+	  LogTrace(theCategory) << "Sanity Check . . . . .";
+	  std::vector<std::pair<TrackingParticleRef,double> >::const_iterator iIter;
+	  std::vector<std::pair<TrackingParticleRef,double> >::const_iterator iBegin = tpRefV.begin();
+	  std::vector<std::pair<TrackingParticleRef,double> >::const_iterator iEnd = tpRefV.end();
+	  for( iIter = iBegin; iIter != iEnd; ++iIter) {
+	    unsigned int iBit = getBit(iIter->first);
+	    LogTrace(theCategory) << " . . . " << iBit;
+	  }
+	}
+	///
+
 	const TrackingParticleRef & trp = tpRefV.begin()->first;
 
-	if( tpSelector_(*trp)  ) simMuon = true;
+	if (isPrimaryMuon(theBit)) muClass = 1;
+	else if (isSiliconMuon(theBit)) muClass = 2;
+	else if (isCalConversionMuon(theBit)) muClass = 3;
+	else if (isOtherMuon(theBit)) muClass = 4;
+	else muClass = 5;
 
-	int particle_ID = trp->pdgId();
-	tpType = particle_ID;
-	int myBin = wantMotherBin.GetBinNum(particle_ID);
 
-	LogTrace(theCategory)<<"with the leading TP ID " << particle_ID;
-
-	tv_iterator dv = trp->decayVertices_begin();
-	decayx = (*dv)->position().x();
-	decayy = (*dv)->position().y();
-	decayz = (*dv)->position().z();
-
-	x =  trp->parentVertex()->position().x();
-	y =  trp->parentVertex()->position().y();
-	z =  trp->parentVertex()->position().z();
+	MuonME * thisME = 0;
 	
-	for(TrackingParticle::g4t_iterator isimtk = trp->g4Track_begin();isimtk!=trp->g4Track_end();isimtk++) {//loop over sim in TP
-	  LogTrace(theCategory)<<"... now going to look for mother ....";
-	  MotherSearch mother(&*isimtk, simTracks, simVertexs, hepmc);
+	if(muClass==1) thisME = aME_;
+	if(muClass==2) thisME = bME_;
+	if(muClass==3) thisME = cME_;
+	if(muClass==4) thisME = dME_;
+	if(muClass==5) thisME = eME_;
 
-	  validMother = mother.IsValid();	  
-	  if (validMother){
-	    validSimMother = mother.SimIsValid();
-	    validGenMother = mother.GenIsValid();
-	    if (validSimMother){
-	      LogTrace(theCategory)<<"motherFromSim " << mother.Sim_mother->type();
-	      LogTrace(theCategory)<<"     vertex " << mother.Sim_vertex->position().Rho() << " " <<  mother.Sim_vertex->position().z();
-	      x = mother.Sim_vertex->position().x();
-	      y = mother.Sim_vertex->position().y();
-	      z = mother.Sim_vertex->position().z();
-	      motherType = mother.Sim_mother->type();
-	      //(*l3ParentID).push_back(mother.Sim_mother->type());
-	      //(*l3MotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Sim_mother->type()));
-	    } else {
-	      LogTrace(theCategory)<<"motherFromGen " << mother.Gen_mother->pdg_id();
-	      LogTrace(theCategory)<<"     vertex " << mother.Gen_vertex->position().perp() << " " <<  mother.Gen_vertex->position().z();
-	      x = 0.1 * mother.Gen_vertex->position().x();
-	      y = 0.1 * mother.Gen_vertex->position().y();
-	      z = 0.1 * mother.Gen_vertex->position().z();
-	      motherType = mother.Gen_mother->pdg_id();
-	      //(*l3ParentID).push_back(mother.Gen_mother->pdg_id());
-	      //(*l3MotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Gen_mother->pdg_id()));
-	    }
-	    //do it once per tracking particle once it succeed
-	    break;
-	  } else{
-	    //this is a "prompt" TrackingParticle
-	    edm::LogError(theCategory)<<"tricky muon from TrackingParticle.";
-	  }
-	}//loop over sim in TP
+	GlobalPoint pos(0,0,0);
+	GlobalPoint decayPos(1,1,1);
+	
+	thisME->fill(*iMuon,trp,muTp);
+	
+
       }//get TP
-      GlobalPoint pos(x,y,z);
-      GlobalPoint decayPos(decayx,decayy,decayz);
 
-      if(TrackerBounds::isInside(pos)) inTracker = true;
-      if(MuonBounds::isInside(pos)) inMuon = true;
-      LogTrace(theCategory) << "***TP is inMuon " << inMuon << " and inTracker " << inTracker;
-
-      if(!validMother) {
-	if(abs(tpType)==13) muClass = 1; //prompt mu
-	else muClass = 2; //prompt other (punch-through)
-      } else {
-	if(abs(tpType)==13 && abs(motherType)!=13) {
-	  if(inTracker) muClass = 3; //decay to muon
-	  else muClass = 4; //shower to muon
-	} else if (abs(tpType)==13 && abs(motherType)==13) {
-	  muClass = 5; //muon decay to muon
-	} else if (abs(tpType)!=13) {
-	  if(inTracker) muClass = 6; //other (punch-through? (decay to other) )
-	  else muClass = 7; //other (shower to other?)
-	}
-      }
 
       LogTrace(theCategory)<<"MuClass " << muClass;
 
-      /*
-      if(muClass==1) aME_->fill(*iMuon,pos);
-      if(muClass==2) bME_->fill(*iMuon,pos);
-      if(muClass==3) cME_->fill(*iMuon,pos);
-      if(muClass==4) dME_->fill(*iMuon,pos);
-      if(muClass==5) eME_->fill(*iMuon,pos);
-      if(muClass==6) fME_->fill(*iMuon,pos);
-      */
-
-      MuonME * thisME = 0;
-
-      if(muClass==1) thisME = aME_;
-      if(muClass==2) thisME = bME_;
-      if(muClass==3) thisME = cME_;
-      if(muClass==4) thisME = dME_;
-      if(muClass==5) thisME = eME_;
-      if(muClass==6) thisME = fME_;
-      if(muClass==7) thisME = gME_;
-
-      thisME->fill(*iMuon,pos,decayPos);
-      //thisME->hg_kink->Fill(kink(iMuon->combinedMuon()));
-      //thisME->ht_kink->Fill(kink(iMuon->innerTrack()));
-      thisME->hm_tpType->Fill(abs(tpType));
-      thisME->hm_motherType->Fill(abs(motherType));
 
     }// isGlobal()
   }// loop over muon
@@ -718,10 +892,11 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
-GlbSelectorStudy::beginJob(const edm::EventSetup&)
+GlbSelectorStudy::beginJob(const edm::EventSetup& iSetup)
 {
-edm::Service<TFileService> fs;
+  edm::Service<TFileService> fs;
 
+  iSetup.getData( pdt_ );
 //TFileDirectory prompt = fs->mkdir( "prompt" );
 //decay = fs->mkdir( "decay" );
 //outside = fs->mkdir( "outside" );
@@ -732,18 +907,18 @@ edm::Service<TFileService> fs;
  cME_ = new MuonME;
  dME_ = new MuonME;
  eME_ = new MuonME;
- fME_ = new MuonME;
- gME_ = new MuonME;
+ //fME_ = new MuonME;
+ //gME_ = new MuonME;
  // decayME_ = new MuonME;
  // outsideME_ = new MuonME;
  //
- aME_->bookHistograms(fs,"A");
- bME_->bookHistograms(fs,"B");
- cME_->bookHistograms(fs,"C");
- dME_->bookHistograms(fs,"D");
- eME_->bookHistograms(fs,"E");
- fME_->bookHistograms(fs,"F");
- gME_->bookHistograms(fs,"G");
+ aME_->bookHistograms(fs,"PrimaryMu");
+ bME_->bookHistograms(fs,"SiliconMu");
+ cME_->bookHistograms(fs,"CalConversionMu");
+ dME_->bookHistograms(fs,"OtherMu");
+ eME_->bookHistograms(fs,"PunchThrough");
+ //fME_->bookHistograms(fs,"F");
+ //gME_->bookHistograms(fs,"G");
 
 
 
@@ -780,67 +955,230 @@ void GlbSelectorStudy::addTraj(const reco::Track& candIn) {
 }
 
 double GlbSelectorStudy::kink(const reco::TrackRef& muonIn) const {
-    
-    typedef std::vector<Trajectory> TC;
-    
-    TC staTrajs = theTrackTransformer->transform(muonIn);
-    
-    if (staTrajs.empty()) {
-      LogTrace(theCategory) << "Transformer: Add Traj failed!";
-      return 0.;
-    } 
-      Trajectory muon(staTrajs.front());
-    
-    
-    double result = 0.0;
-    
-    typedef TransientTrackingRecHit::ConstRecHitPointer 	ConstRecHitPointer;
-    typedef ConstRecHitPointer RecHit;
-    typedef vector<TrajectoryMeasurement>::const_iterator TMI;
-    
-    vector<TrajectoryMeasurement> meas = muon.measurements();
-    
-    for ( TMI m = meas.begin(); m != meas.end(); m++ ) {
-      RecHit rhit = (*m).recHit();
-      bool ok = false;
-      if ( rhit->isValid() ) {
-	//const GeomDetType& type = rhit->det()->detUnits().front()->type();
-	//if ( type.module() == pixel || type.module() == silicon ) ok = true;
-	
-	if(DetId::Tracker == rhit->geographicalId().det()) ok = true;
-	
-      }
-      if ( !ok ) continue;
+  LogDebug(theCategory);
+  typedef std::vector<Trajectory> TC;
+  LogDebug(theCategory);
+  TC staTrajs = theTrackTransformer->transform(muonIn);
+  LogDebug(theCategory);
+  if (staTrajs.empty()) {
+    LogTrace(theCategory) << "Transformer: Add Traj failed!";
+    return 0.;
+  } 
+  Trajectory muon(staTrajs.front());
+  LogDebug(theCategory);
+  
+  double result = 0.0;
+  
+  typedef TransientTrackingRecHit::ConstRecHitPointer 	ConstRecHitPointer;
+  typedef ConstRecHitPointer RecHit;
+  typedef vector<TrajectoryMeasurement>::const_iterator TMI;
+  LogDebug(theCategory);
+  vector<TrajectoryMeasurement> meas = muon.measurements();
+  LogDebug(theCategory);
+  for ( TMI m = meas.begin(); m != meas.end(); m++ ) {
+    LogDebug(theCategory);
+    RecHit rhit = (*m).recHit();
+    bool ok = false;
+    if ( rhit->isValid() ) {
+      //const GeomDetType& type = rhit->det()->detUnits().front()->type();
+      //if ( type.module() == pixel || type.module() == silicon ) ok = true;
       
-      const TrajectoryStateOnSurface& tsos = (*m).predictedState();
-      if ( tsos.isValid() ) {
-	double phi1 = tsos.globalPosition().phi();
-	if ( phi1 < 0 ) phi1 = 2*M_PI + phi1;
-	
-	double phi2 = rhit->globalPosition().phi();
-	if ( phi2 < 0 ) phi2 = 2*M_PI + phi2;
-	
-	double diff = fabs(phi1 - phi2);
-	if ( diff > M_PI ) diff = 2*M_PI - diff;
-	
-	//GlobalPoint hitPos = rhit->det()->toGlobal(rhit->localPosition());
-	//GlobalError hitErr = rhit->det()->toGlobal(rhit->localPositionError());
-	GlobalPoint hitPos = rhit->globalPosition();
-	GlobalError hitErr = rhit->globalPositionError();
-	
-	double error = hitErr.phierr(hitPos);  // error squared
-	
-	double s = ( error > 0.0 ) ? (diff*diff)/error : (diff*diff);
-	result += s;
-	
-      }
+      if(DetId::Tracker == rhit->geographicalId().det()) ok = true;
+      LogDebug(theCategory);
+    }
+    if ( !ok ) continue;
+    
+    const TrajectoryStateOnSurface& tsos = (*m).predictedState();
+    LogDebug(theCategory);
+    if ( tsos.isValid() ) {
+      LogDebug(theCategory);
+      double phi1 = tsos.globalPosition().phi();
+      if ( phi1 < 0 ) phi1 = 2*M_PI + phi1;
+      
+      double phi2 = rhit->globalPosition().phi();
+      if ( phi2 < 0 ) phi2 = 2*M_PI + phi2;
+      
+      double diff = fabs(phi1 - phi2);
+      if ( diff > M_PI ) diff = 2*M_PI - diff;
+      LogDebug(theCategory);
+      //GlobalPoint hitPos = rhit->det()->toGlobal(rhit->localPosition());
+      //GlobalError hitErr = rhit->det()->toGlobal(rhit->localPositionError());
+      GlobalPoint hitPos = rhit->globalPosition();
+      GlobalError hitErr = rhit->globalPositionError();
+      LogDebug(theCategory);
+      double error = hitErr.phierr(hitPos);  // error squared
+      
+      double s = ( error > 0.0 ) ? (diff*diff)/error : (diff*diff);
+      result += s;
+      LogDebug(theCategory);
+    }
+  }
+  LogDebug(theCategory);
+  return result;
+  
+}
+
+void GlbSelectorStudy::printTruth(TrackingParticleRef & simRef, int i) {
+  const TrackingParticle* simTP = simRef.get();
+  TrackHistory const & tracer = classifier_.history();
+  
+  classifier_.evaluate( simRef );
+  
+    LogTrace(theCategory)<<"TP " << i << " with pdgID " << simTP->pdgId();
+    LogTrace(theCategory)<<"     with GenSize " << simTP->genParticle().size();
+    LogTrace(theCategory)<<"     with GeantSize " << simTP->g4Tracks().size();
+    LogTrace(theCategory)<<"     with Pt      " << simTP->pt();
+    LogTrace(theCategory)<<"     with Eta     " << simTP->eta();
+    LogTrace(theCategory)<<"     with Phi     " << simTP->phi();
+    LogTrace(theCategory)<<"     with Vtx Pos " << simTP->parentVertex()->position()
+			 <<"       at " << sqrt(simTP->vertex().perp2()) << " , " <<  simTP->vertex().z();
+
+    for(tv_iterator dv = simTP->decayVertices_begin(); dv != simTP->decayVertices_end(); ++dv) {
+      LogTrace(theCategory)<<"      DecayVertex "<<(*dv)->position();
+    }
+
+    LogTrace(theCategory) <<"     with flags "; 
+    for (std::size_t index = 0; index < classifier_.flags().size(); ++index){
+      if (classifier_.flags()[index])
+	LogTrace(theCategory) <<"                 " 
+			      <<  TrackCategories::Names[index]; 
     }
     
-    return result;
+    // Get the list of TrackingParticles associated to
+    TrackHistory::SimParticleTrail simParticles(tracer.simParticleTrail());
     
-  }
+    // Loop over all simParticles
+    for (std::size_t hindex=0; hindex<simParticles.size(); hindex++)
+      {
+	LogTrace(theCategory)
+	  << "  simParticles [" << hindex << "] : "
+	  << particleString(simParticles[hindex]->pdgId())
+	  //<< simParticles[hindex]->pdgId()
+	  << " pT " <<  simParticles[hindex]->pt()
+	  << " eta " <<  simParticles[hindex]->eta()
+	  << " phi " <<  simParticles[hindex]->phi()
+	  << " at " << sqrt(simParticles[hindex]->vertex().perp2()) << " , " <<  simParticles[hindex]->vertex().z() 
+	  ;
+      }
+    
+    // Get the list of TrackingVertexes associated to
+    TrackHistory::SimVertexTrail simVertexes(tracer.simVertexTrail());
+    
+    // Loop over all simVertexes
+    if ( !simVertexes.empty() )
+      {
+	for (std::size_t hindex=0; hindex<simVertexes.size(); hindex++)
+	  {
+	    LogTrace(theCategory) 
+	      << "  simVertex    [" << hindex << "] : "
+	      << vertexString(
+			      simVertexes[hindex]->sourceTracks(),
+			      simVertexes[hindex]->daughterTracks()
+			      )
+	      << " at " << simVertexes[hindex]->position().Rho() << " , " <<  simVertexes[hindex]->position().z() << " " <<  simVertexes[hindex]->inVolume()
+	      ;
+	  }
+      }
+    else
+      LogTrace(theCategory) << "  simVertex not found" ;
+    
+    //    if(abs(simTP->pdgId()) == 13)
+    //      for(TrackingParticle::g4t_iterator isimtk = simTP->g4Track_begin();isimtk!=simTP->g4Track_end();isimtk++) {//loop over sim in TP
+    //	LogTrace(theCategory)<<"... look for SimMu MOTHER ....";
+    //	MotherSearch mother(&*isimtk, simTracks, simVertexs, hepmc);
+    //      }
+  
+}
+
+std::string GlbSelectorStudy::particleString(int pdgId) const
+{
+    ParticleData const * pid;
+
+    std::ostringstream vDescription;
+
+    HepPDT::ParticleID particleType(pdgId);
+
+    if (particleType.isValid())
+    {
+        pid = pdt_->particle(particleType);
+        if (pid)
+            vDescription << pid->name();
+        else
+            vDescription << pdgId;
+    }
+    else
+        vDescription << pdgId;
+
+    return vDescription.str();
+}
 
 
+std::string GlbSelectorStudy::vertexString(
+    TrackingParticleRefVector in,
+    TrackingParticleRefVector out
+) const
+{
+    ParticleData const * pid;
+
+    std::ostringstream vDescription;
+
+    for (std::size_t j = 0; j < in.size(); j++)
+    {
+        if (!j) vDescription << "(";
+
+        HepPDT::ParticleID particleType(in[j]->pdgId());
+
+        if (particleType.isValid())
+        {
+            pid = pdt_->particle(particleType);
+            if (pid)
+                vDescription << pid->name();
+            else
+                vDescription << in[j]->pdgId();
+        }
+        else
+            vDescription << in[j]->pdgId();
+
+        if (j == in.size() - 1) vDescription << ")";
+        else vDescription << ",";
+    }
+
+    vDescription << "->";
+
+    for (std::size_t j = 0; j < out.size(); j++)
+    {
+        if (!j) vDescription << "(";
+
+        HepPDT::ParticleID particleType(out[j]->pdgId());
+
+        if (particleType.isValid())
+        {
+            pid = pdt_->particle(particleType);
+            if (pid)
+                vDescription << pid->name();
+            else
+                vDescription << out[j]->pdgId();
+        }
+        else
+            vDescription << out[j]->pdgId();
+
+        if (j == out.size() - 1) vDescription << ")";
+        else vDescription << ",";
+    }
+
+    return vDescription.str();
+}
+
+unsigned int GlbSelectorStudy::getBit(const TrackingParticleRef& simRef) const{
+    unsigned int thisBit = 0;
+    
+    if ( tpSelector_primary(*simRef) ) thisBit = primaryMuon;
+    if ( tpSelector_silicon(*simRef) && ! isPrimaryMuon(thisBit) ) thisBit = siliconMuon;
+    if ( tpSelector_calConversion(*simRef) && ! isSiliconMuon(thisBit) && ! isPrimaryMuon(thisBit) ) thisBit = calConversionMuon;
+    if ( fabs(simRef->pdgId())==13 && ! isPrimaryMuon(thisBit) && ! isSiliconMuon(thisBit) && ! isCalConversionMuon(thisBit)) thisBit = otherMuon;
+
+    return thisBit;
+}
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(GlbSelectorStudy);

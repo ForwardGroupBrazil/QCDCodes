@@ -24,18 +24,44 @@ glbSelStudy = cms.EDAnalyzer(
                                 TrackerRecHitBuilder = cms.string('WithTrackAngle'),
                                 Smoother = cms.string('KFSmootherForRefitInsideOut'),
                                 MuonRecHitBuilder = cms.string('MuonRecHitBuilder'),
-                                RefitDirection = cms.string('alongMomentum'),
+                                RefitDirection = cms.string('insideOut'),
                                 RefitRPCHits = cms.bool(True),
                                 Propagator = cms.string('SmartPropagatorAnyRKOpposite')
                                 ),
     
-    tpSelector = cms.PSet(
+    tpSelector_primary = cms.PSet(
        src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
        pdgId = cms.vint32(13, -13),
        tip = cms.double(3.5),
        lip = cms.double(30.0),
        minHit = cms.int32(0),
-       ptMin = cms.double(0.9),
+       ptMin = cms.double(1.5),
+       minRapidity = cms.double(-2.4),
+       maxRapidity = cms.double(2.4),
+       signalOnly = cms.bool(True),
+       chargedOnly = cms.bool(True)
+       ),
+
+    tpSelector_silicon = cms.PSet(
+       src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
+       pdgId = cms.vint32(13, -13),
+       tip = cms.double(120.0),
+       lip = cms.double(300.0),
+       minHit = cms.int32(0),
+       ptMin = cms.double(1.5),
+       minRapidity = cms.double(-2.4),
+       maxRapidity = cms.double(2.4),
+       signalOnly = cms.bool(True),
+       chargedOnly = cms.bool(True)
+       ),
+
+    tpSelector_calConversion = cms.PSet(
+       src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
+       pdgId = cms.vint32(13, -13),
+       tip = cms.double(290.),
+       lip = cms.double(560.0),
+       minHit = cms.int32(0),
+       ptMin = cms.double(1.5),
        minRapidity = cms.double(-2.4),
        maxRapidity = cms.double(2.4),
        signalOnly = cms.bool(True),

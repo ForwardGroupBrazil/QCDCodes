@@ -81,12 +81,12 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.3 $'),
+    version = cms.untracked.string('$Revision: 1.4 $'),
     annotation = cms.untracked.string('step2 nevts:1'),
     name = cms.untracked.string('PyReleaseValidation')
 )
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(50)
+    input = cms.untracked.int32(-1)
 )
 process.options = cms.untracked.PSet(
     Rethrow = cms.untracked.vstring('ProductNotFound')
@@ -94,7 +94,7 @@ process.options = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("PoolSource",
                             skipEvents = cms.untracked.uint32(0),         
-                            #    fileNames = cms.untracked.vstring('file:step2K_RAW2DIGI_RECO_POSTRECO_ALCA_VALIDATION.root')
+#                                fileNames = cms.untracked.vstring('file:step2K_RAW2DIGI_RECO_POSTRECO_ALCA_VALIDATION.root')
                             fileNames = cms.untracked.vstring('file:/home/ba01/u112/aeverett/scratch_rcac/fullOutput.QCDpt800.root')
                             #   fileNames = cms.untracked.vstring('file:/home/ba01/u112/aeverett/scratch_rcac/step3.root')
 )
@@ -118,6 +118,8 @@ process.TFileService = cms.Service("TFileService", fileName = cms.string("histo3
 process.GlobalTag.globaltag = 'IDEAL_V11::All'
 process.validation = cms.Sequence(process.mix+process.globaldigisanalyze*process.globalhitsanalyze*process.globalrechitsanalyze*process.globalValidation)
 
+#process.load("TrackingTools.TrackRefitter.TracksToTrajectories_cff")
+
 process.load("UserCode.GlbSelectorStudy.glbselectorstudy_cfi")
 process.glbSelStudy.doAssoc = False
 process.glbSelStudy.trkMuAssocLabel = "tpToTkmuTrackAssociation"
@@ -125,7 +127,7 @@ process.glbSelStudy.staMuAssocLabel = "tpToStaTrackAssociation"
 process.glbSelStudy.glbMuAssocLabel = "tpToGlbTrackAssociation"
 #process.glbSelStudy.tpSelector.tip = 10000
 #process.glbSelStudy.tpSelector.lip = 10000
-process.p = cms.Path(process.glbSelStudy)
+process.p = cms.Path(process.muonAssociation_seq*process.glbSelStudy)
 
 
 # Path and EndPath definitions
@@ -180,3 +182,6 @@ process.p2 = cms.Path(process.trackCategoriesAnalyzer)
 
 process.schedule = cms.Schedule(process.reTP_step,process.raw2digi_step,process.reconstruction_step,process.p,process.endjob_step,process.out_step)
 #process.schedule = cms.Schedule(process.p)
+
+process.glbSelStudy.trackProducer = "globalMuons"
+process.glbSelStudy.trackAssociator = "TrackAssociatorByPosition"
