@@ -97,8 +97,8 @@ def SwitchToBaselinePP(process):
     process.hltL3TrajectorySeed.TSGFromCombinedHits = makeBaselinePP()
 
 def makeOIState():
-    from ptEtaRescale import ptRange,etaRange,diagTerm,offDiagTerm
-    #from RecoMuon.TrackingTools.MuonErrorMatrixValues_cff import MuonErrorMatrixValues
+    from UserCode.L3Switches.ptEtaRescale import ptRange,etaRange,diagTerm,offDiagTerm
+
     return  cms.PSet(
         ComponentName = cms.string('TSGForRoadSearch'),
         option = cms.uint32(3),
