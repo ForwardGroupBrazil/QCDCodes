@@ -1,22 +1,43 @@
 For the combinedSeeder:
 
-0) for CMSSW_2_2_3 use rev 1.90.2.19 of HLT_2E30_cff.py
-   V01-06-22 HLTrigger/Configuration
-   use V04-08-02 of RecoTracker/TkSeedGenerator
+0) Make sure the three new files for RecoTracker/TkSeedGenerator are
+	copied to RecoTracker/TkSeedGenerator/plugins
 
-1) in HLT_2E30_cff.py rename 
+1) in HLTrigger/Configuration/python/HLT_XXXX_cff.py rename 
 	hltL3TrajectorySeed -> hltL3TrajectorySeedOrig
 
-2) in HLT_2E30_cff.py change the sequence 
+2) in HLT_XXXX_cff.py change the sequence 
 	HLTL3muonTkCandidateSequence = cms.Sequence(
     	HLTDoLocalPixelSequence + HLTDoLocalStripSequence
     	+ cms.SequencePlaceholder("comboSeeds_seq")
     	+ cms.SequencePlaceholder("hltL3TrajectorySeed")
     	+ hltL3TrackCandidateFromL2 )
 
-3) in HLT_2E30_cff.py comment out the module hltL3Muons
+3) Copy UserCode/L3Switches/python/Switches.py to your working directory
+	(the directory with your configuration file)
 
-4) in HLT_2E30_cff.py change the sequence
-	HLTL3muonrecoNocandSequence = cms.Sequence( 
-	HLTL3muonTkCandidateSequence + hltL3TkTracksFromL2 
-	+ cms.SequencePlaceholder('hltL3Muons') )
+4) Copy UserCode/L3Switches/python/ptEtaRescale.py to your working
+	directory (the directory with your configuration file)
+
+4) add to you configuration file
+	from Switches import *
+
+	SwitchToBaseline(process)
+	SwitchToOIState(process)
+	SwitchToOIHit(process)
+	#SwitchToBaselinePP(process)
+	
+	SwitchToCombo(process)
+	process.comboSeeds_seq = cms.Sequence(
+	    process.hltTrajSeedIOHit
+	    + process.hltTrajSeedOIState
+	#    + process.hltTrajSeedOIHit
+	    )
+	process.hltL3TrajectorySeed.seedCollections = cms.VInputTag(
+	    cms.InputTag('hltTrajSeedIOHit',''),
+	    cms.InputTag('hltTrajSeedOIState',''),
+	#    cms.InputTag('hltTrajSeedOIHit','')
+	    )
+	
+5) in comboSeeds_seq and seedCollections, include whatever combination
+	of seeding algorithms you want to use
