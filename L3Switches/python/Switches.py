@@ -3,10 +3,10 @@ import FWCore.ParameterSet.Config as cms
 def SwitchToComboSeeds(process):
     process.l3SeedCombination = cms.EDFilter(
         "L3MuonTrajectorySeedCombiner",
-        seedCollections = cms.VInputTag(
-          cms.InputTag("hltTrajSeedIOHit"),
-          cms.InputTag("hltTrajSeedOIState"),
-          cms.InputTag("hltTrajSeedOIHit")
+        labels = cms.VInputTag(
+           cms.InputTag("hltTrajSeedIOHit"),
+           cms.InputTag("hltTrajSeedOIState"),
+           cms.InputTag("hltTrajSeedOIHit")
           )
         )
     SwitchToBaselinePP(process)
