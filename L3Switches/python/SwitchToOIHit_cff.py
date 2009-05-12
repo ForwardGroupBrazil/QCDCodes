@@ -27,7 +27,7 @@ hltL3TrajectorySeedOrig.TSGFromPropagation = cms.PSet(
         SigmaZ = cms.double(25.0),       
  )
 
-hltL3TrajectorySeed = cms.EDFilter("SeedCombiner",
+hltL3TrajectorySeed = cms.EDFilter("L3SeedCombiner",
     seedCollections = cms.VInputTag( 
         cms.InputTag("hltL3TrajectorySeedOrig"),
     )

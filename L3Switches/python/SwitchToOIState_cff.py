@@ -42,7 +42,7 @@ hltL3TrajectorySeedOrig.TSGForRoadSearchOI.errorMatrixPset.errorMatrixValuesPSet
 hltL3TrajectorySeedOrig.TSGForRoadSearchOI.errorMatrixPset.errorMatrixValuesPSet.pf3_V35 = offDiagTerm
 hltL3TrajectorySeedOrig.TSGForRoadSearchOI.errorMatrixPset.errorMatrixValuesPSet.pf3_V45 = offDiagTerm
 
-hltL3TrajectorySeed = cms.EDFilter("SeedCombiner",
+hltL3TrajectorySeed = cms.EDFilter("L3SeedCombiner",
     seedCollections = cms.VInputTag( 
         cms.InputTag("hltL3TrajectorySeedOrig"),
     )
