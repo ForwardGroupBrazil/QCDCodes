@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-from HLTrigger.Configuration.HLT_2E30_cff import hltL3TrajectorySeedOrig
+from HLTrigger.Configuration.HLT_1E31_cff import hltL3TrajectorySeedOrig
 
 def SwitchToBaseline(process):
     process.hltTrajSeedIOHit   = hltL3TrajectorySeedOrig.clone()
