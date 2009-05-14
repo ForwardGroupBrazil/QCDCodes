@@ -1,11 +1,25 @@
 import FWCore.ParameterSet.Config as cms
-from TrackingTools.TrackRefitter.TracksToTrajectories_cff import *
+#from TrackingTools.TrackRefitter.TracksToTrajectories_cff import *
 from SimTracker.TrackHistory.TrackClassifier_cff import *
+from RecoMuon.GlobalTrackingTools.GlobalMuonRefitter_cff import *
+from RecoMuon.TrackingTools.MuonServiceProxy_cff import *
 
 glbSelStudy = cms.EDAnalyzer(
     'GlbSelectorStudy',
 
+    MuonServiceProxy,
+
     trackClassifier,
+
+    RefitterParameters = cms.PSet(
+    GlobalMuonRefitter,
+    ),
+
+#    Estimator = cms.string('Chi2EstimatorForMuRefit'),
+
+    nSigma = cms.double(3.0),
+    MaxChi2 = cms.double(100000.0),
+
 
     simLabel = cms.InputTag("mergedtruth","MergedTrackTruth"),
     trkMuLabel = cms.InputTag("generalTracks"),
@@ -36,8 +50,8 @@ glbSelStudy = cms.EDAnalyzer(
        lip = cms.double(30.0),
        minHit = cms.int32(0),
        ptMin = cms.double(1.5),
-       minRapidity = cms.double(-2.4),
-       maxRapidity = cms.double(2.4),
+       minRapidity = cms.double(-2.5),
+       maxRapidity = cms.double(2.5),
        signalOnly = cms.bool(True),
        chargedOnly = cms.bool(True)
        ),
@@ -49,8 +63,8 @@ glbSelStudy = cms.EDAnalyzer(
        lip = cms.double(300.0),
        minHit = cms.int32(0),
        ptMin = cms.double(1.5),
-       minRapidity = cms.double(-2.4),
-       maxRapidity = cms.double(2.4),
+       minRapidity = cms.double(-2.5),
+       maxRapidity = cms.double(2.5),
        signalOnly = cms.bool(True),
        chargedOnly = cms.bool(True)
        ),
@@ -58,12 +72,12 @@ glbSelStudy = cms.EDAnalyzer(
     tpSelector_calConversion = cms.PSet(
        src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
        pdgId = cms.vint32(13, -13),
-       tip = cms.double(290.),
+       tip = cms.double(290.0),
        lip = cms.double(560.0),
        minHit = cms.int32(0),
        ptMin = cms.double(1.5),
-       minRapidity = cms.double(-2.4),
-       maxRapidity = cms.double(2.4),
+       minRapidity = cms.double(-999.5),
+       maxRapidity = cms.double(999.5),
        signalOnly = cms.bool(True),
        chargedOnly = cms.bool(True)
        ),

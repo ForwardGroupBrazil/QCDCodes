@@ -50,13 +50,13 @@ process.MessageLogger.cout = cms.untracked.PSet(
         limit = cms.untracked.int32(0)
     ),
     MotherSearch = cms.untracked.PSet(
-        limit = cms.untracked.int32(-1)
+        limit = cms.untracked.int32(0)
     ),
     GlbSelectorStudy = cms.untracked.PSet(
         limit = cms.untracked.int32(-1)
     ),
         MuonIdentification = cms.untracked.PSet(
-        limit = cms.untracked.int32(-1)
+        limit = cms.untracked.int32(0)
         ),
 )
 process.MessageLogger.cerr = cms.untracked.PSet(
@@ -81,7 +81,7 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.4 $'),
+    version = cms.untracked.string('$Revision: 1.5 $'),
     annotation = cms.untracked.string('step2 nevts:1'),
     name = cms.untracked.string('PyReleaseValidation')
 )
@@ -95,8 +95,14 @@ process.options = cms.untracked.PSet(
 process.source = cms.Source("PoolSource",
                             skipEvents = cms.untracked.uint32(0),         
 #                                fileNames = cms.untracked.vstring('file:step2K_RAW2DIGI_RECO_POSTRECO_ALCA_VALIDATION.root')
-                            fileNames = cms.untracked.vstring('file:/home/ba01/u112/aeverett/scratch_rcac/fullOutput.QCDpt800.root')
+#                            fileNames = cms.untracked.vstring('file:/home/ba01/u112/aeverett/scratch_rcac/fullOutput.QCDpt800.root')
                             #   fileNames = cms.untracked.vstring('file:/home/ba01/u112/aeverett/scratch_rcac/step3.root')
+#                                    fileNames = cms.untracked.vstring('/store/user/aeverett/SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1//SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1//abc92f2ca79c035bec8931c1df74b704//SingleKPt2_200_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_162.root',)
+                            fileNames = cms.untracked.vstring('/store/user/aeverett//CMSSW_2_2_5//SingleKPt2_200//aeverett//SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1//SingleKPt2_200_CMSSW_2_2_5_IDEAL_step2//49d2e03eccbedc0e7ba634f37fb81980//step2_RAW2DIGI_RECO_295.root'),
+                            
+                            secondaryFileNames = cms.untracked.vstring('/store/user/aeverett/SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1/SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1/abc92f2ca79c035bec8931c1df74b704/SingleKPt2_200_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_329.root'),
+
+                            
 )
 
 # Output definition
@@ -120,14 +126,60 @@ process.validation = cms.Sequence(process.mix+process.globaldigisanalyze*process
 
 #process.load("TrackingTools.TrackRefitter.TracksToTrajectories_cff")
 
-process.load("UserCode.GlbSelectorStudy.glbselectorstudy_cfi")
+#####
+process.muonCand = cms.EDFilter(
+    "MuonRefSelector",
+    src = cms.InputTag("muons"),
+    cut = cms.string('isGood("GMGoldAll") > 0 && isGood("GlobalMuonPromptTight")')
+    )
+process.tpToCandTrackAssociation = cms.EDProducer(
+    'TrackAssociatorEDProducer',
+    associator = cms.string('TrackAssociatorByDeltaR'),
+    label_tp = cms.InputTag('mergedtruth', 'MergedTrackTruth'),
+    label_tr = cms.InputTag('globalMuons')
+    #    label_tr = cms.InputTag('muonGlb')
+    )
+import Validation.RecoMuon.MultiTrackValidator_cfi
+process.glbCandTrackVTrackAssoc = Validation.RecoMuon.MultiTrackValidator_cfi.multiTrackValidator.clone()
+ 
+process.glbCandTrackVTrackAssoc.associatormap = 'tpToCandTrackAssociation'
+process.glbCandTrackVTrackAssoc.associators = ('TrackAssociatorByDeltaR',)
+process.glbCandTrackVTrackAssoc.label = ('globalMuons',)
+
+import Validation.RecoMuon.RecoMuonValidator_cfi
+process.candMuonVTrackAssoc = Validation.RecoMuon.RecoMuonValidator_cfi.recoMuonValidator.clone()
+ 
+process.candMuonVTrackAssoc.subDir = 'RecoMuonV/CandMuon_TrackAssoc'
+
+process.candMuonVTrackAssoc.trkMuLabel = 'generalTracks'
+process.candMuonVTrackAssoc.staMuLabel = 'standAloneMuons:UpdatedAtVtx'
+process.candMuonVTrackAssoc.glbMuLabel = 'globalMuons'
+process.candMuonVTrackAssoc.muonLabel = 'muonCand'
+ 
+process.candMuonVTrackAssoc.trkMuAssocLabel = 'tpToTkmuTrackAssociation'
+process.candMuonVTrackAssoc.staMuAssocLabel = 'tpToStaTrackAssociation'
+process.candMuonVTrackAssoc.glbMuAssocLabel = 'tpToCandTrackAssociation'
+
+import UserCode.GlbSelectorStudy.glbselectorstudy_cff
+process.goldenSelStudy = UserCode.GlbSelectorStudy.glbselectorstudy_cfi.glbSelStudy.clone()
+process.goldenSelStudy.doAssoc = False
+process.goldenSelStudy.trkMuAssocLabel = "tpToTkmuTrackAssociation"
+process.goldenSelStudy.staMuAssocLabel = "tpToStaTrackAssociation"
+process.goldenSelStudy.glbMuAssocLabel = "tpToCandTrackAssociation"
+process.goldenSelStudy.glbMuLabel = "globalMuons"
+process.goldenSelStudy.muonLabel = "muonCand"
+#process.glbSelStudy.tpSelector.tip = 10000
+#process.glbSelStudy.tpSelector.lip = 10000
+
+#####
+process.load("UserCode.GlbSelectorStudy.glbselectorstudy_cff")
 process.glbSelStudy.doAssoc = False
 process.glbSelStudy.trkMuAssocLabel = "tpToTkmuTrackAssociation"
 process.glbSelStudy.staMuAssocLabel = "tpToStaTrackAssociation"
 process.glbSelStudy.glbMuAssocLabel = "tpToGlbTrackAssociation"
 #process.glbSelStudy.tpSelector.tip = 10000
 #process.glbSelStudy.tpSelector.lip = 10000
-process.p = cms.Path(process.muonAssociation_seq*process.glbSelStudy)
+process.p = cms.Path(process.muonCand+process.muonAssociation_seq*process.tpToCandTrackAssociation+(process.glbCandTrackVTrackAssoc*process.candMuonVTrackAssoc)+process.glbSelStudy*process.goldenSelStudy)
 
 
 # Path and EndPath definitions
@@ -185,3 +237,5 @@ process.schedule = cms.Schedule(process.reTP_step,process.raw2digi_step,process.
 
 process.glbSelStudy.trackProducer = "globalMuons"
 process.glbSelStudy.trackAssociator = "TrackAssociatorByPosition"
+
+

@@ -9,6 +9,9 @@
 <use name=SimTracker/TrackHistory>
 <use name=PhysicsTools/UtilAlgos>
 <use name=FWCore/ServiceRegistry> # GF: Not sure whether really needed...
+<use name="RecoMuon/GlobalTrackingTools">
+<use name="RecoMuon/TrackingTools">
+<use name="TrackingTools/PatternTools">
 
 <use name=hepmc>
 <use name=heppdt>
