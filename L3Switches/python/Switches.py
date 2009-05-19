@@ -1,42 +1,10 @@
 import FWCore.ParameterSet.Config as cms
 
-def SwitchToComboSeeds(process):
-    process.l3SeedCombination = cms.EDFilter(
-        "L3MuonTrajectorySeedCombiner",
-        labels = cms.VInputTag(
-           cms.InputTag("hltTrajSeedIOHit"),
-           cms.InputTag("hltTrajSeedOIState"),
-           cms.InputTag("hltTrajSeedOIHit")
-          )
-        )
-    SwitchToBaselinePP(process)
-    process.hltTrajSeedIOHit = process.hltL3TrajectorySeed.clone()
-    SwitchToOIState(process)
-    process.hltTrajSeedOIState = process.hltL3TrajectorySeed.clone()
-    SwitchToOIHit(process)
-    process.hltTrajSeedOIHit = process.hltL3TrajectorySeed.clone()
+def PCut(process):
+    process.hltL3TrajectorySeed.PCut = cms.double(2.5)
     
-    process.HLTL3muonrecoSequence.replace(process.hltL3TrajectorySeed, process.hltTrajSeedIOHit*process.hltTrajSeedOIState*process.hltTrajSeedOIHit*process.hltL3TrajectorySeed)
-    process.hltL3TrajectorySeed = process.l3SeedCombination
 
-def SwitchToAllCombined(process):
-    process.hltL3TrajectorySeed.TSGForRoadSearchIOpxl = cms.PSet()
-    process.hltL3TrajectorySeed.TSGForRoadSearchOI = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromMixedPairs = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromPixelPairs = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromPixelTriplets = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromCombinedHits = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromPropagation = cms.PSet()
-    
-    process.hltL3TrajectorySeed.TSGFromCombinedSeeds = cms.PSet(
-        ComponentName = cms.string("CombinedTSG"),
-        PSetNames = cms.vstring('baselinePP','oiState','oiHit'),
-        baselinePP = makeBaselinePP(),
-        oiState= makeOIState(),
-        oiHit= makeOIHit()
-        )
-    process.hltL3TrajectorySeed.tkSeedGenerator = "TSGFromCombinedSeeds"
-    process.hltL3TrajectorySeed.ServiceParameters.Propagators = cms.untracked.vstring( 'SteppingHelixPropagatorAny' , 'SteppingHelixPropagatorAlong',  'SmartPropagatorAnyOpposite' ,'PropagatorWithMaterial')
+############ baseline ##############
 
 def makeBaseline():
     return cms.PSet(
@@ -70,7 +38,12 @@ def makeBaseline():
             TTRHBuilder = cms.string('WithTrackAngle')
             )
         )
-    
+
+
+def SwitchToBaseline(process):
+    PCut(process)
+    print "baseline is by default in the menu."
+
 def makeBaselinePP():
     pset=makeBaseline()
     pset.PSetNames.append('thirdTSG')
@@ -90,19 +63,24 @@ def makeBaselinePP():
           )
     return pset
 
-def SwitchToBaseline(process):
-    print "baseline is by default in the menu."
+
+############# baseline plus mixed seeding ######
     
 def SwitchToBaselinePP(process):
+    PCut(process)
     process.hltL3TrajectorySeed.TSGFromCombinedHits = makeBaselinePP()
+    process.hltL3TrajectorySeed.ServiceParameters.Propagators = cms.untracked.vstring()
 
+
+############### OI-state based #############
+    
 def makeOIState():
     from UserCode.L3Switches.ptEtaRescale import ptRange,etaRange,diagTerm,offDiagTerm
 
     return  cms.PSet(
         ComponentName = cms.string('TSGForRoadSearch'),
         option = cms.uint32(3),
-        propagatorCompatibleName = cms.string('SteppingHelixPropagatorAny'),
+        propagatorCompatibleName = cms.string('SteppingHelixPropagatorOpposite'),
         propagatorName = cms.string('SteppingHelixPropagatorAlong'),
         maxChi2 = cms.double(40.0),
         manySeeds = cms.bool(False),
@@ -134,8 +112,15 @@ def makeOIState():
                        )
                    )
         )
-    
+
+def OIStatePropagators(process,pset):
+    if (not hasattr(process.hltL3TrajectorySeed.ServiceParameters,"Propagators")):
+        process.hltL3TrajectorySeed.ServiceParameters.Propagators = cms.untracked.vstring()
+    process.hltL3TrajectorySeed.ServiceParameters.Propagators.append(pset.propagatorCompatibleName.value())
+    process.hltL3TrajectorySeed.ServiceParameters.Propagators.append(pset.propagatorName.value())
+        
 def SwitchToOIState(process):
+    PCut(process)
     #switch off a few things
     process.hltL3TrajectorySeed.TrackerSeedCleaner = cms.PSet()
     process.hltL3TrajectorySeed.TSGForRoadSearchIOpxl = cms.PSet()
@@ -151,9 +136,12 @@ def SwitchToOIState(process):
     #switch on the OIstate
     process.hltL3TrajectorySeed.tkSeedGenerator = "TSGForRoadSearchOI"
     process.hltL3TrajectorySeed.TSGForRoadSearchOI =makeOIState()
-    process.hltL3TrajectorySeed.ServiceParameters.Propagators = cms.untracked.vstring( 'SteppingHelixPropagatorAny' , 'SteppingHelixPropagatorAlong' )
-        
+    process.hltL3TrajectorySeed.ServiceParameters.Propagators = cms.untracked.vstring()
+    OIStatePropagators(process,process.hltL3TrajectorySeed.TSGForRoadSearchOI)
 
+
+
+########## OI hit-based ###########
 
 def makeOIHit():
     return cms.PSet(
@@ -166,12 +154,18 @@ def makeOIHit():
         MaxChi2 = cms.double(15.0),
         UseVertexState = cms.bool(True),
         Propagator = cms.string('SmartPropagatorAnyOpposite'),
-        ResetRescaling = cms.bool(True),
+        ResetMethod = cms.string("discrete"),
         SigmaZ = cms.double(25.0),
         )
 
+def OIHitPropagators(process,pset):
+    if (not hasattr(process.hltL3TrajectorySeed.ServiceParameters,"Propagators")):
+        process.hltL3TrajectorySeed.ServiceParameters.Propagators = cms.untracked.vstring()
+    process.hltL3TrajectorySeed.ServiceParameters.Propagators.append('PropagatorWithMaterial')
+    process.hltL3TrajectorySeed.ServiceParameters.Propagators.append(pset.Propagator.value())
+
 def SwitchToOIHit(process):
-    
+    PCut(process)
     process.hltL3TrajectorySeed.TSGForRoadSearchIOpxl = cms.PSet()
     process.hltL3TrajectorySeed.TSGForRoadSearchOI = cms.PSet()
     process.hltL3TrajectorySeed.MuonTrackingRegionBuilder = cms.PSet()
@@ -182,17 +176,54 @@ def SwitchToOIHit(process):
 
     process.hltL3TrajectorySeed.tkSeedGenerator = "TSGFromPropagation"
 
-    process.hltL3TrajectorySeed.TSGFromPropagation = cms.PSet(
-        ErrorRescaling = cms.double(3.0),
-        ComponentName = cms.string('TSGFromPropagation'),
-        errorMatrixPset = cms.PSet(),
-        UpdateState = cms.bool(True),
-        UseSecondMeasurements = cms.bool(False),
-        SelectState = cms.bool(True),
-        MaxChi2 = cms.double(15.0),
-        UseVertexState = cms.bool(True),
-        Propagator = cms.string('SmartPropagatorAnyOpposite'),
-        ResetRescaling = cms.bool(True),
-        SigmaZ = cms.double(25.0),       
+    process.hltL3TrajectorySeed.TSGFromPropagation = makeOIHit()
+    process.hltL3TrajectorySeed.ServiceParameters.Propagators = cms.untracked.vstring()
+    OIHitPropagators(process,process.hltL3TrajectorySeed.TSGFromPropagation)
+
+################## all combined in one module
+
+
+def SwitchToAllCombined(process):
+    PCut(process)
+    process.hltL3TrajectorySeed.TSGForRoadSearchIOpxl = cms.PSet()
+    process.hltL3TrajectorySeed.TSGForRoadSearchOI = cms.PSet()
+    process.hltL3TrajectorySeed.TSGFromMixedPairs = cms.PSet()
+    process.hltL3TrajectorySeed.TSGFromPixelPairs = cms.PSet()
+    process.hltL3TrajectorySeed.TSGFromPixelTriplets = cms.PSet()
+    process.hltL3TrajectorySeed.TSGFromCombinedHits = cms.PSet()
+    process.hltL3TrajectorySeed.TSGFromPropagation = cms.PSet()
+    
+    process.hltL3TrajectorySeed.TSGFromCombinedSeeds = cms.PSet(
+        ComponentName = cms.string("CombinedTSG"),
+        PSetNames = cms.vstring('baselinePP','oiState','oiHit'),
+        baselinePP = makeBaselinePP(),
+        oiState= makeOIState(),
+        oiHit= makeOIHit()
         )
-    process.hltL3TrajectorySeed.ServiceParameters.Propagators = cms.untracked.vstring( 'SmartPropagatorAnyOpposite' ,'PropagatorWithMaterial' )       
+    process.hltL3TrajectorySeed.tkSeedGenerator = "TSGFromCombinedSeeds"
+
+    OIStatePropagators(process,process.hltL3TrajectorySeed.TSGFromCombinedSeeds.oiState)
+    OIHitPropagators(process,process.hltL3TrajectorySeed.TSGFromCombinedSeeds.oiHit)
+
+
+############### all combined from different modules
+    
+def SwitchToComboSeeds(process):
+    PCut(process)
+    process.l3SeedCombination = cms.EDProducer(
+        "L3MuonTrajectorySeedCombiner",
+        labels = cms.VInputTag(
+           cms.InputTag("hltTrajSeedIOHit"),
+           cms.InputTag("hltTrajSeedOIState"),
+           cms.InputTag("hltTrajSeedOIHit")
+          )
+        )
+    SwitchToBaselinePP(process)
+    process.hltTrajSeedIOHit = process.hltL3TrajectorySeed.clone()
+    SwitchToOIState(process)
+    process.hltTrajSeedOIState = process.hltL3TrajectorySeed.clone()
+    SwitchToOIHit(process)
+    process.hltTrajSeedOIHit = process.hltL3TrajectorySeed.clone()
+
+    process.hltL3TrajectorySeed = process.l3SeedCombination
+    process.HLTL3muonrecoSequence.replace(process.hltL3TrajectorySeed, process.hltTrajSeedIOHit + process.hltTrajSeedOIState + process.hltTrajSeedOIHit + process.hltL3TrajectorySeed)
