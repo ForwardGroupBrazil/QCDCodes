@@ -13,7 +13,7 @@
 //
 // Original Author:  Jean-Roch Vlimant
 //         Created:  Thu Jul 17 12:57:41 CEST 2008
-// $Id: BitPlotting.cc,v 1.3 2009/05/15 14:26:01 vlimant Exp $
+// $Id: BitPlotting.cc,v 1.4 2009/05/25 16:22:12 vlimant Exp $
 //
 //
 
@@ -109,19 +109,22 @@ BitPlotting::BitPlotting(const edm::ParameterSet& iConfig) :
     HLTConfigProvider hltConfig;
     hltConfig.init(processName);
     std::vector<std::string> validTriggerNames = hltConfig.triggerNames();
-    bool goodToGo=false;
-    //remove all path names that are not valid
-    while(!goodToGo && HLTPathsByName_.size()!=0){
-      goodToGo=true;
-      for (std::vector<std::string>::iterator j=HLTPathsByName_.begin();j!=HLTPathsByName_.end();++j){
-	bool goodOne=false;
-	for (uint i=0;i!=validTriggerNames.size();++i){if (validTriggerNames[i]==(*j)) {goodOne=true;break;}}
-	if (!goodOne){goodToGo=false;
-	  buffer<<(*j)<<" is not a valid trigger in process: "<<processName<<std::endl;
-	  HLTPathsByName_.erase(j);break;}
+
+    if (validTriggerNames.size()!=0){
+      bool goodToGo=false;
+      //remove all path names that are not valid
+      while(!goodToGo && HLTPathsByName_.size()!=0){
+	goodToGo=true;
+	for (std::vector<std::string>::iterator j=HLTPathsByName_.begin();j!=HLTPathsByName_.end();++j){
+	  bool goodOne=false;
+	  for (uint i=0;i!=validTriggerNames.size();++i){if (validTriggerNames[i]==(*j)) {goodOne=true;break;}}
+	  if (!goodOne){goodToGo=false;
+	    buffer<<(*j)<<" is not a valid trigger in process: "<<processName<<std::endl;
+	    HLTPathsByName_.erase(j);break;}
+	}
       }
+      LogDebug("BitPlotting|BitStatus")<<buffer.str();
     }
-    LogDebug("BitPlotting|BitStatus")<<buffer.str();
   }
 
   count_.resize(HLTPathsByName_.size());
