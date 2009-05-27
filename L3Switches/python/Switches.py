@@ -1,5 +1,58 @@
 import FWCore.ParameterSet.Config as cms
 
+def adaptTo2_2(process):
+    if (not hasattr(process,"hltL3TkTracksFromL2")):
+        process.hltL3TkTracksFromL2 = cms.EDProducer( "TrackProducer",
+                                                      TrajectoryInEvent = cms.bool( True ),
+                                                      useHitsSplitting = cms.bool( False ),
+                                                      clusterRemovalInfo = cms.InputTag( "" ),
+                                                      alias = cms.untracked.string( "" ),
+                                                      Fitter = cms.string( "hltKFFittingSmoother" ),
+                                                      Propagator = cms.string( "PropagatorWithMaterial" ),
+                                                      src = cms.InputTag( "hltL3TrackCandidateFromL2" ),
+                                                      beamSpot = cms.InputTag( "hltOfflineBeamSpot" ),
+                                                      TTRHBuilder = cms.string( "WithTrackAngle" ),
+                                                      AlgorithmName = cms.string( "undefAlgorithm" )
+                                                      )
+        process.hltL3Muons.L3TrajBuilderParameters.tkTrajLabel = cms.InputTag( "hltL3TkTracksFromL2" )
+        process.HLTL3muonrecoNocandSequence.replace(process.hltL3Muons, process.hltL3TkTracksFromL2+process.hltL3Muons)
+        ##end the necessary ES objects
+
+        process.hltKFFitter = cms.ESProducer( "KFTrajectoryFitterESProducer",
+                                              ComponentName = cms.string( "hltKFFitter" ),
+                                              Propagator = cms.string( "PropagatorWithMaterial" ),
+                                              Updator = cms.string( "KFUpdator" ),
+                                              Estimator = cms.string( "Chi2" ),
+                                              minHits = cms.int32( 3 ),
+                                              appendToDataLabel = cms.string( "" )
+                                              )
+        process.hltKFFittingSmoother = cms.ESProducer( "KFFittingSmootherESProducer",
+                                                       ComponentName = cms.string( "hltKFFittingSmoother" ),
+                                                       Fitter = cms.string( "hltKFFitter" ),
+                                                       Smoother = cms.string( "hltKFSmoother" ),
+                                                       EstimateCut = cms.double( -1.0 ),
+                                                       MinNumberOfHits = cms.int32( 5 ),
+                                                       RejectTracks = cms.bool( True ),
+                                                       BreakTrajWith2ConsecutiveMissing = cms.bool( False ),
+                                                       NoInvalidHitsBeginEnd = cms.bool( False ),
+                                                       appendToDataLabel = cms.string( "" )
+                                                       )
+        process.hltKFSmoother = cms.ESProducer( "KFTrajectorySmootherESProducer",
+                                                ComponentName = cms.string( "hltKFSmoother" ),
+                                                Propagator = cms.string( "PropagatorWithMaterial" ),
+                                                Updator = cms.string( "KFUpdator" ),
+                                                Estimator = cms.string( "Chi2" ),
+                                                errorRescaling = cms.double( 100.0 ),
+                                                minHits = cms.int32( 3 ),
+                                                appendToDataLabel = cms.string( "" )
+                                                )
+        
+        ##additionnal parameters
+        process.hltL3Muons.L3TrajBuilderParameters.ScaleTECxFactor = cms.double( -1.0 )
+        process.hltL3Muons.L3TrajBuilderParameters.ScaleTECyFactor = cms.double( -1.0 )
+
+    
+
 def PCut(process):
     process.hltL3TrajectorySeed.PCut = cms.double(2.5)
     
