@@ -81,7 +81,7 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.5 $'),
+    version = cms.untracked.string('$Revision: 1.6 $'),
     annotation = cms.untracked.string('step2 nevts:1'),
     name = cms.untracked.string('PyReleaseValidation')
 )
@@ -232,7 +232,7 @@ process.p2 = cms.Path(process.trackCategoriesAnalyzer)
 
 #process.schedule = cms.Schedule(process.validation_step,process.p)
 
-process.schedule = cms.Schedule(process.reTP_step,process.raw2digi_step,process.reconstruction_step,process.p,process.endjob_step,process.out_step)
+process.schedule = cms.Schedule(process.reTP_step,process.raw2digi_step,process.reconstruction_step,process.p,process.endjob_step) #,process.out_step)
 #process.schedule = cms.Schedule(process.p)
 
 process.glbSelStudy.trackProducer = "globalMuons"

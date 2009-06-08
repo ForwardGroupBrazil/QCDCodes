@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Tue Mar 31 16:20:19 EDT 2009
-// $Id: GlbSelectorStudy.cc,v 1.5 2009/04/18 04:51:10 aeverett Exp $
+// $Id: GlbSelectorStudy.cc,v 1.6 2009/05/14 17:38:09 aeverett Exp $
 //
 //
 
@@ -285,7 +285,7 @@ struct GlbSelectorStudy::MuonME {
     hm_segComp = MuDir->make<TH1F>("hm_segComp","segComp",50,0.,1.);
     hm_2DComp = MuDir->make<TH2F>("hm_2DComp","Seg/Calo Comp",50,0.,1.,50,0.,1.);
 
-    hm_tm_sel = MuDir->make<TH1F>("hm_tm_sel","TM Selectors",11,-0.5,10.5);
+    hm_tm_sel = MuDir->make<TH1F>("hm_tm_sel","TM Selectors",21,-0.5,20.5);
 
     hm_NSt_tot_ =MuDir->make<TH1F>("hm_NSt_tot","nStation total",11,-0.5,10.5);
     hm_NSt_rpc_ =MuDir->make<TH1F>("hm_NSt_rpc","nStation RPC",11,-0.5,10.5);
@@ -303,6 +303,14 @@ struct GlbSelectorStudy::MuonME {
 
     hm_primary_Decay = dir->make<TH2F>("hm_primary_Decay","Primary Particle Decay Length",100,0.,500.,1601,-1.,1600.);
     hm_primary_tranDecay = dir->make<TH2F>("hm_primary_tranDecay","Primary Particle Transverse Decay Length",100,0.,500.,1001,-1.,1000.);
+    hm_primaryPt = dir->make<TH1F>("hm_primaryPt","Primary Particle p_{T}",100,0.,500.);
+    hm_simMuPt = dir->make<TH1F>("hm_simMuPt","Sim Mu p_{T}",100,0.,500.);
+
+    hm_allTp_Decay = dir->make<TH2F>("hm_allTp_Decay","TP Decay vs primary p_{T}",100,0.,500.,1601,-1.,1600.);
+    hm_allTp_tranDecay = dir->make<TH2F>("hm_allTp_tranDecay","TP Transverse Decay vs primary p_{T}",100,0.,500.,1001,-1.,1000.);
+
+    hm_allTp_Decay2 = dir->make<TH2F>("hm_allTp_Decay2","TP Decay Length vs TP p_{T}",100,0.,500.,1601,-1.,1600.);
+    hm_allTp_tranDecay2 = dir->make<TH2F>("hm_allTp_tranDecay2","TP Transverse Decay vs TP p_{T}",100,0.,500.,1001,-1.,1000.);
 
     hg_kink = GlbDir->make<TH1F>("hg_kink","Kink",100,0.,500.);
     ht_kink = TkDir->make<TH1F>("ht_kink","Kink",100,0.,500.);
@@ -420,7 +428,8 @@ struct GlbSelectorStudy::MuonME {
     hm_NSt_dt_->Fill(nStat.second.first);
     hm_NSt_csc_->Fill(nStat.second.second);
 
-    bool noDepth = (nStat.first.second == 1 && (nStat.second.first == 1 || nStat.second.second == 1) ) ? 1 : 0;
+    //ADAM should I keep the nTot <= 2
+    bool noDepth = (nStat.first.first <= 2 && nStat.first.second == 1 && (nStat.second.first == 1 || nStat.second.second == 1) ) ? 1 : 0;
 
     int nCSCSeg[4];
     int nDTSeg[4];
@@ -431,8 +440,10 @@ struct GlbSelectorStudy::MuonME {
       nRPCSeg[station] = iMuon.numberOfSegments(station+1, MuonSubdetId::RPC, Muon::NoArbitration);
     }
 
-    bool noDepth2 =  ( (nCSCSeg[0] > 1 && nCSCSeg[1] == 0 && nCSCSeg[2] == 0 && nCSCSeg[3] == 0 && nRPCSeg[0] >= 1) ||
-	 (nDTSeg[0] > 1 && nDTSeg[1] == 0 && nDTSeg[2] == 0 && nDTSeg[3] == 0 && nRPCSeg[0] >= 1) ) ? 1 : 0;
+    //    bool noDepth2 =  ( (nCSCSeg[0] > 1 && nCSCSeg[1] == 0 && nCSCSeg[2] == 0 && nCSCSeg[3] == 0 && nRPCSeg[0] >= 1) ||
+    //	 (nDTSeg[0] > 1 && nDTSeg[1] == 0 && nDTSeg[2] == 0 && nDTSeg[3] == 0 && nRPCSeg[0] >= 1) ) ? 1 : 0;
+    bool noDepth2 =  ( (nCSCSeg[0] > 1 && nCSCSeg[1] == 0 && nCSCSeg[2] == 0 && nCSCSeg[3] == 0 ) ||
+		       (nDTSeg[0] > 1 && nDTSeg[1] == 0 && nDTSeg[2] == 0 && nDTSeg[3] == 0 ) ) ? 1 : 0;
 
     hm_noDepth1_->Fill(noDepth);
     hm_noDepth2_->Fill(noDepth2);
@@ -474,8 +485,9 @@ struct GlbSelectorStudy::MuonME {
     if(iMuon.isGood(reco::Muon::TMOneStationTight)) hm_tm_sel->Fill(6);
     if(iMuon.isGood(reco::Muon::AllTrackerMuons)) hm_tm_sel->Fill(7);
     if(iMuon.isGood(reco::Muon::TrackerMuonArbitrated)) hm_tm_sel->Fill(8);
-    if(iMuon.isGood(reco::Muon::TMLastStationOptimizedLowPtLoose)) hm_tm_sel->Fill(7);
-    if(iMuon.isGood(reco::Muon::TMLastStationOptimizedLowPtTight)) hm_tm_sel->Fill(8);
+    if(iMuon.isGood(reco::Muon::TMLastStationOptimizedLowPtLoose)) hm_tm_sel->Fill(9);
+    if(iMuon.isGood(reco::Muon::TMLastStationOptimizedLowPtTight)) hm_tm_sel->Fill(10);
+    //ADAM insert GM golds here
 
     float outerX = glbTrack->outerX();
     float outerY = glbTrack->outerY();
@@ -502,6 +514,9 @@ struct GlbSelectorStudy::MuonME {
       
       hm_motherMuVtxPos->Fill(abs(muTp->vertex().z()),sqrt(muTp->vertex().perp2()));
       hm_motherMuDecayPos->Fill(abs(decayz),sqrt(decayx*decayx + decayy*decayy) );
+
+      //      hm_motherMu_Decay->Fill(pos->pt(),sqrt(muTp->vertex().z()*muTp->vertex().z()+(muTp->vertex().perp2()) ) );
+      //      hm_motherMu_tranDecay->Fill(pos->pt(),sqrt( muTp->vertex().perp2() ) );
 
     }
 
@@ -596,7 +611,8 @@ std::pair< std::pair<int,int>,std::pair<int,int> > countStations(const reco::Tra
   if (rpc_3) {n_rpc++;last=11;}
   if (rpc_4) {n_rpc++;last=12;}
   
-  int nTot = (n_dt+n_csc+n_rpc);
+  //ADAM  int nTot = (n_dt+n_csc+n_rpc);
+  int nTot = (n_dt+n_csc);
 
   std::pair<int,int> p1(nTot,n_rpc);
   std::pair<int,int> p2(n_dt,n_csc);
@@ -624,6 +640,9 @@ std::pair< std::pair<int,int>,std::pair<int,int> > countStations(const reco::Tra
   TH2F *hm_motherVtxPos,*hm_motherDecayPos;
   TH2F *hm_motherMuVtxPos,*hm_motherMuDecayPos;
   TH2F *hm_primary_Decay, *hm_primary_tranDecay;
+  TH2F *hm_allTp_Decay, *hm_allTp_tranDecay;
+  TH2F *hm_allTp_Decay2, *hm_allTp_tranDecay2;
+  TH1F * hm_primaryPt, *hm_simMuPt;
   TH2F *hm_2DComp;
 
   TH1F *hg_kink;
@@ -853,6 +872,8 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
   LogDebug(theCategory)<<"SimColl size " << simColl.size();
 
+  float primaryPt = 0.0;
+
   const TrackingParticleCollection::size_type nSim = simColl.size();
   for(TrackingParticleCollection::size_type i=0; i<nSim; i++) {
     TrackingParticleRef simRef(simHandle, i);
@@ -861,61 +882,81 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     unsigned int thisBit = getBit(simRef);
 
     ///// cccc
-    if(i==0 || i==1){
-      int muClass = 0;
-      
-      if (isPrimaryMuon(thisBit)) muClass = 1;
-      else if (isSiliconMuon(thisBit)) muClass = 2;
-      else if (isCalConversionMuon(thisBit)) muClass = 3;
-      else if (isOtherMuon(thisBit)) muClass = 4;
-      else muClass = 5;
-      
-      MuonME * thisME = 0;
-      
-      if(muClass==1) thisME = aME_;
-      if(muClass==2) thisME = bME_;
-      if(muClass==3) thisME = cME_;
-      if(muClass==4) thisME = dME_;
-      if(muClass==5) thisME = eME_;
+    if(i==0) primaryPt = simTP->pt() ;
+ 
+    int muClass = 0;
+    
+    if (isPrimaryMuon(thisBit)) muClass = 1;
+    else if (isSiliconMuon(thisBit)) muClass = 2;
+    else if (isCalConversionMuon(thisBit)) muClass = 3;
+    else if (isOtherMuon(thisBit)) muClass = 4;
+    else muClass = 5;
+    
+    MuonME * thisME = 0;
+    
+    if(muClass==1) thisME = aME_;
+    if(muClass==2) thisME = bME_;
+    if(muClass==3) thisME = cME_;
+    if(muClass==4) thisME = dME_;
+    if(muClass==5) thisME = eME_;
+    
+    thisME->hm_primaryPt->Fill(primaryPt);
 
-      tv_iterator dv = simTP->decayVertices_begin();
-      float decayx = (*dv)->position().x();
-      float decayy = (*dv)->position().y();
-      float decayz = (*dv)->position().z();
-      
+    float decayx = 0.0;
+    float decayy = 0.0;
+    float decayz = 0.0;
+
+    //    if(i==0 || i==1){      
+    tv_iterator dv = simTP->decayVertices_begin();
+    decayx = (*dv)->position().x();
+    decayy = (*dv)->position().y();
+    decayz = (*dv)->position().z();
+    if(i==0 || i==1){      
       thisME->hm_primary_Decay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy+decayz*decayz));
       thisME->hm_primary_tranDecay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy));
+    } else {
+      //ADAM change this to primaryPt
+      thisME->hm_allTp_Decay->Fill(primaryPt,sqrt(simTP->vertex().z()*simTP->vertex().z()+(simTP->vertex().perp2()) ) );
+      thisME->hm_allTp_tranDecay->Fill(primaryPt,sqrt( simTP->vertex().perp2() ) );
+      thisME->hm_allTp_Decay2->Fill(simTP->pt(),sqrt(simTP->vertex().z()*simTP->vertex().z()+(simTP->vertex().perp2()) ) );
+      thisME->hm_allTp_tranDecay2->Fill(simTP->pt(),sqrt( simTP->vertex().perp2() ) );
     }
-      ///// ccc
+    //thisME->hm_primary_Decay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy+decayz*decayz));
+    //thisME->hm_primary_tranDecay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy));
+    ///// ccc
 
-    if ( ! (isPrimaryMuon(thisBit) || isSiliconMuon(thisBit) || isCalConversionMuon(thisBit) || isOtherMuon(thisBit) ) ) continue;
+    // if ( ! (isPrimaryMuon(thisBit) || isSiliconMuon(thisBit) || isCalConversionMuon(thisBit) || isOtherMuon(thisBit) ) ) continue;
     
     std::vector<std::pair<RefToBase<Track>, double> > rt;
     
     /////start aaa
     if ( isSiliconMuon(thisBit) ) LogTrace(theCategory)<<"SimTP isSilicon";
     //if ( simTP->pt() > 2.0 ) { //b
-    printTruth(simRef, i);
+    if ( (isPrimaryMuon(thisBit) || isSiliconMuon(thisBit) || isCalConversionMuon(thisBit) || isOtherMuon(thisBit) ) ) {
+
+      thisME->hm_simMuPt->Fill(simTP->pt());
     
-    if(simToGlbMuColl.find(simRef) != simToGlbMuColl.end()){
-      rt = simToGlbMuColl[simRef];
-      if (rt.size()!=0) {
-	LogTrace(theCategory) << "\nTrackingParticle #" << i 
-			      << " with pt=" << sqrt(simRef->momentum().perp2()) 
-			      << " and bit " << thisBit
-			      << " associated with quality:" << rt.begin()->second <<"\n";
+      printTruth(simRef, i);
+      
+      if(simToGlbMuColl.find(simRef) != simToGlbMuColl.end()){
+	rt = simToGlbMuColl[simRef];
+	if (rt.size()!=0) {
+	  LogTrace(theCategory) << "\nTrackingParticle #" << i 
+				<< " with pt=" << sqrt(simRef->momentum().perp2()) 
+				<< " and bit " << thisBit
+				<< " associated with quality:" << rt.begin()->second <<"\n";
+	}
+      } else {
+	LogTrace(theCategory) 
+	  << "TrackingParticle #" << i
+	  << " with pt,eta,phi: " 
+	  << sqrt(simRef->momentum().perp2()) << " , "
+	  << simRef->momentum().eta() << " , "
+	  << simRef->momentum().phi() << " , "
+	  << " and bit " << thisBit
+	  << " NOT associated to any reco::Track" << "\n";
       }
-    } else {
-      LogTrace(theCategory) 
-	<< "TrackingParticle #" << i
-	<< " with pt,eta,phi: " 
-	<< sqrt(simRef->momentum().perp2()) << " , "
-	<< simRef->momentum().eta() << " , "
-	<< simRef->momentum().phi() << " , "
-	<< " and bit " << thisBit
-	<< " NOT associated to any reco::Track" << "\n";
-    }
-    
+    }    
     //}//a
     //}//b
     ///////end aaa
