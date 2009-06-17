@@ -2,11 +2,11 @@ import FWCore.ParameterSet.Config as cms
 
 def customise(process):
     import UserCode.L3Switches.Switches as switch
-    SwitchToBaseline(process)
-    #SwitchToBaselinePP(process)
-    #SwitchToOIState(process)
-    #SwitchToOIHit(process)
-    #SwitchToAllCombined(process)
-    #SwitchToComboSeeds(process)
+    switch.SwitchToBaseline(process)
+    #switch.SwitchToBaselinePP(process)
+    #switch.SwitchToOIState(process)
+    #switch.SwitchToOIHit(process)
+    #switch.SwitchToAllCombined(process)
+    #switch.SwitchToComboSeeds(process)
                             
     return(process)
