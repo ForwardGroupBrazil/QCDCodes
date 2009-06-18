@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Tue Mar 31 16:20:19 EDT 2009
-// $Id: GlbSelectorStudy.cc,v 1.6 2009/05/14 17:38:09 aeverett Exp $
+// $Id: GlbSelectorStudy.cc,v 1.7 2009/06/08 20:30:12 aeverett Exp $
 //
 //
 
@@ -276,6 +276,9 @@ struct GlbSelectorStudy::MuonME {
     hg_NTrksPt_ = GlbDir->make<TH1F>("hg_NTrksPt", "Number of reco tracks vs p_{T}", 100, 0., 500.);
     hg_NTrksPt_St1_ = GlbDir->make<TH1F>("hg_NTrksPt_St1", "Number of reco tracks vs p_{T} only in Station1", 100, 0., 500.);
 
+    hg_pt_vs_pt_ = GlbDir->make<TH2F>("hg_pt_vs_pt","p_{T}^{Sta} vs p_{T}^{Tk}",100, 0., 500.,100,0,500.);
+    hg_dpt_ = GlbDir->make<TH1F>("hg_dpt","p_{T}^{Tk} - p_{T}^{Sta}",100, 0., 500.);
+
     hm_nChamber = MuDir->make<TH1F>("hm_nChamber","nChamber",20,0,20);
     hm_nChamberMatch_no = MuDir->make<TH1F>("hm_nChamberMatch_no","nChamberMatch No Arbitration",20,0,20);
     hm_nChamberMatch_seg = MuDir->make<TH1F>("hm_nChamberMatch_seg","nChamberMatch Segment Arbitration",20,0,20);
@@ -318,6 +321,14 @@ struct GlbSelectorStudy::MuonME {
     hm_tpType = MuDir->make<TH1F>("hm_tpType","TP Type",501,-0.5,500.5);
     hm_motherType = MuDir->make<TH1F>("hm_motherType","Mother Type",501,-0.5,500.5);
 
+    hm_pt_K = dir->make<TH1F>("hm_pt_K","K p_{T}",100,0.,500.);
+    hm_pt_B = dir->make<TH1F>("hm_pt_B","B p_{T}",100,0.,500.);
+    hm_pt_D = dir->make<TH1F>("hm_pt_D","D p_{T}",100,0.,500.);
+    hm_pt_Pi = dir->make<TH1F>("hm_pt_Pi","Pi p_{T}",100,0.,500.);
+    hm_pt_Tau = dir->make<TH1F>("hm_pt_Tau","Tau p_{T}",100,0.,500.);
+    hm_pt_Mu = dir->make<TH1F>("hm_pt_Mu","Mu p_{T}",100,0.,500.);
+    hm_pt_Other = dir->make<TH1F>("hm_pt_Other","Other p_{T}",100,0.,500.);
+
     hm_trackerMu = MuDir->make<TH1F>("hm_TM","isTrackerMuon",3,-1.5,1.5);
 
   };
@@ -325,6 +336,16 @@ struct GlbSelectorStudy::MuonME {
   void fill(const reco::Muon& iMuon,const TrackingParticleRef& pos, const TrackingParticleRef& muTp) {
     //
     hm_tpType->Fill(pos->pdgId());
+
+    int pId = fabs(pos->pdgId());
+
+    if(pId >= 310 && pId <= 325) hm_pt_K->Fill(pos->pt());
+    else if(pId >= 511 && pId <= 545) hm_pt_B->Fill(pos->pt());
+    else if(pId >= 411 && pId <= 435) hm_pt_D->Fill(pos->pt());
+    else if(pId == 111 || pId == 211) hm_pt_Pi->Fill(pos->pt());
+    else if(pId == 15 || pId == 17 || pId == 113 || pId == 213 || pId == 333 || pId == 331 || pId == 221) hm_pt_Tau->Fill(pos->pt());
+    else if(pId == 13) hm_pt_Mu->Fill(pos->pt());
+    else hm_pt_Other->Fill(pos->pt());
 
     const TrackRef glbTrack = iMuon.combinedMuon();
     hg_dxy->Fill(glbTrack->dxy());
@@ -459,6 +480,8 @@ struct GlbSelectorStudy::MuonME {
     ht_nlnchi2Prob->Fill(-LnChiSquaredProbability(trkTrack->chi2(), trkTrack->ndof()));
     ht_nchi2Prob->Fill(ChiSquaredProbability(trkTrack->chi2(), trkTrack->ndof()));
 
+    hg_pt_vs_pt_->Fill(trkTrack->pt(),staTrack->pt());
+    hg_dpt_->Fill(trkTrack->pt()-staTrack->pt());
 
     if(iMuon.isEnergyValid()) hm_hcal->Fill(iMuon.calEnergy().had);
     if(iMuon.isEnergyValid()) hm_ecal->Fill(iMuon.calEnergy().em);
@@ -496,10 +519,10 @@ struct GlbSelectorStudy::MuonME {
     hm_outerPosition->Fill(outerZ,outerR);
 
     if(pos.isAvailable()) {
-      tv_iterator dv = pos->decayVertices_begin();
-      float decayx = (*dv)->position().x();
-      float decayy = (*dv)->position().y();
-      float decayz = (*dv)->position().z();
+      tv_iterator dv = pos->decayVertices().begin();
+      float decayx = (dv != pos->decayVertices().end() ) ? (*dv)->position().x() : 0.;
+      float decayy = (dv != pos->decayVertices().end() ) ? (*dv)->position().y() : 0.;
+      float decayz = (dv != pos->decayVertices().end() ) ? (*dv)->position().z() : 0.;
       
       hm_motherVtxPos->Fill(abs(pos->vertex().z()),sqrt(pos->vertex().perp2()));
       hm_motherDecayPos->Fill(abs(decayz),sqrt(decayx*decayx + decayy*decayy) );
@@ -507,10 +530,10 @@ struct GlbSelectorStudy::MuonME {
     }
 
     if(muTp.isAvailable()) {
-      tv_iterator dv = muTp->decayVertices_begin();
-      float decayx = (*dv)->position().x();
-      float decayy = (*dv)->position().y();
-      float decayz = (*dv)->position().z();
+      tv_iterator dv = muTp->decayVertices().begin();
+      float decayx =  (dv != muTp->decayVertices().end()) ? (*dv)->position().x() : 0.;
+      float decayy =  (dv != muTp->decayVertices().end()) ? (*dv)->position().y() : 0.;
+      float decayz =  (dv != muTp->decayVertices().end()) ? (*dv)->position().z() : 0.;
       
       hm_motherMuVtxPos->Fill(abs(muTp->vertex().z()),sqrt(muTp->vertex().perp2()));
       hm_motherMuDecayPos->Fill(abs(decayz),sqrt(decayx*decayx + decayy*decayy) );
@@ -655,9 +678,13 @@ std::pair< std::pair<int,int>,std::pair<int,int> > countStations(const reco::Tra
 
   TH1F *ht_nchi2_a, *ht_nchi2_b;
   TH1F *hs_nchi2_a, *hs_nchi2_b;
-
+  TH2F * hg_pt_vs_pt_;
+  TH1F * hg_dpt_;
   TH2F * ht_chivschi_a, * ht_chivschi_b;
   TH2F * hs_chivschi_a, * hs_chivschi_b;
+
+  TH1F *hm_pt_K, *hm_pt_B, *hm_pt_D, *hm_pt_Pi;
+  TH1F *hm_pt_Tau, *hm_pt_Mu, *hm_pt_Other;
 
 };
 
@@ -828,6 +855,7 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   RecoToSimCollection glbMuToSimColl;
 
   if ( doAssoc_ ) {
+    LogDebug(theCategory);
     // SimToReco associations
     simToTrkMuColl = trkMuAssociator_->associateSimToReco(trkMuHandle, simHandle, &iEvent);
     simToStaMuColl = staMuAssociator_->associateSimToReco(staMuHandle, simHandle, &iEvent);
@@ -839,33 +867,34 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     glbMuToSimColl = glbMuAssociator_->associateRecoToSim(glbMuHandle, simHandle, &iEvent);
   }
   else {
+
     // SimToReco associations
     Handle<SimToRecoCollection> simToTrkMuHandle;
     iEvent.getByLabel(trkMuAssocLabel_, simToTrkMuHandle);
     simToTrkMuColl = *(simToTrkMuHandle.product());
-    
+
     Handle<SimToRecoCollection> simToStaMuHandle;
     iEvent.getByLabel(staMuAssocLabel_, simToStaMuHandle);
     simToStaMuColl = *(simToStaMuHandle.product());
-    
+
     Handle<SimToRecoCollection> simToGlbMuHandle;
     iEvent.getByLabel(glbMuAssocLabel_, simToGlbMuHandle);
     simToGlbMuColl = *(simToGlbMuHandle.product());
-    
+
     // RecoToSim associations
     Handle<RecoToSimCollection> trkMuToSimHandle;
     iEvent.getByLabel(trkMuAssocLabel_, trkMuToSimHandle);
     trkMuToSimColl = *(trkMuToSimHandle.product());
-    
+
     Handle<RecoToSimCollection> staMuToSimHandle;
     iEvent.getByLabel(staMuAssocLabel_, staMuToSimHandle);
     staMuToSimColl = *(staMuToSimHandle.product());
-    
+
     Handle<RecoToSimCollection> glbMuToSimHandle;
     iEvent.getByLabel(glbMuAssocLabel_, glbMuToSimHandle);
     glbMuToSimColl = *(glbMuToSimHandle.product());
   }
-    
+
   tpBitMap   tpBitMap_;
   recoBitMap recoBitMap_;
   recoTpMap recoTpMap_;
@@ -878,7 +907,7 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   for(TrackingParticleCollection::size_type i=0; i<nSim; i++) {
     TrackingParticleRef simRef(simHandle, i);
     const TrackingParticle* simTP = simRef.get();
-    
+
     unsigned int thisBit = getBit(simRef);
 
     ///// cccc
@@ -891,7 +920,7 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     else if (isCalConversionMuon(thisBit)) muClass = 3;
     else if (isOtherMuon(thisBit)) muClass = 4;
     else muClass = 5;
-    
+
     MuonME * thisME = 0;
     
     if(muClass==1) thisME = aME_;
@@ -899,19 +928,22 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if(muClass==3) thisME = cME_;
     if(muClass==4) thisME = dME_;
     if(muClass==5) thisME = eME_;
-    
+
     thisME->hm_primaryPt->Fill(primaryPt);
 
     float decayx = 0.0;
     float decayy = 0.0;
     float decayz = 0.0;
-
-    //    if(i==0 || i==1){      
-    tv_iterator dv = simTP->decayVertices_begin();
-    decayx = (*dv)->position().x();
-    decayy = (*dv)->position().y();
-    decayz = (*dv)->position().z();
-    if(i==0 || i==1){      
+    tv_iterator dv = simTP->decayVertices().begin(); 
+    if(dv != simTP->decayVertices().end()) {
+ 
+      tv_iterator dv = simTP->decayVertices().begin();
+ 
+      decayx = (*dv)->position().x();
+      decayy = (*dv)->position().y();
+      decayz = (*dv)->position().z();
+    }
+    if(i==0 || i==1){     
       thisME->hm_primary_Decay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy+decayz*decayz));
       thisME->hm_primary_tranDecay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy));
     } else {
@@ -926,18 +958,17 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     ///// ccc
 
     // if ( ! (isPrimaryMuon(thisBit) || isSiliconMuon(thisBit) || isCalConversionMuon(thisBit) || isOtherMuon(thisBit) ) ) continue;
-    
+
     std::vector<std::pair<RefToBase<Track>, double> > rt;
     
     /////start aaa
     if ( isSiliconMuon(thisBit) ) LogTrace(theCategory)<<"SimTP isSilicon";
     //if ( simTP->pt() > 2.0 ) { //b
     if ( (isPrimaryMuon(thisBit) || isSiliconMuon(thisBit) || isCalConversionMuon(thisBit) || isOtherMuon(thisBit) ) ) {
-
       thisME->hm_simMuPt->Fill(simTP->pt());
-    
+
       printTruth(simRef, i);
-      
+
       if(simToGlbMuColl.find(simRef) != simToGlbMuColl.end()){
 	rt = simToGlbMuColl[simRef];
 	if (rt.size()!=0) {
@@ -961,13 +992,14 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     //}//b
     ///////end aaa
     
-    if (rt.size()==0) continue;
+    if (rt.empty()) continue;
 
     reco::TrackRef glbMuTrackRef = rt.begin()->first.castTo<TrackRef >();
 
     tpBitMap_.insert(simRef,thisBit);
     recoBitMap_.insert( glbMuTrackRef, thisBit );
     recoTpMap_.insert( glbMuTrackRef, simRef );
+
   }
 
   ///////////////////////  
