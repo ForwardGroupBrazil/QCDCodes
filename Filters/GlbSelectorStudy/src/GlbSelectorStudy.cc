@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Tue Mar 31 16:20:19 EDT 2009
-// $Id: GlbSelectorStudy.cc,v 1.7 2009/06/08 20:30:12 aeverett Exp $
+// $Id: GlbSelectorStudy.cc,v 1.8 2009/06/18 02:40:19 aeverett Exp $
 //
 //
 
@@ -125,6 +125,7 @@ private:
   virtual std::pair<double,double> kink(Trajectory& muon) const ;
   virtual std::pair<double,double> staChi2(Trajectory& muon) const;
   virtual std::pair<double,double> tkChi2(Trajectory& muon) const;
+  virtual std::pair<double,double> newChi2(Trajectory& muon) const;
   //virtual void addTraj(const reco::Track& candIn);
   virtual void printTruth(TrackingParticleRef & simRef, int i);
   virtual unsigned int getBit(const TrackingParticleRef&) const;
@@ -139,6 +140,9 @@ private:
   bool simMuon_;
   
   bool doAssoc_;
+
+  Int_t numberTrackCategories_;
+
 
   edm::ESHandle<ParticleDataTable> pdt_;
   
@@ -214,6 +218,8 @@ using namespace reco;
 struct GlbSelectorStudy::MuonME {
   void bookHistograms(edm::Service<TFileService> fs, const std::string dirName)
   {
+    numberTrackCategories_ = TrackCategories::Unknown+1;
+
     TFileDirectory *dir = new TFileDirectory(fs->mkdir(dirName));
     TFileDirectory *StaDir = new TFileDirectory(dir->mkdir( "Sta" ));
     TFileDirectory *TkDir  = new TFileDirectory(dir->mkdir( "Trk" ));
@@ -236,6 +242,7 @@ struct GlbSelectorStudy::MuonME {
     ht_chi2 = TkDir->make<TH1F>("ht_chi2","chi2",100,0.,100.);
     ht_nchi2 = TkDir->make<TH1F>("ht_nchi2","nchi2",100,0.,100.);
     ht_nchi2_a = TkDir->make<TH1F>("ht_nchi2_a","nchi2_a",100,0.,100.);
+    ht_d_nchi2_a =  TkDir->make<TH1F>("ht_d_nchi2_a","delta nchi2_a",200,-100.,100.);
     ht_nchi2_b = TkDir->make<TH1F>("ht_nchi2_b","nchi2_b",100,0.,100.);
     ht_chivschi_a = TkDir->make<TH2F>("ht_chivschi_a","chivschi_a",100,0.,100.,100,0.,100.);
     ht_chivschi_b = TkDir->make<TH2F>("ht_chivschi_b","chivschi_b",100,0.,100.,100,0.,100.);
@@ -248,6 +255,7 @@ struct GlbSelectorStudy::MuonME {
     hs_chi2 = StaDir->make<TH1F>("hs_chi2","chi2",100,0.,100.);
     hs_nchi2 = StaDir->make<TH1F>("hs_nchi2","nchi2",100,0.,100.);    
     hs_nchi2_a = StaDir->make<TH1F>("hs_nchi2_a","nchi2_a",100,0.,100.);
+    hs_d_nchi2_a =  StaDir->make<TH1F>("hs_d_nchi2_a","delta nchi2_a",200,-100.,100.);
     hs_nchi2_b = StaDir->make<TH1F>("hs_nchi2_b","nchi2_b",100,0.,100.);
     hs_chivschi_a = StaDir->make<TH2F>("hs_chivschi_a","chivschi_a",100,0.,100.,100,0.,100.);
     hs_chivschi_b = StaDir->make<TH2F>("hs_chivschi_b","chivschi_b",100,0.,100.,100,0.,100.);
@@ -277,7 +285,7 @@ struct GlbSelectorStudy::MuonME {
     hg_NTrksPt_St1_ = GlbDir->make<TH1F>("hg_NTrksPt_St1", "Number of reco tracks vs p_{T} only in Station1", 100, 0., 500.);
 
     hg_pt_vs_pt_ = GlbDir->make<TH2F>("hg_pt_vs_pt","p_{T}^{Sta} vs p_{T}^{Tk}",100, 0., 500.,100,0,500.);
-    hg_dpt_ = GlbDir->make<TH1F>("hg_dpt","p_{T}^{Tk} - p_{T}^{Sta}",100, 0., 500.);
+    hg_dpt_ = GlbDir->make<TH1F>("hg_dpt","p_{T}^{Tk} - p_{T}^{Sta}",200, -500., 500.);
 
     hm_nChamber = MuDir->make<TH1F>("hm_nChamber","nChamber",20,0,20);
     hm_nChamberMatch_no = MuDir->make<TH1F>("hm_nChamberMatch_no","nChamberMatch No Arbitration",20,0,20);
@@ -331,6 +339,20 @@ struct GlbSelectorStudy::MuonME {
 
     hm_trackerMu = MuDir->make<TH1F>("hm_TM","isTrackerMuon",3,-1.5,1.5);
 
+    hm_trackCategories_ = dir->make<TH1F>(
+					  "hm_Frequency",
+					  "Frequency for the different track categories",
+					  numberTrackCategories_,
+					  -0.5,
+					  numberTrackCategories_ - 0.5
+					  );
+    for (Int_t i = 0; i < numberTrackCategories_; ++i)
+      hm_trackCategories_->GetXaxis()->SetBinLabel(i+1, TrackCategories::Names[i]);
+    
+
+
+
+
   };
   //void fill(const reco::Muon& iMuon,const GlobalPoint pos,const GlobalPoint decayPos) {
   void fill(const reco::Muon& iMuon,const TrackingParticleRef& pos, const TrackingParticleRef& muTp) {
@@ -373,6 +395,9 @@ struct GlbSelectorStudy::MuonME {
 
     hg_nchi2Prob->Fill(ChiSquaredProbability(glbTrack->chi2(), glbTrack->ndof()));
     hg_nlnchi2Prob->Fill(-LnChiSquaredProbability(glbTrack->chi2(), glbTrack->ndof()));
+
+      ht_kink->Fill(tkink_);
+      hg_kink->Fill(gkink_);
 
     /*
     //calculate by hand
@@ -423,6 +448,9 @@ struct GlbSelectorStudy::MuonME {
     hs_nchi2->Fill(staTrack->normalizedChi2());
     hs_nlnchi2Prob->Fill(-LnChiSquaredProbability(staTrack->chi2(), staTrack->ndof()));
     hs_nchi2Prob->Fill(ChiSquaredProbability(staTrack->chi2(), staTrack->ndof()));
+
+    hs_nchi2_a->Fill(relative_muon_chi2_);
+    hs_d_nchi2_a->Fill(relative_muon_chi2_-staTrack->normalizedChi2());
 
     hs_NTrksEta_->Fill(staTrack->eta());
     hs_NTrksPt_->Fill(staTrack->pt());
@@ -643,6 +671,11 @@ std::pair< std::pair<int,int>,std::pair<int,int> > countStations(const reco::Tra
   return std::pair<std::pair<int,int>,std::pair<int,int> >(p1,p2);
 };
 
+  Int_t numberTrackCategories_;
+
+  double tkink_, gkink_;
+  double relative_muon_chi2_;
+  double relative_tracker_chi2_;
 
   TH1F *ht_dxy, *ht_dz, *ht_nHit, *ht_chi2, *ht_nchi2, *ht_nchi2Prob, *ht_nlnchi2Prob;
   TH1F *hs_dxy, *hs_dz, *hs_nHit, *hs_chi2, *hs_nchi2, *hs_nchi2Prob, *hs_nlnchi2Prob;
@@ -676,8 +709,8 @@ std::pair< std::pair<int,int>,std::pair<int,int> > countStations(const reco::Tra
   TH1F *hm_NSt_tot_, *hm_NSt_rpc_, *hm_NSt_csc_, *hm_NSt_dt_;
   TH1F *hm_noDepth1_, *hm_noDepth2_;
 
-  TH1F *ht_nchi2_a, *ht_nchi2_b;
-  TH1F *hs_nchi2_a, *hs_nchi2_b;
+  TH1F *ht_nchi2_a, *ht_nchi2_b, *ht_d_nchi2_a;
+  TH1F *hs_nchi2_a, *hs_nchi2_b, *hs_d_nchi2_a;
   TH2F * hg_pt_vs_pt_;
   TH1F * hg_dpt_;
   TH2F * ht_chivschi_a, * ht_chivschi_b;
@@ -685,6 +718,8 @@ std::pair< std::pair<int,int>,std::pair<int,int> > countStations(const reco::Tra
 
   TH1F *hm_pt_K, *hm_pt_B, *hm_pt_D, *hm_pt_Pi;
   TH1F *hm_pt_Tau, *hm_pt_Mu, *hm_pt_Other;
+
+  TH1F * hm_trackCategories_;
 
 };
 
@@ -776,6 +811,9 @@ GlbSelectorStudy::GlbSelectorStudy(const edm::ParameterSet& iConfig):
                                          tpset_calConversion.getParameter<bool>("signalOnly"),
                                          tpset_calConversion.getParameter<bool>("chargedOnly"),
                                          tpset_calConversion.getParameter<std::vector<int> >("pdgId"));
+
+  numberTrackCategories_ = TrackCategories::Unknown+1;
+
 }
 
 
@@ -1026,14 +1064,23 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       std::pair<double,double> thisKink;
       std::pair<double,double> stachi;
       std::pair<double,double> tkchi;
+      double relative_muon_chi2 = 0.0;
+      double relative_tracker_chi2 = 0.0;
       if(refitted.size()>0) {
 	thisKink = kink(refitted.front()) ;
 	stachi = staChi2(refitted.front());
 	tkchi = tkChi2(refitted.front());
+	std::pair<double,double> chi = newChi2(refitted.front());
+	relative_muon_chi2 = chi.second/staTrack->ndof();
+	relative_tracker_chi2 = chi.first/tkTrack->ndof();
+	LogDebug(theCategory);
 	LogTrace(theCategory) << "thisKink " << thisKink.first << " " <<thisKink.second;
 	LogTrace(theCategory) << "staChi2 " << stachi.first << " " << stachi.second;
 	LogTrace(theCategory) << "tkChi2 " << tkchi.first << " " << tkchi.second;
       }
+
+      LogTrace(theCategory) << "deltaChi2 trk " << relative_tracker_chi2 - tkTrack->normalizedChi2();
+      LogTrace(theCategory) << "deltaChi2 mu  " << relative_muon_chi2 - staTrack->normalizedChi2();
 
       unsigned int theBit = (recoBitMap_.find(glbTrack) != recoBitMap_.end()) ? recoBitMap_[glbTrack] : 0;
       TrackingParticleRef muTp;
@@ -1100,16 +1147,32 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       
       thisME->fill(*iMuon,theTrp,muTp);
 
-      thisME->ht_kink->Fill(thisKink.first);
-      thisME->hg_kink->Fill(thisKink.second);
+      //
+      for (Int_t i = 0; i != numberTrackCategories_; ++i)
+	if (
+	    classifier_.is( (TrackCategories::Category) i )
+            )
+	  thisME->hm_trackCategories_->Fill(i);
 
-      thisME->hs_nchi2_a->Fill(stachi.first/staTrack->ndof());
-      thisME->hs_chivschi_a->Fill(stachi.first/staTrack->ndof(),glbTrack->normalizedChi2());
+      //
+
+      thisME->tkink_ = thisKink.first;
+      thisME->gkink_ = thisKink.second;
+      thisME->relative_muon_chi2_ = relative_muon_chi2;
+      thisME->relative_tracker_chi2_ = relative_tracker_chi2;
+
+      //thisME->ht_kink->Fill(thisKink.first);
+      //thisME->hg_kink->Fill(thisKink.second);
+
+      //thisME->hs_nchi2_a->Fill(relative_muon_chi2);
+      //thisME->hs_d_nchi2_a->Fill(relative_muon_chi2-staTrack->normalizedChi2());
+      thisME->hs_chivschi_a->Fill(relative_muon_chi2,staTrack->normalizedChi2());
       thisME->hs_nchi2_b->Fill(stachi.second/staTrack->ndof());
       thisME->hs_chivschi_b->Fill(stachi.second/staTrack->ndof(),glbTrack->normalizedChi2());
 
-      thisME->ht_nchi2_a->Fill(tkchi.first/tkTrack->ndof());
-      thisME->ht_chivschi_a->Fill(tkchi.first/tkTrack->ndof(),glbTrack->normalizedChi2());
+      thisME->ht_nchi2_a->Fill(relative_tracker_chi2);
+      thisME->ht_d_nchi2_a->Fill(relative_tracker_chi2-tkTrack->normalizedChi2());
+      thisME->ht_chivschi_a->Fill(relative_tracker_chi2,tkTrack->normalizedChi2());
       thisME->ht_nchi2_b->Fill(tkchi.second/tkTrack->ndof());
       thisME->ht_chivschi_b->Fill(tkchi.second/tkTrack->ndof(),glbTrack->normalizedChi2());
       
@@ -1479,6 +1542,43 @@ std::pair<double,double> GlbSelectorStudy::tkChi2(Trajectory& muon) const {
   }
   return std::pair<double,double>(tkChi2_a,tkChi2_b);
 }
+
+std::pair<double,double> GlbSelectorStudy::newChi2(Trajectory& muon) const {
+  double muChi2 = 0.0;
+  double tkChi2 = 0.0;
+
+  typedef TransientTrackingRecHit::ConstRecHitPointer 	ConstRecHitPointer;
+  typedef ConstRecHitPointer RecHit;
+  typedef vector<TrajectoryMeasurement>::const_iterator TMI;
+
+  vector<TrajectoryMeasurement> meas = muon.measurements();
+
+  for ( TMI m = meas.begin(); m != meas.end(); m++ ) {
+    TransientTrackingRecHit::ConstRecHitPointer hit = m->recHit();
+    const TrajectoryStateOnSurface& uptsos = (*m).updatedState();
+    TransientTrackingRecHit::RecHitPointer preciseHit = hit->clone(uptsos);
+    double estimate = 0.0;
+    if (preciseHit->isValid() && uptsos.isValid()) {
+      estimate = theEstimator->estimate(uptsos, *preciseHit ).second;
+    }
+    
+    LogTrace(theCategory) << "estimate " << estimate << " TM.est " << m->estimate();
+    double tkDiff = 0.0;
+    double staDiff = 0.0;
+    if ( hit->isValid() &&  (hit->geographicalId().det()) == DetId::Tracker ) {
+      tkChi2 += estimate;
+      tkDiff = estimate - m->estimate();
+    }
+    if ( hit->isValid() &&  (hit->geographicalId().det()) == DetId::Muon ) {
+      muChi2 += estimate;
+      staDiff = estimate - m->estimate();
+    }
+  }
+
+  return std::pair<double,double>(tkChi2,muChi2);
+       
+}
+
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(GlbSelectorStudy);

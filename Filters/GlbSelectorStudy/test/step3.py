@@ -81,12 +81,12 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.6 $'),
+    version = cms.untracked.string('$Revision: 1.7 $'),
     annotation = cms.untracked.string('step2 nevts:1'),
     name = cms.untracked.string('PyReleaseValidation')
 )
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(-1)
+    input = cms.untracked.int32(10)
 )
 process.options = cms.untracked.PSet(
     Rethrow = cms.untracked.vstring('ProductNotFound')
@@ -98,9 +98,9 @@ process.source = cms.Source("PoolSource",
 #                            fileNames = cms.untracked.vstring('file:/home/ba01/u112/aeverett/scratch_rcac/fullOutput.QCDpt800.root')
                             #   fileNames = cms.untracked.vstring('file:/home/ba01/u112/aeverett/scratch_rcac/step3.root')
 #                                    fileNames = cms.untracked.vstring('/store/user/aeverett/SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1//SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1//abc92f2ca79c035bec8931c1df74b704//SingleKPt2_200_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_162.root',)
-                            fileNames = cms.untracked.vstring('/store/user/aeverett//CMSSW_2_2_5//SingleKPt2_200//aeverett//SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1//SingleKPt2_200_CMSSW_2_2_5_IDEAL_step2//49d2e03eccbedc0e7ba634f37fb81980//step2_RAW2DIGI_RECO_295.root'),
+                            fileNames = cms.untracked.vstring('/store/user/aeverett//CMSSW_2_2_5//SingleKPt2_200//aeverett//SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1//SingleKPt2_200_CMSSW_2_2_5_IDEAL_step2//49d2e03eccbedc0e7ba634f37fb81980//step2_RAW2DIGI_RECO_295.root',),
                             
-                            secondaryFileNames = cms.untracked.vstring('/store/user/aeverett/SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1/SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1/abc92f2ca79c035bec8931c1df74b704/SingleKPt2_200_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_329.root'),
+                            secondaryFileNames = cms.untracked.vstring('/store/user/aeverett/SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1/SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1/abc92f2ca79c035bec8931c1df74b704/SingleKPt2_200_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_329.root',),
 
                             
 )
@@ -118,6 +118,7 @@ process.output = cms.OutputModule("PoolOutputModule",
 
 # Additional output definition
 process.output.outputCommands.append("keep *")
+process.output.outputCommands.append("keep *_MEtoEDMConverter_*_*")
 # Other statements
 process.TFileService = cms.Service("TFileService", fileName = cms.string("histo3.root"))
 
@@ -232,7 +233,7 @@ process.p2 = cms.Path(process.trackCategoriesAnalyzer)
 
 #process.schedule = cms.Schedule(process.validation_step,process.p)
 
-process.schedule = cms.Schedule(process.reTP_step,process.raw2digi_step,process.reconstruction_step,process.p,process.endjob_step) #,process.out_step)
+process.schedule = cms.Schedule(process.reTP_step,process.raw2digi_step,process.reconstruction_step,process.postreco_step,process.validation_step,process.p,process.endjob_step,process.out_step)
 #process.schedule = cms.Schedule(process.p)
 
 process.glbSelStudy.trackProducer = "globalMuons"
