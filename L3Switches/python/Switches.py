@@ -1,61 +1,17 @@
 import FWCore.ParameterSet.Config as cms
 
-def adaptTo2_2(process):
-    if (not hasattr(process,"hltL3TkTracksFromL2")):
-        process.hltL3TkTracksFromL2 = cms.EDProducer( "TrackProducer",
-                                                      TrajectoryInEvent = cms.bool( True ),
-                                                      useHitsSplitting = cms.bool( False ),
-                                                      clusterRemovalInfo = cms.InputTag( "" ),
-                                                      alias = cms.untracked.string( "" ),
-                                                      Fitter = cms.string( "hltKFFittingSmoother" ),
-                                                      Propagator = cms.string( "PropagatorWithMaterial" ),
-                                                      src = cms.InputTag( "hltL3TrackCandidateFromL2" ),
-                                                      beamSpot = cms.InputTag( "hltOfflineBeamSpot" ),
-                                                      TTRHBuilder = cms.string( "WithTrackAngle" ),
-                                                      AlgorithmName = cms.string( "undefAlgorithm" )
-                                                      )
-        process.hltL3Muons.L3TrajBuilderParameters.tkTrajLabel = cms.InputTag( "hltL3TkTracksFromL2" )
-        process.HLTL3muonrecoNocandSequence.replace(process.hltL3Muons, process.hltL3TkTracksFromL2+process.hltL3Muons)
-        ##end the necessary ES objects
-
-        process.hltKFFitter = cms.ESProducer( "KFTrajectoryFitterESProducer",
-                                              ComponentName = cms.string( "hltKFFitter" ),
-                                              Propagator = cms.string( "PropagatorWithMaterial" ),
-                                              Updator = cms.string( "KFUpdator" ),
-                                              Estimator = cms.string( "Chi2" ),
-                                              minHits = cms.int32( 3 ),
-                                              appendToDataLabel = cms.string( "" )
-                                              )
-        process.hltKFFittingSmoother = cms.ESProducer( "KFFittingSmootherESProducer",
-                                                       ComponentName = cms.string( "hltKFFittingSmoother" ),
-                                                       Fitter = cms.string( "hltKFFitter" ),
-                                                       Smoother = cms.string( "hltKFSmoother" ),
-                                                       EstimateCut = cms.double( -1.0 ),
-                                                       MinNumberOfHits = cms.int32( 5 ),
-                                                       RejectTracks = cms.bool( True ),
-                                                       BreakTrajWith2ConsecutiveMissing = cms.bool( False ),
-                                                       NoInvalidHitsBeginEnd = cms.bool( False ),
-                                                       appendToDataLabel = cms.string( "" )
-                                                       )
-        process.hltKFSmoother = cms.ESProducer( "KFTrajectorySmootherESProducer",
-                                                ComponentName = cms.string( "hltKFSmoother" ),
-                                                Propagator = cms.string( "PropagatorWithMaterial" ),
-                                                Updator = cms.string( "KFUpdator" ),
-                                                Estimator = cms.string( "Chi2" ),
-                                                errorRescaling = cms.double( 100.0 ),
-                                                minHits = cms.int32( 3 ),
-                                                appendToDataLabel = cms.string( "" )
-                                                )
-        
-        ##additionnal parameters
-        process.hltL3Muons.L3TrajBuilderParameters.ScaleTECxFactor = cms.double( -1.0 )
-        process.hltL3Muons.L3TrajBuilderParameters.ScaleTECyFactor = cms.double( -1.0 )
-
-    
-
 def PCut(process):
     process.hltL3TrajectorySeed.PCut = cms.double(2.5)
-    
+
+def cleanTSG(m):
+    m.TSGForRoadSearchIOpxl = cms.PSet()
+    m.TSGForRoadSearchOI = cms.PSet()
+    m.TSGFromPropagation = cms.PSet()
+    m.TSGFromMixedPairs = cms.PSet()
+    m.TSGFromPixelPairs = cms.PSet()
+    m.TSGFromPixelTriplets = cms.PSet()
+    m.TSGFromCombinedHits = cms.PSet()
+
 
 ############ baseline ##############
 
@@ -93,9 +49,45 @@ def makeBaseline():
         )
 
 
+def regionBuilder():
+    return cms.PSet(EtaR_UpperLimit_Par1 = cms.double( 0.25 ),
+                    Eta_fixed = cms.double( 0.2 ),
+                    beamSpot = cms.InputTag( "hltOfflineBeamSpot" ),
+                    OnDemand = cms.double( -1.0 ),
+                    Rescale_Dz = cms.double( 3.0 ),
+                    Eta_min = cms.double( 0.1 ),
+                    Rescale_phi = cms.double( 3.0 ),
+                    PhiR_UpperLimit_Par1 = cms.double( 0.6 ),
+                    DeltaZ_Region = cms.double( 15.9 ),
+                    Phi_min = cms.double( 0.1 ),
+                    PhiR_UpperLimit_Par2 = cms.double( 0.2 ),
+                    vertexCollection = cms.InputTag( "pixelVertices" ),
+                    Phi_fixed = cms.double( 0.2 ),
+                    DeltaR = cms.double( 0.2 ),
+                    EtaR_UpperLimit_Par2 = cms.double( 0.15 ),
+                    UseFixedRegion = cms.bool( False ),
+                    Rescale_eta = cms.double( 3.0 ),
+                    UseVertex = cms.bool( False ),
+                    EscapePt = cms.double( 1.5 )
+                    )
+
+def seedCleaner():
+    return cms.PSet(cleanerFromSharedHits = cms.bool( True ),
+                    ptCleaner = cms.bool( True ),
+                    TTRHBuilder = cms.string( "WithTrackAngle" ),
+                    beamSpot = cms.InputTag( "hltOfflineBeamSpot" ),
+                    directionCleaner = cms.bool( True )
+                    )
+        
 def SwitchToBaseline(process):
     PCut(process)
-    print "baseline is by default in the menu."
+    cleanTSG(process.hltL3TrajectorySeed)
+    process.hltL3TrajectorySeed.TSGFromCombinedHits = makeBaseline()
+    process.hltL3TrajectorySeed.tkSeedGenerator = "TSGFromCombinedHits"
+    process.hltL3TrajectorySeed.ServiceParameters.Propagators = cms.untracked.vstring()
+    process.hltL3TrajectorySeed.MuonTrackingRegionBuilder = regionBuilder()
+    process.hltL3TrajectorySeed.TrackerSeedCleaner = seedCleaner()
+    
 
 def makeBaselinePP():
     pset=makeBaseline()
@@ -121,8 +113,12 @@ def makeBaselinePP():
     
 def SwitchToBaselinePP(process):
     PCut(process)
+    cleanTSG(process.hltL3TrajectorySeed)
     process.hltL3TrajectorySeed.TSGFromCombinedHits = makeBaselinePP()
+    process.hltL3TrajectorySeed.tkSeedGenerator = "TSGFromCombinedHits"
     process.hltL3TrajectorySeed.ServiceParameters.Propagators = cms.untracked.vstring()
+    process.hltL3TrajectorySeed.MuonTrackingRegionBuilder = regionBuilder()
+    process.hltL3TrajectorySeed.TrackerSeedCleaner = seedCleaner()
 
 
 ############### OI-state based #############
@@ -171,24 +167,21 @@ def OIStatePropagators(process,pset):
         process.hltL3TrajectorySeed.ServiceParameters.Propagators = cms.untracked.vstring()
     process.hltL3TrajectorySeed.ServiceParameters.Propagators.append(pset.propagatorCompatibleName.value())
     process.hltL3TrajectorySeed.ServiceParameters.Propagators.append(pset.propagatorName.value())
-        
+
+    
 def SwitchToOIState(process):
     PCut(process)
     #switch off a few things
-    process.hltL3TrajectorySeed.TrackerSeedCleaner = cms.PSet()
-    process.hltL3TrajectorySeed.TSGForRoadSearchIOpxl = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromPropagation = cms.PSet()
+    cleanTSG(process.hltL3TrajectorySeed)
+
     process.hltL3TrajectorySeed.MuonTrackingRegionBuilder = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromMixedPairs = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromPixelPairs = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromPixelTriplets = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromCombinedHits = cms.PSet()
+    process.hltL3TrajectorySeed.TrackerSeedCleaner = cms.PSet()
 
     #    process.hltL3TrajectorySeed
     
     #switch on the OIstate
     process.hltL3TrajectorySeed.tkSeedGenerator = "TSGForRoadSearchOI"
-    process.hltL3TrajectorySeed.TSGForRoadSearchOI =makeOIState()
+    process.hltL3TrajectorySeed.TSGForRoadSearchOI = makeOIState()
     process.hltL3TrajectorySeed.ServiceParameters.Propagators = cms.untracked.vstring()
     OIStatePropagators(process,process.hltL3TrajectorySeed.TSGForRoadSearchOI)
 
@@ -219,13 +212,8 @@ def OIHitPropagators(process,pset):
 
 def SwitchToOIHit(process):
     PCut(process)
-    process.hltL3TrajectorySeed.TSGForRoadSearchIOpxl = cms.PSet()
-    process.hltL3TrajectorySeed.TSGForRoadSearchOI = cms.PSet()
+    cleanTSG(process.hltL3TrajectorySeed)
     process.hltL3TrajectorySeed.MuonTrackingRegionBuilder = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromMixedPairs = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromPixelPairs = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromPixelTriplets = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromCombinedHits = cms.PSet()
 
     process.hltL3TrajectorySeed.tkSeedGenerator = "TSGFromPropagation"
 
