@@ -1,6 +1,6 @@
 /** \class AODMuonToNtuple
- *  $Date: 2009/07/25 14:32:30 $
- *  $Revision: 1.1 $
+ *  $Date: 2009/07/25 16:19:32 $
+ *  $Revision: 1.2 $
  *  \author Chang Liu   -  Purdue University <Chang.Liu@cern.ch>
  *
  *  1st modified by Hwidong Yoo (hdyoo@cern.ch)
@@ -17,8 +17,8 @@
 
 
 //#include "DataFormats/PatCandidates/interface/Muon.h"
-//#include "DataFormats/PatCandidates/interface/MET.h"
-//#include "DataFormats/PatCandidates/interface/Jet.h"
+#include "DataFormats/PatCandidates/interface/MET.h"
+#include "DataFormats/PatCandidates/interface/Jet.h"
 //#include "DataFormats/PatCandidates/interface/Vertexing.h"
 //#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
 //#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
@@ -104,8 +104,8 @@ AODMuonToNtuple::AODMuonToNtuple(const edm::ParameterSet& iConfig)
 
   theRootFileName = iConfig.getParameter<string>("out");
   theMuonLabel = iConfig.getParameter<edm::InputTag>("Muon");
-  //  theMETLabel = iConfig.getParameter<edm::InputTag>("MET");
-  //  theJetLabel = iConfig.getParameter<edm::InputTag>("Jet");
+  theMETLabel = iConfig.getParameter<edm::InputTag>("MET");
+  theJetLabel = iConfig.getParameter<edm::InputTag>("Jet");
   isMC = iConfig.getParameter<bool>("isMC");
   theCrossSection = iConfig.getParameter<double>("CrossSection");
   theFilterEfficiency = iConfig.getParameter<double>("FilterEfficiency");
@@ -254,12 +254,12 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
    edm::Handle<edm::View<reco::Muon> > muonHandle;
    iEvent.getByLabel(theMuonLabel,muonHandle);
 
-   //   edm::Handle<edm::View<pat::MET> > metHandle;
-   //   iEvent.getByLabel(theMETLabel,metHandle);
-
-   //   edm::Handle<edm::View<pat::Jet> > jetHandle;
-   //   iEvent.getByLabel(theJetLabel,jetHandle);
-
+   edm::Handle<edm::View<pat::MET> > metHandle;
+   iEvent.getByLabel(theMETLabel,metHandle);
+   
+   edm::Handle<edm::View<pat::Jet> > jetHandle;
+   iEvent.getByLabel(theJetLabel,jetHandle);
+   
    edm::Handle<edm::View<reco::Track> > trackHandle;
    iEvent.getByLabel("generalTracks", trackHandle);
 
@@ -744,17 +744,14 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
    nPair = _nPair;
 
 
-   // MET
-   /*
+   // MET   
    if( metHandle->size() > 1 ) cout << "# of METs = " << metHandle->size() << endl;
    for(edm::View<pat::MET>::const_iterator iMET = metHandle->begin(); iMET != metHandle->end(); ++iMET) {
        MET = iMET->sumEt();
        break;
    }
-   */
 
-   // Jets
-   /*
+   // Jets   
    int _njets = 0;
    int _nbjets = 0;
    int _nbjets1 = 0;
@@ -774,7 +771,7 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	    _isbtagged = true;
 	}
 	if( _isbtagged ) {
-            for(edm::View<pat::Muon>::const_iterator iMuon = muonHandle->begin(); iMuon != muonHandle->end(); ++iMuon) {
+            for(edm::View<reco::Muon>::const_iterator iMuon = muonHandle->begin(); iMuon != muonHandle->end(); ++iMuon) {
 		double deltaR = sqrt( pow(iMuon->eta() - iJet->eta(), 2) 
 				+ pow(iMuon->phi() - iJet->phi(), 2) );
 		if( deltaR < 0.5 ) {
@@ -788,7 +785,7 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
    
    Nbtagged = _nbjets;
    NbtaggedCloseMuon = _nbjets1;
-   */
+   
    DiMuonTree->Fill();
 }
 
@@ -916,6 +913,13 @@ AODMuonToNtuple::beginJob(const edm::EventSetup&)
   DiMuonTree->Branch("Muon1_vy", &Muon1_vy,"Muon1_vy[nPair]/D");
   DiMuonTree->Branch("Muon1_vz", &Muon1_vz,"Muon1_vz[nPair]/D");
   DiMuonTree->Branch("Muon1_Glb_chi2dof", &Muon1_Glb_chi2dof,"Muon1_Glb_chi2dof[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_phi", &Muon1_Glb_phi,"Muon1_Glb_phi[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_eta", &Muon1_Glb_eta,"Muon1_Glb_eta[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_pT", &Muon1_Glb_pT,"Muon1_Glb_pT[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_Px", &Muon1_Glb_Px,"Muon1_Glb_Px[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_Py", &Muon1_Glb_Py,"Muon1_Glb_Py[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_Pz", &Muon1_Glb_Pz,"Muon1_Glb_Pz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_charge", &Muon1_Glb_charge,"Muon1_Glb_charge[nPair]/I");
   DiMuonTree->Branch("Muon1_Glb_nhits", &Muon1_Glb_nhits,"Muon1_Glb_nhits[nPair]/I");
   DiMuonTree->Branch("Muon1_Glb_qoverp", &Muon1_Glb_qoverp,"Muon1_Glb_qoverp[nPair]/D");
   DiMuonTree->Branch("Muon1_Glb_theta", &Muon1_Glb_theta,"Muon1_Glb_theta[nPair]/D");
@@ -931,6 +935,13 @@ AODMuonToNtuple::beginJob(const edm::EventSetup&)
   DiMuonTree->Branch("Muon1_Glb_vy", &Muon1_Glb_vy,"Muon1_Glb_vy[nPair]/D");
   DiMuonTree->Branch("Muon1_Glb_vz", &Muon1_Glb_vz,"Muon1_Glb_vz[nPair]/D");
   DiMuonTree->Branch("Muon1_Sta_chi2dof", &Muon1_Sta_chi2dof,"Muon1_Sta_chi2dof[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_phi", &Muon1_Sta_phi,"Muon1_Sta_phi[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_eta", &Muon1_Sta_eta,"Muon1_Sta_eta[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_pT", &Muon1_Sta_pT,"Muon1_Sta_pT[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_Px", &Muon1_Sta_Px,"Muon1_Sta_Px[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_Py", &Muon1_Sta_Py,"Muon1_Sta_Py[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_Pz", &Muon1_Sta_Pz,"Muon1_Sta_Pz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_charge", &Muon1_Sta_charge,"Muon1_Sta_charge[nPair]/I");
   DiMuonTree->Branch("Muon1_Sta_nhits", &Muon1_Sta_nhits,"Muon1_Sta_nhits[nPair]/I");
   DiMuonTree->Branch("Muon1_Sta_qoverp", &Muon1_Sta_qoverp,"Muon1_Sta_qoverp[nPair]/D");
   DiMuonTree->Branch("Muon1_Sta_theta", &Muon1_Sta_theta,"Muon1_Sta_theta[nPair]/D");
@@ -946,6 +957,13 @@ AODMuonToNtuple::beginJob(const edm::EventSetup&)
   DiMuonTree->Branch("Muon1_Sta_vy", &Muon1_Sta_vy,"Muon1_Sta_vy[nPair]/D");
   DiMuonTree->Branch("Muon1_Sta_vz", &Muon1_Sta_vz,"Muon1_Sta_vz[nPair]/D");
   DiMuonTree->Branch("Muon1_Trk_chi2dof", &Muon1_Trk_chi2dof,"Muon1_Trk_chi2dof[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_phi", &Muon1_Trk_phi,"Muon1_Trk_phi[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_eta", &Muon1_Trk_eta,"Muon1_Trk_eta[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_pT", &Muon1_Trk_pT,"Muon1_Trk_pT[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_Px", &Muon1_Trk_Px,"Muon1_Trk_Px[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_Py", &Muon1_Trk_Py,"Muon1_Trk_Py[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_Pz", &Muon1_Trk_Pz,"Muon1_Trk_Pz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_charge", &Muon1_Trk_charge,"Muon1_Trk_charge[nPair]/I");
   DiMuonTree->Branch("Muon1_Trk_nhits", &Muon1_Trk_nhits,"Muon1_Trk_nhits[nPair]/I");
   DiMuonTree->Branch("Muon1_Trk_qoverp", &Muon1_Trk_qoverp,"Muon1_Trk_qoverp[nPair]/D");
   DiMuonTree->Branch("Muon1_Trk_theta", &Muon1_Trk_theta,"Muon1_Trk_theta[nPair]/D");

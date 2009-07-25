@@ -57,9 +57,12 @@ process.source = testInput()
 
 # set the number of events
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(1000)
+    input = cms.untracked.int32(500)
 )
 
+# input pat sequences
+process.load("PhysicsTools.PatAlgos.patLayer0_cff")
+process.load("PhysicsTools.PatAlgos.patLayer1_cff")
 
 # input AOD analyzer sequence
 process.load("UserCode.MuonToNtuple.aodmuontontuple_cfi")
@@ -85,7 +88,9 @@ process.HLTAnalyzerEndpath = cms.EndPath( process.hltL1gtTrigReport + process.hl
 
 
 process.p = cms.Path(
-    process.aodmuontontuple
+    process.patLayer0
+    *process.patLayer1
+    *process.aodmuontontuple
     #+process.mcTruthForDimuons
 )
 
