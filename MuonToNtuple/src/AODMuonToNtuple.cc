@@ -1,4 +1,4 @@
-/** \class MuonToNtuple
+/** \class AODMuonToNtuple
  *  $Date: 2009/07/25 13:13:00 $
  *  $Revision: 1.1 $
  *  \author Chang Liu   -  Purdue University <Chang.Liu@cern.ch>
@@ -11,10 +11,11 @@
  */
 
 
-#include "UserCode/MuonToNtuple/interface/MuonToNtuple.h"
+#include "UserCode/MuonToNtuple/interface/AODMuonToNtuple.h"
 // system include files
 #include <memory>
 
+/*
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
@@ -22,6 +23,7 @@
 #include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
+*/
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -96,14 +98,14 @@ using namespace edm;
 
 
 //
-MuonToNtuple::MuonToNtuple(const edm::ParameterSet& iConfig)
+AODMuonToNtuple::AODMuonToNtuple(const edm::ParameterSet& iConfig)
 {
   nEvt = 0;
 
   theRootFileName = iConfig.getParameter<string>("out");
   theMuonLabel = iConfig.getParameter<edm::InputTag>("Muon");
-  theMETLabel = iConfig.getParameter<edm::InputTag>("MET");
-  theJetLabel = iConfig.getParameter<edm::InputTag>("Jet");
+  //  theMETLabel = iConfig.getParameter<edm::InputTag>("MET");
+  //  theJetLabel = iConfig.getParameter<edm::InputTag>("Jet");
   isMC = iConfig.getParameter<bool>("isMC");
   theCrossSection = iConfig.getParameter<double>("CrossSection");
   theFilterEfficiency = iConfig.getParameter<double>("FilterEfficiency");
@@ -112,7 +114,7 @@ MuonToNtuple::MuonToNtuple(const edm::ParameterSet& iConfig)
 }
 
 
-MuonToNtuple::~MuonToNtuple()
+AODMuonToNtuple::~AODMuonToNtuple()
 {
  
 
@@ -124,7 +126,7 @@ MuonToNtuple::~MuonToNtuple()
 //
 
 // ------------ method called to for each event  ------------
-void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   LogDebug("NTUPLE");
    // initialize for ntuple variables
@@ -231,14 +233,14 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
    evtNum = iEvent.id().event();
 
    // call pat objects
-   edm::Handle<edm::View<pat::Muon> > muonHandle;
+   edm::Handle<edm::View<reco::Muon> > muonHandle;
    iEvent.getByLabel(theMuonLabel,muonHandle);
 
-   edm::Handle<edm::View<pat::MET> > metHandle;
-   iEvent.getByLabel(theMETLabel,metHandle);
+   //   edm::Handle<edm::View<pat::MET> > metHandle;
+   //   iEvent.getByLabel(theMETLabel,metHandle);
 
-   edm::Handle<edm::View<pat::Jet> > jetHandle;
-   iEvent.getByLabel(theJetLabel,jetHandle);
+   //   edm::Handle<edm::View<pat::Jet> > jetHandle;
+   //   iEvent.getByLabel(theJetLabel,jetHandle);
 
    edm::Handle<edm::View<reco::Track> > trackHandle;
    iEvent.getByLabel("generalTracks", trackHandle);
@@ -364,9 +366,9 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
    // select highest invariant mass pair
    // 
    double highest_invmass = -100;
-   pat::Muon hMmuon1; pat::Muon hMmuon2;
-   for(edm::View<pat::Muon>::const_iterator iMuon1 = muonHandle->begin(); iMuon1 != muonHandle->end(); ++iMuon1) {
-       for(edm::View<pat::Muon>::const_iterator iMuon2 = muonHandle->begin(); iMuon2 != muonHandle->end(); ++iMuon2) {
+   reco::Muon hMmuon1; reco::Muon hMmuon2;
+   for(edm::View<reco::Muon>::const_iterator iMuon1 = muonHandle->begin(); iMuon1 != muonHandle->end(); ++iMuon1) {
+       for(edm::View<reco::Muon>::const_iterator iMuon2 = muonHandle->begin(); iMuon2 != muonHandle->end(); ++iMuon2) {
 	    if( iMuon1 <= iMuon2 ) continue;
 	    if( !iMuon1->isGood() || !iMuon2->isGood() ) continue;
 
@@ -385,13 +387,14 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
    // DiMuonTree (all possible permutation)
    //
    int _nPair = 0;
-   for(edm::View<pat::Muon>::const_iterator iMuon1 = muonHandle->begin(); iMuon1 != muonHandle->end(); ++iMuon1) {
-       for(edm::View<pat::Muon>::const_iterator iMuon2 = muonHandle->begin(); iMuon2 != muonHandle->end(); ++iMuon2) {
+   for(edm::View<reco::Muon>::const_iterator iMuon1 = muonHandle->begin(); iMuon1 != muonHandle->end(); ++iMuon1) {
+       for(edm::View<reco::Muon>::const_iterator iMuon2 = muonHandle->begin(); iMuon2 != muonHandle->end(); ++iMuon2) {
 	    if( iMuon1 <= iMuon2 ) continue;
 	    // only select good muons
 	    if( !iMuon1->isGood() || !iMuon2->isGood() ) continue;
 
 	    // trigger matching in PAT
+	    /*
 	    Muon1_nTrig[_nPair] = iMuon1->triggerMatches().size();
 	    if( Muon1_nTrig[_nPair] > 0 ) {
 	    	// trigger object type as defined in DataFormats/HLTReco/interface/TriggerTypeDefs.h
@@ -424,7 +427,8 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    	if( _filterName == "hltSameSignMuL3PreFiltered" ) Muon1_filterName[_nPair] = 24;
 	    	if( _filterName == "hltPsi2SMML3Filtered" ) Muon1_filterName[_nPair] = 25;
 	    }
-
+	    */
+	    /*
 	    Muon2_nTrig[_nPair] = iMuon2->triggerMatches().size();
 	    if( Muon2_nTrig[_nPair] > 0 ) {
 	    	// trigger object type as defined in DataFormats/HLTReco/interface/TriggerTypeDefs.h
@@ -457,7 +461,7 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    	if( _filterName == "hltSameSignMuL3PreFiltered" ) Muon2_filterName[_nPair] = 24;
 	    	if( _filterName == "hltPsi2SMML3Filtered" ) Muon2_filterName[_nPair] = 25;
 	    }
-
+	    */
 	    // muon pair index by muon pt
 	    MuonPairIndex[_nPair] = _nPair;
 
@@ -484,9 +488,9 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    Muon1_eta[_nPair] = iMuon1->eta();
 	    Muon1_phi[_nPair] = iMuon1->phi();
 	    Muon1_sumtrkpt[_nPair] = TrackSumPtrInCone03(*iMuon1, trackHandle);
-	    Muon1_trkiso[_nPair] = iMuon1->trackIso();
-	    Muon1_hcaliso[_nPair] = iMuon1->hcalIso();
-	    Muon1_ecaliso[_nPair] = iMuon1->ecalIso();
+	    //aaa	    Muon1_trkiso[_nPair] = iMuon1->trackIso();
+	    //aaa	    Muon1_hcaliso[_nPair] = iMuon1->hcalIso();
+	    //aaa	    Muon1_ecaliso[_nPair] = iMuon1->ecalIso();
 	    Muon1_charge[_nPair] = iMuon1->charge();
 	    Muon1_nChambers[_nPair] = iMuon1->numberOfChambers(); // # of chambers
 	    Muon1_nMatches[_nPair] = iMuon1->numberOfMatches(); // # of chambers with matched segments
@@ -530,6 +534,7 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    }
 
 	    // MC truthMatch
+	    /* aaa
 	    if( isMC ) {
             	reco::GenParticleRef genMuon1 = iMuon1->genParticleRef();
 		if( genMuon1.isNonnull() ) {
@@ -543,6 +548,7 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    	    Muon1_MCtruth_mother[_nPair] = motherId(genMuon1);
 		}
 	    }
+	    aaa */
 
 	    // muon2 kinematics
 	    Muon2_pT[_nPair] = iMuon2->pt();
@@ -552,9 +558,9 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    Muon2_eta[_nPair] = iMuon2->eta();
 	    Muon2_phi[_nPair] = iMuon2->phi();
 	    Muon2_sumtrkpt[_nPair] = TrackSumPtrInCone03(*iMuon2, trackHandle);
-	    Muon2_trkiso[_nPair] = iMuon2->trackIso();
-	    Muon2_hcaliso[_nPair] = iMuon2->hcalIso();
-	    Muon2_ecaliso[_nPair] = iMuon2->ecalIso();
+	    //aaa	    Muon2_trkiso[_nPair] = iMuon2->trackIso();
+	    //aaa	    Muon2_hcaliso[_nPair] = iMuon2->hcalIso();
+	    //aaa   Muon2_ecaliso[_nPair] = iMuon2->ecalIso();
 	    Muon2_charge[_nPair] = iMuon2->charge();
 	    Muon2_nChambers[_nPair] = iMuon2->numberOfChambers(); // # of chambers
 	    Muon2_nMatches[_nPair] = iMuon2->numberOfMatches(); // # of chambers with matched segments
@@ -631,7 +637,8 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    
 
 	    // MC truthMatch
-	    if( isMC ) {
+	    /* aaa
+	    if( isMC ) {	    
             	reco::GenParticleRef genMuon2 = iMuon2->genParticleRef();
 		if( genMuon2.isNonnull() ) {
 	    	    Muon2_MCtruth_pT[_nPair] = genMuon2->pt();
@@ -644,7 +651,7 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	    	    Muon2_MCtruth_mother[_nPair] = motherId(genMuon2);
 		}
 	    }
-
+	    aaa */
 	    /*
 	    // MC truth invariant mass
 	    const double par_mass = 0.105658;
@@ -730,13 +737,16 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
 
    // MET
+   /*
    if( metHandle->size() > 1 ) cout << "# of METs = " << metHandle->size() << endl;
    for(edm::View<pat::MET>::const_iterator iMET = metHandle->begin(); iMET != metHandle->end(); ++iMET) {
        MET = iMET->sumEt();
        break;
    }
+   */
 
    // Jets
+   /*
    int _njets = 0;
    int _nbjets = 0;
    int _nbjets1 = 0;
@@ -767,16 +777,17 @@ void MuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	}
 	_njets++;
    }
+   
    Nbtagged = _nbjets;
    NbtaggedCloseMuon = _nbjets1;
-
+   */
    DiMuonTree->Fill();
 }
 
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
-MuonToNtuple::beginJob(const edm::EventSetup&)
+AODMuonToNtuple::beginJob(const edm::EventSetup&)
 {
 
   theFile = new TFile(theRootFileName.c_str(),"recreate");
@@ -975,7 +986,7 @@ MuonToNtuple::beginJob(const edm::EventSetup&)
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
-MuonToNtuple::endJob() {
+AODMuonToNtuple::endJob() {
   std::cout <<"++++++++++++++++++++++++++++++++++++++" << std::endl;
   std::cout <<"analyzed " << nEvt << " events: " << std::endl;
   std::cout << "writing information into file: " << theFile->GetName() << std::endl;
@@ -986,7 +997,7 @@ MuonToNtuple::endJob() {
 
 }
 
-float MuonToNtuple::deltaEtaPhi(const pat::Muon& lhs, const pat::Muon& rhs) const {
+float AODMuonToNtuple::deltaEtaPhi(const reco::Muon& lhs, const reco::Muon& rhs) const {
     float phi1 = lhs.track()->phi();
     float eta1 = lhs.track()->eta();
 
@@ -996,7 +1007,7 @@ float MuonToNtuple::deltaEtaPhi(const pat::Muon& lhs, const pat::Muon& rhs) cons
 
 }
 
-float MuonToNtuple::angleBetween(const pat::Muon& lhs, const pat::Muon& rhs) const {
+float AODMuonToNtuple::angleBetween(const reco::Muon& lhs, const reco::Muon& rhs) const {
    GlobalVector mom1(lhs.track()->px(), lhs.track()->py(), lhs.track()->pz());
    GlobalVector mom2(rhs.track()->px(), rhs.track()->py(), rhs.track()->pz());
 
@@ -1005,7 +1016,7 @@ float MuonToNtuple::angleBetween(const pat::Muon& lhs, const pat::Muon& rhs) con
 
 }
 
-float MuonToNtuple::angleBetween(const reco::Track& lhs, const reco::Track& rhs) const {
+float AODMuonToNtuple::angleBetween(const reco::Track& lhs, const reco::Track& rhs) const {
    GlobalVector mom1(lhs.px(), lhs.py(), lhs.pz());
    GlobalVector mom2(rhs.px(), rhs.py(), rhs.pz());
 
@@ -1014,7 +1025,7 @@ float MuonToNtuple::angleBetween(const reco::Track& lhs, const reco::Track& rhs)
 
 }
 
-float MuonToNtuple::angleBetween(const reco::GenParticle& lhs, const reco::GenParticle& rhs) const {
+float AODMuonToNtuple::angleBetween(const reco::GenParticle& lhs, const reco::GenParticle& rhs) const {
    GlobalVector mom1(lhs.px(), lhs.py(), lhs.pz());
    GlobalVector mom2(rhs.px(), rhs.py(), rhs.pz());
 
@@ -1023,7 +1034,7 @@ float MuonToNtuple::angleBetween(const reco::GenParticle& lhs, const reco::GenPa
 
 }
 
-int MuonToNtuple::motherId(const reco::GenParticle& par) const
+int AODMuonToNtuple::motherId(const reco::GenParticle& par) const
 {
     int _motherid = -9999;
     const Candidate* motherCand = par.mother(0);
@@ -1039,7 +1050,7 @@ int MuonToNtuple::motherId(const reco::GenParticle& par) const
     return _motherid;
 }
 
-int MuonToNtuple::motherId(const reco::GenParticleRef par) const
+int AODMuonToNtuple::motherId(const reco::GenParticleRef par) const
 {
     int _motherid = -9999;
     const Candidate* motherCand = par->mother(0);
@@ -1055,7 +1066,7 @@ int MuonToNtuple::motherId(const reco::GenParticleRef par) const
     return _motherid;
 }
 
-double MuonToNtuple::TrackSumPtrInCone03( const pat::Muon& muon, edm::Handle<edm::View<reco::Track> > tracks )
+double AODMuonToNtuple::TrackSumPtrInCone03( const reco::Muon& muon, edm::Handle<edm::View<reco::Track> > tracks )
 {
    double sum_pt = 0;
    for(edm::View<reco::Track>::const_iterator itrk = tracks->begin(); itrk != tracks->end(); ++itrk) {
@@ -1067,4 +1078,4 @@ double MuonToNtuple::TrackSumPtrInCone03( const pat::Muon& muon, edm::Handle<edm
    return sum_pt;
 }
 //define this as a plug-in
-//DEFINE_FWK_MODULE(MuonToNtuple);
+//DEFINE_FWK_MODULE(AODMuonToNtuple);
