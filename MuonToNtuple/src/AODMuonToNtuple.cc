@@ -1,5 +1,5 @@
 /** \class AODMuonToNtuple
- *  $Date: 2009/07/25 13:13:00 $
+ *  $Date: 2009/07/25 14:32:30 $
  *  $Revision: 1.1 $
  *  \author Chang Liu   -  Purdue University <Chang.Liu@cern.ch>
  *
@@ -15,15 +15,15 @@
 // system include files
 #include <memory>
 
-/*
-#include "DataFormats/PatCandidates/interface/Muon.h"
-#include "DataFormats/PatCandidates/interface/MET.h"
-#include "DataFormats/PatCandidates/interface/Jet.h"
-#include "DataFormats/PatCandidates/interface/Vertexing.h"
-#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
-#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
-#include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
-*/
+
+//#include "DataFormats/PatCandidates/interface/Muon.h"
+//#include "DataFormats/PatCandidates/interface/MET.h"
+//#include "DataFormats/PatCandidates/interface/Jet.h"
+//#include "DataFormats/PatCandidates/interface/Vertexing.h"
+//#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
+//#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+//#include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
+
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -175,11 +175,10 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
        JETflavour[i] = JETntracks[i] = -100;
 
        // muon type
-       Muon1_muonType[i] = Muon2_muonType[i] = -1;
+       Muon1_muonType[i] = -1;
 
        // trigger
        Muon1_nTrig[i] = Muon1_triggerObjectType[i] = Muon1_filterName[i] = -1;
-       Muon2_nTrig[i] = Muon2_triggerObjectType[i] = Muon2_filterName[i] = -1;
 
        // Muon kinematics
        InvMass[i] = Angle[i] = isOppSign[i] = MuonPairIndex[i] = isHMassPair[i] = -1;
@@ -190,29 +189,48 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
        Muon1_phi[i] = Muon1_eta[i] = Muon1_pT[i] = -100;
        Muon1_Px[i] = Muon1_Py[i] = Muon1_Pz[i] = -100;
+       Muon1_Glb_phi[i] = Muon1_Glb_eta[i] = Muon1_Glb_pT[i] = -100;
+       Muon1_Glb_Px[i] = Muon1_Glb_Py[i] = Muon1_Glb_Pz[i] = -100;
+       Muon1_Sta_phi[i] = Muon1_Sta_eta[i] = Muon1_Sta_pT[i] = -100;
+       Muon1_Sta_Px[i] = Muon1_Sta_Py[i] = Muon1_Sta_Pz[i] = -100;
+       Muon1_Trk_phi[i] = Muon1_Trk_eta[i] = Muon1_Trk_pT[i] = -100;
+       Muon1_Trk_Px[i] = Muon1_Trk_Py[i] = Muon1_Trk_Pz[i] = -100;
        Muon1_trkiso[i] = Muon1_hcaliso[i] = Muon1_ecaliso[i] = Muon1_chi2dof[i] = -100;
        Muon1_nChambers[i] = Muon1_nMatches[i] = Muon1_stationMask[i] = Muon1_nSegments[i] =  -1;
-       Muon2_phi[i] = Muon2_eta[i] = Muon2_pT[i] = -100;
-       Muon2_Px[i] = Muon2_Py[i] = Muon2_Pz[i] = -100;
-       Muon2_trkiso[i] = Muon2_hcaliso[i] = Muon2_ecaliso[i] = Muon2_chi2dof[i] = -100;
-       Muon2_nChambers[i] = Muon2_nMatches[i] = Muon2_stationMask[i] = Muon2_nSegments[i] =  -1;
-       Muon1_charge[i] = Muon2_charge[i] = Muon1_nhits[i] = Muon2_nhits[i] = -100;
+
+       Muon1_charge[i] = Muon1_nhits[i] = -100;
+       Muon1_Glb_charge[i] = Muon1_Glb_nhits[i] = -100;
+       Muon1_Sta_charge[i] = Muon1_Sta_nhits[i] = -100;
+       Muon1_Trk_charge[i] = Muon1_Trk_nhits[i] = -100;
 
        Muon1_qoverp[i] = Muon1_theta[i] = Muon1_lambda[i] = -100;
        Muon1_dxy[i] = Muon1_d0[i] = Muon1_dsz[i] = Muon1_dz[i] = -100;
        Muon1_vx[i] = Muon1_vy[i] = Muon1_vz[i] = -100;
        Muon1_dxyBS[i] = Muon1_dszBS[i] = Muon1_dzBS[i] = -100;
-       Muon2_qoverp[i] = Muon2_theta[i] = Muon2_lambda[i] = -100;
-       Muon2_dxy[i] = Muon2_d0[i] = Muon2_dsz[i] = Muon2_dz[i] = -100;
-       Muon2_vx[i] = Muon2_vy[i] = Muon2_vz[i] = -100;
-       Muon2_dxyBS[i] = Muon2_dszBS[i] = Muon2_dzBS[i] = -100;
+
+       Muon1_Glb_qoverp[i] = Muon1_Glb_theta[i] = Muon1_Glb_lambda[i] = -100;
+       Muon1_Glb_dxy[i] = Muon1_Glb_d0[i] = Muon1_Glb_dsz[i] = Muon1_Glb_dz[i] = -100;
+       Muon1_Glb_vx[i] = Muon1_Glb_vy[i] = Muon1_Glb_vz[i] = -100;
+       Muon1_Glb_dxyBS[i] = Muon1_Glb_dszBS[i] = Muon1_Glb_dzBS[i] = -100;
+
+       Muon1_Sta_qoverp[i] = Muon1_Sta_theta[i] = Muon1_Sta_lambda[i] = -100;
+       Muon1_Sta_dxy[i] = Muon1_Sta_d0[i] = Muon1_Sta_dsz[i] = Muon1_Sta_dz[i] = -100;
+       Muon1_Sta_vx[i] = Muon1_Sta_vy[i] = Muon1_Sta_vz[i] = -100;
+       Muon1_Sta_dxyBS[i] = Muon1_Sta_dszBS[i] = Muon1_Sta_dzBS[i] = -100;
+
+       Muon1_Trk_qoverp[i] = Muon1_Trk_theta[i] = Muon1_Trk_lambda[i] = -100;
+       Muon1_Trk_dxy[i] = Muon1_Trk_d0[i] = Muon1_Trk_dsz[i] = Muon1_Trk_dz[i] = -100;
+       Muon1_Trk_vx[i] = Muon1_Trk_vy[i] = Muon1_Trk_vz[i] = -100;
+       Muon1_Trk_dxyBS[i] = Muon1_Trk_dszBS[i] = Muon1_Trk_dzBS[i] = -100;
+
+       //       Muon2_qoverp[i] = Muon2_theta[i] = Muon2_lambda[i] = -100;
+       //       Muon2_dxy[i] = Muon2_d0[i] = Muon2_dsz[i] = Muon2_dz[i] = -100;
+       //       Muon2_vx[i] = Muon2_vy[i] = Muon2_vz[i] = -100;
+       //       Muon2_dxyBS[i] = Muon2_dszBS[i] = Muon2_dzBS[i] = -100;
 
        Muon1_MCtruth_pT[i] = Muon1_MCtruth_eta[i] = Muon1_MCtruth_phi[i] = -100;
        Muon1_MCtruth_Px[i] = Muon1_MCtruth_Py[i] = Muon1_MCtruth_Pz[i] = -100;
        Muon1_MCtruth_charge[i] = Muon1_MCtruth_mother[i] =-100;
-       Muon2_MCtruth_pT[i] = Muon2_MCtruth_eta[i] = Muon2_MCtruth_phi[i] = -100;
-       Muon2_MCtruth_Px[i] = Muon2_MCtruth_Py[i] = Muon2_MCtruth_Pz[i] = -100;
-       Muon2_MCtruth_charge[i] = Muon2_MCtruth_mother[i] =-100;
 
        // GEN Muon
        GENInvMass[i] = GENAngle[i] = GENisOppSign[i] = -1;
@@ -232,7 +250,7 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
    runNum = iEvent.id().run();
    evtNum = iEvent.id().event();
 
-   // call pat objects
+   // call AOD objects
    edm::Handle<edm::View<reco::Muon> > muonHandle;
    iEvent.getByLabel(theMuonLabel,muonHandle);
 
@@ -244,6 +262,12 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
    edm::Handle<edm::View<reco::Track> > trackHandle;
    iEvent.getByLabel("generalTracks", trackHandle);
+
+   edm::Handle<edm::View<reco::Track> > standAloneHandle;
+   iEvent.getByLabel("standAloneMuons:UpdatedAtVtx", standAloneHandle);
+
+   edm::Handle<edm::View<reco::Track> > globalHandle;
+   iEvent.getByLabel("globalMuons", globalHandle);
 
    edm::Handle<reco::BeamSpot> beamSpotHandle;
    iEvent.getByLabel("offlineBeamSpot", beamSpotHandle);
@@ -364,7 +388,8 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
    //
    // select highest invariant mass pair
-   // 
+   //
+   /* 
    double highest_invmass = -100;
    reco::Muon hMmuon1; reco::Muon hMmuon2;
    for(edm::View<reco::Muon>::const_iterator iMuon1 = muonHandle->begin(); iMuon1 != muonHandle->end(); ++iMuon1) {
@@ -381,17 +406,17 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	    }
        }
    }
-
+   */
 
    //
-   // DiMuonTree (all possible permutation)
+   // MuonTree (loop over all muons)
    //
    int _nPair = 0;
    for(edm::View<reco::Muon>::const_iterator iMuon1 = muonHandle->begin(); iMuon1 != muonHandle->end(); ++iMuon1) {
-       for(edm::View<reco::Muon>::const_iterator iMuon2 = muonHandle->begin(); iMuon2 != muonHandle->end(); ++iMuon2) {
-	    if( iMuon1 <= iMuon2 ) continue;
+     //aaa01 for(edm::View<reco::Muon>::const_iterator iMuon2 = muonHandle->begin(); iMuon2 != muonHandle->end(); ++iMuon2) {
+     //if( iMuon1 <= iMuon2 ) continue;
 	    // only select good muons
-	    if( !iMuon1->isGood() || !iMuon2->isGood() ) continue;
+	    if( !iMuon1->isGood() ) continue;
 
 	    // trigger matching in PAT
 	    /*
@@ -466,10 +491,11 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	    MuonPairIndex[_nPair] = _nPair;
 
 	    // highest invariant mass muon pair
-	    bool _isHighestInvMassMuonPair = false;
-	    if( iMuon1->pt() == hMmuon1.pt() && iMuon2->pt() == hMmuon2.pt() ) _isHighestInvMassMuonPair = true;
+	    //bool _isHighestInvMassMuonPair = false;
+	    //if( iMuon1->pt() == hMmuon1.pt() && iMuon2->pt() == hMmuon2.pt() ) _isHighestInvMassMuonPair = true;
 
 	    // candidate
+	    /* aaa
 	    reco::NamedCompositeCandidate aDYcand;
 	    aDYcand.setP4(iMuon1->p4() + iMuon2->p4());
 	    InvMass[_nPair] = aDYcand.mass();
@@ -478,8 +504,8 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	    Dalpha[_nPair] = (iMuon1->theta() - iMuon2->theta()) + (iMuon1->phi() - iMuon2->phi()) - 2*TMath::Pi();
 	    if( iMuon1->charge() != iMuon2->charge() ) isOppSign[_nPair] = 1;
 	    else isOppSign[_nPair] = 0;
-	    if( _isHighestInvMassMuonPair ) isHMassPair[_nPair] = 1;
-
+	    //if( _isHighestInvMassMuonPair ) isHMassPair[_nPair] = 1;
+	    aaa */
 	    // muon1 kinematics
 	    Muon1_pT[_nPair] = iMuon1->pt();
 	    Muon1_Px[_nPair] = iMuon1->px();
@@ -506,6 +532,7 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 		}
 	    }
 	    Muon1_nSegments[_nPair] = _segments;
+	    Muon1_type[_nPair] = iMuon1->type();
 	    if( iMuon1->isGlobalMuon() ) Muon1_muonType[_nPair] = 1; // global muon
 	    else if( iMuon1->isStandAloneMuon() ) Muon1_muonType[_nPair] = 2; // STA muon
 	    else if( iMuon1->isTrackerMuon() ) Muon1_muonType[_nPair] = 3; // track muon
@@ -515,6 +542,13 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	    if( Muon1_muonType[_nPair] == 1 ) _muon1Trk = iMuon1->globalTrack();
 	    if( Muon1_muonType[_nPair] == 2 ) _muon1Trk = iMuon1->track();
 	    if( Muon1_muonType[_nPair] == 3 ) _muon1Trk = iMuon1->standAloneMuon();
+	    reco::TrackRef _muon1GlbTrk;
+	    reco::TrackRef _muon1StaTrk;
+	    reco::TrackRef _muon1TrkTrk;
+	    if(iMuon1->isGlobalMuon()) _muon1GlbTrk = iMuon1->globalTrack();
+	    if(iMuon1->isStandAloneMuon()) _muon1StaTrk = iMuon1->outerTrack();
+	    if(iMuon1->isTrackerMuon() || iMuon1->isGlobalMuon()) _muon1TrkTrk = iMuon1->innerTrack();
+
 	    if( _muon1Trk.isNonnull() ) {
 	        if( _muon1Trk->normalizedChi2() < 1000 ) Muon1_chi2dof[_nPair] = _muon1Trk->normalizedChi2();
     	        Muon1_nhits[_nPair] = _muon1Trk->numberOfValidHits();
@@ -531,6 +565,81 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	        Muon1_vx[_nPair] = _muon1Trk->vx();
 	        Muon1_vy[_nPair] = _muon1Trk->vy();
 	        Muon1_vz[_nPair] = _muon1Trk->vz();
+	    }
+
+	    if( _muon1GlbTrk.isNonnull() ) {
+	        if( _muon1GlbTrk->normalizedChi2() < 1000 ) Muon1_Glb_chi2dof[_nPair] = _muon1GlbTrk->normalizedChi2();
+		Muon1_Glb_pT[_nPair] = iMuon1->pt();
+		Muon1_Glb_Px[_nPair] = iMuon1->px();
+		Muon1_Glb_Py[_nPair] = iMuon1->py();
+		Muon1_Glb_Pz[_nPair] = iMuon1->pz();
+		Muon1_Glb_eta[_nPair] = iMuon1->eta();
+		Muon1_Glb_phi[_nPair] = iMuon1->phi();
+		Muon1_Glb_charge[_nPair] = iMuon1->charge();
+    	        Muon1_Glb_nhits[_nPair] = _muon1GlbTrk->numberOfValidHits();
+	        Muon1_Glb_qoverp[_nPair] = _muon1GlbTrk->qoverp();
+	        Muon1_Glb_theta[_nPair] = _muon1GlbTrk->theta();
+	        Muon1_Glb_lambda[_nPair] = _muon1GlbTrk->lambda();
+	        Muon1_Glb_dxy[_nPair] = _muon1GlbTrk->dxy();
+	        Muon1_Glb_d0[_nPair] = _muon1GlbTrk->d0();
+	        Muon1_Glb_dsz[_nPair] = _muon1GlbTrk->dsz();
+	        Muon1_Glb_dz[_nPair] = _muon1GlbTrk->dz();
+	        Muon1_Glb_dxyBS[_nPair] = _muon1GlbTrk->dxy(beamSpot.position());
+	        Muon1_Glb_dszBS[_nPair] = _muon1GlbTrk->dsz(beamSpot.position());
+	        Muon1_Glb_dzBS[_nPair] = _muon1GlbTrk->dz(beamSpot.position());
+	        Muon1_Glb_vx[_nPair] = _muon1GlbTrk->vx();
+	        Muon1_Glb_vy[_nPair] = _muon1GlbTrk->vy();
+	        Muon1_Glb_vz[_nPair] = _muon1GlbTrk->vz();
+	    }
+
+	    if( _muon1StaTrk.isNonnull() ) {
+	        if( _muon1StaTrk->normalizedChi2() < 1000 ) Muon1_Sta_chi2dof[_nPair] = _muon1StaTrk->normalizedChi2();
+		Muon1_Sta_pT[_nPair] = iMuon1->pt();
+		Muon1_Sta_Px[_nPair] = iMuon1->px();
+		Muon1_Sta_Py[_nPair] = iMuon1->py();
+		Muon1_Sta_Pz[_nPair] = iMuon1->pz();
+		Muon1_Sta_eta[_nPair] = iMuon1->eta();
+		Muon1_Sta_phi[_nPair] = iMuon1->phi();
+		Muon1_Sta_charge[_nPair] = iMuon1->charge();
+    	        Muon1_Sta_nhits[_nPair] = _muon1StaTrk->numberOfValidHits();
+	        Muon1_Sta_qoverp[_nPair] = _muon1StaTrk->qoverp();
+	        Muon1_Sta_theta[_nPair] = _muon1StaTrk->theta();
+	        Muon1_Sta_lambda[_nPair] = _muon1StaTrk->lambda();
+	        Muon1_Sta_dxy[_nPair] = _muon1StaTrk->dxy();
+	        Muon1_Sta_d0[_nPair] = _muon1StaTrk->d0();
+	        Muon1_Sta_dsz[_nPair] = _muon1StaTrk->dsz();
+	        Muon1_Sta_dz[_nPair] = _muon1StaTrk->dz();
+	        Muon1_Sta_dxyBS[_nPair] = _muon1StaTrk->dxy(beamSpot.position());
+	        Muon1_Sta_dszBS[_nPair] = _muon1StaTrk->dsz(beamSpot.position());
+	        Muon1_Sta_dzBS[_nPair] = _muon1StaTrk->dz(beamSpot.position());
+	        Muon1_Sta_vx[_nPair] = _muon1StaTrk->vx();
+	        Muon1_Sta_vy[_nPair] = _muon1StaTrk->vy();
+	        Muon1_Sta_vz[_nPair] = _muon1StaTrk->vz();
+	    }
+
+	    if( _muon1TrkTrk.isNonnull() ) {
+	        if( _muon1TrkTrk->normalizedChi2() < 1000 ) Muon1_Trk_chi2dof[_nPair] = _muon1TrkTrk->normalizedChi2();
+	    Muon1_Trk_pT[_nPair] = iMuon1->pt();
+	    Muon1_Trk_Px[_nPair] = iMuon1->px();
+	    Muon1_Trk_Py[_nPair] = iMuon1->py();
+	    Muon1_Trk_Pz[_nPair] = iMuon1->pz();
+	    Muon1_Trk_eta[_nPair] = iMuon1->eta();
+	    Muon1_Trk_phi[_nPair] = iMuon1->phi();
+	    Muon1_Trk_charge[_nPair] = iMuon1->charge();
+    	        Muon1_Trk_nhits[_nPair] = _muon1TrkTrk->numberOfValidHits();
+	        Muon1_Trk_qoverp[_nPair] = _muon1TrkTrk->qoverp();
+	        Muon1_Trk_theta[_nPair] = _muon1TrkTrk->theta();
+	        Muon1_Trk_lambda[_nPair] = _muon1TrkTrk->lambda();
+	        Muon1_Trk_dxy[_nPair] = _muon1TrkTrk->dxy();
+	        Muon1_Trk_d0[_nPair] = _muon1TrkTrk->d0();
+	        Muon1_Trk_dsz[_nPair] = _muon1TrkTrk->dsz();
+	        Muon1_Trk_dz[_nPair] = _muon1TrkTrk->dz();
+	        Muon1_Trk_dxyBS[_nPair] = _muon1TrkTrk->dxy(beamSpot.position());
+	        Muon1_Trk_dszBS[_nPair] = _muon1TrkTrk->dsz(beamSpot.position());
+	        Muon1_Trk_dzBS[_nPair] = _muon1TrkTrk->dz(beamSpot.position());
+	        Muon1_Trk_vx[_nPair] = _muon1TrkTrk->vx();
+	        Muon1_Trk_vy[_nPair] = _muon1TrkTrk->vy();
+	        Muon1_Trk_vz[_nPair] = _muon1TrkTrk->vz();
 	    }
 
 	    // MC truthMatch
@@ -550,108 +659,7 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	    }
 	    aaa */
 
-	    // muon2 kinematics
-	    Muon2_pT[_nPair] = iMuon2->pt();
-	    Muon2_Px[_nPair] = iMuon2->px();
-	    Muon2_Py[_nPair] = iMuon2->py();
-	    Muon2_Pz[_nPair] = iMuon2->pz();
-	    Muon2_eta[_nPair] = iMuon2->eta();
-	    Muon2_phi[_nPair] = iMuon2->phi();
-	    Muon2_sumtrkpt[_nPair] = TrackSumPtrInCone03(*iMuon2, trackHandle);
-	    //aaa	    Muon2_trkiso[_nPair] = iMuon2->trackIso();
-	    //aaa	    Muon2_hcaliso[_nPair] = iMuon2->hcalIso();
-	    //aaa   Muon2_ecaliso[_nPair] = iMuon2->ecalIso();
-	    Muon2_charge[_nPair] = iMuon2->charge();
-	    Muon2_nChambers[_nPair] = iMuon2->numberOfChambers(); // # of chambers
-	    Muon2_nMatches[_nPair] = iMuon2->numberOfMatches(); // # of chambers with matched segments
-	    Muon2_stationMask[_nPair] = iMuon2->stationMask(); // bit map of stations with matched segments
-	    // bits 0-1-2-3 = DT stations 1-2-3-4
-	    // bits 4-5-6-7 = CSC stations 1-2-3-4
-	    _segments = 0;
-	    for( int idet = 1; idet < 4; idet++ ) {
-		// DT (1), CSC (2), RPC (3)
-		for( int istation = 1; istation < 5; istation++ ) {
-		    // station 1, 2, 3, 4
-		    _segments += iMuon2->numberOfSegments(istation, idet);
-		}
-	    }
-	    Muon2_nSegments[_nPair] = _segments;
-	    if( iMuon2->isGlobalMuon() ) Muon2_muonType[_nPair] = 1; // global muon
-	    else if( iMuon2->isStandAloneMuon() ) Muon2_muonType[_nPair] = 2; // STA muon
-	    else if( iMuon2->isTrackerMuon() ) Muon2_muonType[_nPair] = 3; // track muon
 
-	    // global, track and STA
-	    reco::TrackRef _muon2Trk;
-	    if( Muon2_muonType[_nPair] == 1 ) _muon2Trk = iMuon2->globalTrack();
-	    if( Muon2_muonType[_nPair] == 2 ) _muon2Trk = iMuon2->track();
-	    if( Muon2_muonType[_nPair] == 3 ) _muon2Trk = iMuon2->standAloneMuon();
-	    if( _muon2Trk.isNonnull() ) {
-	        if( _muon2Trk->normalizedChi2() < 1000 ) Muon2_chi2dof[_nPair] = _muon2Trk->normalizedChi2();
-    	        Muon2_nhits[_nPair] = _muon2Trk->numberOfValidHits();
-	        Muon2_qoverp[_nPair] = _muon2Trk->qoverp();
-	        Muon2_theta[_nPair] = _muon2Trk->theta();
-	        Muon2_lambda[_nPair] = _muon2Trk->lambda();
-	        Muon2_dxy[_nPair] = _muon2Trk->dxy();
-	        Muon2_dxyBS[_nPair] = _muon2Trk->dxy(beamSpot.position());
-	        Muon2_dszBS[_nPair] = _muon2Trk->dsz(beamSpot.position());
-	        Muon2_dzBS[_nPair] = _muon2Trk->dz(beamSpot.position());
-	        Muon2_d0[_nPair] = _muon2Trk->d0();
-	        Muon2_dsz[_nPair] = _muon2Trk->dsz();
-	        Muon2_dz[_nPair] = _muon2Trk->dz();
-	        Muon2_vx[_nPair] = _muon2Trk->vx();
-	        Muon2_vy[_nPair] = _muon2Trk->vy();
-	        Muon2_vz[_nPair] = _muon2Trk->vz();
-	    }
-
-	    // dimuon vertex
-	    if( _muon1Trk.isNonnull() && _muon2Trk.isNonnull() ) {
-	        ESHandle<MagneticField> B;
-	    	iSetup.get<IdealMagneticFieldRecord>().get(B);
-
-	    	TransientTrack muon1Transient( _muon1Trk, B.product());
-	    	TransientTrack muon2Transient( _muon2Trk, B.product());
-	    
-	    	vector<TransientTrack> dimuonTracks;
-	    	dimuonTracks.push_back(muon1Transient);
-	    	dimuonTracks.push_back(muon2Transient);
-	    	KalmanVertexFitter KalmanFitter;
-	    	TransientVertex vertex;
-	    	bool isVertex = true;
-	    	try {
-			vertex = KalmanFitter.vertex(dimuonTracks);
-	    	}	
-	    	catch( exception & err ) {
-			isVertex = false;
-	    	}
-	    	if( isVertex ) {
-	    		reco::Vertex vtx = vertex;
-			vtxChi2[_nPair] = vtx.chi2();
-			vtxPositionX[_nPair] = vtx.x();
-			vtxPositionY[_nPair] = vtx.y();
-			vtxPositionZ[_nPair] = vtx.z();
-			vtxXerror[_nPair] = vtx.xError();
-			vtxYerror[_nPair] = vtx.yError();
-			vtxZerror[_nPair] = vtx.zError();
-	    	}
-	    }
-	    
-
-	    // MC truthMatch
-	    /* aaa
-	    if( isMC ) {	    
-            	reco::GenParticleRef genMuon2 = iMuon2->genParticleRef();
-		if( genMuon2.isNonnull() ) {
-	    	    Muon2_MCtruth_pT[_nPair] = genMuon2->pt();
-	    	    Muon2_MCtruth_Px[_nPair] = genMuon2->px();
-	    	    Muon2_MCtruth_Py[_nPair] = genMuon2->py();
-	    	    Muon2_MCtruth_Pz[_nPair] = genMuon2->pz();
-	    	    Muon2_MCtruth_eta[_nPair] = genMuon2->eta();
-	    	    Muon2_MCtruth_phi[_nPair] = genMuon2->phi();
-	    	    Muon2_MCtruth_charge[_nPair] = genMuon2->charge();
-	    	    Muon2_MCtruth_mother[_nPair] = motherId(genMuon2);
-		}
-	    }
-	    aaa */
 	    /*
 	    // MC truth invariant mass
 	    const double par_mass = 0.105658;
@@ -668,7 +676,7 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	    TLorentzVector genDYcand = genMuon1vec + genMuon2vec;
 	    */
 	    _nPair++;
-       }
+	    //aaa01 }
    }
    // Gen Muon
    if( isMC ) {
@@ -872,6 +880,7 @@ AODMuonToNtuple::beginJob(const edm::EventSetup&)
   DiMuonTree->Branch("vtxZerror", &vtxZerror,"vtxZerror[nPair]/D");
 
   // object variables
+  DiMuonTree->Branch("Muon1_type", &Muon1_type,"Muon1_type[nPair]/i");
   DiMuonTree->Branch("Muon1_muonType", &Muon1_muonType,"Muon1_muonType[nPair]/I");
   DiMuonTree->Branch("Muon1_nTrig", &Muon1_nTrig,"Muon1_nTrig[nPair]/I");
   DiMuonTree->Branch("Muon1_triggerObjectType", &Muon1_triggerObjectType,"Muon1_triggerObjectType[nPair]/I");
@@ -906,6 +915,52 @@ AODMuonToNtuple::beginJob(const edm::EventSetup&)
   DiMuonTree->Branch("Muon1_vx", &Muon1_vx,"Muon1_vx[nPair]/D");
   DiMuonTree->Branch("Muon1_vy", &Muon1_vy,"Muon1_vy[nPair]/D");
   DiMuonTree->Branch("Muon1_vz", &Muon1_vz,"Muon1_vz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_chi2dof", &Muon1_Glb_chi2dof,"Muon1_Glb_chi2dof[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_nhits", &Muon1_Glb_nhits,"Muon1_Glb_nhits[nPair]/I");
+  DiMuonTree->Branch("Muon1_Glb_qoverp", &Muon1_Glb_qoverp,"Muon1_Glb_qoverp[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_theta", &Muon1_Glb_theta,"Muon1_Glb_theta[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_lambda", &Muon1_Glb_lambda,"Muon1_Glb_lambda[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_dxy", &Muon1_Glb_dxy,"Muon1_Glb_dxy[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_d0", &Muon1_Glb_d0,"Muon1_Glb_d0[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_dsz", &Muon1_Glb_dsz,"Muon1_Glb_dsz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_dz", &Muon1_Glb_dz,"Muon1_Glb_dz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_dxyBS", &Muon1_Glb_dxyBS,"Muon1_Glb_dxyBS[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_dszBS", &Muon1_Glb_dszBS,"Muon1_Glb_dszBS[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_dzBS", &Muon1_Glb_dzBS,"Muon1_Glb_dzBS[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_vx", &Muon1_Glb_vx,"Muon1_Glb_vx[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_vy", &Muon1_Glb_vy,"Muon1_Glb_vy[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_vz", &Muon1_Glb_vz,"Muon1_Glb_vz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_chi2dof", &Muon1_Sta_chi2dof,"Muon1_Sta_chi2dof[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_nhits", &Muon1_Sta_nhits,"Muon1_Sta_nhits[nPair]/I");
+  DiMuonTree->Branch("Muon1_Sta_qoverp", &Muon1_Sta_qoverp,"Muon1_Sta_qoverp[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_theta", &Muon1_Sta_theta,"Muon1_Sta_theta[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_lambda", &Muon1_Sta_lambda,"Muon1_Sta_lambda[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_dxy", &Muon1_Sta_dxy,"Muon1_Sta_dxy[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_d0", &Muon1_Sta_d0,"Muon1_Sta_d0[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_dsz", &Muon1_Sta_dsz,"Muon1_Sta_dsz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_dz", &Muon1_Sta_dz,"Muon1_Sta_dz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_dxyBS", &Muon1_Sta_dxyBS,"Muon1_Sta_dxyBS[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_dszBS", &Muon1_Sta_dszBS,"Muon1_Sta_dszBS[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_dzBS", &Muon1_Sta_dzBS,"Muon1_Sta_dzBS[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_vx", &Muon1_Sta_vx,"Muon1_Sta_vx[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_vy", &Muon1_Sta_vy,"Muon1_Sta_vy[nPair]/D");
+  DiMuonTree->Branch("Muon1_Sta_vz", &Muon1_Sta_vz,"Muon1_Sta_vz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_chi2dof", &Muon1_Trk_chi2dof,"Muon1_Trk_chi2dof[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_nhits", &Muon1_Trk_nhits,"Muon1_Trk_nhits[nPair]/I");
+  DiMuonTree->Branch("Muon1_Trk_qoverp", &Muon1_Trk_qoverp,"Muon1_Trk_qoverp[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_theta", &Muon1_Trk_theta,"Muon1_Trk_theta[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_lambda", &Muon1_Trk_lambda,"Muon1_Trk_lambda[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_dxy", &Muon1_Trk_dxy,"Muon1_Trk_dxy[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_d0", &Muon1_Trk_d0,"Muon1_Trk_d0[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_dsz", &Muon1_Trk_dsz,"Muon1_Trk_dsz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_dz", &Muon1_Trk_dz,"Muon1_Trk_dz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_dxyBS", &Muon1_Trk_dxyBS,"Muon1_Trk_dxyBS[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_dszBS", &Muon1_Trk_dszBS,"Muon1_Trk_dszBS[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_dzBS", &Muon1_Trk_dzBS,"Muon1_Trk_dzBS[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_vx", &Muon1_Trk_vx,"Muon1_Trk_vx[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_vy", &Muon1_Trk_vy,"Muon1_Trk_vy[nPair]/D");
+  DiMuonTree->Branch("Muon1_Trk_vz", &Muon1_Trk_vz,"Muon1_Trk_vz[nPair]/D");
+  /*
   DiMuonTree->Branch("Muon1_MCtruth_pT", &Muon1_MCtruth_pT,"Muon1_MCtruth_pT[nPair]/D");
   DiMuonTree->Branch("Muon1_MCtruth_Px", &Muon1_MCtruth_Px,"Muon1_MCtruth_Px[nPair]/D");
   DiMuonTree->Branch("Muon1_MCtruth_Py", &Muon1_MCtruth_Py,"Muon1_MCtruth_Py[nPair]/D");
@@ -914,49 +969,7 @@ AODMuonToNtuple::beginJob(const edm::EventSetup&)
   DiMuonTree->Branch("Muon1_MCtruth_phi", &Muon1_MCtruth_phi,"Muon1_MCtruth_phi[nPair]/D");
   DiMuonTree->Branch("Muon1_MCtruth_charge", &Muon1_MCtruth_charge,"Muon1_MCtruth_charge[nPair]/I");
   DiMuonTree->Branch("Muon1_MCtruth_mother", &Muon1_MCtruth_mother,"Muon1_MCtruth_mother[nPair]/I");
-
-  DiMuonTree->Branch("Muon2_muonType", &Muon2_muonType,"Muon2_muonType[nPair]/I");
-  DiMuonTree->Branch("Muon2_nTrig", &Muon2_nTrig,"Muon2_nTrig[nPair]/I");
-  DiMuonTree->Branch("Muon2_triggerObjectType", &Muon2_triggerObjectType,"Muon2_triggerObjectType[nPair]/I");
-  DiMuonTree->Branch("Muon2_filterName", &Muon2_filterName,"Muon2_filterName[nPair]/I");
-  DiMuonTree->Branch("Muon2_phi", &Muon2_phi,"Muon2_phi[nPair]/D");
-  DiMuonTree->Branch("Muon2_eta", &Muon2_eta,"Muon2_eta[nPair]/D");
-  DiMuonTree->Branch("Muon2_pT", &Muon2_pT,"Muon2_pT[nPair]/D");
-  DiMuonTree->Branch("Muon2_Px", &Muon2_Px,"Muon2_Px[nPair]/D");
-  DiMuonTree->Branch("Muon2_Py", &Muon2_Py,"Muon2_Py[nPair]/D");
-  DiMuonTree->Branch("Muon2_Pz", &Muon2_Pz,"Muon2_Pz[nPair]/D");
-  DiMuonTree->Branch("Muon2_sumtrkpt", &Muon2_sumtrkpt,"Muon2_sumtrkpt[nPair]/D");
-  DiMuonTree->Branch("Muon2_trkiso", &Muon2_trkiso,"Muon2_trkiso[nPair]/D");
-  DiMuonTree->Branch("Muon2_hcaliso", &Muon2_hcaliso,"Muon2_hcaliso[nPair]/D");
-  DiMuonTree->Branch("Muon2_ecaliso", &Muon2_ecaliso,"Muon2_ecaliso[nPair]/D");
-  DiMuonTree->Branch("Muon2_charge", &Muon2_charge,"Muon2_charge[nPair]/I");
-  DiMuonTree->Branch("Muon2_nChambers", &Muon2_nChambers,"Muon2_nChambers[nPair]/I");
-  DiMuonTree->Branch("Muon2_nMatches", &Muon2_nMatches,"Muon2_nMatches[nPair]/I");
-  DiMuonTree->Branch("Muon2_stationMask", &Muon2_stationMask,"Muon2_stationMask[nPair]/I");
-  DiMuonTree->Branch("Muon2_nSegments", &Muon2_nSegments,"Muon2_nSegments[nPair]/I");
-  DiMuonTree->Branch("Muon2_chi2dof", &Muon2_chi2dof,"Muon2_chi2dof[nPair]/D");
-  DiMuonTree->Branch("Muon2_nhits", &Muon2_nhits,"Muon2_nhits[nPair]/I");
-  DiMuonTree->Branch("Muon2_qoverp", &Muon2_qoverp,"Muon2_qoverp[nPair]/D");
-  DiMuonTree->Branch("Muon2_theta", &Muon2_theta,"Muon2_theta[nPair]/D");
-  DiMuonTree->Branch("Muon2_lambda", &Muon2_lambda,"Muon2_lambda[nPair]/D");
-  DiMuonTree->Branch("Muon2_dxy", &Muon2_dxy,"Muon2_dxy[nPair]/D");
-  DiMuonTree->Branch("Muon2_dxyBS", &Muon2_dxyBS,"Muon2_dxyBS[nPair]/D");
-  DiMuonTree->Branch("Muon2_dszBS", &Muon2_dszBS,"Muon2_dszBS[nPair]/D");
-  DiMuonTree->Branch("Muon2_dzBS", &Muon2_dzBS,"Muon2_dzBS[nPair]/D");
-  DiMuonTree->Branch("Muon2_d0", &Muon2_d0,"Muon2_d0[nPair]/D");
-  DiMuonTree->Branch("Muon2_dsz", &Muon2_dsz,"Muon2_dsz[nPair]/D");
-  DiMuonTree->Branch("Muon2_dz", &Muon2_dz,"Muon2_dz[nPair]/D");
-  DiMuonTree->Branch("Muon2_vx", &Muon2_vx,"Muon2_vx[nPair]/D");
-  DiMuonTree->Branch("Muon2_vy", &Muon2_vy,"Muon2_vy[nPair]/D");
-  DiMuonTree->Branch("Muon2_vz", &Muon2_vz,"Muon2_vz[nPair]/D");
-  DiMuonTree->Branch("Muon2_MCtruth_pT", &Muon2_MCtruth_pT,"Muon2_MCtruth_pT[nPair]/D");
-  DiMuonTree->Branch("Muon2_MCtruth_Px", &Muon2_MCtruth_Px,"Muon2_MCtruth_Px[nPair]/D");
-  DiMuonTree->Branch("Muon2_MCtruth_Py", &Muon2_MCtruth_Py,"Muon2_MCtruth_Py[nPair]/D");
-  DiMuonTree->Branch("Muon2_MCtruth_Pz", &Muon2_MCtruth_Pz,"Muon2_MCtruth_Pz[nPair]/D");
-  DiMuonTree->Branch("Muon2_MCtruth_eta", &Muon2_MCtruth_eta,"Muon2_MCtruth_eta[nPair]/D");
-  DiMuonTree->Branch("Muon2_MCtruth_phi", &Muon2_MCtruth_phi,"Muon2_MCtruth_phi[nPair]/D");
-  DiMuonTree->Branch("Muon2_MCtruth_charge", &Muon2_MCtruth_charge,"Muon2_MCtruth_charge[nPair]/I");
-  DiMuonTree->Branch("Muon2_MCtruth_mother", &Muon2_MCtruth_mother,"Muon2_MCtruth_mother[nPair]/I");
+  */
 
   // Gen Muon
   // global event varialbes (for GEN)
