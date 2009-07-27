@@ -49,8 +49,8 @@ it to your code easily (or as another class).
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/ESHandle.h"
-//#include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
-#include "SimDataFormats/HepMCProduct/interface/HepMCProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
+//#include "SimDataFormats/HepMCProduct/interface/HepMCProduct.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "DataFormats/MuonReco/interface/MuonFwd.h"
 #include "DataFormats/TrackReco/interface/Track.h"
@@ -74,6 +74,7 @@ it to your code easily (or as another class).
 #include "RecoVertex/KalmanVertexFit/interface/KalmanVertexFitter.h"
 #include "PhysicsTools/RecoUtils/interface/CandCommonVertexFitter.h"
 
+//#include "SimTracker/TrackHistory/interface/TrackClassifier.h"
 
 #include <iostream>
 
@@ -84,6 +85,11 @@ it to your code easily (or as another class).
 #include <TFrame.h>
 #include <TMath.h>
 
+class GlobalMuonRefitter;
+class MuonServiceProxy;
+class MeasurementEstimator;
+class TrackClassifier;
+class TrackTransformer;
 //
 // class decleration
 //
@@ -117,6 +123,9 @@ class AODMuonToNtuple : public edm::EDAnalyzer {
 
       double TrackSumPtrInCone03( const reco::Muon& muon, edm::Handle<edm::View<reco::Track> > tracks );
 
+      virtual std::pair<double,double> kink(Trajectory& muon) const ;
+      virtual std::pair<double,double> newChi2(Trajectory& muon) const;
+
       std::string theRootFileName;
       edm::InputTag theMuonLabel;
       edm::InputTag theMETLabel;
@@ -129,7 +138,14 @@ class AODMuonToNtuple : public edm::EDAnalyzer {
 
       TFile *theFile;
       TTree *DiMuonTree;
+      
+      TrackTransformer * theTrackTransformer;
+      MuonServiceProxy* theService;
+            
+      GlobalMuonRefitter *theRefitter;
+      MeasurementEstimator *theEstimator;
 
+      TrackClassifier *classifier_;
 
       int nEvt;
 
@@ -284,6 +300,10 @@ class AODMuonToNtuple : public edm::EDAnalyzer {
       double Muon1_Glb_vx[MPSIZE];
       double Muon1_Glb_vy[MPSIZE];
       double Muon1_Glb_vz[MPSIZE];
+      double Muon1_Glb_trkKink[MPSIZE];
+      double Muon1_Glb_glbKink[MPSIZE];
+      double Muon1_Glb_rChi2Sta[MPSIZE];
+      double Muon1_Glb_rChi2Trk[MPSIZE];
       double Muon1_Sta_chi2dof[MPSIZE];
       int Muon1_Sta_nhits[MPSIZE];
       double Muon1_Sta_qoverp[MPSIZE];

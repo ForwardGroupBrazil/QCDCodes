@@ -1,6 +1,6 @@
 /** \class AODMuonToNtuple
- *  $Date: 2009/07/25 16:19:32 $
- *  $Revision: 1.2 $
+ *  $Date: 2009/07/25 16:47:13 $
+ *  $Revision: 1.3 $
  *  \author Chang Liu   -  Purdue University <Chang.Liu@cern.ch>
  *
  *  1st modified by Hwidong Yoo (hdyoo@cern.ch)
@@ -38,6 +38,7 @@
 #include "DataFormats/MuonReco/interface/MuonFwd.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/MuonReco/interface/Muon.h"
+#include "DataFormats/MuonReco/interface/MuonSelectors.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
@@ -71,6 +72,29 @@
 #include "DataFormats/L1GlobalTrigger/interface/L1GlobalTriggerReadoutRecord.h"
 #include "DataFormats/L1GlobalTrigger/interface/L1GlobalTriggerRecord.h"
 
+#include "RecoMuon/GlobalTrackingTools/interface/GlobalMuonRefitter.h"
+#include "RecoMuon/TrackingTools/interface/MuonServiceProxy.h"
+#include "TrackingTools/PatternTools/interface/MeasurementEstimator.h"
+#include "TrackingTools/KalmanUpdators/interface/Chi2MeasurementEstimator.h"
+
+#include "SimGeneral/HepPDTRecord/interface/ParticleDataTable.h"
+#include "SimTracker/TrackHistory/interface/TrackClassifier.h"
+#include "SimTracker/TrackHistory/interface/TrackCategories.h"
+
+#include "DataFormats/DetId/interface/DetId.h"
+#include "DataFormats/MuonDetId/interface/DTChamberId.h"
+#include "DataFormats/MuonDetId/interface/CSCDetId.h"
+#include "DataFormats/MuonDetId/interface/RPCDetId.h"
+
+#include <TrackingTools/PatternTools/interface/TrajectoryMeasurement.h>
+#include "TrackingTools/TrackRefitter/interface/TrackTransformer.h"
+#include <TrackingTools/PatternTools/interface/Trajectory.h>
+#include "TrackingTools/Records/interface/TransientRecHitRecord.h"
+#include "RecoMuon/TransientTrackingRecHit/interface/MuonTransientTrackingRecHit.h"
+#include <DataFormats/TrackingRecHit/interface/TrackingRecHit.h>
+#include "Geometry/CommonDetUnit/interface/GeomDetType.h"
+#include "DataFormats/DetId/interface/DetId.h"
+
 #include <iostream>
 
 #include <TFile.h>
@@ -101,7 +125,7 @@ using namespace edm;
 AODMuonToNtuple::AODMuonToNtuple(const edm::ParameterSet& iConfig)
 {
   nEvt = 0;
-
+  LogDebug("NTUPLE");
   theRootFileName = iConfig.getParameter<string>("out");
   theMuonLabel = iConfig.getParameter<edm::InputTag>("Muon");
   theMETLabel = iConfig.getParameter<edm::InputTag>("MET");
@@ -111,12 +135,37 @@ AODMuonToNtuple::AODMuonToNtuple(const edm::ParameterSet& iConfig)
   theFilterEfficiency = iConfig.getParameter<double>("FilterEfficiency");
   theTotalNevents = iConfig.getParameter<double>("TotalNevents");
   theBDiscriminant = iConfig.getParameter<double>("BDiscriminant");
+  LogDebug("NTUPLE");
+  //aaa classifier_ = new TrackClassifier(iConfig);
+  // service parameters
+  ParameterSet serviceParameters = iConfig.getParameter<ParameterSet>("ServiceParameters");
+
+  // the services
+  theService = new MuonServiceProxy(serviceParameters);
+    LogDebug("NTUPLE");
+  // TrackRefitter parameters
+  ParameterSet refitterParameters = iConfig.getParameter<ParameterSet>("RefitterParameters");
+  theRefitter = new GlobalMuonRefitter(refitterParameters, theService);
+
+  double maxChi2 = iConfig.getParameter<double>("MaxChi2");
+  double nSigma = iConfig.getParameter<double>("nSigma");
+  LogDebug("NTUPLE");
+  theEstimator = new Chi2MeasurementEstimator(maxChi2,nSigma);
+  LogDebug("NTUPLE");
+  /*
+  ParameterSet trackTransformerPSet = iConfig.getParameter<ParameterSet>("TrackTransformer");
+  //trackTransformerPSet.addParameter<string>("Propagator",TransformerOutPropagator);
+  theTrackTransformer = new TrackTransformer(trackTransformerPSet);
+  */
 }
 
 
 AODMuonToNtuple::~AODMuonToNtuple()
 {
- 
+  if (theService) delete theService;
+  if (theRefitter) delete theRefitter;
+  if (theEstimator) delete theEstimator;
+  //aaa if (classifier_) delete classifier_;
 
 }
 
@@ -129,6 +178,15 @@ AODMuonToNtuple::~AODMuonToNtuple()
 void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   LogDebug("NTUPLE");
+  theService->update(iSetup);
+  
+  theRefitter->setEvent(iEvent);
+  
+  theRefitter->setServices(theService->eventSetup());
+
+  //aaa classifier_->newEvent(iEvent, iSetup);
+  LogDebug("NTUPLE");
+
    // initialize for ntuple variables
    nPair = -1; GENnPair = -1; 
    weight = -1; MET = -1;
@@ -211,6 +269,8 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
        Muon1_Glb_qoverp[i] = Muon1_Glb_theta[i] = Muon1_Glb_lambda[i] = -100;
        Muon1_Glb_dxy[i] = Muon1_Glb_d0[i] = Muon1_Glb_dsz[i] = Muon1_Glb_dz[i] = -100;
        Muon1_Glb_vx[i] = Muon1_Glb_vy[i] = Muon1_Glb_vz[i] = -100;
+       Muon1_Glb_trkKink[i] = Muon1_Glb_glbKink[i] = -100;
+       Muon1_Glb_rChi2Sta[i] = Muon1_Glb_rChi2Trk[i] = -100;
        Muon1_Glb_dxyBS[i] = Muon1_Glb_dszBS[i] = Muon1_Glb_dzBS[i] = -100;
 
        Muon1_Sta_qoverp[i] = Muon1_Sta_theta[i] = Muon1_Sta_lambda[i] = -100;
@@ -308,11 +368,9 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 		"HLT_DoubleMu3_JPsi", "HLT_DoubleMu3_Upsilon", "HLT_DoubleMu7_Z",
 		"HLT_DoubleMu3_SameSign", "HLT_DoubleMu3_Psi2S"};
    */
-   const int nTrigName = 14;
+   const int nTrigName = 1;
    // put the whole muon HLT trigger lists defined in CMSSW_2_1_9
-   string _trigs[nTrigName] = {"HLT_L1Mu", "HLT_L1MuOpen", "HLT_L2Mu9", 
-   		"HLT_IsoMu9", "HLT_IsoMu11", "HLT_IsoMu13", "HLT_IsoMu15",
-			       "HLT_Mu3", "HLT_Mu5", "HLT_Mu7", "HLT_Mu9", "HLT_Mu11", "HLT_Mu13", "HLT_Mu15"} ;
+   string _trigs[nTrigName] = {"HLT_Mu9"} ;
 
 
 /*
@@ -353,8 +411,9 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
    if( ntrigs != 0 ) {
        trigName.init(*trigResult);
        for( int itrig = 0; itrig != ntrigs; ++itrig) {
-	   for( int itrigName = 0; itrigName < nTrigName; itrigName++ ) {
-	     LogDebug("NTUPLE") << itrig << " " << itrigName;
+       //aaa2	   for( int itrigName = 0; itrigName < nTrigName; itrigName++ ) {
+	   for( int itrigName = 0; itrigName < 0; itrigName++ ) {
+	     // LogDebug("NTUPLE") << itrig << " " << itrigName;
 	     if( trigResult->accept(trigName.triggerIndex(MuonHLT[itrigName])) ){ trigFired[itrigName] = true;}
 	   }
        }
@@ -416,8 +475,9 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
      //aaa01 for(edm::View<reco::Muon>::const_iterator iMuon2 = muonHandle->begin(); iMuon2 != muonHandle->end(); ++iMuon2) {
      //if( iMuon1 <= iMuon2 ) continue;
 	    // only select good muons
-	    if( !iMuon1->isGood() ) continue;
-
+     //aaa2	    if( !iMuon1->isGood() ) continue;
+	    if( !muon::isGoodMuon(*iMuon1,muon::AllArbitrated) ) continue;
+	    LogDebug("NTUPLE");
 	    // trigger matching in PAT
 	    /*
 	    Muon1_nTrig[_nPair] = iMuon1->triggerMatches().size();
@@ -506,6 +566,7 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	    else isOppSign[_nPair] = 0;
 	    //if( _isHighestInvMassMuonPair ) isHMassPair[_nPair] = 1;
 	    aaa */
+	    LogDebug("NTUPLE");
 	    // muon1 kinematics
 	    Muon1_pT[_nPair] = iMuon1->pt();
 	    Muon1_Px[_nPair] = iMuon1->px();
@@ -536,7 +597,7 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	    if( iMuon1->isGlobalMuon() ) Muon1_muonType[_nPair] = 1; // global muon
 	    else if( iMuon1->isStandAloneMuon() ) Muon1_muonType[_nPair] = 2; // STA muon
 	    else if( iMuon1->isTrackerMuon() ) Muon1_muonType[_nPair] = 3; // track muon
-
+	    LogDebug("NTUPLE");
 	    // global, track and STA
 	    reco::TrackRef _muon1Trk;
 	    if( Muon1_muonType[_nPair] == 1 ) _muon1Trk = iMuon1->globalTrack();
@@ -545,10 +606,11 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	    reco::TrackRef _muon1GlbTrk;
 	    reco::TrackRef _muon1StaTrk;
 	    reco::TrackRef _muon1TrkTrk;
+	    LogDebug("NTUPLE");
 	    if(iMuon1->isGlobalMuon()) _muon1GlbTrk = iMuon1->globalTrack();
 	    if(iMuon1->isStandAloneMuon()) _muon1StaTrk = iMuon1->outerTrack();
 	    if(iMuon1->isTrackerMuon() || iMuon1->isGlobalMuon()) _muon1TrkTrk = iMuon1->innerTrack();
-
+	    LogDebug("NTUPLE");
 	    if( _muon1Trk.isNonnull() ) {
 	        if( _muon1Trk->normalizedChi2() < 1000 ) Muon1_chi2dof[_nPair] = _muon1Trk->normalizedChi2();
     	        Muon1_nhits[_nPair] = _muon1Trk->numberOfValidHits();
@@ -590,7 +652,34 @@ void AODMuonToNtuple::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	        Muon1_Glb_vx[_nPair] = _muon1GlbTrk->vx();
 	        Muon1_Glb_vy[_nPair] = _muon1GlbTrk->vy();
 	        Muon1_Glb_vz[_nPair] = _muon1GlbTrk->vz();
-	    }
+		LogDebug("NTUPLE");
+		//Now some special stuff
+		
+		vector<Trajectory> refitted = theRefitter->refit(*_muon1GlbTrk,1) ;
+
+		LogDebug("NTUPLE") << refitted.size();
+		std::pair<double,double> thisKink;
+		//std::pair<double,double> stachi;
+		//std::pair<double,double> tkchi;
+		double relative_muon_chi2 = 0.0;
+		double relative_tracker_chi2 = 0.0;
+		
+		if(refitted.size()>0) {
+		  thisKink = kink(refitted.front()) ;
+		  std::pair<double,double> chi = newChi2(refitted.front());
+		  relative_muon_chi2 = chi.second/_muon1StaTrk->ndof();
+		  relative_tracker_chi2 = chi.first/_muon1TrkTrk->ndof();
+		  
+		  LogTrace("NTUPLE") << "thisKink " 
+				     << thisKink.first << " " 
+				     <<thisKink.second;
+		}
+		Muon1_Glb_trkKink[_nPair] = thisKink.first;
+		Muon1_Glb_glbKink[_nPair] = thisKink.second;
+		Muon1_Glb_rChi2Sta[_nPair] = relative_muon_chi2;
+		Muon1_Glb_rChi2Trk[_nPair] = relative_tracker_chi2;
+		
+	    } 
 
 	    if( _muon1StaTrk.isNonnull() ) {
 	        if( _muon1StaTrk->normalizedChi2() < 1000 ) Muon1_Sta_chi2dof[_nPair] = _muon1StaTrk->normalizedChi2();
@@ -934,6 +1023,10 @@ AODMuonToNtuple::beginJob(const edm::EventSetup&)
   DiMuonTree->Branch("Muon1_Glb_vx", &Muon1_Glb_vx,"Muon1_Glb_vx[nPair]/D");
   DiMuonTree->Branch("Muon1_Glb_vy", &Muon1_Glb_vy,"Muon1_Glb_vy[nPair]/D");
   DiMuonTree->Branch("Muon1_Glb_vz", &Muon1_Glb_vz,"Muon1_Glb_vz[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_trkKink", &Muon1_Glb_trkKink,"Muon1_Glb_trkKink[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_glbKink", &Muon1_Glb_glbKink,"Muon1_Glb_glbKink[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_rChi2Sta", &Muon1_Glb_rChi2Sta,"Muon1_Glb_rChi2Sta[nPair]/D");
+  DiMuonTree->Branch("Muon1_Glb_rChi2Trk", &Muon1_Glb_rChi2Trk,"Muon1_Glb_rChi2Trk[nPair]/D");
   DiMuonTree->Branch("Muon1_Sta_chi2dof", &Muon1_Sta_chi2dof,"Muon1_Sta_chi2dof[nPair]/D");
   DiMuonTree->Branch("Muon1_Sta_phi", &Muon1_Sta_phi,"Muon1_Sta_phi[nPair]/D");
   DiMuonTree->Branch("Muon1_Sta_eta", &Muon1_Sta_eta,"Muon1_Sta_eta[nPair]/D");
@@ -1108,5 +1201,100 @@ double AODMuonToNtuple::TrackSumPtrInCone03( const reco::Muon& muon, edm::Handle
    }
    return sum_pt;
 }
+
+std::pair<double,double> AODMuonToNtuple::newChi2(Trajectory& muon) const {
+  double muChi2 = 0.0;
+  double tkChi2 = 0.0;
+  
+  typedef TransientTrackingRecHit::ConstRecHitPointer 	ConstRecHitPointer;
+  typedef ConstRecHitPointer RecHit;
+  typedef vector<TrajectoryMeasurement>::const_iterator TMI;
+
+  vector<TrajectoryMeasurement> meas = muon.measurements();
+
+  for ( TMI m = meas.begin(); m != meas.end(); m++ ) {
+    TransientTrackingRecHit::ConstRecHitPointer hit = m->recHit();
+    const TrajectoryStateOnSurface& uptsos = (*m).updatedState();
+    TransientTrackingRecHit::RecHitPointer preciseHit = hit->clone(uptsos);
+    double estimate = 0.0;
+    if (preciseHit->isValid() && uptsos.isValid()) {
+      estimate = theEstimator->estimate(uptsos, *preciseHit ).second;
+    }
+    
+    LogTrace("NTUPLE") << "estimate " << estimate << " TM.est " << m->estimate();
+    double tkDiff = 0.0;
+    double staDiff = 0.0;
+    if ( hit->isValid() &&  (hit->geographicalId().det()) == DetId::Tracker ) {
+      tkChi2 += estimate;
+      tkDiff = estimate - m->estimate();
+    }
+    if ( hit->isValid() &&  (hit->geographicalId().det()) == DetId::Muon ) {
+      muChi2 += estimate;
+      staDiff = estimate - m->estimate();
+    }
+  }
+  
+  return std::pair<double,double>(tkChi2,muChi2);
+       
+}
+
+std::pair<double,double> AODMuonToNtuple::kink(Trajectory& muon) const {
+    
+  double result = 0.0;
+  double resultGlb = 0.0;
+  
+  typedef TransientTrackingRecHit::ConstRecHitPointer 	ConstRecHitPointer;
+  typedef ConstRecHitPointer RecHit;
+  typedef vector<TrajectoryMeasurement>::const_iterator TMI;
+
+  vector<TrajectoryMeasurement> meas = muon.measurements();
+  //LogDebug("NTUPLE");
+  
+  for ( TMI m = meas.begin(); m != meas.end(); m++ ) {
+    //LogDebug("NTUPLE");
+
+    TransientTrackingRecHit::ConstRecHitPointer hit = m->recHit();
+
+    //double estimate = 0.0;
+
+    RecHit rhit = (*m).recHit();
+    bool ok = false;
+    if ( rhit->isValid() ) {
+      if(DetId::Tracker == rhit->geographicalId().det()) ok = true;
+    }
+
+    //if ( !ok ) continue;
+    
+    const TrajectoryStateOnSurface& tsos = (*m).predictedState();
+
+
+    if ( tsos.isValid() ) {
+
+      double phi1 = tsos.globalPosition().phi();
+      if ( phi1 < 0 ) phi1 = 2*M_PI + phi1;
+
+      double phi2 = rhit->globalPosition().phi();
+      if ( phi2 < 0 ) phi2 = 2*M_PI + phi2;
+
+      double diff = fabs(phi1 - phi2);
+      if ( diff > M_PI ) diff = 2*M_PI - diff;
+
+      GlobalPoint hitPos = rhit->globalPosition();
+
+      GlobalError hitErr = rhit->globalPositionError();
+
+      double error = hitErr.phierr(hitPos);  // error squared
+
+      double s = ( error > 0.0 ) ? (diff*diff)/error : (diff*diff);
+
+      if(ok) result += s;
+      resultGlb += s;
+    }   
+  }
+  
+  return pair<double,double>(result,resultGlb);
+
+}
+
 //define this as a plug-in
 //DEFINE_FWK_MODULE(AODMuonToNtuple);
