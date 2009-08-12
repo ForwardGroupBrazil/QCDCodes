@@ -225,14 +225,8 @@ def SwitchToOIHit(process):
 
 
 def SwitchToAllCombined(process):
+    cleanTSG(process.hltL3TrajectorySeed)
     PCut(process)
-    process.hltL3TrajectorySeed.TSGForRoadSearchIOpxl = cms.PSet()
-    process.hltL3TrajectorySeed.TSGForRoadSearchOI = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromMixedPairs = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromPixelPairs = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromPixelTriplets = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromCombinedHits = cms.PSet()
-    process.hltL3TrajectorySeed.TSGFromPropagation = cms.PSet()
     
     process.hltL3TrajectorySeed.TSGFromCombinedSeeds = cms.PSet(
         ComponentName = cms.string("CombinedTSG"),
@@ -246,10 +240,25 @@ def SwitchToAllCombined(process):
     OIStatePropagators(process,process.hltL3TrajectorySeed.TSGFromCombinedSeeds.oiState)
     OIHitPropagators(process,process.hltL3TrajectorySeed.TSGFromCombinedSeeds.oiHit)
 
+def SwitchToOICombined(process):
+    cleanTSG(process.hltL3TrajectorySeed)
+    PCut(process)
+    
+    process.hltL3TrajectorySeed.TSGFromCombinedSeeds = cms.PSet(
+        ComponentName = cms.string("CombinedTSG"),
+        PSetNames = cms.vstring('oiState','oiHit'),
+        oiState= makeOIState(),
+        oiHit= makeOIHit()
+        )
+    process.hltL3TrajectorySeed.tkSeedGenerator = "TSGFromCombinedSeeds"
+
+    OIStatePropagators(process,process.hltL3TrajectorySeed.TSGFromCombinedSeeds.oiState)
+    OIHitPropagators(process,process.hltL3TrajectorySeed.TSGFromCombinedSeeds.oiHit)
 
 ############### all combined from different modules
     
 def SwitchToComboSeeds(process):
+    cleanTSG(process.hltL3TrajectorySeed)
     PCut(process)
     process.l3SeedCombination = cms.EDProducer(
         "L3MuonTrajectorySeedCombiner",
