@@ -190,17 +190,43 @@ def SwitchToOIState(process):
 ########## OI hit-based ###########
 
 def makeOIHit():
+    from UserCode.L3Switches.ptEtaRescale import ptRange,etaRange,diagTerm,offDiagTerm
+    
     return cms.PSet(
+        ResetMethod = cms.string('matrix'),
         ErrorRescaling = cms.double(3.0),
         ComponentName = cms.string('TSGFromPropagation'),
-        errorMatrixPset = cms.PSet(),
+        errorMatrixPset = cms.PSet(
+                   action = cms.string('use'),
+                   atIP = cms.bool(True),
+                   errorMatrixValuesPSet = cms.PSet(
+                       xAxis = ptRange,
+                       yAxis = etaRange,
+                       zAxis = cms.vdouble(-3.14159, 3.14159),
+                       
+                       pf3_V11 = diagTerm,
+                       pf3_V22 = diagTerm,
+                       pf3_V33 = diagTerm,
+                       pf3_V44 = diagTerm,
+                       pf3_V55 = diagTerm,
+                       
+                       pf3_V12 = offDiagTerm,
+                       pf3_V13 = offDiagTerm,
+                       pf3_V14 = offDiagTerm,
+                       pf3_V15 = offDiagTerm,
+                       pf3_V23 = offDiagTerm,
+                       pf3_V24 = offDiagTerm,
+                       pf3_V25 = offDiagTerm,
+                       pf3_V34 = offDiagTerm,
+                       pf3_V35 = offDiagTerm,
+                       pf3_V45 = offDiagTerm
+                       )
+                   ),
         UpdateState = cms.bool(True),
-        UseSecondMeasurements = cms.bool(False),
         SelectState = cms.bool(True),
         MaxChi2 = cms.double(15.0),
         UseVertexState = cms.bool(True),
         Propagator = cms.string('SmartPropagatorAnyOpposite'),
-        ResetMethod = cms.string("discrete"),
         SigmaZ = cms.double(25.0),
         )
 

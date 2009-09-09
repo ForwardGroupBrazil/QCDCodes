@@ -7,6 +7,6 @@ def customise(process):
     #switch.SwitchToOIState(process)
     #switch.SwitchToOIHit(process)
     #switch.SwitchToAllCombined(process)
-    #switch.SwitchToComboSeeds(process)
+    #switch.SwitchToOICombined(process)
                             
     return(process)
