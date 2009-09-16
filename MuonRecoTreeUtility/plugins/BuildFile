@@ -1,6 +1,0 @@
-<use name=Workspace/MuonRecoTreeUtility>
-<use name=RecoMuon/MuonXRay>
-
-<library file="*.cc" name=WorkspaceMuonRecoTreeUtilityPlugins>
-	  <flags EDM_PLUGIN=1>
-</library>
