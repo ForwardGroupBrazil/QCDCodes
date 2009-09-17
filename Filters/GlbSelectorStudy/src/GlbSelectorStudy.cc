@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Tue Mar 31 16:20:19 EDT 2009
-// $Id: GlbSelectorStudy.cc,v 1.8 2009/06/18 02:40:19 aeverett Exp $
+// $Id: GlbSelectorStudy.cc,v 1.7 2009/06/08 20:30:12 aeverett Exp $
 //
 //
 
@@ -123,9 +123,8 @@ private:
   virtual void analyze(const edm::Event&, const edm::EventSetup&);
   virtual void endJob() ;
   virtual std::pair<double,double> kink(Trajectory& muon) const ;
-  //virtual std::pair<double,double> staChi2(Trajectory& muon) const;
-  //virtual std::pair<double,double> tkChi2(Trajectory& muon) const;
-  virtual std::pair<double,double> newChi2(Trajectory& muon) const;
+  virtual std::pair<double,double> staChi2(Trajectory& muon) const;
+  virtual std::pair<double,double> tkChi2(Trajectory& muon) const;
   //virtual void addTraj(const reco::Track& candIn);
   virtual void printTruth(TrackingParticleRef & simRef, int i);
   virtual unsigned int getBit(const TrackingParticleRef&) const;
@@ -140,9 +139,6 @@ private:
   bool simMuon_;
   
   bool doAssoc_;
-
-  Int_t numberTrackCategories_;
-
 
   edm::ESHandle<ParticleDataTable> pdt_;
   
@@ -218,8 +214,6 @@ using namespace reco;
 struct GlbSelectorStudy::MuonME {
   void bookHistograms(edm::Service<TFileService> fs, const std::string dirName)
   {
-    numberTrackCategories_ = TrackCategories::Unknown+1;
-
     TFileDirectory *dir = new TFileDirectory(fs->mkdir(dirName));
     TFileDirectory *StaDir = new TFileDirectory(dir->mkdir( "Sta" ));
     TFileDirectory *TkDir  = new TFileDirectory(dir->mkdir( "Trk" ));
@@ -241,13 +235,10 @@ struct GlbSelectorStudy::MuonME {
     ht_nHit = TkDir->make<TH1F>("ht_nHit","nHit",100,0.,100.);
     ht_chi2 = TkDir->make<TH1F>("ht_chi2","chi2",100,0.,100.);
     ht_nchi2 = TkDir->make<TH1F>("ht_nchi2","nchi2",100,0.,100.);
-    ht_relative_chi2 = TkDir->make<TH1F>("ht_relative_chi2","relative chi2",100,0.,100.);
-    ht_d_relative_chi2 =  TkDir->make<TH1F>("ht_d_relative_chi2","delta chi2",200,-100.,100.);
-    ht_d_relative_chi2_pt =  TkDir->make<TH2F>("ht_d_relative_chi2_pt","delta chi2",500,0.,500.,200,-100.,100.);
-    ht_d_relative_chi2_length =  TkDir->make<TH2F>("ht_d_relative_chi2_length","delta chi2",500,0.,1000.,200,-100.,100.);
-
-    ht_chivschi = TkDir->make<TH2F>("ht_chivschi","chi vs chi",100,0.,100.,100,0.,100.);
-
+    ht_nchi2_a = TkDir->make<TH1F>("ht_nchi2_a","nchi2_a",100,0.,100.);
+    ht_nchi2_b = TkDir->make<TH1F>("ht_nchi2_b","nchi2_b",100,0.,100.);
+    ht_chivschi_a = TkDir->make<TH2F>("ht_chivschi_a","chivschi_a",100,0.,100.,100,0.,100.);
+    ht_chivschi_b = TkDir->make<TH2F>("ht_chivschi_b","chivschi_b",100,0.,100.,100,0.,100.);
     ht_nchi2Prob = TkDir->make<TH1F>("ht_nchi2Prob","nchi2 Probability",100,0.,1.);
     ht_nlnchi2Prob = TkDir->make<TH1F>("ht_nlnchi2Prob","-ln(chi2 Probability)",100,0.,100.);
 
@@ -256,13 +247,10 @@ struct GlbSelectorStudy::MuonME {
     hs_nHit = StaDir->make<TH1F>("hs_nHit","nHit",100,0.,100.);
     hs_chi2 = StaDir->make<TH1F>("hs_chi2","chi2",100,0.,100.);
     hs_nchi2 = StaDir->make<TH1F>("hs_nchi2","nchi2",100,0.,100.);    
-    hs_relative_chi2 = StaDir->make<TH1F>("hs_relative_chi2","relative chi2",100,0.,100.);
-    hs_d_relative_chi2 =  StaDir->make<TH1F>("hs_d_relative_chi2","delta chi2",200,-100.,100.);
-    hs_d_relative_chi2_pt =  StaDir->make<TH2F>("hs_d_relative_chi2_pt","delta chi2",500,0.,500.,200,-100.,100.);
-    hs_d_relative_chi2_length =  StaDir->make<TH2F>("hs_d_relative_chi2_length","delta chi2",500,0.,1000.,200,-100.,100.);
-
-    hs_chivschi = StaDir->make<TH2F>("hs_chivschi","chi vs chi",100,0.,100.,100,0.,100.);
-
+    hs_nchi2_a = StaDir->make<TH1F>("hs_nchi2_a","nchi2_a",100,0.,100.);
+    hs_nchi2_b = StaDir->make<TH1F>("hs_nchi2_b","nchi2_b",100,0.,100.);
+    hs_chivschi_a = StaDir->make<TH2F>("hs_chivschi_a","chivschi_a",100,0.,100.,100,0.,100.);
+    hs_chivschi_b = StaDir->make<TH2F>("hs_chivschi_b","chivschi_b",100,0.,100.,100,0.,100.);
     hs_nchi2Prob = StaDir->make<TH1F>("hs_nchi2Prob","nchi2 Probability",100,0.,1.);
     hs_nlnchi2Prob = StaDir->make<TH1F>("hs_nlnchi2Prob","-ln(chi2 Probability)",100,0.,100.);
 
@@ -278,11 +266,6 @@ struct GlbSelectorStudy::MuonME {
     hm_hcal = MuDir->make<TH1F>("hm_hcal","E_{HCAL}",100,0.,10.);
     hm_ecal = MuDir->make<TH1F>("hm_ecal","E_{ECAL}",100,0.,10.);
 
-    hm_DecayLength   = MuDir->make<TH1F>("hm_DecayLength", "Mu Parent Decay Length",   600, 0., 1200. ) ;
-    hm_transDecayLength   = MuDir->make<TH1F>("hm_transDecayLength", "Mu Parent Decay Length",   600, 0., 1200. ) ;
-    hm_DecayLength_pt   = MuDir->make<TH2F>("hm_DecayLength_pt", "Mu Parent Decay Length", 100, 0., 500.,  600, 0., 1200. ) ;
-    hm_transDecayLength_pt   = MuDir->make<TH2F>("hm_transDecayLength_pt", "Mu Parent Decay Length", 100, 0., 500.,  600, 0., 1200. ) ;
-
     hs_NTrksEta_ = StaDir->make<TH1F>("hs_NTrksEta", "Number of reco tracks vs #eta", 50, -2.5, 2.5);
     hs_NTrksEta_St1_ = StaDir->make<TH1F>("hs_NTrksEta_St1", "Number of reco tracks vs #eta only in Station1", 50, -2.5, 2.5);
     hs_NTrksPt_ = StaDir->make<TH1F>("hs_NTrksPt", "Number of reco tracks vs p_{T}", 100, 0., 500.);
@@ -293,9 +276,7 @@ struct GlbSelectorStudy::MuonME {
     hg_NTrksPt_ = GlbDir->make<TH1F>("hg_NTrksPt", "Number of reco tracks vs p_{T}", 100, 0., 500.);
     hg_NTrksPt_St1_ = GlbDir->make<TH1F>("hg_NTrksPt_St1", "Number of reco tracks vs p_{T} only in Station1", 100, 0., 500.);
 
-    hm_pt_vs_pt_ = GlbDir->make<TH2F>("hg_pt_vs_pt","p_{T}^{Sta} vs p_{T}^{Tk}",100, 0., 500.,100,0,500.);
-    hm_dpt_ = GlbDir->make<TH1F>("hg_dpt","p_{T}^{Tk} - p_{T}^{Sta}",200, -500., 500.);
-    hm_ndpt_ = GlbDir->make<TH1F>("hg_ndpt","(p_{T}^{Tk} - p_{T}^{Sta}) / p_{T}^{Tk}",200, -10., 10.);
+    hg_pt_vs_pt_ = GlbDir->make<TH2F>("hg_pt_vs_pt","p_{T}^{Sta} vs p_{T}^{Tk}",100, 0., 500.,100,0,500.);
 
     hm_nChamber = MuDir->make<TH1F>("hm_nChamber","nChamber",20,0,20);
     hm_nChamberMatch_no = MuDir->make<TH1F>("hm_nChamberMatch_no","nChamberMatch No Arbitration",20,0,20);
@@ -306,9 +287,7 @@ struct GlbSelectorStudy::MuonME {
     hm_segComp = MuDir->make<TH1F>("hm_segComp","segComp",50,0.,1.);
     hm_2DComp = MuDir->make<TH2F>("hm_2DComp","Seg/Calo Comp",50,0.,1.,50,0.,1.);
 
-    hm_tm_sel = MuDir->make<TH1F>("hm_tm_sel","TM Selectors",31,-0.5,30.5);
-    hm_tm_cross = MuDir->make<TH1F>("hm_tm_cross","Cross Selectors",31,-0.5,30.5);
-    hm_tm_cross2 = MuDir->make<TH1F>("hm_tm_cross2","Cross Selectors2",31,-0.5,30.5);
+    hm_tm_sel = MuDir->make<TH1F>("hm_tm_sel","TM Selectors",21,-0.5,20.5);
 
     hm_NSt_tot_ =MuDir->make<TH1F>("hm_NSt_tot","nStation total",11,-0.5,10.5);
     hm_NSt_rpc_ =MuDir->make<TH1F>("hm_NSt_rpc","nStation RPC",11,-0.5,10.5);
@@ -318,41 +297,28 @@ struct GlbSelectorStudy::MuonME {
     hm_noDepth1_ = MuDir->make<TH1F>("hm_noDepth1","no depth (1)",3,-1.5,1.5);
     hm_noDepth2_ = MuDir->make<TH1F>("hm_noDepth2","no depth (2)",3,-1.5,1.5);
 
-    hg_outerPosition = MuDir->make<TH2F>("hg_outerPosition","OuterMost Position",1200,0.,1200.,1000,0.,1000.);
-    //    hm_motherVtxPos = MuDir->make<TH2F>("hm_motherVtxPos","Mother Vtx Position",1201,-1.,1200.,1001,-1.,1000.);
-    //    hm_motherDecayPos = MuDir->make<TH2F>("hm_motherDecayPos","Mother Decay Position",1201,-1.,1200.,1001,-1.,1000.);
-    //    hm_motherMuVtxPos = MuDir->make<TH2F>("hm_motherMuVtxPos","MotherMu Vtx Position",1201,-1.,1200.,1001,-1.,1000.);
-    //    hm_motherMuDecayPos = MuDir->make<TH2F>("hm_motherMuDecayPos","MotherMu Decay Position",1201,-1.,1200.,1001,-1.,1000.);
+    hm_outerPosition = MuDir->make<TH2F>("hm_outerPosition","OuterMost Position",1200,0.,1200.,1000,0.,1000.);
+    hm_motherVtxPos = MuDir->make<TH2F>("hm_motherVtxPos","Mother Vtx Position",1201,-1.,1200.,1001,-1.,1000.);
+    hm_motherDecayPos = MuDir->make<TH2F>("hm_motherDecayPos","Mother Decay Position",1201,-1.,1200.,1001,-1.,1000.);
+    hm_motherMuVtxPos = MuDir->make<TH2F>("hm_motherMuVtxPos","MotherMu Vtx Position",1201,-1.,1200.,1001,-1.,1000.);
+    hm_motherMuDecayPos = MuDir->make<TH2F>("hm_motherMuDecayPos","MotherMu Decay Position",1201,-1.,1200.,1001,-1.,1000.);
 
-  hm_MuRZ  = dir->make<TH2F>(  "hm_MuRZ", "Mu production Vertex R vs Z", 1201,-1.,1200.,1001,-1.,1000.) ;
-  hm_MuXY  = dir->make<TH2F>(  "hm_MuXY", "Mu production Vertex XY", 300, -150., 150.,300, -150., 150.) ;
-  hm_MuZ   = dir->make<TH1F>(  "hm_MuZ", "Mu Vertex Z",   600, -300., 300. ) ;
-
-  hm_TPRZ  = dir->make<TH2F>(  "hm_TPRZ", "TP production Vertex R vs Z", 1201,-1.,1200.,1001,-1.,1000.) ;
-  hm_TPXY  = dir->make<TH2F>(  "hm_TPXY", "TP production Vertex XY", 300, -150., 150.,300, -150., 150.) ;
-  hm_TPZ   = dir->make<TH1F>(  "hm_TPZ", "TP Vertex Z",   600, -300., 300. ) ;
-
-    //    hm_primary_Decay = dir->make<TH2F>("hm_primary_Decay","Primary Particle Decay Length",100,0.,500.,1601,-1.,1600.);
-    //    hm_primary_tranDecay = dir->make<TH2F>("hm_primary_tranDecay","Primary Particle Transverse Decay Length",100,0.,500.,1001,-1.,1000.);
+    hm_primary_Decay = dir->make<TH2F>("hm_primary_Decay","Primary Particle Decay Length",100,0.,500.,1601,-1.,1600.);
+    hm_primary_tranDecay = dir->make<TH2F>("hm_primary_tranDecay","Primary Particle Transverse Decay Length",100,0.,500.,1001,-1.,1000.);
     hm_primaryPt = dir->make<TH1F>("hm_primaryPt","Primary Particle p_{T}",100,0.,500.);
     hm_simMuPt = dir->make<TH1F>("hm_simMuPt","Sim Mu p_{T}",100,0.,500.);
 
-    //    hm_allTp_Decay = dir->make<TH2F>("hm_allTp_Decay","TP Decay vs primary p_{T}",100,0.,500.,1601,-1.,1600.);
-    //    hm_allTp_tranDecay = dir->make<TH2F>("hm_allTp_tranDecay","TP Transverse Decay vs primary p_{T}",100,0.,500.,1001,-1.,1000.);
+    hm_allTp_Decay = dir->make<TH2F>("hm_allTp_Decay","TP Decay vs primary p_{T}",100,0.,500.,1601,-1.,1600.);
+    hm_allTp_tranDecay = dir->make<TH2F>("hm_allTp_tranDecay","TP Transverse Decay vs primary p_{T}",100,0.,500.,1001,-1.,1000.);
 
-    //    hm_allTp_Decay2 = dir->make<TH2F>("hm_allTp_Decay2","TP Decay Length vs TP p_{T}",100,0.,500.,1601,-1.,1600.);
-    //    hm_allTp_tranDecay2 = dir->make<TH2F>("hm_allTp_tranDecay2","TP Transverse Decay vs TP p_{T}",100,0.,500.,1001,-1.,1000.);
+    hm_allTp_Decay2 = dir->make<TH2F>("hm_allTp_Decay2","TP Decay Length vs TP p_{T}",100,0.,500.,1601,-1.,1600.);
+    hm_allTp_tranDecay2 = dir->make<TH2F>("hm_allTp_tranDecay2","TP Transverse Decay vs TP p_{T}",100,0.,500.,1001,-1.,1000.);
 
-    hg_kink = GlbDir->make<TH1F>("hg_kink","Kink",100,0.,5000.);
-    ht_kink = TkDir->make<TH1F>("ht_kink","Kink",100,0.,5000.);
-    hg_kink_pt = GlbDir->make<TH2F>("hg_kink_pt","Kink",100,0.,500.,100,0.,5000.);
-    ht_kink_pt = TkDir->make<TH2F>("ht_kink_pt","Kink",100,0.,500.,100,0.,5000.);
-    hg_kink_length = GlbDir->make<TH2F>("hg_kink_length","Kink",1000,0.,1000.,100,0.,5000.);
-    ht_kink_length = TkDir->make<TH2F>("ht_kink_length","Kink",1000,0.,1000.,100,0.,5000.);
+    hg_kink = GlbDir->make<TH1F>("hg_kink","Kink",100,0.,500.);
+    ht_kink = TkDir->make<TH1F>("ht_kink","Kink",100,0.,500.);
 
     hm_tpType = MuDir->make<TH1F>("hm_tpType","TP Type",501,-0.5,500.5);
-    hm_muType = MuDir->make<TH1F>("hm_muType","#mu TP Type",501,-0.5,500.5);
-    //    hm_motherType = MuDir->make<TH1F>("hm_motherType","Mother Type",501,-0.5,500.5);
+    hm_motherType = MuDir->make<TH1F>("hm_motherType","Mother Type",501,-0.5,500.5);
 
     hm_pt_K = dir->make<TH1F>("hm_pt_K","K p_{T}",100,0.,500.);
     hm_pt_B = dir->make<TH1F>("hm_pt_B","B p_{T}",100,0.,500.);
@@ -364,84 +330,13 @@ struct GlbSelectorStudy::MuonME {
 
     hm_trackerMu = MuDir->make<TH1F>("hm_TM","isTrackerMuon",3,-1.5,1.5);
 
-    hm_trackCategories_ = dir->make<TH1F>(
-					  "hm_trackCategories",
-					  "Frequency for the different track categories",
-					  numberTrackCategories_,
-					  -0.5,
-					  numberTrackCategories_ - 0.5
-					  );
-    hm_muTpCategories_ = dir->make<TH1F>(
-					  "hm_muTpCategories",
-					  "Frequency for the different track categories",
-					  numberTrackCategories_,
-					  -0.5,
-					  numberTrackCategories_ - 0.5
-					  );
-    hm_tpCategories_ = dir->make<TH1F>(
-					  "hm_tpCategories",
-					  "Frequency for the different track categories",
-					  numberTrackCategories_,
-					  -0.5,
-					  numberTrackCategories_ - 0.5
-					  );
-    for (Int_t i = 0; i < numberTrackCategories_; ++i) {
-      hm_trackCategories_->GetXaxis()->SetBinLabel(i+1, TrackCategories::Names[i]);
-      hm_muTpCategories_->GetXaxis()->SetBinLabel(i+1, TrackCategories::Names[i]);
-      hm_tpCategories_->GetXaxis()->SetBinLabel(i+1, TrackCategories::Names[i]);
-    }
-
-
-
-
   };
-
+  //void fill(const reco::Muon& iMuon,const GlobalPoint pos,const GlobalPoint decayPos) {
   void fill(const reco::Muon& iMuon,const TrackingParticleRef& pos, const TrackingParticleRef& muTp) {
     //
+    hm_tpType->Fill(pos->pdgId());
 
     int pId = fabs(pos->pdgId());
-    hm_primaryPt->Fill(primaryPt_);
-    float vxmu=-99999.;
-    float vymu=-99999.;
-    float vzmu=-99999.;
-    float vrmu=-99999.;
-    float vxtp=-99999.;
-    float vytp=-99999.;
-    float vztp=-99999,;
-    float vrtp=-99999.;
-    float decayLength = -999.;
-    float transDecayLength = -999.;
-    
-    if(muTp.isAvailable()) {
-      hm_muType->Fill(muTp->pdgId());
-      vrmu =  sqrt(muTp->vertex().perp2());
-      vxmu =  muTp->vertex().x();
-      vymu =  muTp->vertex().y();
-      vzmu =  muTp->vertex().z();
-      decayLength = sqrt(vxmu*vxmu + vymu*vymu + vzmu*vzmu);
-      transDecayLength = vrmu;
-      hm_DecayLength->Fill(decayLength);
-      hm_transDecayLength->Fill(transDecayLength);
-      hm_DecayLength_pt->Fill(primaryPt_,decayLength);
-      hm_transDecayLength_pt->Fill(primaryPt_,transDecayLength);
-      hm_MuRZ->Fill(vzmu,vrmu);
-      hm_MuXY->Fill(vxmu,vymu);
-      hm_MuZ->Fill(vzmu);
-    }
-    
-    if(pos.isAvailable()) {
-      hm_tpType->Fill(pos->pdgId());
-      vrtp =  sqrt(pos->vertex().perp2());
-      vxtp =  pos->vertex().x();
-      vytp =  pos->vertex().y();
-      vztp =  pos->vertex().z();
-      hm_TPRZ->Fill(vztp,vrtp);
-      hm_TPXY->Fill(vxtp,vytp);
-      hm_TPZ->Fill(vztp);
-    }
-
-
-
 
     if(pId >= 310 && pId <= 325) hm_pt_K->Fill(pos->pt());
     else if(pId >= 511 && pId <= 545) hm_pt_B->Fill(pos->pt());
@@ -451,64 +346,58 @@ struct GlbSelectorStudy::MuonME {
     else if(pId == 13) hm_pt_Mu->Fill(pos->pt());
     else hm_pt_Other->Fill(pos->pt());
 
-    hm_trackerMu->Fill(iMuon.isTrackerMuon());
-
     const TrackRef glbTrack = iMuon.combinedMuon();
-    hg_NTrksEta_->Fill(glbTrack->eta());
-    hg_NTrksPt_->Fill(glbTrack->pt());
     hg_dxy->Fill(glbTrack->dxy());
     hg_dz->Fill(glbTrack->dz());
     hg_nHit->Fill(glbTrack->numberOfValidHits());
     hg_chi2->Fill(glbTrack->chi2());
     hg_nchi2->Fill(glbTrack->normalizedChi2());
+
+    /*
+    double chi2 = glbTrack->chi2();
+    double ndof =  glbTrack->ndof();
+    float lnchi2prob =  -LnChiSquaredProbability(chi2, ndof);
+    float lnchi2prob_int =  -LnChiSquaredProbability(chi2,  glbTrack->ndof() );
+    float chi2prob =  ChiSquaredProbability(chi2, ndof);
+
+    LogTrace("GlbSelectorStudy")<<"Chi2Probability calculation:\n"
+				<<"\t chi2 = " << chi2
+				<<"\t ndof = " << ndof
+				<<"\t nchi2 = " << glbTrack->normalizedChi2()
+				<<" -LnProb = " << lnchi2prob
+				<<"\n\t\t\t\t\t -LnProb_int = " << lnchi2prob_int
+				<<"\n\t\t\t\t\t -LnProb: " << -LnChiSquaredProbability(glbTrack->chi2(), glbTrack->ndof())
+				<<"\n\t\t\t\t\t Prob = " << chi2prob ;
+    */
+
     hg_nchi2Prob->Fill(ChiSquaredProbability(glbTrack->chi2(), glbTrack->ndof()));
     hg_nlnchi2Prob->Fill(-LnChiSquaredProbability(glbTrack->chi2(), glbTrack->ndof()));
-    hg_kink->Fill(gkink_);
-    hg_kink_pt->Fill(primaryPt_,gkink_);
-    hg_kink_length->Fill(decayLength,gkink_);
 
-    float outerX = glbTrack->outerX();
-    float outerY = glbTrack->outerY();
-    float outerZ = glbTrack->outerZ();
-    float outerR = sqrt( outerX*outerX +outerY*outerY);
-    hg_outerPosition->Fill(outerZ,outerR);
+    /*
+    //calculate by hand
+    float byHand1 = 0.0;
+    float byHand2 = 0.0;
+    float x = chi2 / 2;
+    float a = ndof / 2;
+    if( x < 0.0 || a <= 0.0 ) 
+      std::cerr << "IncompleteGammaComplement::invalid arguments" << std::endl;
+    if( x < (a+1.0) ){
+      // take the complement of the series representation    
+      byHand1 =  log(1.-GammaSeries(a,x)*(exp(-x + a*log(x) - GammaLn(a))));
+      byHand2 =  log(1.-GammaSeries(a,x)*(exp(-x + a*log(x) - GammaLn(a))));
+    } else {
+      // use the continued fraction representation
+      byHand1 = log(GammaContinuedFraction(a,x)) -x + a*log(x) - GammaLn(a);
+      byHand2 = log(GammaContinuedFraction(a,x)*exp(-x + a*log(x) - GammaLn(a)));
+    } 
+    LogTrace("GlbSelectorStudy")<<" IncompleteGammaComplement::ln = " << IncompleteGammaComplement::ln( ndof / 2 , chi2 / 2 );
+    LogTrace("GlbSelectorStudy")<<"by hand1 "<<byHand1 <<" by hand2 " <<byHand2;
+    */
 
-    const TrackRef staTrack = iMuon.standAloneMuon();
-    hs_NTrksEta_->Fill(staTrack->eta());
-    hs_NTrksPt_->Fill(staTrack->pt());
-    hs_dxy->Fill(staTrack->dxy());
-    hs_dz->Fill(staTrack->dz());
-    hs_nHit->Fill(staTrack->numberOfValidHits());
-    hs_chi2->Fill(staTrack->chi2());
-    hs_nchi2->Fill(staTrack->normalizedChi2());
-    hs_nchi2Prob->Fill(ChiSquaredProbability(staTrack->chi2(), staTrack->ndof()));
-    hs_nlnchi2Prob->Fill(-LnChiSquaredProbability(staTrack->chi2(), staTrack->ndof()));
-    hs_relative_chi2->Fill(relative_muon_chi2_);
-    hs_d_relative_chi2->Fill(relative_muon_chi2_-staTrack->normalizedChi2());
-    hs_d_relative_chi2_pt->Fill(primaryPt_,relative_muon_chi2_-staTrack->normalizedChi2());
-    hs_d_relative_chi2_length->Fill(decayLength,relative_muon_chi2_-staTrack->normalizedChi2());
-    hs_chivschi->Fill(relative_muon_chi2_,staTrack->normalizedChi2());
+    hm_trackerMu->Fill(iMuon.isTrackerMuon());
 
-    const TrackRef trkTrack = iMuon.track();
-    ht_dxy->Fill(trkTrack->dxy());
-    ht_dz->Fill(trkTrack->dz());
-    ht_nHit->Fill(trkTrack->numberOfValidHits());
-    ht_chi2->Fill(trkTrack->chi2());
-    ht_nchi2->Fill(trkTrack->normalizedChi2());
-    ht_nchi2Prob->Fill(ChiSquaredProbability(trkTrack->chi2(), trkTrack->ndof()));
-    ht_nlnchi2Prob->Fill(-LnChiSquaredProbability(trkTrack->chi2(), trkTrack->ndof()));
-    ht_relative_chi2->Fill(relative_tracker_chi2_);
-    ht_d_relative_chi2->Fill(relative_tracker_chi2_-trkTrack->normalizedChi2());
-    ht_d_relative_chi2_pt->Fill(primaryPt_,relative_tracker_chi2_-trkTrack->normalizedChi2());
-    ht_d_relative_chi2_length->Fill(decayLength,relative_tracker_chi2_-trkTrack->normalizedChi2());
-    ht_chivschi->Fill(relative_tracker_chi2_,trkTrack->normalizedChi2());
-    ht_kink->Fill(tkink_);
-    ht_kink_pt->Fill(primaryPt_,tkink_);
-    ht_kink_length->Fill(decayLength,tkink_);
-      
-
-
-
+    hg_NTrksEta_->Fill(glbTrack->eta());
+    hg_NTrksPt_->Fill(glbTrack->pt());
 
     int station = 0;
     DetId id(glbTrack->outerDetId());
@@ -518,15 +407,25 @@ struct GlbSelectorStudy::MuonME {
     }  else if ( id.subdetId() == MuonSubdetId::CSC ) {
       CSCDetId did(id.rawId());
       station = did.station();
-    }   else if ( id.subdetId() == MuonSubdetId::RPC ) {LogDebug("GlbSelectorStudy");
-    //RPCDetId rpcid(id.rawId());LogDebug("GlbSelectorStudy");
-    //station = rpcid.station();
+    }   else if ( id.subdetId() == MuonSubdetId::RPC ) {
+      RPCDetId rpcid(id.rawId());
+      station = rpcid.station();
     }
     
     if(station == 1) hg_NTrksEta_St1_->Fill(glbTrack->eta());
     if(station == 1) hg_NTrksPt_St1_->Fill(glbTrack->pt());
 
+    const TrackRef staTrack = iMuon.standAloneMuon();
+    hs_dxy->Fill(staTrack->dxy());
+    hs_dz->Fill(staTrack->dz());
+    hs_nHit->Fill(staTrack->numberOfValidHits());
+    hs_chi2->Fill(staTrack->chi2());
+    hs_nchi2->Fill(staTrack->normalizedChi2());
+    hs_nlnchi2Prob->Fill(-LnChiSquaredProbability(staTrack->chi2(), staTrack->ndof()));
+    hs_nchi2Prob->Fill(ChiSquaredProbability(staTrack->chi2(), staTrack->ndof()));
 
+    hs_NTrksEta_->Fill(staTrack->eta());
+    hs_NTrksPt_->Fill(staTrack->pt());
     station = 0;
     DetId id2(staTrack->outerDetId());
     if ( id2.subdetId() == MuonSubdetId::DT ) {
@@ -535,9 +434,9 @@ struct GlbSelectorStudy::MuonME {
     }  else if ( id2.subdetId() == MuonSubdetId::CSC ) {
       CSCDetId did(id2.rawId());
       station = did.station();
-    }   else if ( id2.subdetId() == MuonSubdetId::RPC ) {LogDebug("GlbSelectorStudy");
-    //RPCDetId rpcid(id2.rawId());LogDebug("GlbSelectorStudy");
-    //station = rpcid.station();
+    }   else if ( id2.subdetId() == MuonSubdetId::RPC ) {
+      RPCDetId rpcid(id2.rawId());
+      station = rpcid.station();
     }
     
     if(station == 1) hs_NTrksEta_St1_->Fill(staTrack->eta());
@@ -557,22 +456,31 @@ struct GlbSelectorStudy::MuonME {
     int nDTSeg[4];
     int nRPCSeg[4];
     for(int station = 0; station < 4; ++station) {
-      nCSCSeg[station] = iMuon.numberOfSegments(station+1, MuonSubdetId::CSC, Muon::SegmentAndTrackArbitration);
-      nDTSeg[station] = iMuon.numberOfSegments(station+1, MuonSubdetId::DT, Muon::SegmentAndTrackArbitration);LogDebug("GlbSelectorStudy");
-      nRPCSeg[station] = iMuon.numberOfSegments(station+1, MuonSubdetId::RPC, Muon::SegmentAndTrackArbitration);LogDebug("GlbSelectorStudy");
+      nCSCSeg[station] = iMuon.numberOfSegments(station+1, MuonSubdetId::CSC, Muon::NoArbitration);
+      nDTSeg[station] = iMuon.numberOfSegments(station+1, MuonSubdetId::DT, Muon::NoArbitration);
+      nRPCSeg[station] = iMuon.numberOfSegments(station+1, MuonSubdetId::RPC, Muon::NoArbitration);
     }
 
     //    bool noDepth2 =  ( (nCSCSeg[0] > 1 && nCSCSeg[1] == 0 && nCSCSeg[2] == 0 && nCSCSeg[3] == 0 && nRPCSeg[0] >= 1) ||
     //	 (nDTSeg[0] > 1 && nDTSeg[1] == 0 && nDTSeg[2] == 0 && nDTSeg[3] == 0 && nRPCSeg[0] >= 1) ) ? 1 : 0;
-    bool noDepth2 =  ( (nCSCSeg[0] == 1 && nCSCSeg[1] == 0 && nCSCSeg[2] == 0 && nCSCSeg[3] == 0 ) ||
-		       (nDTSeg[0] == 1 && nDTSeg[1] == 0 && nDTSeg[2] == 0 && nDTSeg[3] == 0 ) ) ? 1 : 0;
+    bool noDepth2 =  ( (nCSCSeg[0] > 1 && nCSCSeg[1] == 0 && nCSCSeg[2] == 0 && nCSCSeg[3] == 0 ) ||
+		       (nDTSeg[0] > 1 && nDTSeg[1] == 0 && nDTSeg[2] == 0 && nDTSeg[3] == 0 ) ) ? 1 : 0;
 
     hm_noDepth1_->Fill(noDepth);
     hm_noDepth2_->Fill(noDepth2);
 
-    hm_pt_vs_pt_->Fill(trkTrack->pt(),staTrack->pt());
-    hm_dpt_->Fill(trkTrack->pt()-staTrack->pt());
-    hm_ndpt_->Fill( (trkTrack->pt()-staTrack->pt()) / trkTrack->pt() );
+
+    
+    const TrackRef trkTrack = iMuon.track();
+    ht_dxy->Fill(trkTrack->dxy());
+    ht_dz->Fill(trkTrack->dz());
+    ht_nHit->Fill(trkTrack->numberOfValidHits());
+    ht_chi2->Fill(trkTrack->chi2());
+    ht_nchi2->Fill(trkTrack->normalizedChi2());
+    ht_nlnchi2Prob->Fill(-LnChiSquaredProbability(trkTrack->chi2(), trkTrack->ndof()));
+    ht_nchi2Prob->Fill(ChiSquaredProbability(trkTrack->chi2(), trkTrack->ndof()));
+
+    hg_pt_vs_pt_->Fill(trkTrack->pt(),staTrack->pt());
 
     if(iMuon.isEnergyValid()) hm_hcal->Fill(iMuon.calEnergy().had);
     if(iMuon.isEnergyValid()) hm_ecal->Fill(iMuon.calEnergy().em);
@@ -589,71 +497,50 @@ struct GlbSelectorStudy::MuonME {
     else
       hm_2DComp->Fill(0.,iMuon.segmentCompatibility());
 
-    bool bool0=false; bool bool1=false; bool bool2=false; 
-    bool bool3=false; bool bool4=false; bool bool5=false; 
-    bool bool6=false; bool bool7=false; bool bool8=false; 
-    bool bool9=false; bool bool10=false; bool bool11=false; 
-    bool bool12=false; bool bool13=false; bool bool14=false; 
-    bool bool15=false; bool bool16=false; bool bool17=false; 
-    bool bool18=false; bool bool19=false; bool bool20=false; 
-    bool bool21=false; bool bool22=false; bool bool23=false; 
-    bool bool24=false; bool bool25=false; bool bool26=false; 
-    bool bool27=false; bool bool28=false; bool bool29=false;
     
     hm_tm_sel->Fill(0);
-    if(iMuon.isGood(reco::Muon::AllTrackerMuons)) hm_tm_sel->Fill(1);
-    if(iMuon.isGood(reco::Muon::TrackerMuonArbitrated)) hm_tm_sel->Fill(2);
-    if(iMuon.isGood(reco::Muon::AllArbitrated)) hm_tm_sel->Fill(3);
-    if(iMuon.isGood(reco::Muon::GlobalMuonPromptTight)) {hm_tm_sel->Fill(4);bool4=true;}
-    if(iMuon.isGood(reco::Muon::TMLastStationLoose)) hm_tm_sel->Fill(5);
-    if(iMuon.isGood(reco::Muon::TMLastStationTight)) hm_tm_sel->Fill(6);
-    if(iMuon.isGood(reco::Muon::TM2DCompatibilityLoose)) hm_tm_sel->Fill(7);
-    if(iMuon.isGood(reco::Muon::TM2DCompatibilityTight)) {hm_tm_sel->Fill(8);bool8=true;}
-    if(iMuon.isGood(reco::Muon::TMOneStationLoose)) {hm_tm_sel->Fill(9);bool9=true;}
-    if(iMuon.isGood(reco::Muon::TMOneStationTight)) {hm_tm_sel->Fill(10);bool10=true;}
-    if(iMuon.isGood(reco::Muon::TMLastStationOptimizedLowPtLoose)) hm_tm_sel->Fill(11);
-    if(iMuon.isGood(reco::Muon::TMLastStationOptimizedLowPtTight)) hm_tm_sel->Fill(12);
-    if(iMuon.isGood(reco::Muon::TMFirstLoose)) {hm_tm_sel->Fill(13);bool13=true;}
-    if(iMuon.isGood(reco::Muon::TMFirstTight)) {hm_tm_sel->Fill(14);bool14=true;}
-    if(iMuon.isGood(reco::Muon::TMFirstOneLoose)) {hm_tm_sel->Fill(15);bool15=true;}
-    if(iMuon.isGood(reco::Muon::TMFirstOneTight)) {hm_tm_sel->Fill(16);bool16=true;}
-    if(iMuon.isGood(reco::Muon::GlobalMuonKink)) {hm_tm_sel->Fill(17);bool17=true;}
-    if(iMuon.isGood(reco::Muon::CalComp)) {hm_tm_sel->Fill(18);bool18=true;}
-    if(iMuon.isGood(reco::Muon::sDrelChi2)) {hm_tm_sel->Fill(19);bool19=true;}
-    if(iMuon.isGood(reco::Muon::tDrelChi2)) {hm_tm_sel->Fill(20);bool20=true;}
-    if(iMuon.isGood(reco::Muon::badPt)) {hm_tm_sel->Fill(21);bool21=true;}
-    if(iMuon.isGood(reco::Muon::GMGoldAll)) {hm_tm_sel->Fill(22);bool22=true;}
-    if(iMuon.isGood(reco::Muon::GMGoldHits)) {hm_tm_sel->Fill(23);bool23=true;}
-    if(iMuon.isGood(reco::Muon::GMGoldDepth)) {hm_tm_sel->Fill(24);bool24=true;}
-    if( (bool4 || bool8) && !(bool17==false && bool18==false)) {hm_tm_sel->Fill(25);}
-  
+    if(iMuon.isGood(reco::Muon::TMLastStationLoose)) hm_tm_sel->Fill(1);
+    if(iMuon.isGood(reco::Muon::TMLastStationTight)) hm_tm_sel->Fill(2);
+    if(iMuon.isGood(reco::Muon::TM2DCompatibilityLoose)) hm_tm_sel->Fill(3);
+    if(iMuon.isGood(reco::Muon::TM2DCompatibilityTight)) hm_tm_sel->Fill(4);
+    if(iMuon.isGood(reco::Muon::TMOneStationLoose)) hm_tm_sel->Fill(5);
+    if(iMuon.isGood(reco::Muon::TMOneStationTight)) hm_tm_sel->Fill(6);
+    if(iMuon.isGood(reco::Muon::AllTrackerMuons)) hm_tm_sel->Fill(7);
+    if(iMuon.isGood(reco::Muon::TrackerMuonArbitrated)) hm_tm_sel->Fill(8);
+    if(iMuon.isGood(reco::Muon::TMLastStationOptimizedLowPtLoose)) hm_tm_sel->Fill(9);
+    if(iMuon.isGood(reco::Muon::TMLastStationOptimizedLowPtTight)) hm_tm_sel->Fill(10);
     //ADAM insert GM golds here
-    bool SiPTcand=false;
-    hm_tm_cross->Fill(0);
-    if((bool17==false) && (bool8==false)) {hm_tm_cross->Fill(1);SiPTcand=true;}
-    if( SiPTcand==true && bool19==false) hm_tm_cross->Fill(2);
-    if( SiPTcand==true && bool20==false) hm_tm_cross->Fill(3);
-    if( SiPTcand==true && bool19==false && bool20==false) hm_tm_cross->Fill(4);
-    if( SiPTcand==true && bool21==true) hm_tm_cross->Fill(5);
-    if( bool18==false && bool13==true) hm_tm_cross->Fill(6);
-    if( bool18==false && bool14==true) hm_tm_cross->Fill(7);
-    if( bool18==false && bool15==true) hm_tm_cross->Fill(8);
-    if( bool18==false && bool16==true) hm_tm_cross->Fill(9);
-    if( bool18==false && bool24==true) hm_tm_cross->Fill(10);
 
+    float outerX = glbTrack->outerX();
+    float outerY = glbTrack->outerY();
+    float outerZ = glbTrack->outerZ();
+    float outerR = sqrt( outerX*outerX +outerY*outerY);
+    hm_outerPosition->Fill(outerZ,outerR);
 
-    bool Kinkcand=false;
-    hm_tm_cross2->Fill(0);
-    if((bool17==false) ) {hm_tm_cross2->Fill(1);Kinkcand=true;}
-    if( Kinkcand==true && bool19==false) hm_tm_cross2->Fill(2);
-    if( Kinkcand==true && bool20==false) hm_tm_cross2->Fill(3);
-    if( Kinkcand==true && bool19==false && bool20==false) hm_tm_cross2->Fill(4);
-    if( Kinkcand==true && bool21==true) hm_tm_cross2->Fill(5);
-    if( bool17==false && bool13==true) hm_tm_cross2->Fill(6);
-    if( bool17==false && bool14==true) hm_tm_cross2->Fill(7);
-    if( bool17==false && bool15==true) hm_tm_cross2->Fill(8);
-    if( bool17==false && bool16==true) hm_tm_cross2->Fill(9);
-    if( bool17==false && bool24==true) hm_tm_cross2->Fill(10);
+    if(pos.isAvailable()) {
+      tv_iterator dv = pos->decayVertices_end();
+      float decayx = (*dv)->position().x();
+      float decayy = (*dv)->position().y();
+      float decayz = (*dv)->position().z();
+      
+      hm_motherVtxPos->Fill(abs(pos->vertex().z()),sqrt(pos->vertex().perp2()));
+      hm_motherDecayPos->Fill(abs(decayz),sqrt(decayx*decayx + decayy*decayy) );
+
+    }
+
+    if(muTp.isAvailable()) {
+      tv_iterator dv = muTp->decayVertices_begin();
+      float decayx = (*dv)->position().x();
+      float decayy = (*dv)->position().y();
+      float decayz = (*dv)->position().z();
+      
+      hm_motherMuVtxPos->Fill(abs(muTp->vertex().z()),sqrt(muTp->vertex().perp2()));
+      hm_motherMuDecayPos->Fill(abs(decayz),sqrt(decayx*decayx + decayy*decayy) );
+
+      //      hm_motherMu_Decay->Fill(pos->pt(),sqrt(muTp->vertex().z()*muTp->vertex().z()+(muTp->vertex().perp2()) ) );
+      //      hm_motherMu_tranDecay->Fill(pos->pt(),sqrt( muTp->vertex().perp2() ) );
+
+    }
 
   };
 
@@ -699,9 +586,9 @@ std::pair< std::pair<int,int>,std::pair<int,int> > countStations(const reco::Tra
 	    break;
           }
 	case MuonSubdetId::RPC:
-	  {LogDebug("GlbSelectorStudy");
+	  {
 	    RPCDetId rpcid((*iall)->geographicalId().rawId());
-	    RPC_station = rpcid.station();LogDebug("GlbSelectorStudy");	    
+	    RPC_station = rpcid.station();	    
 	    break;
 	  }
         default: ;
@@ -755,12 +642,6 @@ std::pair< std::pair<int,int>,std::pair<int,int> > countStations(const reco::Tra
   return std::pair<std::pair<int,int>,std::pair<int,int> >(p1,p2);
 };
 
-  Int_t numberTrackCategories_;
-
-  double tkink_, gkink_;
-  double relative_muon_chi2_;
-  double relative_tracker_chi2_;
-  float primaryPt_;
 
   TH1F *ht_dxy, *ht_dz, *ht_nHit, *ht_chi2, *ht_nchi2, *ht_nchi2Prob, *ht_nlnchi2Prob;
   TH1F *hs_dxy, *hs_dz, *hs_nHit, *hs_chi2, *hs_nchi2, *hs_nchi2Prob, *hs_nlnchi2Prob;
@@ -776,47 +657,33 @@ std::pair< std::pair<int,int>,std::pair<int,int> > countStations(const reco::Tra
   TH1F *hm_caloComp, *hm_segComp;
 
   TH1F *hm_tm_sel;
-  TH1F *hm_tm_cross, *hm_tm_cross2;
 
-  TH2F *hg_outerPosition;
-  //TH2F *hm_motherVtxPos,*hm_motherDecayPos;
-  //TH2F *hm_motherMuVtxPos,*hm_motherMuDecayPos;
-  TH2F *hm_MuRZ, *hm_MuXY;
-  TH1F *hm_MuZ;
-  TH2F *hm_TPRZ, *hm_TPXY;
-  TH1F *hm_TPZ;
-  //TH2F *hm_primary_Decay, *hm_primary_tranDecay;
-  //TH2F *hm_allTp_Decay, *hm_allTp_tranDecay;
-  //TH2F *hm_allTp_Decay2, *hm_allTp_tranDecay2;
+  TH2F *hm_outerPosition;
+  TH2F *hm_motherVtxPos,*hm_motherDecayPos;
+  TH2F *hm_motherMuVtxPos,*hm_motherMuDecayPos;
+  TH2F *hm_primary_Decay, *hm_primary_tranDecay;
+  TH2F *hm_allTp_Decay, *hm_allTp_tranDecay;
+  TH2F *hm_allTp_Decay2, *hm_allTp_tranDecay2;
   TH1F * hm_primaryPt, *hm_simMuPt;
   TH2F *hm_2DComp;
 
   TH1F *hg_kink;
-  TH2F *hg_kink_pt, *hg_kink_length;
   TH1F *ht_kink;
-  TH2F *ht_kink_pt, *ht_kink_length;
 
-  TH1F *hm_tpType, *hm_muType, *hm_trackerMu;
+  TH1F *hm_tpType, *hm_motherType, *hm_trackerMu;
+
+  TH1F *hm_pt_K, *hm_pt_B, *hm_pt_D, *hm_pt_Pi, *hm_pt_Tau, *hm_pt_Mu, *hm_pt_Other;
 
   TH1F *hm_NSt_tot_, *hm_NSt_rpc_, *hm_NSt_csc_, *hm_NSt_dt_;
   TH1F *hm_noDepth1_, *hm_noDepth2_;
 
-  TH1F *hm_DecayLength, *hm_transDecayLength;
-  TH2F *hm_DecayLength_pt, *hm_transDecayLength_pt;
+  TH1F *ht_nchi2_a, *ht_nchi2_b;
+  TH1F *hs_nchi2_a, *hs_nchi2_b;
 
-  TH1F *ht_relative_chi2, *ht_d_relative_chi2;
-  TH2F *ht_d_relative_chi2_pt, *ht_d_relative_chi2_length; 
-  TH1F *hs_relative_chi2, *hs_d_relative_chi2;
-  TH2F *hs_d_relative_chi2_pt, *hs_d_relative_chi2_length; 
-  TH2F * hm_pt_vs_pt_;
-  TH1F *hm_dpt_, *hm_ndpt_;
-  TH2F * ht_chivschi, * hs_chivschi;
+  TH2F * ht_chivschi_a, * ht_chivschi_b;
+  TH2F * hs_chivschi_a, * hs_chivschi_b;
 
-
-  TH1F *hm_pt_K, *hm_pt_B, *hm_pt_D, *hm_pt_Pi;
-  TH1F *hm_pt_Tau, *hm_pt_Mu, *hm_pt_Other;
-
-  TH1F *hm_trackCategories_, *hm_muTpCategories_, *hm_tpCategories_;
+  TH2F * hg_pt_vs_pt_;
 
 };
 
@@ -908,9 +775,6 @@ GlbSelectorStudy::GlbSelectorStudy(const edm::ParameterSet& iConfig):
                                          tpset_calConversion.getParameter<bool>("signalOnly"),
                                          tpset_calConversion.getParameter<bool>("chargedOnly"),
                                          tpset_calConversion.getParameter<std::vector<int> >("pdgId"));
-
-  numberTrackCategories_ = TrackCategories::Unknown+1;
-
 }
 
 
@@ -990,7 +854,6 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   RecoToSimCollection glbMuToSimColl;
 
   if ( doAssoc_ ) {
-    LogDebug(theCategory);
     // SimToReco associations
     simToTrkMuColl = trkMuAssociator_->associateSimToReco(trkMuHandle, simHandle, &iEvent);
     simToStaMuColl = staMuAssociator_->associateSimToReco(staMuHandle, simHandle, &iEvent);
@@ -1002,34 +865,33 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     glbMuToSimColl = glbMuAssociator_->associateRecoToSim(glbMuHandle, simHandle, &iEvent);
   }
   else {
-
     // SimToReco associations
     Handle<SimToRecoCollection> simToTrkMuHandle;
     iEvent.getByLabel(trkMuAssocLabel_, simToTrkMuHandle);
     simToTrkMuColl = *(simToTrkMuHandle.product());
-
+    
     Handle<SimToRecoCollection> simToStaMuHandle;
     iEvent.getByLabel(staMuAssocLabel_, simToStaMuHandle);
     simToStaMuColl = *(simToStaMuHandle.product());
-
+    
     Handle<SimToRecoCollection> simToGlbMuHandle;
     iEvent.getByLabel(glbMuAssocLabel_, simToGlbMuHandle);
     simToGlbMuColl = *(simToGlbMuHandle.product());
-
+    
     // RecoToSim associations
     Handle<RecoToSimCollection> trkMuToSimHandle;
     iEvent.getByLabel(trkMuAssocLabel_, trkMuToSimHandle);
     trkMuToSimColl = *(trkMuToSimHandle.product());
-
+    
     Handle<RecoToSimCollection> staMuToSimHandle;
     iEvent.getByLabel(staMuAssocLabel_, staMuToSimHandle);
     staMuToSimColl = *(staMuToSimHandle.product());
-
+    
     Handle<RecoToSimCollection> glbMuToSimHandle;
     iEvent.getByLabel(glbMuAssocLabel_, glbMuToSimHandle);
     glbMuToSimColl = *(glbMuToSimHandle.product());
   }
-
+    
   tpBitMap   tpBitMap_;
   recoBitMap recoBitMap_;
   recoTpMap recoTpMap_;
@@ -1042,7 +904,7 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   for(TrackingParticleCollection::size_type i=0; i<nSim; i++) {
     TrackingParticleRef simRef(simHandle, i);
     const TrackingParticle* simTP = simRef.get();
-
+    
     unsigned int thisBit = getBit(simRef);
 
     ///// cccc
@@ -1055,8 +917,7 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     else if (isCalConversionMuon(thisBit)) muClass = 3;
     else if (isOtherMuon(thisBit)) muClass = 4;
     else muClass = 5;
-
-    /*
+    
     MuonME * thisME = 0;
     
     if(muClass==1) thisME = aME_;
@@ -1064,24 +925,19 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if(muClass==3) thisME = cME_;
     if(muClass==4) thisME = dME_;
     if(muClass==5) thisME = eME_;
-    */
+    
+    thisME->hm_primaryPt->Fill(primaryPt);
 
-    //aaa thisME->hm_primaryPt->Fill(primaryPt);
-
-    /*
     float decayx = 0.0;
     float decayy = 0.0;
     float decayz = 0.0;
-    tv_iterator dv = simTP->decayVertices().begin(); 
-    if(dv != simTP->decayVertices().end()) {
- 
-      tv_iterator dv = simTP->decayVertices().begin();
- 
-      decayx = (*dv)->position().x();
-      decayy = (*dv)->position().y();
-      decayz = (*dv)->position().z();
-    }
-    if(i==0 || i==1){     
+
+    //    if(i==0 || i==1){      
+    tv_iterator dv = simTP->decayVertices_end();
+    decayx = (*dv)->position().x();
+    decayy = (*dv)->position().y();
+    decayz = (*dv)->position().z();
+    if(i==0 || i==1){      
       thisME->hm_primary_Decay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy+decayz*decayz));
       thisME->hm_primary_tranDecay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy));
     } else {
@@ -1091,23 +947,23 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       thisME->hm_allTp_Decay2->Fill(simTP->pt(),sqrt(simTP->vertex().z()*simTP->vertex().z()+(simTP->vertex().perp2()) ) );
       thisME->hm_allTp_tranDecay2->Fill(simTP->pt(),sqrt( simTP->vertex().perp2() ) );
     }
-    */
     //thisME->hm_primary_Decay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy+decayz*decayz));
     //thisME->hm_primary_tranDecay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy));
     ///// ccc
 
     // if ( ! (isPrimaryMuon(thisBit) || isSiliconMuon(thisBit) || isCalConversionMuon(thisBit) || isOtherMuon(thisBit) ) ) continue;
-
+    
     std::vector<std::pair<RefToBase<Track>, double> > rt;
     
     /////start aaa
     if ( isSiliconMuon(thisBit) ) LogTrace(theCategory)<<"SimTP isSilicon";
     //if ( simTP->pt() > 2.0 ) { //b
     if ( (isPrimaryMuon(thisBit) || isSiliconMuon(thisBit) || isCalConversionMuon(thisBit) || isOtherMuon(thisBit) ) ) {
-      //aaa thisME->hm_simMuPt->Fill(simTP->pt());
 
+      thisME->hm_simMuPt->Fill(simTP->pt());
+    
       printTruth(simRef, i);
-
+      
       if(simToGlbMuColl.find(simRef) != simToGlbMuColl.end()){
 	rt = simToGlbMuColl[simRef];
 	if (rt.size()!=0) {
@@ -1131,14 +987,13 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     //}//b
     ///////end aaa
     
-    if (rt.empty()) continue;
+    if (rt.size()==0) continue;
 
     reco::TrackRef glbMuTrackRef = rt.begin()->first.castTo<TrackRef >();
 
     tpBitMap_.insert(simRef,thisBit);
     recoBitMap_.insert( glbMuTrackRef, thisBit );
     recoTpMap_.insert( glbMuTrackRef, simRef );
-
   }
 
   ///////////////////////  
@@ -1151,7 +1006,7 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     int muClass = 0;
 
     LogTrace(theCategory)<<"Looking at a new muon.....";
-    if ( iMuon->isGlobalMuon() ) {      
+    if ( iMuon->isGlobalMuon() && iMuon->isTrackerMuon() ) {      
       LogTrace(theCategory)<<"which isGlobalMuon";
 
       const TrackRef glbTrack = iMuon->combinedMuon();
@@ -1163,31 +1018,21 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       vector<Trajectory> refitted = theRefitter->refit(*glbTrack,1) ;
       LogDebug(theCategory) << refitted.size();
       std::pair<double,double> thisKink;
-      //std::pair<double,double> stachi;
-      //std::pair<double,double> tkchi;
-      double relative_muon_chi2 = 0.0;
-      double relative_tracker_chi2 = 0.0;
+      std::pair<double,double> stachi;
+      std::pair<double,double> tkchi;
       if(refitted.size()>0) {
 	thisKink = kink(refitted.front()) ;
-	//stachi = staChi2(refitted.front());
-	//tkchi = tkChi2(refitted.front());
-	std::pair<double,double> chi = newChi2(refitted.front());
-	relative_muon_chi2 = chi.second/staTrack->ndof();
-	relative_tracker_chi2 = chi.first/tkTrack->ndof();
-
+	stachi = staChi2(refitted.front());
+	tkchi = tkChi2(refitted.front());
 	LogTrace(theCategory) << "thisKink " << thisKink.first << " " <<thisKink.second;
-	//LogTrace(theCategory) << "staChi2 " << stachi.first << " " << stachi.second;
-	//LogTrace(theCategory) << "tkChi2 " << tkchi.first << " " << tkchi.second;
+	LogTrace(theCategory) << "staChi2 " << stachi.first << " " << stachi.second;
+	LogTrace(theCategory) << "tkChi2 " << tkchi.first << " " << tkchi.second;
       }
-
-      LogTrace(theCategory) << "deltaChi2 trk " << relative_tracker_chi2 - tkTrack->normalizedChi2();
-      LogTrace(theCategory) << "deltaChi2 mu  " << relative_muon_chi2 - staTrack->normalizedChi2();
 
       unsigned int theBit = (recoBitMap_.find(glbTrack) != recoBitMap_.end()) ? recoBitMap_[glbTrack] : 0;
       TrackingParticleRef muTp;
       if(recoTpMap_.find(glbTrack) != recoTpMap_.end()) 
 	muTp = recoTpMap_[glbTrack] ;
-
 
       TrackingParticleRef theTrp ;
       
@@ -1197,17 +1042,16 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       LogTrace(theCategory)<<"  isCAL " << isCalConversionMuon(theBit);
       LogTrace(theCategory)<<"  isOther " << isOtherMuon(theBit);
       
-
-      
-      LogTrace(theCategory) <<"      with flags "; 
       classifier_.evaluate( glbTrackRB );
       
+      LogTrace(theCategory) <<"      with flags "; 
       for (std::size_t index = 0; index < classifier_.flags().size(); ++index){
 	if (classifier_.flags()[index])
 	  LogTrace(theCategory) <<"                 " 
 				<<  TrackCategories::Names[index]; 
       }
-      
+
+
       std::vector<std::pair<TrackingParticleRef,double> > tpRefV;
       if ( glbTrack.isAvailable() && glbMuToSimColl.find(glbTrackRB) != glbMuToSimColl.end() ) {//get TP
 	tpRefV = glbMuToSimColl[glbTrackRB];
@@ -1232,90 +1076,36 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
 	theTrp = trp;
 
-
-
       }//get TP
-
-      if(muTp.isAvailable()) classifier_.evaluate(muTp);
-
+      
       if (isPrimaryMuon(theBit)) muClass = 1;
-      else if (isSiliconMuon(theBit) && (classifier_.is(TrackCategories::BWeakDecay) || classifier_.is(TrackCategories::CWeakDecay)) ) muClass = 6;
-      else if (isSiliconMuon(theBit) && classifier_.is(TrackCategories::LongLivedDecay)) muClass = 2;
-      else if (isSiliconMuon(theBit)) muClass = 7;
+      else if (isSiliconMuon(theBit)) muClass = 2;
       else if (isCalConversionMuon(theBit)) muClass = 3;
       else if (isOtherMuon(theBit)) muClass = 4;
       else muClass = 5;
-
+      
       MuonME * thisME = 0;
-
+      
       if(muClass==1) thisME = aME_;
-      if(muClass==6) thisME = fME_;
       if(muClass==2) thisME = bME_;
-      if(muClass==7) thisME = gME_;
       if(muClass==3) thisME = cME_;
       if(muClass==4) thisME = dME_;
       if(muClass==5) thisME = eME_;
-
-      thisME->tkink_ = 0.;
-      thisME->gkink_ = 0.;
-      thisME->relative_muon_chi2_ = 0.;
-      thisME->relative_tracker_chi2_ = 0.;
-      thisME->primaryPt_ = 0.;
-
-      thisME->tkink_ = thisKink.first;
-      thisME->gkink_ = thisKink.second;
-      thisME->relative_muon_chi2_ = relative_muon_chi2;
-      thisME->relative_tracker_chi2_ = relative_tracker_chi2;
-
-      classifier_.evaluate( glbTrackRB );
-      for (Int_t i = 0; i != numberTrackCategories_; ++i) {
-	if (
-	    classifier_.is( (TrackCategories::Category) i )
-            ) {
-	  thisME->hm_trackCategories_->Fill(i);
-	}
-      }
-
-      if(muTp.isAvailable()) classifier_.evaluate(muTp);
-      thisME->primaryPt_ = sqrt(classifier_.history().genParticle()->momentum().perp2());
-      for (Int_t i = 0; i != numberTrackCategories_; ++i) {
-	if (
-	    classifier_.is( (TrackCategories::Category) i )
-	    ) {
-	  thisME->hm_muTpCategories_->Fill(i);
-
-	  //	  LogTrace(theCategory) <<"               "
-	  //				<<  TrackCategories::Names[i];
-	}
-      }
-
-      if(theTrp.isAvailable()) classifier_.evaluate(theTrp);
-      for (Int_t i = 0; i != numberTrackCategories_; ++i) {
-	if (
-	    classifier_.is( (TrackCategories::Category) i )
-	    ) {
-	  thisME->hm_tpCategories_->Fill(i);
-	  //	  LogTrace(theCategory) <<"               "
-	  //				<<  TrackCategories::Names[i];
-	}
-      }
-
+      
       thisME->fill(*iMuon,theTrp,muTp);
 
-      //thisME->ht_kink->Fill(thisKink.first);
-      //thisME->hg_kink->Fill(thisKink.second);
+      thisME->ht_kink->Fill(thisKink.first);
+      thisME->hg_kink->Fill(thisKink.second);
 
-      //thisME->hs_nchi2_a->Fill(relative_muon_chi2);
-      //thisME->hs_d_nchi2_a->Fill(relative_muon_chi2-staTrack->normalizedChi2());
-      //thisME->hs_chivschi_a->Fill(relative_muon_chi2,staTrack->normalizedChi2());
-      //thisME->hs_nchi2_b->Fill(stachi.second/staTrack->ndof());
-      //thisME->hs_chivschi_b->Fill(stachi.second/staTrack->ndof(),glbTrack->normalizedChi2());
+      thisME->hs_nchi2_a->Fill(stachi.first/staTrack->ndof());
+      thisME->hs_chivschi_a->Fill(stachi.first/staTrack->ndof(),glbTrack->normalizedChi2());
+      thisME->hs_nchi2_b->Fill(stachi.second/staTrack->ndof());
+      thisME->hs_chivschi_b->Fill(stachi.second/staTrack->ndof(),glbTrack->normalizedChi2());
 
-      //thisME->ht_nchi2_a->Fill(relative_tracker_chi2);
-      //thisME->ht_d_nchi2_a->Fill(relative_tracker_chi2-tkTrack->normalizedChi2());
-      //thisME->ht_chivschi_a->Fill(relative_tracker_chi2,tkTrack->normalizedChi2());
-      //thisME->ht_nchi2_b->Fill(tkchi.second/tkTrack->ndof());
-      //thisME->ht_chivschi_b->Fill(tkchi.second/tkTrack->ndof(),glbTrack->normalizedChi2());
+      thisME->ht_nchi2_a->Fill(tkchi.first/tkTrack->ndof());
+      thisME->ht_chivschi_a->Fill(tkchi.first/tkTrack->ndof(),glbTrack->normalizedChi2());
+      thisME->ht_nchi2_b->Fill(tkchi.second/tkTrack->ndof());
+      thisME->ht_chivschi_b->Fill(tkchi.second/tkTrack->ndof(),glbTrack->normalizedChi2());
       
       LogTrace(theCategory)<<"MuClass " << muClass;
 
@@ -1342,24 +1132,28 @@ GlbSelectorStudy::beginJob(const edm::EventSetup& iSetup)
  cME_ = new MuonME;
  dME_ = new MuonME;
  eME_ = new MuonME;
- fME_ = new MuonME;
- gME_ = new MuonME;
+ //fME_ = new MuonME;
+ //gME_ = new MuonME;
  // decayME_ = new MuonME;
  // outsideME_ = new MuonME;
  //
  aME_->bookHistograms(fs,"PrimaryMu");
- fME_->bookHistograms(fs,"SiliconHeavy");
- bME_->bookHistograms(fs,"SiliconLong");
- gME_->bookHistograms(fs,"SiliconShort");
+ bME_->bookHistograms(fs,"SiliconMu");
  cME_->bookHistograms(fs,"CalConversionMu");
  dME_->bookHistograms(fs,"OtherMu");
  eME_->bookHistograms(fs,"PunchThrough");
+ //fME_->bookHistograms(fs,"F");
+ //gME_->bookHistograms(fs,"G");
+
+
 
 }
+
 // ------------ method called once each job just after ending the event loop  ------------
 void 
 GlbSelectorStudy::endJob() {
 }
+
 
 //
 // kink finder
@@ -1466,15 +1260,13 @@ void GlbSelectorStudy::printTruth(TrackingParticleRef & simRef, int i) {
       LogTrace(theCategory)<<"      DecayVertex "<<(*dv)->position();
     }
 
-    /*
     LogTrace(theCategory) <<"     with flags "; 
     for (std::size_t index = 0; index < classifier_.flags().size(); ++index){
       if (classifier_.flags()[index])
 	LogTrace(theCategory) <<"                 " 
 			      <<  TrackCategories::Names[index]; 
     }
-    */
-
+    
     // Get the list of TrackingParticles associated to
     TrackHistory::SimParticleTrail simParticles(tracer.simParticleTrail());
     
@@ -1610,7 +1402,7 @@ unsigned int GlbSelectorStudy::getBit(const TrackingParticleRef& simRef) const{
 
     return thisBit;
 }
-/*
+
 std::pair<double,double> GlbSelectorStudy::staChi2(Trajectory& muon) const {
 
   double muChi2_a = 0.0;
@@ -1681,44 +1473,6 @@ std::pair<double,double> GlbSelectorStudy::tkChi2(Trajectory& muon) const {
   }
   return std::pair<double,double>(tkChi2_a,tkChi2_b);
 }
-*/
-
-std::pair<double,double> GlbSelectorStudy::newChi2(Trajectory& muon) const {
-  double muChi2 = 0.0;
-  double tkChi2 = 0.0;
-
-  typedef TransientTrackingRecHit::ConstRecHitPointer 	ConstRecHitPointer;
-  typedef ConstRecHitPointer RecHit;
-  typedef vector<TrajectoryMeasurement>::const_iterator TMI;
-
-  vector<TrajectoryMeasurement> meas = muon.measurements();
-
-  for ( TMI m = meas.begin(); m != meas.end(); m++ ) {
-    TransientTrackingRecHit::ConstRecHitPointer hit = m->recHit();
-    const TrajectoryStateOnSurface& uptsos = (*m).updatedState();
-    TransientTrackingRecHit::RecHitPointer preciseHit = hit->clone(uptsos);
-    double estimate = 0.0;
-    if (preciseHit->isValid() && uptsos.isValid()) {
-      estimate = theEstimator->estimate(uptsos, *preciseHit ).second;
-    }
-    
-    //LogTrace(theCategory) << "estimate " << estimate << " TM.est " << m->estimate();
-    double tkDiff = 0.0;
-    double staDiff = 0.0;
-    if ( hit->isValid() &&  (hit->geographicalId().det()) == DetId::Tracker ) {
-      tkChi2 += estimate;
-      tkDiff = estimate - m->estimate();
-    }
-    if ( hit->isValid() &&  (hit->geographicalId().det()) == DetId::Muon ) {
-      muChi2 += estimate;
-      staDiff = estimate - m->estimate();
-    }
-  }
-
-  return std::pair<double,double>(tkChi2,muChi2);
-       
-}
-
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(GlbSelectorStudy);
