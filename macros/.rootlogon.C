@@ -5,31 +5,53 @@
    TStyle *myStyle  = new TStyle("MyStyle","My Root Styles");
 
    // from ROOT plain style
-   myStyle->SetCanvasBorderMode(0);
-   myStyle->SetPadBorderMode(0);
-   myStyle->SetPadColor(0);
-   myStyle->SetCanvasColor(0);
+
    myStyle->SetTitleColor(1);
    myStyle->SetStatColor(0);
 
    myStyle->SetLabelSize(0.03,"xyz"); // size of axis values
 
    // default canvas positioning
+   myStyle->SetCanvasBorderMode(0);
+   myStyle->SetCanvasColor(0);
    myStyle->SetCanvasDefX(900);
    myStyle->SetCanvasDefY(20);
    myStyle->SetCanvasDefH(550);
    myStyle->SetCanvasDefW(540);
+
+   myStyle->SetPadBorderMode(0);
+   myStyle->SetPadColor(0);
+   myStyle->SetPadGridX(true);
+   myStyle->SetPadGridY(true);
+   myStyle->SetGridColor(0);
+   myStyle->SetGridStyle(3);
+   myStyle->SetGridWidth(1);
+   myStyle->SetPadTickX(1);
+   myStyle->SetPadTickY(1);
+
+// For the frame:
+  myStyle->SetFrameBorderMode(0);
+  myStyle->SetFrameBorderSize(1);
+  myStyle->SetFrameFillColor(0);
+  myStyle->SetFrameFillStyle(0);
+  myStyle->SetFrameLineColor(1);
+  myStyle->SetFrameLineStyle(1);
+  myStyle->SetFrameLineWidth(1);
 
    myStyle->SetPadBottomMargin(0.1);
    myStyle->SetPadTopMargin(0.1);
    myStyle->SetPadLeftMargin(0.1);
    myStyle->SetPadRightMargin(0.1);
 
+   /*
+  myStyle->SetHistLineColor(1);
+  myStyle->SetHistLineStyle(0);
+  myStyle->SetHistLineWidth(1);
+ myStyle->SetEndErrorSize(2);
+ myStyle->SetErrorX(0.);
+  myStyle->SetMarkerStyle(20);
+ */
 
-   myStyle->SetPadTickX(1);
-   myStyle->SetPadTickY(1);
-
-   myStyle->SetFrameBorderMode(0);
 
    // US letter
    myStyle->SetPaperSize(20, 24);
