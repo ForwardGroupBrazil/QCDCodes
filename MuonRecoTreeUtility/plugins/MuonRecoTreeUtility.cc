@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.9 2009/07/22 15:40:02 klukas Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.1 2009/08/26 04:37:42 aeverett Exp $
 //
 //
 
@@ -202,7 +202,7 @@ private:
   int nL3;
   int nL3TracksFromL2;
   int nL3Cands;
-  int nL3Seeds;
+  //int nL3Seeds;
   // basic L3 muon quantities
   std::vector<double> *l3P;
   std::vector<double> *l3Px;
@@ -249,9 +249,9 @@ private:
   // L2 <-> L3 interface
 
   // L3 seeding from L2
-  std::vector<int> *indexL2SeedingL3;
-  std::vector<int> *indexL3SeededFromL2;
-  std::vector<int> *l2SeedsL3;
+  //std::vector<int> *indexL2SeedingL3;
+  //std::vector<int> *indexL3SeededFromL2;
+  //std::vector<int> *l2SeedsL3;
 
   // Error matrix that's rescaled for the OI algos
   std::map<int,std::vector<double> > *muonErrorMatrix;
@@ -309,7 +309,7 @@ private:
   std::vector<double> *l2Charge;
   std::vector<double> *l2Chi2;
   std::vector<double> *l2Ndof;
-  std::vector<int> *l2NSeeds;
+  //std::vector<int> *l2NSeeds;
   std::map<int,std::vector<int> > *l2DetIds;
   std::map<int,std::vector<int> > *l2SubdetIds;
   std::map<int,std::vector<int> > *l2Component;
@@ -320,7 +320,7 @@ private:
   std::map<int, int> *l2NMuHits;
   std::map<int,std::vector<int> > *l2MuStationNumber;
   // L2 muon isolation quantities
-  std::vector<double> *l2CalIsoDeposit;
+  //std::vector<double> *l2CalIsoDeposit;
   // L2 track fitting and error matrix: note that phi is already in there...
   std::vector<double> *l2Dsz;
   std::vector<double> *l2DszError;
@@ -456,13 +456,13 @@ private:
   edm::InputTag l2Label;
   edm::InputTag l3Label;
   edm::InputTag trackLabel;
-  edm::InputTag candLabel;
+  //edm::InputTag candLabel;
   edm::InputTag triggerResults_;
   edm::InputTag trackingParticleLabel;
   // To get the seeds for the L2 muons
   edm::InputTag l2SeedCollectionLabel;
   // To get the seeds for the L3 muons
-  edm::InputTag l3SeedCollectionLabel;
+  //edm::InputTag l3SeedCollectionLabel;
 
   // The all-important error matrix
   edm::ParameterSet errorMatrixPset;
@@ -489,14 +489,17 @@ private:
   //Needed for the ISO quantities
   reco::isodeposit::IsoDepositExtractor* caloDepositExtractor;
   reco::isodeposit::IsoDepositExtractor* trackDepositExtractor;
-  std::string calExtractorName;
-  std::string L3IsoTrackCollectionName;
-  edm::ParameterSet calExtractorPSet;
+  reco::isodeposit::IsoDepositExtractor* jetDepositExtractor;
+  //not needed //std::string calExtractorName;
+  //not needed //std::string L3IsoTrackCollectionName;
+  edm::ParameterSet caloExtractorPSet;
   edm::ParameterSet trackExtractorPSet;
+  edm::ParameterSet jetExtractorPSet;
   edm::ParameterSet trackCutsPSet;
+  edm::ParameterSet caloCutsPSet;
   edm::InputTag CaloTowerCollectionLabel;
   // This track collection is the tracks for the L3iso track cut
-  edm::InputTag inputTrackCollection;
+  //not needed //edm::InputTag inputTrackCollection;
   muonisolation::Cuts L2IsoCalCuts;
   muonisolation::Cuts L3IsoTrackCuts;
 
@@ -545,8 +548,8 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   l2Label = iConfig.getParameter<edm::InputTag>("l2MuonLabel");
   l3Label = iConfig.getParameter<edm::InputTag>("l3MuonLabel");
   trackLabel = iConfig.getParameter<edm::InputTag>("trackLabel");
-  candLabel = iConfig.getParameter<edm::InputTag>("candLabel");
-  l3SeedCollectionLabel = iConfig.getParameter<edm::InputTag>("l3SeedLabel");
+  //candLabel = iConfig.getParameter<edm::InputTag>("candLabel");
+  //l3SeedCollectionLabel = iConfig.getParameter<edm::InputTag>("l3SeedLabel");
   triggerResults_ = iConfig.getParameter<edm::InputTag>("triggerResults_");
   trackingParticleLabel = iConfig.getParameter<edm::InputTag>("trackingParticleLabel");
   bsSrc = iConfig.getParameter<edm::InputTag>("beamSpotLabel");
@@ -566,7 +569,7 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   // Get our module timing things
 
   theTimerLabel=iConfig.getParameter<edm::InputTag>("TimerLabel"); 
-  if(isRecoLevel==false) {
+  if(isRecoLevel==false) { LogDebug("MuonRecoTreeUtility");
   edm::ParameterSet ModulesForTiming =  iConfig.getUntrackedParameter<edm::ParameterSet>("TimingModules");
   theMuonDigiModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonDigiModules");
   theMuonLocalRecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonLocalRecModules");
@@ -580,40 +583,56 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   theCaloRecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("CaloRecModules");
   }
   // Get our trigger names from the config
-
+  LogDebug("MuonRecoTreeUtility");
   singleMuIsoTriggerName = iConfig.getParameter<std::string>("singleMuIsoTriggerName");
   singleMuNonIsoTriggerName = iConfig.getParameter<std::string>("singleMuNonIsoTriggerName");
   diMuIsoTriggerName = iConfig.getParameter<std::string>("diMuIsoTriggerName");
   diMuNonIsoTriggerName = iConfig.getParameter<std::string>("diMuNonIsoTriggerName"); 
-
+  LogDebug("MuonRecoTreeUtility");
   l2AssocLabel = iConfig.getParameter<std::string>("l2AssociatorName");
   l3AssocLabel = iConfig.getParameter<std::string>("l3AssociatorName");
   tkAssocLabel = iConfig.getParameter<std::string>("tkAssociatorName");
 
   theLinkLabel = iConfig.getParameter<edm::InputTag>("linkLabel");
-  
+  LogDebug("MuonRecoTreeUtility");
   // Read in the PSets
-  calExtractorPSet = iConfig.getParameter<edm::ParameterSet>("calExtractorPSet");
-  trackExtractorPSet = iConfig.getParameter<edm::ParameterSet>("trackExtractorPSet");
+  //not needed //calExtractorPSet = iConfig.getParameter<edm::ParameterSet>("calExtractorPSet");
+  //not needed //trackExtractorPSet = iConfig.getParameter<edm::ParameterSet>("trackExtractorPSet");
   trackCutsPSet = iConfig.getParameter<edm::ParameterSet>("trackCutsPSet");
+  caloCutsPSet = iConfig.getParameter<edm::ParameterSet>("caloCutsPSet");
   // Read in the ISO quantities from L2 (CAL) and L3 (track)
-  calExtractorName = calExtractorPSet.getParameter<std::string>("calName");
-  L3IsoTrackCollectionName = trackExtractorPSet.getParameter<std::string>("ComponentName");
+  //not needed //calExtractorName = calExtractorPSet.getParameter<std::string>("calName");
+  //not needed //L3IsoTrackCollectionName = trackExtractorPSet.getParameter<std::string>("ComponentName");
   // we have our L3 extractor PSet.  Use that to get the pixel tracks.
-  inputTrackCollection = trackExtractorPSet.getParameter<edm::InputTag>("inputTrackCollection");
+  //not needed //inputTrackCollection = trackExtractorPSet.getParameter<edm::InputTag>("inputTrackCollection");
   // Create Extractors to read in the deposits
-  if(isRecoLevel == false) {
-    caloDepositExtractor = IsoDepositExtractorFactory::get()->create( calExtractorName, calExtractorPSet);
-    trackDepositExtractor = IsoDepositExtractorFactory::get()->create(L3IsoTrackCollectionName, trackExtractorPSet);
-  }
-
+  //aaa if(isRecoLevel == false) {
+  //aaa start
+  LogDebug("MuonRecoTreeUtility");
+  edm::ParameterSet caloExtractorPSet = iConfig.getParameter<edm::ParameterSet>("CaloExtractorPSet");
+  std::string caloExtractorName = caloExtractorPSet.getParameter<std::string>("ComponentName");
+  caloDepositExtractor = IsoDepositExtractorFactory::get()->create( caloExtractorName, caloExtractorPSet);
+  LogDebug("MuonRecoTreeUtility");  
+  edm::ParameterSet trackExtractorPSet = iConfig.getParameter<edm::ParameterSet>("TrackExtractorPSet");
+  std::string trackExtractorName = trackExtractorPSet.getParameter<std::string>("ComponentName");
+  trackDepositExtractor = IsoDepositExtractorFactory::get()->create( trackExtractorName, trackExtractorPSet);
+  LogDebug("MuonRecoTreeUtility");
+  edm::ParameterSet jetExtractorPSet = iConfig.getParameter<edm::ParameterSet>("JetExtractorPSet");
+  std::string jetExtractorName = jetExtractorPSet.getParameter<std::string>("ComponentName");
+  jetDepositExtractor = IsoDepositExtractorFactory::get()->create( jetExtractorName, jetExtractorPSet);
+  LogDebug("MuonRecoTreeUtility");
+  //aaa end
+  //caloDepositExtractor = IsoDepositExtractorFactory::get()->create( calExtractorName, calExtractorPSet);
+  //trackDepositExtractor = IsoDepositExtractorFactory::get()->create(L3IsoTrackCollectionName, trackExtractorPSet);
+  //aaa }
+  
   // start in on the L3 cuts
   std::string L3IsoTrackCutsName = trackCutsPSet.getParameter<std::string>("L3IsoTrackCutsName");
-  if (L3IsoTrackCutsName == "SimpleCuts" && isRecoLevel == false) {
-    L2IsoCalCuts = muonisolation::Cuts(calExtractorPSet);
-    L3IsoTrackCuts = muonisolation::Cuts(trackCutsPSet);
+  if (L3IsoTrackCutsName == "SimpleCuts") { LogDebug("MuonRecoTreeUtility");
+    L2IsoCalCuts = muonisolation::Cuts(caloCutsPSet);  LogDebug("MuonRecoTreeUtility");
+    L3IsoTrackCuts = muonisolation::Cuts(trackCutsPSet);  LogDebug("MuonRecoTreeUtility");
   }
-
+  LogDebug("MuonRecoTreeUtility");
   // Initialize things so that we have an address for root to write things to
   triggerDecisions = 0;
   triggerNames = 0;
@@ -656,8 +675,8 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   l3RecHitsY = new std::map<int,std::vector<double> >;
   l3RecHitsZ = new std::map<int,std::vector<double> >;
   
-  l3CalIsoDeposit = 0;
-  l3TrackIsoDeposit = 0;
+  //l3CalIsoDeposit = 0;
+  //l3TrackIsoDeposit = 0;
   l3IsoTrackDR = 0;
   l3IsoTrackDRMinDelPt = 0;
   
@@ -671,10 +690,10 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   l3QoverpError = 0;
   l3ErrorMatrix = 0;
   
-  indexL2SeedingL3 = 0;
-  indexL3SeededFromL2 = 0;
-  l2SeedsL3 = 0;
-
+  //indexL2SeedingL3 = 0;
+  //indexL3SeededFromL2 = 0;
+  //l2SeedsL3 = 0;
+  LogDebug("MuonRecoTreeUtility");
   muonErrorMatrix = new std::map<int,std::vector<double> >;
 
   l3IsAssociated = 0;
@@ -759,7 +778,7 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   l2Charge = 0;
   l2Chi2 = 0;
   l2Ndof = 0;
-  l2NSeeds = 0;
+  //l2NSeeds = 0;
   l2DetIds = new std::map<int,std::vector<int> >;
   l2SubdetIds = new std::map<int,std::vector<int> >;
   l2Component = new std::map<int,std::vector<int> >;
@@ -770,7 +789,7 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   l2RecHitsY = new std::map<int,std::vector<double> >;
   l2RecHitsZ = new std::map<int,std::vector<double> >;
 
-  l2CalIsoDeposit = 0;
+  //l2CalIsoDeposit = 0;
 
   l2Dsz = 0;
   l2DszError = 0;
@@ -876,15 +895,15 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   edm::Handle<reco::TrackCollection> l2Muons;
   edm::Handle<reco::TrackCollection> l3Muons;
   edm::Handle<reco::TrackCollection> l3MuonTracks;
-  edm::Handle<TrackCandidateCollection> l3MuonCands;
-  edm::Handle<L3MuonTrajectorySeedCollection> l3Seeds; 
+  //edm::Handle<TrackCandidateCollection> l3MuonCands;
+  //edm::Handle<L3MuonTrajectorySeedCollection> l3Seeds; 
 
   iEvent.getByLabel(l1Label,l1Muons);
   iEvent.getByLabel(l2Label,l2Muons);
   iEvent.getByLabel(l3Label,l3Muons);
   iEvent.getByLabel(trackLabel,l3MuonTracks);
-  iEvent.getByLabel(candLabel,l3MuonCands);
-  iEvent.getByLabel(l3SeedCollectionLabel,l3Seeds);
+  //iEvent.getByLabel(candLabel,l3MuonCands);
+  //iEvent.getByLabel(l3SeedCollectionLabel,l3Seeds);
 
   edm::Handle<edm::View<reco::Track> > l2MuonsForAssociation;
   edm::Handle<edm::View<reco::Track> > l3MuonsForAssociation;
@@ -938,31 +957,31 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     nL3TracksFromL2 = -1;
     edm::LogInfo("MuonRecoTreeUtility") << "no l3 tracks";
   }
-  if (!l3MuonCands.failedToGet()) {
-    nL3Cands = l3MuonCands->size();
-  }
-  else {
-    nL3Cands = -1;
-    edm::LogInfo("MuonRecoTreeUtility") << "we have no cands";
-  }
-  if (!l3Seeds.failedToGet()) { // do we have L3 seeds?
-    nL3Seeds = l3Seeds->size();
-  }
-  else {
-    nL3Seeds = -1;
-    edm::LogInfo("MuonRecoTreeUtility") << "We have no seeds";
-  }
+  //   if (!l3MuonCands.failedToGet()) {
+  //     nL3Cands = l3MuonCands->size();
+  //   }
+  //   else {
+  //     nL3Cands = -1;
+  //     edm::LogInfo("MuonRecoTreeUtility") << "we have no cands";
+  //   }
+  //  if (!l3Seeds.failedToGet()) { // do we have L3 seeds?
+  //    nL3Seeds = l3Seeds->size();
+  //  }
+  //  else {
+  //    nL3Seeds = -1;
+  //    edm::LogInfo("MuonRecoTreeUtility") << "We have no seeds";
+  //  }
 
   edm::LogInfo("MuonRecoTreeUtility") << "How many L1, L2, L3 do we have? " << nL1 << " " << nL2 << " " << nL3;
 
   //ISO variables go here
-  if(isRecoLevel == false){
-    LogDebug("MuonRecoTreeUtility");
-    caloDepositExtractor->fillVetos(iEvent,iSetup,*l2Muons);
-    trackDepositExtractor->fillVetos(iEvent,iSetup,*l3Muons);
-    
-    edm::LogInfo("MuonRecoTreeUtility") << "vetoe filled";
-  }
+  //aaa if(isRecoLevel == false){
+  LogDebug("MuonRecoTreeUtility");
+  caloDepositExtractor->fillVetos(iEvent,iSetup,*l2Muons);
+  trackDepositExtractor->fillVetos(iEvent,iSetup,*l3Muons);
+  
+  edm::LogInfo("MuonRecoTreeUtility") << "vetoe filled";
+    //aaa }
   LogDebug("MuonRecoTreeUtility");
   reco::IsoDeposit::Vetos trackVetos;
   typedef std::vector< std::pair<reco::TrackRef,reco::IsoDeposit> > MuonsWithDeposits;
@@ -1250,44 +1269,44 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	reco::TrackRef refL2ToMatch(l2Muons, iL2);
         if (refL2FromTrackLinks == refL2ToMatch) {
           // Fill these so we know which L2 muon seeded this L3 muon
-          (*indexL2SeedingL3).push_back(iL2);
-          (*indexL3SeededFromL2).push_back(iL3);
+          //(*indexL2SeedingL3).push_back(iL2);
+          //(*indexL3SeededFromL2).push_back(iL3);
         }
       }
     }
 
     // get the CAL deposits associated with this muon
-    if(isRecoLevel == false){
-      reco::IsoDeposit calDeposit = caloDepositExtractor->deposit(iEvent, iSetup, *refL3);
-      // cutting for the L3 muon cal isolation (just getting the cuts and vetos)
-      muonisolation::Cuts::CutSpec calo_cuts_here = L2IsoCalCuts(refL3->eta());
-      // and deposit for the L3 muon cal isolation
-      double conesize = calo_cuts_here.conesize;
-      (*l3CalIsoDeposit).push_back(calDeposit.depositWithin(conesize));
-      // now for the L3 tracking things
-      reco::IsoDeposit trackDeposit = trackDepositExtractor->deposit(iEvent, iSetup, *refL3);
-      reco::IsoDeposit::const_iterator pixEnd = trackDeposit.end();
-      double dRMinDelPt = 1;
-      double dRMin = 1;
-      double DelPtMin = 999;
-      for (reco::IsoDeposit::const_iterator pix = trackDeposit.begin(); pix != pixEnd; ++pix) {
-	double tempDelphi = pix.phi() - refL3->phi();
-	if (tempDelphi > TMath::Pi()) tempDelphi = (2 * TMath::Pi()) - tempDelphi;
-	double tempdR = sqrt(((pix.eta() - refL3->eta()) * (pix.eta() - refL3->eta())) + (tempDelphi * tempDelphi));
-	double tempPt = pix.value();
-	if (tempdR < dRMin) dRMin = tempdR;
-	if (fabs(refL3->pt() - tempPt) < DelPtMin) {
-	  dRMinDelPt = tempdR;
-	  DelPtMin = fabs(refL3->pt() - tempPt);
-	}
+    //aaa if(isRecoLevel == false){
+    reco::IsoDeposit calDeposit = caloDepositExtractor->deposit(iEvent, iSetup, *refL3);
+    // cutting for the L3 muon cal isolation (just getting the cuts and vetos)
+    muonisolation::Cuts::CutSpec calo_cuts_here = L2IsoCalCuts(refL3->eta());
+    // and deposit for the L3 muon cal isolation
+    double conesize = calo_cuts_here.conesize;
+    (*l3CalIsoDeposit).push_back(calDeposit.depositWithin(conesize));
+    // now for the L3 tracking things
+    reco::IsoDeposit trackDeposit = trackDepositExtractor->deposit(iEvent, iSetup, *refL3);
+    reco::IsoDeposit::const_iterator pixEnd = trackDeposit.end();
+    double dRMinDelPt = 1;
+    double dRMin = 1;
+    double DelPtMin = 999;
+    for (reco::IsoDeposit::const_iterator pix = trackDeposit.begin(); pix != pixEnd; ++pix) {
+      double tempDelphi = pix.phi() - refL3->phi();
+      if (tempDelphi > TMath::Pi()) tempDelphi = (2 * TMath::Pi()) - tempDelphi;
+      double tempdR = sqrt(((pix.eta() - refL3->eta()) * (pix.eta() - refL3->eta())) + (tempDelphi * tempDelphi));
+      double tempPt = pix.value();
+      if (tempdR < dRMin) dRMin = tempdR;
+      if (fabs(refL3->pt() - tempPt) < DelPtMin) {
+	dRMinDelPt = tempdR;
+	DelPtMin = fabs(refL3->pt() - tempPt);
       }
-      (*l3IsoTrackDR).push_back(dRMin);
-      (*l3IsoTrackDRMinDelPt).push_back(dRMinDelPt);
-      trackVetos.push_back(trackDeposit.veto());
-      const muonisolation::Cuts::CutSpec & trackCut = L3IsoTrackCuts(refL3->eta());
-      // get the Tracking deposits for our muon
-      (*l3TrackIsoDeposit).push_back(trackDeposit.depositWithin(trackCut.conesize, trackVetos));
     }
+    (*l3IsoTrackDR).push_back(dRMin);
+    (*l3IsoTrackDRMinDelPt).push_back(dRMinDelPt);
+    trackVetos.push_back(trackDeposit.veto());
+    const muonisolation::Cuts::CutSpec & trackCut = L3IsoTrackCuts(refL3->eta());
+    // get the Tracking deposits for our muon
+    (*l3TrackIsoDeposit).push_back(trackDeposit.depositWithin(trackCut.conesize, trackVetos));
+    //aaa }
     bool associated = false;
     // With the detector-level things filled, time to start doing the associations to sim
     int sim_index = 0;
@@ -1801,15 +1820,15 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     (*l2RecHitsY).insert(std::make_pair(iL2,*yForThisL2));
     (*l2RecHitsZ).insert(std::make_pair(iL2,*zForThisL2));
 
-    int l3_seed_counter = 0;
-    if (!l3Seeds.failedToGet()) { // did we get our collection?
-      for(L3MuonTrajectorySeedCollection::const_iterator l3Seed = l3Seeds->begin(); l3Seed != l3Seeds->end(); ++l3Seed) {
-	reco::TrackRef tmpL2 = l3Seed->l2Track();
-	if (tmpL2 == refL2) l3_seed_counter++;
-      }
-    }
-    else l3_seed_counter = -1;
-    (*l2NSeeds).push_back(l3_seed_counter);
+//     int l3_seed_counter = 0;
+//     if (!l3Seeds.failedToGet()) { // did we get our collection?
+//       for(L3MuonTrajectorySeedCollection::const_iterator l3Seed = l3Seeds->begin(); l3Seed != l3Seeds->end(); ++l3Seed) {
+// 	reco::TrackRef tmpL2 = l3Seed->l2Track();
+// 	if (tmpL2 == refL2) l3_seed_counter++;
+//       }
+//     }
+//     else l3_seed_counter = -1;
+//     (*l2NSeeds).push_back(l3_seed_counter);
 
     idsForThisL2->clear();
     subidsForThisL2->clear();
@@ -1822,11 +1841,11 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     nMuHitsForThisL2 = 0;
 
     // Determine whether this L2 muon seeds L3
-    int seedsL3 = 0;
-    for (unsigned int i = 0; i < indexL2SeedingL3->size(); i++) {
-      if (iL2 == indexL2SeedingL3->at(i)) seedsL3 = 1;
-    }
-    (*l2SeedsL3).push_back(seedsL3);
+//     int seedsL3 = 0;
+//     for (unsigned int i = 0; i < indexL2SeedingL3->size(); i++) {
+//       if (iL2 == indexL2SeedingL3->at(i)) seedsL3 = 1;
+//     }
+//     (*l2SeedsL3).push_back(seedsL3);
 
     // Find the correct L1 muon using TrajectorySeeds.
     if(isRecoLevel == false){
@@ -1843,12 +1862,12 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     }
     // get the Calorimeter isolation deposits for this L2 muon
     if(isRecoLevel == false){
-      reco::IsoDeposit calDeposit = caloDepositExtractor->deposit(iEvent, iSetup, *refL2);
+      //reco::IsoDeposit calDeposit = caloDepositExtractor->deposit(iEvent, iSetup, *refL2);
       // cutting for the L2 muon isolation
-      muonisolation::Cuts::CutSpec calo_cuts_here = L2IsoCalCuts(refL2->eta());
+      //muonisolation::Cuts::CutSpec calo_cuts_here = L2IsoCalCuts(refL2->eta());
       // and deposit for the L2 muon isolation
-      double conesize = calo_cuts_here.conesize;
-      (*l2CalIsoDeposit).push_back(calDeposit.depositWithin(conesize));
+      //double conesize = calo_cuts_here.conesize;
+      //(*l2CalIsoDeposit).push_back(calDeposit.depositWithin(conesize));
     }
     // With the detector-level things filled, time to start doing the associations to sim
     bool associated = false;
@@ -2260,9 +2279,9 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   l3QoverpError->clear();
   l3ErrorMatrix->clear();
 
-  l2SeedsL3->clear();
-  indexL2SeedingL3->clear();
-  indexL3SeededFromL2->clear();
+  //l2SeedsL3->clear();
+  //indexL2SeedingL3->clear();
+  //indexL3SeededFromL2->clear();
 
   muonErrorMatrix->clear();
 
@@ -2352,14 +2371,14 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   l2SubdetIds->clear();
   l2Component->clear();
   l2NMuHits->clear();
-  l2NSeeds->clear();
+  //l2NSeeds->clear();
   l2MuStationNumber->clear();
   l2RecHitsStatus->clear();
   l2RecHitsX->clear();
   l2RecHitsY->clear();
   l2RecHitsZ->clear();
 
-  l2CalIsoDeposit->clear();
+  //l2CalIsoDeposit->clear();
 
   l2Dsz->clear();
   l2DszError->clear();
@@ -2484,7 +2503,7 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigData->Branch("nL3",&nL3,"nL3/I");
   MuTrigData->Branch("nL3TracksFromL2",&nL3TracksFromL2,"nL3TracksFromL2/I");
   MuTrigData->Branch("nL3Cands",&nL3Cands,"nL3Cands/I");
-  MuTrigData->Branch("nL3Seeds",&nL3Seeds,"nL3Seeds/I");
+  //MuTrigData->Branch("nL3Seeds",&nL3Seeds,"nL3Seeds/I");
   // L3 muon information: the basics
   MuTrigData->Branch("l3P",&l3P);
   MuTrigData->Branch("l3Px",&l3Px);
@@ -2528,9 +2547,9 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigData->Branch("l3RecHitsY",&l3RecHitsY);
   MuTrigData->Branch("l3RecHitsZ",&l3RecHitsZ);
   // Indices for L3<->L2
-  MuTrigData->Branch("indexL2SeedingL3",&indexL2SeedingL3);
-  MuTrigData->Branch("indexL3SeededFromL2",&indexL3SeededFromL2);
-  MuTrigData->Branch("l2SeedsL3",&l2SeedsL3);
+  //MuTrigData->Branch("indexL2SeedingL3",&indexL2SeedingL3);
+  //MuTrigData->Branch("indexL3SeededFromL2",&indexL3SeededFromL2);
+  //MuTrigData->Branch("l2SeedsL3",&l2SeedsL3);
 
   // The muon error matrix
   MuTrigData->Branch("muonErrorMatrix",&muonErrorMatrix);
@@ -2587,9 +2606,9 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigData->Branch("l2Charge",&l2Charge);
   MuTrigData->Branch("l2Chi2",&l2Chi2);
   MuTrigData->Branch("l2Ndof",&l2Ndof);
-  MuTrigData->Branch("l2NSeeds",&l2NSeeds);
+  //MuTrigData->Branch("l2NSeeds",&l2NSeeds);
   // L2 Muon Isolation quantities
-  MuTrigData->Branch("l2CalIsoDeposit",&l2CalIsoDeposit);
+  //MuTrigData->Branch("l2CalIsoDeposit",&l2CalIsoDeposit);
   // L2 Muon Track fitting parameters (with phi already declared above)
   MuTrigData->Branch("l2Dsz",&l2Dsz);
   MuTrigData->Branch("l2DszError",&l2DszError);
@@ -2667,7 +2686,7 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigMC->Branch("nL3",&nL3,"nL3/I");
   MuTrigMC->Branch("nL3TracksFromL2",&nL3TracksFromL2,"nL3TracksFromL2/I");
   MuTrigMC->Branch("nL3Cands",&nL3Cands,"nL3Cands/I");
-  MuTrigMC->Branch("nL3Seeds",&nL3Seeds,"nL3Seeds/I");
+  //MuTrigMC->Branch("nL3Seeds",&nL3Seeds,"nL3Seeds/I");
   // L3 muon information: the basics
   MuTrigMC->Branch("l3P",&l3P);
   MuTrigMC->Branch("l3Px",&l3Px);
@@ -2711,9 +2730,9 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigMC->Branch("l3RecHitsY",&l3RecHitsY);
   MuTrigMC->Branch("l3RecHitsZ",&l3RecHitsZ);
   // Indices for L3<->L2
-  MuTrigMC->Branch("indexL2SeedingL3",&indexL2SeedingL3);
-  MuTrigMC->Branch("indexL3SeededFromL2",&indexL3SeededFromL2);
-  MuTrigMC->Branch("l2SeedsL3",&l2SeedsL3);
+  //MuTrigMC->Branch("indexL2SeedingL3",&indexL2SeedingL3);
+  //MuTrigMC->Branch("indexL3SeededFromL2",&indexL3SeededFromL2);
+  //MuTrigMC->Branch("l2SeedsL3",&l2SeedsL3);
 
   // The muon error matrix
   MuTrigMC->Branch("muonErrorMatrix",&muonErrorMatrix);
@@ -2770,7 +2789,7 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigMC->Branch("l2Charge",&l2Charge);
   MuTrigMC->Branch("l2Chi2",&l2Chi2);
   MuTrigMC->Branch("l2Ndof",&l2Ndof);
-  MuTrigMC->Branch("l2NSeeds",&l2NSeeds);
+  //MuTrigMC->Branch("l2NSeeds",&l2NSeeds);
   MuTrigMC->Branch("l2DetIds",&l2DetIds);
   MuTrigMC->Branch("l2SubdetIds",&l2SubdetIds);
   MuTrigMC->Branch("l2Component",&l2Component);
@@ -2781,7 +2800,7 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigMC->Branch("l2RecHitsY",&l2RecHitsY);
   MuTrigMC->Branch("l2RecHitsZ",&l2RecHitsZ);
   // L2 Muon Isolation quantities
-  MuTrigMC->Branch("l2CalIsoDeposit",&l2CalIsoDeposit);
+  //MuTrigMC->Branch("l2CalIsoDeposit",&l2CalIsoDeposit);
   // L2 Muon Track fitting parameters (with phi already declared above)
   MuTrigMC->Branch("l2Dsz",&l2Dsz);
   MuTrigMC->Branch("l2DszError",&l2DszError);

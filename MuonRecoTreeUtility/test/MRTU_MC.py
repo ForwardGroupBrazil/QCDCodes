@@ -53,7 +53,7 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.123 $'),
+    version = cms.untracked.string('$Revision: 1.1 $'),
     annotation = cms.untracked.string('MHTU nevts:100'),
     name = cms.untracked.string('PyReleaseValidation')
 )
@@ -99,9 +99,7 @@ process.out_step = cms.EndPath(process.output)
 # Schedule definition
 #process.schedule = cms.Schedule()
 process.schedule = cms.Schedule(process.L1simulation_step)
-#bbb process.schedule.extend(process.HLTriggerFirstPath)
-#bbb process.schedule.extend([process.HLTriggerFinalPath,process.HLTAnalyzerEndpath])
-#process.schedule.extend(process.HLTSchedule)
+
 ##
 process.raw2digi_step = cms.Path(process.RawToDigi)
 process.reconstruction_step = cms.Path(process.reconstruction)
@@ -115,21 +113,5 @@ def customise(process):
      insertMHTU(process)
      return (process)
 
-## def customise(process):
-##     process.load('Workspace.MuonHLTTreeUtility.muonHLTTreeUtility_cff')
-##     from Workspace.MuonHLTTreeUtility.muonHLTTreeUtility_cff import muonHLTrecoSequence
-##     process.muonHLTreco = muonHLTrecoSequence(process)
-##     process.MHTU_Path+=process.muonHLTreco
-##     import FWCore.ParameterSet.SequenceTypes
-##     for p in process.schedule:
-##         if (p.__class__==FWCore.ParameterSet.SequenceTypes.EndPath):
-##             process.schedule.insert(process.schedule.index(p), process.MHTU_Path )
-##             break
-##     process.schedule.append( process.MHTU_EndPath )
-##     ##actually do the --no_output option
-##     if (hasattr(process,"out_step")):
-##         process.schedule.remove(process.out_step)
-##     return (process) 
-# End of customisation function definition
 
 process = customise(process)
