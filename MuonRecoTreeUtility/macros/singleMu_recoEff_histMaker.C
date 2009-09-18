@@ -7,7 +7,8 @@
 #include <TStopwatch.h>
 
 //int ScanTree ( TTree* tree) {
-int ScanTree ( TTree* tree, char *fileName) {
+//int ScanTree ( TTree* tree, char *fileName) {
+int ScanTree ( TChain* tree, char *fileName) {
 
   // This reads in the tree.  As you might imagine.
   Init(tree);
