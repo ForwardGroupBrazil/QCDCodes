@@ -7,19 +7,19 @@
 #include <TStopwatch.h>
 
 //int ScanTree ( TTree* tree) {
-int ScanTree ( TTree* tree, char *fileName) {
+int ScanTreeAlgo ( TTree* tree, char *fileName) {
 
   // This reads in the tree.  As you might imagine.
   Init(tree);
-  TFile *histFile = new TFile(fileName,"RECREATE");
-  TDirectory *histDir = histFile->mkdir("eff_hist");
+  TFile *histFileAlgo = new TFile(fileName,"RECREATE");
+  TDirectory *histDirAlgo = histFileAlgo->mkdir("algo_hist");
   TStopwatch timer;
   timer.Start();
 
   // Declare the usual constants
   double pi = 3.141592653;
 
-  histDir->cd();
+  histDirAlgo->cd();
 
   int nPtBins = 19;
   Double_t pt_Edges[20] = {0, 5, 7, 9, 11, 13, 15, 18, 21, 24, 27, 30, 34, 38, 42, 50, 60, 70, 80, 100};
@@ -303,8 +303,9 @@ int ScanTree ( TTree* tree, char *fileName) {
   divide_histos_and_errors(l3TkOverSimEtaEffNum, l3OverSimEtaEffDenom, l3TkOverSimEtaEff);  
   divide_TH2_histos_and_errors(l3TkOverSimPtEtaEffNum, l3OverSimPtEtaEffDenom, l3TkOverSimPtEtaEff);  
 
-  histDir->Write("",TObject::kOverwrite);
-  histFile->Close();  
+  histDirAlgo->Write("",TObject::kOverwrite);
+  histFileAlgo->Close();  
+
   return 0;
 }
 

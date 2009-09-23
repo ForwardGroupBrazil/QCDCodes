@@ -7,12 +7,12 @@
 #include <TStopwatch.h>
 
 //int ScanTree ( TTree* tree) {
-int ScanTree ( TTree* tree, char *fileName) {
+int ScanTreeTrig ( TTree* tree, char *fileName) {
 
   // This reads in the tree.  As you might imagine.
   Init(tree);
-  TFile *histFile = new TFile(fileName,"RECREATE");
-  TDirectory *histDir = histFile->mkdir("eff_hist");
+  TFile *histFileAlgo = new TFile(fileName,"UPDATE");
+  TDirectory *histDirAlgo = histFileAlgo->mkdir("trig_hist");
   TStopwatch timer;
   timer.Start();
 
@@ -23,7 +23,7 @@ int ScanTree ( TTree* tree, char *fileName) {
   vector<int> *simUsedByL2 = new vector<int>;
   vector<int> *simUsedByL3 = new vector<int>;
 
-  histDir->cd();
+  histDirAlgo->cd();
 
   int nPtBins = 19;
   Double_t pt_Edges[20] = {0, 5, 7, 9, 11, 13, 15, 18, 21, 24, 27, 30, 34, 38, 42, 50, 60, 70, 80, 100};
@@ -139,9 +139,11 @@ int ScanTree ( TTree* tree, char *fileName) {
 
       //            cout << "loop over l3" << endl;
       for (int iL3 = 0; iL3 < nL3; iL3++) {
-	if ((*l3Pt).at(iL3) > 9 && (*l3Eta).at(iL3) > -2.5 && (*l3Eta).at(iL3)       if (temp_delphi > 3.141592653) {
-	temp_delphi = (2 * 3.141592653) - temp_delphi;
-      }< 2.5) {
+	//	if ((*l3Pt).at(iL3) > 9 && (*l3Eta).at(iL3) > -2.5 && (*l3Eta).at(iL3)       if (temp_delphi > 3.141592653) {
+	      //	temp_delphi = (2 * 3.141592653) - temp_delphi;
+	//      }< 2.5) {
+	//if (temp_delphi > 3.141592653) temp_delphi = (2 * 3.141592653)-temp_delphi;
+	if ((*l3Pt).at(iL3) > 9 && (*l3Eta).at(iL3) > -2.5 && (*l3Eta).at(iL3) < 2.5) {
 	  //	  cout << "trying to get l2 seed for l3" << endl;
 	  int indexL2 = (*indexL2SeedingL3).at(iL3);
 	  //	  cout << "got it" << endl;
@@ -199,8 +201,9 @@ int ScanTree ( TTree* tree, char *fileName) {
   divide_histos_and_errors(l1OverXPtEffNum,lXOverSimPtEffDenom,l1OverSimPtEff);
   divide_TH2_histos_and_errors(l1OverXPtEtaEffNum,lXOverSimPtEtaEffDenom,l1OverSimPtEtaEff);
   
-  histDir->Write("",TObject::kOverwrite);
-  
+  histDirAlgo->Write("",TObject::kOverwrite);
+  histFileAlgo->Close();  
+
   return 0;
 }
 
