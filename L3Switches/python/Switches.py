@@ -223,8 +223,8 @@ def makeOIHit():
                        )
                    ),
         UpdateState = cms.bool(True),
-        SelectState = cms.bool(True),
-        MaxChi2 = cms.double(15.0),
+        SelectState = cms.bool(False),
+        MaxChi2 = cms.double(40.0),
         UseVertexState = cms.bool(True),
         Propagator = cms.string('SmartPropagatorAnyOpposite'),
         SigmaZ = cms.double(25.0),
@@ -289,20 +289,23 @@ def SwitchToComboSeeds(process):
     process.l3SeedCombination = cms.EDProducer(
         "L3MuonTrajectorySeedCombiner",
         labels = cms.VInputTag(
-           cms.InputTag("hltTrajSeedIOHit"),
-           cms.InputTag("hltTrajSeedOIState"),
-           cms.InputTag("hltTrajSeedOIHit")
+           cms.InputTag("hltL3TrajSeedIOHit"),
+           cms.InputTag("hltL3TrajSeedOIState"),
+           cms.InputTag("hltL3TrajSeedOIHit")
           )
         )
-    SwitchToBaselinePP(process)
-    process.hltTrajSeedIOHit = process.hltL3TrajectorySeed.clone()
     SwitchToOIState(process)
-    process.hltTrajSeedOIState = process.hltL3TrajectorySeed.clone()
+    process.hltL3TrajSeedOIState = process.hltL3TrajectorySeed.clone()
     SwitchToOIHit(process)
-    process.hltTrajSeedOIHit = process.hltL3TrajectorySeed.clone()
+    process.hltL3TrajSeedOIHit = process.hltL3TrajectorySeed.clone()
+    process.hltL3TrajSeedOIHit.TSGFromCombinedHits = makeDualByIterativeOIHit()
+    process.hltL3TrajSeedOIHit.tkSeedGenerator = 'TSGFromCombinedHits'
+    SwitchToBaselinePP(process)
+    process.hltL3TrajSeedIOHit = process.hltL3TrajectorySeed.clone()
+    process.hltL3TrajSeedIOHit.TSGFromCombinedHits = makeDualByIterative()
 
     process.hltL3TrajectorySeed = process.l3SeedCombination
-    process.HLTL3muonrecoSequence.replace(process.hltL3TrajectorySeed, process.hltTrajSeedIOHit + process.hltTrajSeedOIState + process.hltTrajSeedOIHit + process.hltL3TrajectorySeed)
+#    process.HLTL3muonrecoSequence.replace(process.hltL3TrajectorySeed, process.hltTrajSeedIOHit + process.hltTrajSeedOIState + process.hltTrajSeedOIHit + process.hltL3TrajectorySeed)
 
 ################ iterative tracking version #########
 
@@ -313,7 +316,17 @@ def makeDualByIterative():
         PSetNames = cms.vstring('skipTSG','iterativeTSG'),
         skipTSG = cms.PSet(    ),
         iterativeTSG = makeBaselinePP(),
-        L3TkCollectionA = cms.InputTag('hltL3TkTracksFromL2OI'),
+        L3TkCollectionA = cms.InputTag('l3TkFromL2OICombination'),
+        )
+
+def makeDualByIterativeOIHit():
+##    return makeBaseline()
+    return cms.PSet (
+        ComponentName = cms.string('DualByL2TSG'),
+        PSetNames = cms.vstring('skipTSG','iterativeTSG'),
+        skipTSG = cms.PSet(    ),
+        iterativeTSG = makeOIHit(),
+        L3TkCollectionA = cms.InputTag('hltL3TkTracksFromL2OIState'),
         )
 
 def SwitchToIterative(process):
@@ -339,6 +352,14 @@ def SwitchToIterative(process):
     process.hltL3TkTracksFromL2IO = process.hltL3TkTracksFromL2.clone()
     process.hltL3TkTracksFromL2IO.src = "hltL3TrackCandidateFromL2IO"
 
+    process.l3TkFromL2OICombination = cms.EDProducer(
+        "L3TrackCombiner",
+        labels = cms.VInputTag(
+        cms.InputTag("hltL3TkTracksFromL2OI"),
+        )
+        )
+
+
     process.l3TkFromL2Combination = cms.EDProducer(
         "L3TrackCombiner",
         labels = cms.VInputTag(
@@ -349,4 +370,77 @@ def SwitchToIterative(process):
 
     process.hltL3TkTracksFromL2 = process.l3TkFromL2Combination
 
-    process.HLTL3muonrecoNocandSequence.replace(process.hltL3TkTracksFromL2,process.hltL3TkTracksFromL2OI * process.hltL3TrajSeedIOHit + process.hltL3TrackCandidateFromL2IO + process.hltL3TkTracksFromL2IO + process.hltL3TkTracksFromL2)
+    process.HLTL3muonrecoNocandSequence.replace(process.hltL3TkTracksFromL2,process.hltL3TkTracksFromL2OI * process.l3TkFromL2OICombination * process.hltL3TrajSeedIOHit + process.hltL3TrackCandidateFromL2IO + process.hltL3TkTracksFromL2IO + process.hltL3TkTracksFromL2)
+
+
+def SwitchToIterative3(process):
+    SwitchToComboSeeds(process)
+        
+    process.hltL3TrackCandidateFromL2IOHit = process.hltL3TrackCandidateFromL2.clone()
+    process.hltL3TrackCandidateFromL2IOHit.src = "hltL3TrajSeedIOHit"
+
+    process.hltL3TrackCandidateFromL2OIHit = process.hltL3TrackCandidateFromL2.clone()
+    process.hltL3TrackCandidateFromL2OIHit.src = "hltL3TrajSeedOIHit"
+
+    process.hltL3TrackCandidateFromL2OIState = process.hltL3TrackCandidateFromL2.clone()
+    process.hltL3TrackCandidateFromL2OIState.src = "hltL3TrajSeedOIState"
+
+    process.l3TkCandFromL2Combination = cms.EDProducer(
+        "L3TrackCandCombiner",
+        labels = cms.VInputTag(
+        cms.InputTag("hltL3TrackCandidateFromL2IOHit"),
+        cms.InputTag("hltL3TrackCandidateFromL2OIHit"),
+        cms.InputTag("hltL3TrackCandidateFromL2OIState"),
+        )
+        )
+    
+    process.hltL3TkTracksFromL2IOHit = process.hltL3TkTracksFromL2.clone()
+    process.hltL3TkTracksFromL2IOHit.src = "hltL3TrackCandidateFromL2IOHit"
+
+    process.hltL3TkTracksFromL2OIHit = process.hltL3TkTracksFromL2.clone()
+    process.hltL3TkTracksFromL2OIHit.src = "hltL3TrackCandidateFromL2OIHit"
+    
+    process.hltL3TkTracksFromL2OIState = process.hltL3TkTracksFromL2.clone()
+    process.hltL3TkTracksFromL2OIState.src = "hltL3TrackCandidateFromL2OIState"
+
+    process.l3TkFromL2OICombination = cms.EDProducer(
+        "L3TrackCombiner",
+        labels = cms.VInputTag(
+        cms.InputTag("hltL3TkTracksFromL2OIHit"),
+        cms.InputTag("hltL3TkTracksFromL2OIState")
+        )
+        )
+    
+    process.l3TkFromL2Combination = cms.EDProducer(
+        "L3TrackCombiner",
+        labels = cms.VInputTag(
+        cms.InputTag("hltL3TkTracksFromL2IOHit"),
+        cms.InputTag("hltL3TkTracksFromL2OIHit"),
+        cms.InputTag("hltL3TkTracksFromL2OIState")
+        )
+        )
+
+    process.hltL3TkTracksFromL2 = process.l3TkFromL2Combination
+    process.hltL3TrackCandidateFromL2 = process.l3TkCandFromL2Combination
+
+    process.HLTL3muonTkCandidateSequence = cms.Sequence(
+    process.HLTDoLocalPixelSequence +
+    process.HLTDoLocalStripSequence +
+    process.hltL3TrajSeedOIState +
+    process.hltL3TrackCandidateFromL2OIState +
+    process.hltL3TkTracksFromL2OIState *
+    process.hltL3TrajSeedOIHit +
+    process.hltL3TrackCandidateFromL2OIHit +
+    process.hltL3TkTracksFromL2OIHit +
+    process.l3TkFromL2OICombination *
+    process.hltL3TrajSeedIOHit +
+    process.hltL3TrackCandidateFromL2IOHit +
+    process.hltL3TkTracksFromL2IOHit +    
+    process.hltL3TrajectorySeed +
+    process.hltL3TrackCandidateFromL2
+    )
+
+    process.HLTL3muonrecoNocandSequence = cms.Sequence(
+    process.HLTL3muonTkCandidateSequence +
+    process.hltL3TkTracksFromL2 +
+    process.hltL3Muons )
