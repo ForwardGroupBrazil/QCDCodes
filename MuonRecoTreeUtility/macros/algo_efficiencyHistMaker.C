@@ -319,10 +319,12 @@ void divide_histos_and_errors(TH1F* HIS1, TH1F* HIS2, TH1F* HIS3) {
     Float_t content_2 = HIS2->GetBinContent(ibins1);
     Float_t error_1 = HIS1->GetBinError(ibins1);
     Float_t error_2 = HIS2->GetBinError(ibins1);
-    
+    Float_t eff =  (content_2 != 0) ? content_1/content_2 : 0.;    
     if (content_2 != 0) {
-      HIS3->SetBinContent(ibins1, content_1/content_2);
-      HIS3->SetBinError(ibins1, error_1/content_2);
+      HIS3->SetBinContent(ibins1, eff);
+      Float_t err = content_2 && eff <= 1 ? sqrt(eff*(1-eff)/content_2) : 0.;
+      //HIS3->SetBinError(ibins1, error_1/content_2);
+      HIS3->SetBinError(ibins1, err);
     }
   }
 }
@@ -339,10 +341,12 @@ void divide_TH2_histos_and_errors(TH2F* HIS1, TH2F* HIS2, TH2F* HIS3) {
       Float_t content_2 = HIS2->GetBinContent(ibinsX, ibinsY);
       Float_t error_1 = HIS1->GetBinError(ibinsX, ibinsY);
       Float_t error_2 = HIS2->GetBinError(ibinsX, ibinsY);
-      
+      Float_t eff =  (content_2 != 0) ? content_1/content_2 : 0.;
       if (content_2 != 0) {
-	HIS3->SetBinContent(ibinsX, ibinsY, content_1/content_2);
-	HIS3->SetBinError(ibinsX, ibinsY, error_1/content_2);
+	HIS3->SetBinContent(ibinsX, ibinsY, eff);
+	Float_t err = content_2 && eff <= 1 ? sqrt(eff*(1-eff)/content_2) : 0.;
+	//HIS3->SetBinError(ibinsX, ibinsY, error_1/content_2);
+	HIS3->SetBinError(ibinsX, ibinsY, err);
       }
       else {
 	HIS3->SetBinContent(ibinsX, ibinsY, 0);
