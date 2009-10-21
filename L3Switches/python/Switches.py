@@ -298,12 +298,13 @@ def SwitchToComboSeeds(process):
     process.hltL3TrajSeedOIState = process.hltL3TrajectorySeed.clone()
     SwitchToOIHit(process)
     process.hltL3TrajSeedOIHit = process.hltL3TrajectorySeed.clone()
-    process.hltL3TrajSeedOIHit.TSGFromCombinedHits = makeDualByIterativeOIHit()
-    process.hltL3TrajSeedOIHit.tkSeedGenerator = 'TSGFromCombinedHits'
-    SwitchToBaselinePP(process)
+    process.hltL3TrajSeedOIHit.TSGFromPropagation = makeDualByIterativeOIHit()
+    process.hltL3TrajSeedOIHit.tkSeedGenerator = 'TSGFromPropagation'
+    SwitchToBaseline(process)
     process.hltL3TrajSeedIOHit = process.hltL3TrajectorySeed.clone()
     process.hltL3TrajSeedIOHit.TSGFromCombinedHits = makeDualByIterative()
-
+    process.hltL3TrajSeedIOHit.tkSeedGenerator = 'TSGFromCombinedHits'
+    
     process.hltL3TrajectorySeed = process.l3SeedCombination
 #    process.HLTL3muonrecoSequence.replace(process.hltL3TrajectorySeed, process.hltTrajSeedIOHit + process.hltTrajSeedOIState + process.hltTrajSeedOIHit + process.hltL3TrajectorySeed)
 
@@ -315,7 +316,7 @@ def makeDualByIterative():
         ComponentName = cms.string('DualByL2TSG'),
         PSetNames = cms.vstring('skipTSG','iterativeTSG'),
         skipTSG = cms.PSet(    ),
-        iterativeTSG = makeBaselinePP(),
+        iterativeTSG = makeBaseline(),
         L3TkCollectionA = cms.InputTag('l3TkFromL2OICombination'),
         )
 
@@ -326,7 +327,8 @@ def makeDualByIterativeOIHit():
         PSetNames = cms.vstring('skipTSG','iterativeTSG'),
         skipTSG = cms.PSet(    ),
         iterativeTSG = makeOIHit(),
-        L3TkCollectionA = cms.InputTag('hltL3TkTracksFromL2OIState'),
+        #aaa   L3TkCollectionA = cms.InputTag('hltL3TkTracksFromL2OIState'),
+        L3TkCollectionA = cms.InputTag('hltL3MuonsOIState'),
         )
 
 def SwitchToIterative(process):
@@ -403,11 +405,22 @@ def SwitchToIterative3(process):
     process.hltL3TkTracksFromL2OIState = process.hltL3TkTracksFromL2.clone()
     process.hltL3TkTracksFromL2OIState.src = "hltL3TrackCandidateFromL2OIState"
 
+    process.hltL3MuonsOIState = process.hltL3Muons.clone()
+    process.hltL3MuonsOIState.L3TrajBuilderParameters.tkTrajLabel = "hltL3TkTracksFromL2OIState"
+
+    process.hltL3MuonsOIHit = process.hltL3Muons.clone()
+    process.hltL3MuonsOIHit.L3TrajBuilderParameters.tkTrajLabel = "hltL3TkTracksFromL2OIHit"
+
+    process.hltL3MuonsIOHit = process.hltL3Muons.clone()
+    process.hltL3MuonsIOHit.L3TrajBuilderParameters.tkTrajLabel = "hltL3TkTracksFromL2IOHit"
+
     process.l3TkFromL2OICombination = cms.EDProducer(
         "L3TrackCombiner",
         labels = cms.VInputTag(
-        cms.InputTag("hltL3TkTracksFromL2OIHit"),
-        cms.InputTag("hltL3TkTracksFromL2OIState")
+        #aaa cms.InputTag("hltL3TkTracksFromL2OIHit"),
+        #aaa cms.InputTag("hltL3TkTracksFromL2OIState")
+        cms.InputTag("hltL3MuonsOIState"),
+        cms.InputTag("hltL3MuonsOIHit"),
         )
         )
     
@@ -420,22 +433,39 @@ def SwitchToIterative3(process):
         )
         )
 
+    process.l3MuonsCombination = cms.EDProducer(
+        "L3TrackLinksCombiner",
+        labels = cms.VInputTag(
+        cms.InputTag("hltL3MuonsOIState"),
+        cms.InputTag("hltL3MuonsOIHit"),
+        cms.InputTag("hltL3MuonsIOHit")
+        )
+        )
+
     process.hltL3TkTracksFromL2 = process.l3TkFromL2Combination
     process.hltL3TrackCandidateFromL2 = process.l3TkCandFromL2Combination
+#    process.hltL3Muons = process.l3MuonsCombination
 
     process.HLTL3muonTkCandidateSequence = cms.Sequence(
     process.HLTDoLocalPixelSequence +
     process.HLTDoLocalStripSequence +
     process.hltL3TrajSeedOIState +
     process.hltL3TrackCandidateFromL2OIState +
-    process.hltL3TkTracksFromL2OIState *
+    process.hltL3TkTracksFromL2OIState +
+#
+    process.hltL3MuonsOIState +
     process.hltL3TrajSeedOIHit +
     process.hltL3TrackCandidateFromL2OIHit +
     process.hltL3TkTracksFromL2OIHit +
-    process.l3TkFromL2OICombination *
-    process.hltL3TrajSeedIOHit +
-    process.hltL3TrackCandidateFromL2IOHit +
-    process.hltL3TkTracksFromL2IOHit +    
+
+ #
+    process.hltL3MuonsOIHit +
+    process.l3TkFromL2OICombination +
+     process.hltL3TrajSeedIOHit +
+     process.hltL3TrackCandidateFromL2IOHit +
+     process.hltL3TkTracksFromL2IOHit +
+ #    process.hltL3MuonsIOHit +  
+    
     process.hltL3TrajectorySeed +
     process.hltL3TrackCandidateFromL2
     )
