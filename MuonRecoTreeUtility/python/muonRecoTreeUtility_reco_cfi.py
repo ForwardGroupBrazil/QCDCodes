@@ -67,10 +67,11 @@ hltMuonTreeMaker = cms.EDAnalyzer(
                                  0.1)
         ),
     IDconverttoBinNum = cms.PSet(
-        ranges = cms.VPSet(cms.PSet(
-            pdgIDs = cms.vint32(0),
-            label = cms.string('ID=0')
-        ), 
+        ranges = cms.VPSet(
+            cms.PSet(
+                pdgIDs = cms.vint32(0),
+                label = cms.string('ID=0')
+            ), 
             cms.PSet(
                 pdgIDs = cms.vint32(211, -211),
                 label = cms.string('#pi+/-')
@@ -244,5 +245,44 @@ hltMuonTreeMaker = cms.EDAnalyzer(
 
 
     TimerLabel = cms.InputTag("hltTimer"),
+
+    tpSelector_primary = cms.PSet(
+       src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
+       pdgId = cms.vint32(13, -13),
+       tip = cms.double(3.5),
+       lip = cms.double(30.0),
+       minHit = cms.int32(0),
+       ptMin = cms.double(1.5),
+       minRapidity = cms.double(-2.5),
+       maxRapidity = cms.double(2.5),
+       signalOnly = cms.bool(True),
+       chargedOnly = cms.bool(True)
+       ),
+
+    tpSelector_silicon = cms.PSet(
+       src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
+       pdgId = cms.vint32(13, -13),
+       tip = cms.double(120.0),
+       lip = cms.double(300.0),
+       minHit = cms.int32(0),
+       ptMin = cms.double(1.5),
+       minRapidity = cms.double(-2.5),
+       maxRapidity = cms.double(2.5),
+       signalOnly = cms.bool(True),
+       chargedOnly = cms.bool(True)
+       ),
+
+    tpSelector_calConversion = cms.PSet(
+       src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
+       pdgId = cms.vint32(13, -13),
+       tip = cms.double(290.0),
+       lip = cms.double(560.0),
+       minHit = cms.int32(0),
+       ptMin = cms.double(1.5),
+       minRapidity = cms.double(-999.5),
+       maxRapidity = cms.double(999.5),
+       signalOnly = cms.bool(True),
+       chargedOnly = cms.bool(True)
+       ),    
 
 )

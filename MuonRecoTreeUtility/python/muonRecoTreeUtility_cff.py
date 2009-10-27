@@ -37,7 +37,7 @@ mytrackingParticles.vertexDistanceCut = 1000
 import Validation.RecoTrack.cutsTPEffic_cfi
 tpMuon = Validation.RecoTrack.cutsTPEffic_cfi.cutsTPEffic.clone()
 #only muons
-tpMuon.pdgId = cms.vint32(13,-13)
+#aaa tpMuon.pdgId = cms.vint32(13,-13)
 #allows decays in flight
 tpMuon.tip = cms.double(10000.0)
 tpMuon.lip = cms.double(10000.0)
