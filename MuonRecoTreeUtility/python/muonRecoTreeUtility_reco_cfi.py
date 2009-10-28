@@ -134,6 +134,7 @@ hltMuonTreeMaker = cms.EDAnalyzer(
     ),
     triggerResults_ = cms.InputTag("TriggerResults","","HLT"),
     linkLabel = cms.InputTag("globalMuons"),
+    muonLabel = cms.InputTag("muons"),
 
     singleMuNonIsoTriggerName = cms.string('HLT_Mu15'),
     diMuNonIsoTriggerName = cms.string('HLT_DoubleMu3'),

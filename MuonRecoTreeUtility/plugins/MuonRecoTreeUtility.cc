@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.3 2009/09/21 21:03:00 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.4 2009/10/27 17:39:42 aeverett Exp $
 //
 //
 
@@ -108,6 +108,7 @@
 #include "DataFormats/MuonSeed/interface/L2MuonTrajectorySeedCollection.h"
 #include "DataFormats/MuonReco/interface/MuonTrackLinks.h"
 #include "DataFormats/MuonReco/interface/MuonFwd.h"
+#include "DataFormats/MuonReco/interface/Muon.h"
 
 // so that we can use the pt sorting method, we use this:
 #include "SimGeneral/HepPDTRecord/interface/ParticleDataTable.h"
@@ -170,6 +171,7 @@ private:
   // Event-level information
   int RunNumber;
   int EventNumber;  
+  /*
   // Overall MuonHLT execution time, and execution time for each module.
   double totalMuonHLTTime;
   std::map<std::string,double> *muonDigiModuleTimes;
@@ -182,6 +184,8 @@ private:
   std::map<std::string,double> *trackerRecModuleTimes;
   std::map<std::string,double> *caloDigiModuleTimes;
   std::map<std::string,double> *caloRecModuleTimes;
+  */
+  /*
   // Trigger information for the single muon iso and non-iso paths
   // Until they aren't, the level 1 are identical for both...
   int l1SingleMuNonIsoTriggered;
@@ -202,6 +206,7 @@ private:
   int l3DiMuIsoTriggered;
   std::vector<int> *triggerDecisions;
   std::vector<std::string> *triggerNames;
+  */
   // HLT and L1 muon information
   int nL2;
   int nL3;
@@ -436,8 +441,8 @@ private:
   // And that ends the items going into the tree itself.  Now we just need the things 
   // for putting the items into the tree.
   
+  /*
   // Here's where we get the execution time for the modules.
-
   edm::InputTag theTimerLabel;
   std::vector<std::string> theMuonDigiModules;
   std::vector<std::string> theTrackerDigiModules;
@@ -450,12 +455,15 @@ private:
   std::vector<std::string> theMuonL2IsoModules;
   std::vector<std::string> theMuonL3RecModules;
   std::vector<std::string> theMuonL3IsoModules;
-  
+  */
+
   std::string theCategory;
+  /*
   std::string singleMuIsoTriggerName;
   std::string singleMuNonIsoTriggerName;
   std::string diMuIsoTriggerName;
   std::string diMuNonIsoTriggerName; 
+  */
 
   std::string outputFileName;
 
@@ -484,6 +492,7 @@ private:
   edm::ESHandle<TrackAssociatorBase> tkAssociator;
 
   edm::InputTag theLinkLabel;
+  edm::InputTag theMuonLabel;
 
   edm::ESHandle<MagneticField> field;
   edm::ESHandle<HepPDT::ParticleDataTable> fPDGTable;
@@ -580,33 +589,37 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   edm::LogInfo("MuonRecoTreeUtility") << "And onwards...";
 
   // Get our module timing things
-
+  /*
   theTimerLabel=iConfig.getParameter<edm::InputTag>("TimerLabel"); 
   if(isRecoLevel==false) { LogDebug("MuonRecoTreeUtility");
-  edm::ParameterSet ModulesForTiming =  iConfig.getUntrackedParameter<edm::ParameterSet>("TimingModules");
-  theMuonDigiModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonDigiModules");
-  theMuonLocalRecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonLocalRecModules");
-  theMuonL2RecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonL2RecModules");
-  theMuonL3RecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonL3RecModules");
-  theMuonL2IsoModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonL2IsoModules");
-  theMuonL3IsoModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonL3IsoModules");
-  theTrackerDigiModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("TrackerDigiModules");
-  theTrackerRecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("TrackerRecModules");
-  theCaloDigiModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("CaloDigiModules");
-  theCaloRecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("CaloRecModules");
+    edm::ParameterSet ModulesForTiming =  iConfig.getUntrackedParameter<edm::ParameterSet>("TimingModules");
+    theMuonDigiModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonDigiModules");
+    theMuonLocalRecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonLocalRecModules");
+    theMuonL2RecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonL2RecModules");
+    theMuonL3RecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonL3RecModules");
+    theMuonL2IsoModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonL2IsoModules");
+    theMuonL3IsoModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonL3IsoModules");
+    theTrackerDigiModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("TrackerDigiModules");
+    theTrackerRecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("TrackerRecModules");
+    theCaloDigiModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("CaloDigiModules");
+    theCaloRecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("CaloRecModules");
   }
+  */
+  /*
   // Get our trigger names from the config
   LogDebug("MuonRecoTreeUtility");
   singleMuIsoTriggerName = iConfig.getParameter<std::string>("singleMuIsoTriggerName");
   singleMuNonIsoTriggerName = iConfig.getParameter<std::string>("singleMuNonIsoTriggerName");
   diMuIsoTriggerName = iConfig.getParameter<std::string>("diMuIsoTriggerName");
   diMuNonIsoTriggerName = iConfig.getParameter<std::string>("diMuNonIsoTriggerName"); 
+  */
   LogDebug("MuonRecoTreeUtility");
   l2AssocLabel = iConfig.getParameter<std::string>("l2AssociatorName");
   l3AssocLabel = iConfig.getParameter<std::string>("l3AssociatorName");
   tkAssocLabel = iConfig.getParameter<std::string>("tkAssociatorName");
 
   theLinkLabel = iConfig.getParameter<edm::InputTag>("linkLabel");
+  theMuonLabel = iConfig.getParameter<edm::InputTag>("muonLabel");
   LogDebug("MuonRecoTreeUtility");
 
   //Make the TrackingParticleSelectors
@@ -679,9 +692,11 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
 
   // Initialize things so that we have an address for root to write things to
   LogTrace("MuonRecoTreeUtility")<<"Initializing some variables . . . ";
+  /*
   triggerDecisions = 0;
   triggerNames = 0;
- 
+  */
+  /*
   muonDigiModuleTimes = 0;
   muonLocalRecModuleTimes = 0;
   muonL2RecModuleTimes = 0;
@@ -692,7 +707,8 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   trackerRecModuleTimes = 0;
   caloDigiModuleTimes = 0;
   caloRecModuleTimes = 0;
-  
+  */
+
   l3P = 0;
   l3Pt = 0;
   l3Px = 0;
@@ -928,6 +944,7 @@ MuonRecoTreeUtility::~MuonRecoTreeUtility()
 void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   using namespace edm;
+  using namespace reco;
 
   edm::LogInfo("MuonRecoTreeUtility") << "Beginning of the loop.";
 
@@ -937,8 +954,10 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   iEvent.getByLabel(bsSrc,recoBeamSpotHandle);
   reco::BeamSpot bs = *recoBeamSpotHandle;      
 
+  /*
   edm::Handle<EventTime> evtTime;
   iEvent.getByLabel(theTimerLabel, evtTime); 
+  */
 
   //get the collection of muons at all levels
   edm::Handle<reco::TrackCollection> l2Muons;
@@ -1018,12 +1037,14 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   edm::LogInfo("MuonRecoTreeUtility") << "deposit objects created.";
 
   // get hold of the TriggerResults objects
+  /*
   edm::Handle<TriggerResults> triggerResults;
   iEvent.getByLabel(triggerResults_,triggerResults);
   TriggerNames namesOfTriggers(*triggerResults);
+  */
 
   // Right, that's the setup done.  Now let's put in our execution times.
-
+  /*
   edm::LogInfo("MuonRecoTreeUtility") << "doing the module timing.";
 
   unsigned nTotalModules = evtTime->size();
@@ -1091,7 +1112,9 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       }
     }
   }
+  */
 
+  /*
   edm::LogInfo("MuonRecoTreeUtility") << "checking what filter passed.";
 
   unsigned int indexSingleMuIso = namesOfTriggers.triggerIndex(singleMuIsoTriggerName );
@@ -1159,319 +1182,429 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     (*triggerDecisions).push_back(triggerResults->state(i));
     (*triggerNames).push_back(namesOfTriggers.triggerName(i));
   }
+  */ 
 
-  edm::Handle<reco::MuonTrackLinksCollection> l3ToL2Links;
-  iEvent.getByLabel(theLinkLabel, l3ToL2Links);
+  //edm::Handle<reco::MuonTrackLinksCollection> l3ToL2Links;
+  //iEvent.getByLabel(theLinkLabel, l3ToL2Links);
 
-  edm::LogInfo("MuonRecoTreeUtility") << "loop over L3s";
-  
-  for(int iL3 = 0;iL3!=nL3;++iL3){
-    reco::TrackRef refL3(l3Muons, iL3);
+  //start ADAM recoMuon
+  //edm::Handle<reco::MuonCollection> recMuons;
+  //iEvent.getByLabel(theMuonLabel, recMuons);
+
+  // Get Muon Tracks
+  //Handle<View<Track> > trkMuHandle;
+  //iEvent.getByLabel(trkMuLabel_, trkMuHandle);
+  //View<Track> trkMuColl = *(trkMuHandle.product());
+
+  //Handle<View<Track> > staMuHandle;
+  //iEvent.getByLabel(staMuLabel_, staMuHandle);
+  //View<Track> staMuColl = *(staMuHandle.product());
+
+  //Handle<View<Track> > glbMuHandle;
+  //iEvent.getByLabel(glbMuLabel_, glbMuHandle);
+  //View<Track> glbMuColl = *(glbMuHandle.product());
+
+  // Get Muons
+  Handle<View<Muon> > muonHandle;
+  iEvent.getByLabel(theMuonLabel, muonHandle);
+  View<Muon> muonColl = *(muonHandle.product());
+
+  int iMu = 0;
+  for(View<Muon>::const_iterator iMuon = muonColl.begin();
+      iMuon != muonColl.end(); ++iMuon) {
+
+    const reco::TrackRef glbTrack = ( iMuon->isGlobalMuon()) ? 
+      iMuon->combinedMuon() : reco::TrackRef();
+
+    const RefToBase<Track> glbTrackRB(glbTrack);
     
-    // Fill in basic information of l3Muons
-    (*l3P).push_back(refL3->p());
-    (*l3Px).push_back(refL3->px());
-    (*l3Py).push_back(refL3->py());
-    (*l3Pz).push_back(refL3->pz());
-    (*l3Pt).push_back(refL3->pt());
-    (*l3PtError).push_back(refL3->ptError());
-    (*l3Pt90).push_back(pt90(refL3,iEvent));
-    (*l3Eta).push_back(refL3->eta());
-    (*l3EtaError).push_back(refL3->etaError());
-    (*l3Phi).push_back(refL3->phi());
-    (*l3PhiError).push_back(refL3->phiError());
-    (*l3D0).push_back(refL3->d0());
-    (*l3D0Error).push_back(refL3->d0Error());
-    (*l3NHits).push_back(refL3->recHitsSize());
-    (*l3Charge).push_back(refL3->charge());
-    (*l3Chi2).push_back(refL3->chi2());
-    (*l3Ndof).push_back(refL3->ndof());
-    // Fill in the track fitting parameters (with phi filled in above)
-    (*l3Dsz).push_back(refL3->dsz());
-    (*l3DszError).push_back(refL3->dszError());
-    (*l3Dxy).push_back(refL3->dxy());
-    (*l3DxyError).push_back(refL3->dxyError());
-    (*l3Lambda).push_back(refL3->lambda());
-    (*l3LambdaError).push_back(refL3->lambdaError());
-    (*l3Qoverp).push_back(refL3->qoverp());
-    (*l3QoverpError).push_back(refL3->qoverpError());
-    (*l3ErrorMatrix).push_back(refL3->covariance());
+    const reco::TrackRef tkTrack = ( iMuon->isTrackerMuon() ) ? 
+      iMuon->innerTrack() : TrackRef();
     
-    std::vector<int> *idsForThisL3 = new std::vector<int>;
-    std::vector<int> *subidsForThisL3 = new std::vector<int>;
-    std::vector<int> *detsForThisL3 = new std::vector<int>;
-    std::vector<int> *statusForThisL3 = new std::vector<int>;
-    std::vector<double> *xForThisL3 = new std::vector<double>;
-    std::vector<double> *yForThisL3 = new std::vector<double>;
-    std::vector<double> *zForThisL3 = new std::vector<double>;
-    std::vector<int> *stationsForThisL3 = new std::vector<int>;
-    int nMuHitsForThisL3 = 0;
+    const reco::TrackRef staTrack = ( iMuon->isStandAloneMuon() ) ? 
+      iMuon->outerTrack() : TrackRef();
+    
+    if(glbTrack.isAvailable()) {
+      int iL3 = iMu;
+      const reco::TrackRef refL3(glbTrack);
 
-    edm::ESHandle<TransientTrackingRecHitBuilder> trackBuilder;
-    edm::ESHandle<TransientTrackingRecHitBuilder> muonBuilder;
-    std::string trackBuilderName = "WithTrackAngle";
-    std::string muonBuilderName = "MuonRecHitBuilder";
-    iSetup.get<TransientRecHitRecord>().get(trackBuilderName,trackBuilder);
-    iSetup.get<TransientRecHitRecord>().get(muonBuilderName,muonBuilder);
-
-    for (trackingRecHit_iterator l3Hit = refL3->recHitsBegin(); l3Hit != refL3->recHitsEnd(); ++l3Hit) {
-      if ((*l3Hit)->isValid()) {
-	(*idsForThisL3).push_back((*l3Hit)->geographicalId().rawId());
-	(*subidsForThisL3).push_back((*l3Hit)->geographicalId().subdetId());
-	(*detsForThisL3).push_back((*l3Hit)->geographicalId().det());
-	(*statusForThisL3).push_back((*l3Hit)->type());
-	if ((*l3Hit)->geographicalId().det() == 1) { // Tracker
-	  TransientTrackingRecHit::RecHitPointer globL3 = trackBuilder->build(&**l3Hit);
-	  (*xForThisL3).push_back(globL3->globalPosition().x());
-	  (*yForThisL3).push_back(globL3->globalPosition().y());
-	  (*zForThisL3).push_back(globL3->globalPosition().z());
-	}
-	else if ((*l3Hit)->geographicalId().det() == 2) { // Muon System
-	  nMuHitsForThisL3++;
-	  TransientTrackingRecHit::RecHitPointer globL3 = muonBuilder->build(&**l3Hit);
-	  (*xForThisL3).push_back(globL3->globalPosition().x());
-	  (*yForThisL3).push_back(globL3->globalPosition().y());
-	  (*zForThisL3).push_back(globL3->globalPosition().z());
-	  // number station goes here
-	  if ( (*l3Hit)->geographicalId().subdetId() == 1) { // DT hit 
-	    const DTChamberId& id = DTChamberId((*l3Hit)->geographicalId());
-	    (*stationsForThisL3).push_back(id.station());
+      // Fill in basic information of l3Muons
+      (*l3P).push_back(refL3->p());
+      (*l3Px).push_back(refL3->px());
+      (*l3Py).push_back(refL3->py());
+      (*l3Pz).push_back(refL3->pz());
+      (*l3Pt).push_back(refL3->pt());
+      (*l3PtError).push_back(refL3->ptError());
+      (*l3Pt90).push_back(pt90(refL3,iEvent));
+      (*l3Eta).push_back(refL3->eta());
+      (*l3EtaError).push_back(refL3->etaError());
+      (*l3Phi).push_back(refL3->phi());
+      (*l3PhiError).push_back(refL3->phiError());
+      (*l3D0).push_back(refL3->d0());
+      (*l3D0Error).push_back(refL3->d0Error());
+      (*l3NHits).push_back(refL3->recHitsSize());
+      (*l3Charge).push_back(refL3->charge());
+      (*l3Chi2).push_back(refL3->chi2());
+      (*l3Ndof).push_back(refL3->ndof());
+      // Fill in the track fitting parameters (with phi filled in above)
+      (*l3Dsz).push_back(refL3->dsz());
+      (*l3DszError).push_back(refL3->dszError());
+      (*l3Dxy).push_back(refL3->dxy());
+      (*l3DxyError).push_back(refL3->dxyError());
+      (*l3Lambda).push_back(refL3->lambda());
+      (*l3LambdaError).push_back(refL3->lambdaError());
+      (*l3Qoverp).push_back(refL3->qoverp());
+      (*l3QoverpError).push_back(refL3->qoverpError());
+      (*l3ErrorMatrix).push_back(refL3->covariance());
+      
+      std::vector<int> *idsForThisL3 = new std::vector<int>;
+      std::vector<int> *subidsForThisL3 = new std::vector<int>;
+      std::vector<int> *detsForThisL3 = new std::vector<int>;
+      std::vector<int> *statusForThisL3 = new std::vector<int>;
+      std::vector<double> *xForThisL3 = new std::vector<double>;
+      std::vector<double> *yForThisL3 = new std::vector<double>;
+      std::vector<double> *zForThisL3 = new std::vector<double>;
+      std::vector<int> *stationsForThisL3 = new std::vector<int>;
+      int nMuHitsForThisL3 = 0;
+      
+      edm::ESHandle<TransientTrackingRecHitBuilder> trackBuilder;
+      edm::ESHandle<TransientTrackingRecHitBuilder> muonBuilder;
+      std::string trackBuilderName = "WithTrackAngle";
+      std::string muonBuilderName = "MuonRecHitBuilder";
+      iSetup.get<TransientRecHitRecord>().get(trackBuilderName,trackBuilder);
+      iSetup.get<TransientRecHitRecord>().get(muonBuilderName,muonBuilder);
+      
+      for (trackingRecHit_iterator l3Hit = refL3->recHitsBegin(); l3Hit != refL3->recHitsEnd(); ++l3Hit) {
+	if ((*l3Hit)->isValid()) {
+	  (*idsForThisL3).push_back((*l3Hit)->geographicalId().rawId());
+	  (*subidsForThisL3).push_back((*l3Hit)->geographicalId().subdetId());
+	  (*detsForThisL3).push_back((*l3Hit)->geographicalId().det());
+	  (*statusForThisL3).push_back((*l3Hit)->type());
+	  if ((*l3Hit)->geographicalId().det() == 1) { // Tracker
+	    TransientTrackingRecHit::RecHitPointer globL3 = trackBuilder->build(&**l3Hit);
+	    (*xForThisL3).push_back(globL3->globalPosition().x());
+	    (*yForThisL3).push_back(globL3->globalPosition().y());
+	    (*zForThisL3).push_back(globL3->globalPosition().z());
 	  }
-	  if ( (*l3Hit)->geographicalId().subdetId() == 2) { // CSC hit
-	    const CSCDetId& id = CSCDetId((*l3Hit)->geographicalId());
-	    (*stationsForThisL3).push_back(id.station());
-	  }
-	  if ( (*l3Hit)->geographicalId().subdetId() == 3) { // RPC hit
-	    const RPCDetId& id = RPCDetId((*l3Hit)->geographicalId());
-	    (*stationsForThisL3).push_back(id.station());
+	  else if ((*l3Hit)->geographicalId().det() == 2) { // Muon System
+	    nMuHitsForThisL3++;
+	    TransientTrackingRecHit::RecHitPointer globL3 = muonBuilder->build(&**l3Hit);
+	    (*xForThisL3).push_back(globL3->globalPosition().x());
+	    (*yForThisL3).push_back(globL3->globalPosition().y());
+	    (*zForThisL3).push_back(globL3->globalPosition().z());
+	    // number station goes here
+	    if ( (*l3Hit)->geographicalId().subdetId() == 1) { // DT hit 
+	      const DTChamberId& id = DTChamberId((*l3Hit)->geographicalId());
+	      (*stationsForThisL3).push_back(id.station());
+	    }
+	    if ( (*l3Hit)->geographicalId().subdetId() == 2) { // CSC hit
+	      const CSCDetId& id = CSCDetId((*l3Hit)->geographicalId());
+	      (*stationsForThisL3).push_back(id.station());
+	    }
+	    if ( (*l3Hit)->geographicalId().subdetId() == 3) { // RPC hit
+	      const RPCDetId& id = RPCDetId((*l3Hit)->geographicalId());
+	      (*stationsForThisL3).push_back(id.station());
+	    }
 	  }
 	}
       }
-    }
-    
-    (*l3DetIds).insert(std::make_pair(iL3,*idsForThisL3));    
-    (*l3SubdetIds).insert(std::make_pair(iL3,*subidsForThisL3));
-    (*l3Component).insert(std::make_pair(iL3,*detsForThisL3));
-    (*l3RecHitsStatus).insert(std::make_pair(iL3,*statusForThisL3));
-    (*l3NMuHits).insert(std::make_pair(iL3,nMuHitsForThisL3));
-    (*l3MuStationNumber).insert(std::make_pair(iL3,*stationsForThisL3));
-    (*l3RecHitsX).insert(std::make_pair(iL3,*xForThisL3));
-    (*l3RecHitsY).insert(std::make_pair(iL3,*yForThisL3));
-    (*l3RecHitsZ).insert(std::make_pair(iL3,*zForThisL3));
-
-    idsForThisL3->clear();
-    subidsForThisL3->clear();
-    detsForThisL3->clear();
-    statusForThisL3->clear();
-    stationsForThisL3->clear();
-    xForThisL3->clear();
-    yForThisL3->clear();
-    zForThisL3->clear();
-    nMuHitsForThisL3 = 0;
-
-    // Find the correct L2 muon using track links.  Start with borrowed code.
-    bool correctTrackLink = false;
-    uint matchingLink=0;
-    for(uint iLink=0;iLink!=l3ToL2Links->size();iLink++){
+      
+      (*l3DetIds).insert(std::make_pair(iMu,*idsForThisL3));    
+      (*l3SubdetIds).insert(std::make_pair(iMu,*subidsForThisL3));
+      (*l3Component).insert(std::make_pair(iMu,*detsForThisL3));
+      (*l3RecHitsStatus).insert(std::make_pair(iMu,*statusForThisL3));
+      (*l3NMuHits).insert(std::make_pair(iMu,nMuHitsForThisL3));
+      (*l3MuStationNumber).insert(std::make_pair(iMu,*stationsForThisL3));
+      (*l3RecHitsX).insert(std::make_pair(iMu,*xForThisL3));
+      (*l3RecHitsY).insert(std::make_pair(iMu,*yForThisL3));
+      (*l3RecHitsZ).insert(std::make_pair(iMu,*zForThisL3));
+      
+      idsForThisL3->clear();
+      subidsForThisL3->clear();
+      detsForThisL3->clear();
+      statusForThisL3->clear();
+      stationsForThisL3->clear();
+      xForThisL3->clear();
+      yForThisL3->clear();
+      zForThisL3->clear();
+      nMuHitsForThisL3 = 0;
+      
+      /*  
+      // Find the correct L2 muon using track links.  Start with borrowed code.
+      bool correctTrackLink = false;
+      uint matchingLink=0;
+      for(uint iLink=0;iLink!=l3ToL2Links->size();iLink++){
       // L3 is treated as a global track.
       if ((*l3ToL2Links)[iLink].globalTrack() == refL3){
-        //this L3muon is coming from this L2 track
-        correctTrackLink =true;
-        matchingLink=iLink;
+      //this L3muon is coming from this L2 track
+      correctTrackLink =true;
+      matchingLink=iLink;
       }//same track ref
-    }//loop over track links
-    if(correctTrackLink) {
+      }//loop over track links
+      if(correctTrackLink) {
       reco::TrackRef refL2FromTrackLinks = (*l3ToL2Links)[matchingLink].standAloneTrack();
       // Get match indices here
       for(int iL2 = 0;iL2!=nL2;++iL2){
-	reco::TrackRef refL2ToMatch(l2Muons, iL2);
-        if (refL2FromTrackLinks == refL2ToMatch) {
-          // Fill these so we know which L2 muon seeded this L3 muon
-          (*indexL2SeedingL3).push_back(iL2);
-          (*indexL3SeededFromL2).push_back(iL3);
-        }
+      reco::TrackRef refL2ToMatch(l2Muons, iL2);
+      if (refL2FromTrackLinks == refL2ToMatch) {
+      // Fill these so we know which L2 muon seeded this L3 muon
+      (*indexL2SeedingL3).push_back(iL2);
+      (*indexL3SeededFromL2).push_back(iL3);
       }
-    }
-
-    // get the CAL deposits associated with this muon
-    reco::IsoDeposit calDeposit = caloDepositExtractor->deposit(iEvent, iSetup, *refL3);
-    // cutting for the L3 muon cal isolation (just getting the cuts and vetos)
-    muonisolation::Cuts::CutSpec calo_cuts_here = L2IsoCalCuts(refL3->eta());
-    // and deposit for the L3 muon cal isolation
-    double conesize = calo_cuts_here.conesize;
-    (*l3CalIsoDeposit).push_back(calDeposit.depositWithin(conesize));
-    // now for the L3 tracking things
-    reco::IsoDeposit trackDeposit = trackDepositExtractor->deposit(iEvent, iSetup, *refL3);
-    reco::IsoDeposit::const_iterator pixEnd = trackDeposit.end();
-    double dRMinDelPt = 1;
-    double dRMin = 1;
-    double DelPtMin = 999;
-    for (reco::IsoDeposit::const_iterator pix = trackDeposit.begin(); pix != pixEnd; ++pix) {
-      double tempDelphi = pix.phi() - refL3->phi();
-      if (tempDelphi > TMath::Pi()) tempDelphi = (2 * TMath::Pi()) - tempDelphi;
-      double tempdR = sqrt(((pix.eta() - refL3->eta()) * (pix.eta() - refL3->eta())) + (tempDelphi * tempDelphi));
-      double tempPt = pix.value();
-      if (tempdR < dRMin) dRMin = tempdR;
-      if (fabs(refL3->pt() - tempPt) < DelPtMin) {
-	dRMinDelPt = tempdR;
-	DelPtMin = fabs(refL3->pt() - tempPt);
       }
-    }
-    (*l3IsoTrackDR).push_back(dRMin);
-    (*l3IsoTrackDRMinDelPt).push_back(dRMinDelPt);
-    trackVetos.push_back(trackDeposit.veto());
-    const muonisolation::Cuts::CutSpec & trackCut = L3IsoTrackCuts(refL3->eta());
-    // get the Tracking deposits for our muon
-    (*l3TrackIsoDeposit).push_back(trackDeposit.depositWithin(trackCut.conesize, trackVetos));
-
-    //ADAM: associators
-    bool associated = false;
-    // With the detector-level things filled, time to start doing the associations to sim
-    int sim_index = 0;
-    for (reco::RecoToSimCollection::const_iterator findRefL3 = l3RecSimColl.begin(); findRefL3 != l3RecSimColl.end(); ++findRefL3) {
-      const edm::RefToBase<reco::Track> & l3RecSimMatch = findRefL3->key;
-      if (l3RecSimMatch->pt() == refL3->pt()) {
-	associated = true;
-	const std::vector<std::pair<TrackingParticleRef,double> > & tp = findRefL3->val;
-	const TrackingParticleRef & trp = tp.begin()->first;
-
-	(*l3AssociationVar).push_back(tp.begin()->second);
-
-	int particle_ID = trp->pdgId();
-	//	int myBin = wantMotherBin.GetBinNum(particle_ID);
-	(*l3AssociationPdgId).push_back(particle_ID);
-	unsigned int thisBit = getBit(trp);
-	(*l3AssociationMyBit).push_back(thisBit);
-	(*l3AssociationVtxX).push_back(trp->vertex().x());
-	(*l3AssociationVtxY).push_back(trp->vertex().y());
-	(*l3AssociationVtxZ).push_back(trp->vertex().z());
-
-	if(abs(particle_ID) == 13){
-	  // put in the associated pt,eta,phi
-	  (*l3AssociatedSimMuonPt).push_back(trp->pt());
-	  (*l3AssociatedSimMuonEta).push_back(trp->eta());
-	  (*l3AssociatedSimMuonPhi).push_back(trp->phi());
-	  if (fabs(trp->phi() - refL3->phi()) > 1) {
-	    //Note: keeping this in.  This happens sometimes when the associator used is the 
-	    //steppingHelixPropagatorAny
-	    edm::LogInfo("MuonRecoTreeUtility") << "Something's gone wrong here. First our indexes";
-	    edm::LogInfo("MuonRecoTreeUtility") << "iL3, sim_index = " << iL3 <<" " << sim_index;
-	    edm::LogInfo("MuonRecoTreeUtility") << "What about recSimMatch vs trp phi?" << l3RecSimMatch->phi() <<" " << trp->phi();
-	  }
-	  // put in the detIDs for this sim muon
-	  std::vector<int> *idsForSimL3 = new std::vector<int>;
-	  std::vector<int> *stationsForSim = new std::vector<int>;
-	  int simHitCounter = 0;
-	  int simMuHitCounter = 0;
-	  for (PSimHitContainer::const_iterator l3SimHit = trp->pSimHit_begin(); l3SimHit != trp->pSimHit_end(); ++l3SimHit) {
-	    (*idsForSimL3).push_back((*l3SimHit).detUnitId());
-	    DetId theDetUnitId(l3SimHit->detUnitId());
-	    int detector = theDetUnitId.det();
-	    int subdetector = theDetUnitId.subdetId();
-	    if (detector == 2) { //Muon system
-	      simMuHitCounter ++;
-	      if (subdetector == 1) { //DT
-		const DTChamberId& id = DTChamberId(l3SimHit->detUnitId());
-		(*stationsForSim).push_back(id.station());
-	      }
-	      if (subdetector == 2) { //CSC
-		const CSCDetId& id=CSCDetId(l3SimHit->detUnitId());
-		(*stationsForSim).push_back(id.station());
-	      }
-	      if (subdetector == 3) { //RPC
-		const RPCDetId& id = RPCDetId(l3SimHit->detUnitId());
-		(*stationsForSim).push_back(id.station());
-	      }
+      }
+      */
+      
+      // get the CAL deposits associated with this muon
+      reco::IsoDeposit calDeposit = caloDepositExtractor->deposit(iEvent, iSetup, *refL3);
+      // cutting for the L3 muon cal isolation (just getting the cuts and vetos)
+      muonisolation::Cuts::CutSpec calo_cuts_here = L2IsoCalCuts(refL3->eta());
+      // and deposit for the L3 muon cal isolation
+      double conesize = calo_cuts_here.conesize;
+      (*l3CalIsoDeposit).push_back(calDeposit.depositWithin(conesize));
+      // now for the L3 tracking things
+      reco::IsoDeposit trackDeposit = trackDepositExtractor->deposit(iEvent, iSetup, *refL3);
+      reco::IsoDeposit::const_iterator pixEnd = trackDeposit.end();
+      double dRMinDelPt = 1;
+      double dRMin = 1;
+      double DelPtMin = 999;
+      for (reco::IsoDeposit::const_iterator pix = trackDeposit.begin(); pix != pixEnd; ++pix) {
+	double tempDelphi = pix.phi() - refL3->phi();
+	if (tempDelphi > TMath::Pi()) tempDelphi = (2 * TMath::Pi()) - tempDelphi;
+	double tempdR = sqrt(((pix.eta() - refL3->eta()) * (pix.eta() - refL3->eta())) + (tempDelphi * tempDelphi));
+	double tempPt = pix.value();
+	if (tempdR < dRMin) dRMin = tempdR;
+	if (fabs(refL3->pt() - tempPt) < DelPtMin) {
+	  dRMinDelPt = tempdR;
+	  DelPtMin = fabs(refL3->pt() - tempPt);
+	}
+      }
+      (*l3IsoTrackDR).push_back(dRMin);
+      (*l3IsoTrackDRMinDelPt).push_back(dRMinDelPt);
+      trackVetos.push_back(trackDeposit.veto());
+      const muonisolation::Cuts::CutSpec & trackCut = L3IsoTrackCuts(refL3->eta());
+      // get the Tracking deposits for our muon
+      (*l3TrackIsoDeposit).push_back(trackDeposit.depositWithin(trackCut.conesize, trackVetos));
+      
+      bool associated = false;
+      // With the detector-level things filled, time to start doing the associations to sim
+      int sim_index = 0;
+      for (reco::RecoToSimCollection::const_iterator findRefL3 = l3RecSimColl.begin(); findRefL3 != l3RecSimColl.end(); ++findRefL3) {
+	const edm::RefToBase<reco::Track> & l3RecSimMatch = findRefL3->key;
+	if (l3RecSimMatch->pt() == refL3->pt()) {
+	  associated = true;
+	  const std::vector<std::pair<TrackingParticleRef,double> > & tp = findRefL3->val;
+	  const TrackingParticleRef & trp = tp.begin()->first;
+	  
+	  (*l3AssociationVar).push_back(tp.begin()->second);
+	  
+	  int particle_ID = trp->pdgId();
+	  //	int myBin = wantMotherBin.GetBinNum(particle_ID);
+	  (*l3AssociationPdgId).push_back(particle_ID);
+	  unsigned int thisBit = getBit(trp);
+	  (*l3AssociationMyBit).push_back(thisBit);
+	  (*l3AssociationVtxX).push_back(trp->vertex().x());
+	  (*l3AssociationVtxY).push_back(trp->vertex().y());
+	  (*l3AssociationVtxZ).push_back(trp->vertex().z());
+	  
+	  if(abs(particle_ID) == 13){
+	    // put in the associated pt,eta,phi
+	    (*l3AssociatedSimMuonPt).push_back(trp->pt());
+	    (*l3AssociatedSimMuonEta).push_back(trp->eta());
+	    (*l3AssociatedSimMuonPhi).push_back(trp->phi());
+	    if (fabs(trp->phi() - refL3->phi()) > 1) {
+	      //Note: keeping this in.  This happens sometimes when the associator used is the 
+	      //steppingHelixPropagatorAny
+	      edm::LogInfo("MuonRecoTreeUtility") << "Something's gone wrong here. First our indexes";
+	      edm::LogInfo("MuonRecoTreeUtility") << "iL3, sim_index = " << iMu <<" " << sim_index;
+	      edm::LogInfo("MuonRecoTreeUtility") << "What about recSimMatch vs trp phi?" << l3RecSimMatch->phi() <<" " << trp->phi();
 	    }
-	    simHitCounter++;
-	  }
-	  (*l3AssociatedSimMuonNHits).push_back(simHitCounter);
-	  (*l3AssociatedSimMuonDetIds).insert(std::make_pair(sim_index,*idsForSimL3));
-	  (*l3AssociatedSimMuonMuStationNumber).insert(std::make_pair(sim_index,*stationsForSim));
-	  (*l3AssociatedSimMuonNMuHits).insert(std::make_pair(sim_index,simMuHitCounter));
-	  idsForSimL3->clear();
-	  stationsForSim->clear();
-	  sim_index++;
-	  //---------------------- MOTHERHOOD --------------------------------
-	  //find the parent of tracking particle
-	  for(TrackingParticle::g4t_iterator isimtk = trp->g4Track_begin();isimtk!=trp->g4Track_end();isimtk++)
-	    {
-	      LogDebug(theCategory)<<"I am here 1";
-	      if(isimtk->type()==13||isimtk->type()==-13)
-		{
-		  // This is the sim track for this tracking particle.  Time to put in the parameters
-		  FreeTrajectoryState 
-		    ftsAtProduction(GlobalPoint(trp->vertex().x(),trp->vertex().y(),trp->vertex().z()),
-				    GlobalVector(isimtk->momentum().x(),isimtk->momentum().y(),isimtk->momentum().z()),
-				    TrackCharge(trp->charge()),
-				    field.product());
-		  TSCBLBuilderNoMaterial tscblBuilder;
-		  TrajectoryStateClosestToBeamLine tsAtClosestApproach = tscblBuilder(ftsAtProduction,bs);//as in TrackProducerAlgorithm
-		  GlobalPoint v1 = tsAtClosestApproach.trackStateAtPCA().position();
-		  GlobalVector p = tsAtClosestApproach.trackStateAtPCA().momentum();
-		  GlobalPoint v(v1.x()-bs.x0(),v1.y()-bs.y0(),v1.z()-bs.z0());
-	
-		  double qoverpSim = tsAtClosestApproach.trackStateAtPCA().charge()/p.mag();
-		  double lambdaSim = M_PI/2-p.theta();
-		  double dxySim    = (-v.x()*sin(p.phi())+v.y()*cos(p.phi()));
-		  double dzSim     = v.z() - (v.x()*p.x()+v.y()*p.y())/p.perp() * p.z()/p.perp();
-		  
-		  (*l3AssociatedSimMuonDsz).push_back(dzSim);
-		  (*l3AssociatedSimMuonDxy).push_back(dxySim);
-		  (*l3AssociatedSimMuonLambda).push_back(lambdaSim);
-		  (*l3AssociatedSimMuonQoverP).push_back(qoverpSim);
-	
-		  //calculate mother hood
-		  MotherSearch mother(&*isimtk, SimTk, SimVtx, hepmc);
-		  //FIXME, use reco::Particle mother.mother();
-		  //                double pt,eta,phi;
-		  //                int parentID;
-		  //                int motherBinNumber;
-	
-		  if (mother.IsValid()){
-		    if (mother.SimIsValid()){
-		      (*l3ParentID).push_back(mother.Sim_mother->type());
-		      (*l3MotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Sim_mother->type()));
-		    }
-		    else {
-		      (*l3ParentID).push_back(mother.Gen_mother->pdg_id());
-		      (*l3MotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Gen_mother->pdg_id()));
-		    }
-		    //do it once per tracking particle once it succeeds
-		    break;
-		  }
-		  else{
-		    // This handles cases when we have an associated sim muon, but "tricky" muon without 
-		    // valid parent (e.g. singleMu)
-		    (*l3ParentID).push_back(0);
-		    (*l3MotherBinNumber).push_back(wantMotherBin.GetBinNum(0));
-		    edm::LogError(theCategory)<<"tricky muon from TrackingParticle.";
-		  }
-		}//sim track is a muon
-	      else{
-		(*l3ParentID).push_back(isimtk->type());
-		(*l3MotherBinNumber).push_back(777);
-		edm::LogError(theCategory)<<"the sim track attached to the tracking particle is not a muon.";
+	    // put in the detIDs for this sim muon
+	    std::vector<int> *idsForSimL3 = new std::vector<int>;
+	    std::vector<int> *stationsForSim = new std::vector<int>;
+	    int simHitCounter = 0;
+	    int simMuHitCounter = 0;
+	    for (PSimHitContainer::const_iterator l3SimHit = trp->pSimHit_begin(); l3SimHit != trp->pSimHit_end(); ++l3SimHit) {
+	      (*idsForSimL3).push_back((*l3SimHit).detUnitId());
+	      DetId theDetUnitId(l3SimHit->detUnitId());
+	      int detector = theDetUnitId.det();
+	      int subdetector = theDetUnitId.subdetId();
+	      if (detector == 2) { //Muon system
+		simMuHitCounter ++;
+		if (subdetector == 1) { //DT
+		  const DTChamberId& id = DTChamberId(l3SimHit->detUnitId());
+		  (*stationsForSim).push_back(id.station());
+		}
+		if (subdetector == 2) { //CSC
+		  const CSCDetId& id=CSCDetId(l3SimHit->detUnitId());
+		  (*stationsForSim).push_back(id.station());
+		}
+		if (subdetector == 3) { //RPC
+		  const RPCDetId& id = RPCDetId(l3SimHit->detUnitId());
+		  (*stationsForSim).push_back(id.station());
+		}
 	      }
-	    }  //loop over SimTrack of tracking particle
-	}
+	      simHitCounter++;
+	    }
+	    (*l3AssociatedSimMuonNHits).push_back(simHitCounter);
+	    (*l3AssociatedSimMuonDetIds).insert(std::make_pair(sim_index,*idsForSimL3));
+	    (*l3AssociatedSimMuonMuStationNumber).insert(std::make_pair(sim_index,*stationsForSim));
+	    (*l3AssociatedSimMuonNMuHits).insert(std::make_pair(sim_index,simMuHitCounter));
+	    idsForSimL3->clear();
+	    stationsForSim->clear();
+	    sim_index++;
+	    //---------------------- MOTHERHOOD ----------------------------
+	    //find the parent of tracking particle
+	    for(TrackingParticle::g4t_iterator isimtk = trp->g4Track_begin();isimtk!=trp->g4Track_end();isimtk++)
+	      {
+		LogDebug(theCategory)<<"I am here 1";
+		if(isimtk->type()==13||isimtk->type()==-13)
+		  {
+		    // This is the sim track for this tracking particle.  Time to put in the parameters
+		    FreeTrajectoryState 
+		      ftsAtProduction(GlobalPoint(trp->vertex().x(),trp->vertex().y(),trp->vertex().z()),
+				      GlobalVector(isimtk->momentum().x(),isimtk->momentum().y(),isimtk->momentum().z()),
+				      TrackCharge(trp->charge()),
+				      field.product());
+		    TSCBLBuilderNoMaterial tscblBuilder;
+		    TrajectoryStateClosestToBeamLine tsAtClosestApproach = tscblBuilder(ftsAtProduction,bs);//as in TrackProducerAlgorithm
+		    GlobalPoint v1 = tsAtClosestApproach.trackStateAtPCA().position();
+		    GlobalVector p = tsAtClosestApproach.trackStateAtPCA().momentum();
+		    GlobalPoint v(v1.x()-bs.x0(),v1.y()-bs.y0(),v1.z()-bs.z0());
+		    
+		    double qoverpSim = tsAtClosestApproach.trackStateAtPCA().charge()/p.mag();
+		    double lambdaSim = M_PI/2-p.theta();
+		    double dxySim    = (-v.x()*sin(p.phi())+v.y()*cos(p.phi()));
+		    double dzSim     = v.z() - (v.x()*p.x()+v.y()*p.y())/p.perp() * p.z()/p.perp();
+		    
+		    (*l3AssociatedSimMuonDsz).push_back(dzSim);
+		    (*l3AssociatedSimMuonDxy).push_back(dxySim);
+		    (*l3AssociatedSimMuonLambda).push_back(lambdaSim);
+		    (*l3AssociatedSimMuonQoverP).push_back(qoverpSim);
+		    
+		    //calculate mother hood
+		    MotherSearch mother(&*isimtk, SimTk, SimVtx, hepmc);
+		    //FIXME, use reco::Particle mother.mother();
+		    //                double pt,eta,phi;
+		    //                int parentID;
+		    //                int motherBinNumber;
+		    
+		    if (mother.IsValid()){
+		      if (mother.SimIsValid()){
+			(*l3ParentID).push_back(mother.Sim_mother->type());
+			(*l3MotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Sim_mother->type()));
+		      }
+		      else {
+			(*l3ParentID).push_back(mother.Gen_mother->pdg_id());
+			(*l3MotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Gen_mother->pdg_id()));
+		      }
+		      //do it once per tracking particle once it succeeds
+		      break;
+		    }
+		    else{
+		      // This handles cases when we have an associated sim muon, but "tricky" muon without 
+		      // valid parent (e.g. singleMu)
+		      (*l3ParentID).push_back(0);
+		      (*l3MotherBinNumber).push_back(wantMotherBin.GetBinNum(0));
+		      edm::LogError(theCategory)<<"tricky muon from TrackingParticle.";
+		    }
+		  }//sim track is a muon
+		else{
+		  (*l3ParentID).push_back(isimtk->type());
+		  (*l3MotherBinNumber).push_back(777);
+		  edm::LogError(theCategory)<<"the sim track attached to the tracking particle is not a muon.";
+		}
+	      }  //loop over SimTrack of tracking particle
+	  }
+	  else{
+	    //a reco muon is associated to something else than a muon
+	    edm::LogError(theCategory)<<"a reconstructed muon is associated to: "<<particle_ID;
+	    (*l3ParentID).push_back(particle_ID);
+	    (*l3MotherBinNumber).push_back(-777);
+	  }
+	}//track has an association
 	else{
-	  //a reco muon is associated to something else than a muon
-	  edm::LogError(theCategory)<<"a reconstructed muon is associated to: "<<particle_ID;
-	  (*l3ParentID).push_back(particle_ID);
-	  (*l3MotherBinNumber).push_back(-777);
+	  //this track was not associated.
+	  edm::LogError(theCategory)<<"a reconstructed muon is not associated.";
 	}
-      }//track has an association
-      else{
-	//this track was not associated.
-	edm::LogError(theCategory)<<"a reconstructed muon is not associated.";
       }
-    }
-    if (associated) {
-      //      std::cout << "Associated..." << std::endl;
-      (*l3IsAssociated).push_back(1);
-    }
-    else {
+      if (associated) {
+	//      std::cout << "Associated..." << std::endl;
+	(*l3IsAssociated).push_back(1);
+      }
+      else {
+	(*l3IsAssociated).push_back(0);
+	(*l3AssociationVar).push_back(-999);
+	(*l3AssociatedSimMuonPt).push_back(-999);
+	(*l3AssociatedSimMuonEta).push_back(-999);
+	(*l3AssociatedSimMuonPhi).push_back(-999);
+	(*l3AssociatedSimMuonNHits).push_back(-999);
+	(*l3AssociatedSimMuonQoverP).push_back(-999);
+	(*l3AssociatedSimMuonLambda).push_back(-999);
+	(*l3AssociatedSimMuonDxy).push_back(-999);
+	(*l3AssociatedSimMuonDsz).push_back(-999);
+	(*l3ParentID).push_back(-666);
+	(*l3MotherBinNumber).push_back(-999);
+      }
+    } else { //ifGlbTrack isAvailable  //loop over l3Muons
+      double crap = -999;
+      (*l3P).push_back(crap);
+      (*l3Px).push_back(crap);
+      (*l3Py).push_back(crap);
+      (*l3Pz).push_back(crap);
+      (*l3Pt).push_back(crap);
+      (*l3PtError).push_back(crap);
+      (*l3Pt90).push_back(crap);
+      (*l3Eta).push_back(crap);
+      (*l3EtaError).push_back(crap);
+      (*l3Phi).push_back(crap);
+      (*l3PhiError).push_back(crap);
+      (*l3D0).push_back(crap);
+      (*l3D0Error).push_back(crap);
+      (*l3NHits).push_back(0);
+      (*l3Charge).push_back(crap);
+      (*l3Chi2).push_back(crap);
+      (*l3Ndof).push_back(crap);
+      // Fill in the track fitting parameters (with phi filled in above)
+      (*l3Dsz).push_back(crap);
+      (*l3DszError).push_back(crap);
+      (*l3Dxy).push_back(crap);
+      (*l3DxyError).push_back(crap);
+      (*l3Lambda).push_back(crap);
+      (*l3LambdaError).push_back(crap);
+      (*l3Qoverp).push_back(crap);
+      (*l3QoverpError).push_back(crap);
+      //adam (*l3ErrorMatrix).push_back(NULL);
+      
+      (*l3DetIds).insert(std::make_pair(iMu,0));    
+      (*l3SubdetIds).insert(std::make_pair(iMu,0));
+      (*l3Component).insert(std::make_pair(iMu,0));
+      (*l3RecHitsStatus).insert(std::make_pair(iMu,0));
+      (*l3NMuHits).insert(std::make_pair(iMu,0));
+      (*l3MuStationNumber).insert(std::make_pair(iMu,0));
+      (*l3RecHitsX).insert(std::make_pair(iMu,0));
+      (*l3RecHitsY).insert(std::make_pair(iMu,0));
+      (*l3RecHitsZ).insert(std::make_pair(iMu,0));
+      
+      (*l3IsoTrackDR).push_back(crap);
+      (*l3IsoTrackDRMinDelPt).push_back(crap);
+      (*l3TrackIsoDeposit).push_back(0);
+      
+      (*l3AssociationVar).push_back(crap);
+      (*l3AssociationPdgId).push_back(-999);
+      (*l3AssociationMyBit).push_back(0);
+      (*l3AssociationVtxX).push_back(crap);
+      (*l3AssociationVtxY).push_back(crap);
+      (*l3AssociationVtxZ).push_back(crap);
+      (*l3AssociatedSimMuonPt).push_back(crap);
+      (*l3AssociatedSimMuonEta).push_back(crap);
+      (*l3AssociatedSimMuonPhi).push_back(crap);
+      
+      (*l3AssociatedSimMuonNHits).push_back(0);
+      (*l3AssociatedSimMuonDetIds).insert(std::make_pair(iMu,0));
+      (*l3AssociatedSimMuonMuStationNumber).insert(std::make_pair(iMu,0));
+      (*l3AssociatedSimMuonNMuHits).insert(std::make_pair(iMu,0));
+      
       (*l3IsAssociated).push_back(0);
       (*l3AssociationVar).push_back(-999);
       (*l3AssociatedSimMuonPt).push_back(-999);
@@ -1485,202 +1618,272 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*l3ParentID).push_back(-666);
       (*l3MotherBinNumber).push_back(-999);
     }
-  } //loop over l3Muons
-
-  // loop now over hltL3TkTracksFromL2
-
-  for(int iTk = 0;iTk < nTkTracks;++iTk){
-    reco::TrackRef refTk(tkTracks, iTk);
     
-    // Fill in basic information of l3Muons
-    (*tkTrackP).push_back(refTk->p());
-    (*tkTrackPx).push_back(refTk->px());
-    (*tkTrackPy).push_back(refTk->py());
-    (*tkTrackPz).push_back(refTk->pz());
-    (*tkTrackPt).push_back(refTk->pt());
-    (*tkTrackPtError).push_back(refTk->ptError());
-    (*tkTrackEta).push_back(refTk->eta());
-    (*tkTrackEtaError).push_back(refTk->etaError());
-    (*tkTrackPhi).push_back(refTk->phi());
-    (*tkTrackPhiError).push_back(refTk->phiError());
-    (*tkTrackD0).push_back(refTk->d0());
-    (*tkTrackD0Error).push_back(refTk->d0Error());
-    (*tkTrackNHits).push_back(refTk->recHitsSize());
-    (*tkTrackCharge).push_back(refTk->charge());
-    (*tkTrackChi2).push_back(refTk->chi2());
-    (*tkTrackNdof).push_back(refTk->ndof());
-    // Fill in the track fitting parameters (with phi filled in above)
-    (*tkTrackDsz).push_back(refTk->dsz());
-    (*tkTrackDszError).push_back(refTk->dszError());
-    (*tkTrackDxy).push_back(refTk->dxy());
-    (*tkTrackDxyError).push_back(refTk->dxyError());
-    (*tkTrackLambda).push_back(refTk->lambda());
-    (*tkTrackLambdaError).push_back(refTk->lambdaError());
-    (*tkTrackQoverp).push_back(refTk->qoverp());
-    (*tkTrackQoverpError).push_back(refTk->qoverpError());
-    (*tkTrackErrorMatrix).push_back(refTk->covariance());
-    
-    std::vector<int> *idsForThisTk = new std::vector<int>;
-    std::vector<int> *subidsForThisTk = new std::vector<int>;
-    std::vector<int> *statusForThisTk = new std::vector<int>;
-    std::vector<double> *xForThisTk = new std::vector<double>;
-    std::vector<double> *yForThisTk = new std::vector<double>;
-    std::vector<double> *zForThisTk = new std::vector<double>;
-    
-    edm::ESHandle<TransientTrackingRecHitBuilder> trackBuilder;
-    std::string trackBuilderName = "WithTrackAngle";
-    iSetup.get<TransientRecHitRecord>().get(trackBuilderName,trackBuilder);
-    
-    edm::LogInfo("MuonRecoTreeUtility") << "iterating over tracking rechits";
-    for (trackingRecHit_iterator tkHit = refTk->recHitsBegin(); tkHit != refTk->recHitsEnd(); ++tkHit) {     
-      if ((*tkHit)->isValid()) {
-	(*idsForThisTk).push_back((*tkHit)->geographicalId().rawId());
-	(*subidsForThisTk).push_back((*tkHit)->geographicalId().subdetId());
-	(*statusForThisTk).push_back((*tkHit)->type());
-	if ((*tkHit)->geographicalId().det() == 1) {
-	  TransientTrackingRecHit::RecHitPointer globTk = trackBuilder->build(&**tkHit);
-	  (*xForThisTk).push_back(globTk->globalPosition().x());
-	  (*yForThisTk).push_back(globTk->globalPosition().y());
-	  (*zForThisTk).push_back(globTk->globalPosition().z());
+    if(tkTrack.isAvailable()) {
+      int iTk = iMu;  
+      const reco::TrackRef refTk(tkTrack);
+      
+      // Fill in basic information of tkMuons
+      (*tkTrackP).push_back(refTk->p());
+      (*tkTrackPx).push_back(refTk->px());
+      (*tkTrackPy).push_back(refTk->py());
+      (*tkTrackPz).push_back(refTk->pz());
+      (*tkTrackPt).push_back(refTk->pt());
+      (*tkTrackPtError).push_back(refTk->ptError());
+      (*tkTrackEta).push_back(refTk->eta());
+      (*tkTrackEtaError).push_back(refTk->etaError());
+      (*tkTrackPhi).push_back(refTk->phi());
+      (*tkTrackPhiError).push_back(refTk->phiError());
+      (*tkTrackD0).push_back(refTk->d0());
+      (*tkTrackD0Error).push_back(refTk->d0Error());
+      (*tkTrackNHits).push_back(refTk->recHitsSize());
+      (*tkTrackCharge).push_back(refTk->charge());
+      (*tkTrackChi2).push_back(refTk->chi2());
+      (*tkTrackNdof).push_back(refTk->ndof());
+      // Fill in the track fitting parameters (with phi filled in above)
+      (*tkTrackDsz).push_back(refTk->dsz());
+      (*tkTrackDszError).push_back(refTk->dszError());
+      (*tkTrackDxy).push_back(refTk->dxy());
+      (*tkTrackDxyError).push_back(refTk->dxyError());
+      (*tkTrackLambda).push_back(refTk->lambda());
+      (*tkTrackLambdaError).push_back(refTk->lambdaError());
+      (*tkTrackQoverp).push_back(refTk->qoverp());
+      (*tkTrackQoverpError).push_back(refTk->qoverpError());
+      (*tkTrackErrorMatrix).push_back(refTk->covariance());
+      
+      std::vector<int> *idsForThisTk = new std::vector<int>;
+      std::vector<int> *subidsForThisTk = new std::vector<int>;
+      std::vector<int> *statusForThisTk = new std::vector<int>;
+      std::vector<double> *xForThisTk = new std::vector<double>;
+      std::vector<double> *yForThisTk = new std::vector<double>;
+      std::vector<double> *zForThisTk = new std::vector<double>;
+      
+      edm::ESHandle<TransientTrackingRecHitBuilder> trackBuilder;
+      std::string trackBuilderName = "WithTrackAngle";
+      iSetup.get<TransientRecHitRecord>().get(trackBuilderName,trackBuilder);
+      
+      edm::LogInfo("MuonRecoTreeUtility") << "iterating over tracking rechits";
+      for (trackingRecHit_iterator tkHit = refTk->recHitsBegin(); tkHit != refTk->recHitsEnd(); ++tkHit) {     
+	if ((*tkHit)->isValid()) {
+	  (*idsForThisTk).push_back((*tkHit)->geographicalId().rawId());
+	  (*subidsForThisTk).push_back((*tkHit)->geographicalId().subdetId());
+	  (*statusForThisTk).push_back((*tkHit)->type());
+	  if ((*tkHit)->geographicalId().det() == 1) {
+	    TransientTrackingRecHit::RecHitPointer globTk = trackBuilder->build(&**tkHit);
+	    (*xForThisTk).push_back(globTk->globalPosition().x());
+	    (*yForThisTk).push_back(globTk->globalPosition().y());
+	    (*zForThisTk).push_back(globTk->globalPosition().z());
+	  }
+	  else edm::LogInfo("MuonRecoTreeUtility") << "rechit found in detector " << (*tkHit)->geographicalId().det();
 	}
-	else edm::LogInfo("MuonRecoTreeUtility") << "rechit found in detector " << (*tkHit)->geographicalId().det();
       }
-    }
-    edm::LogInfo("MuonRecoTreeUtility") << "iteration finished";
-    
-    (*tkTrackDetIds).insert(std::make_pair(iTk,*idsForThisTk));
-    (*tkTrackSubdetIds).insert(std::make_pair(iTk,*subidsForThisTk));
-    (*tkTrackRecHitsStatus).insert(std::make_pair(iTk,*statusForThisTk));
-    (*tkTrackRecHitsX).insert(std::make_pair(iTk,*xForThisTk));
-    (*tkTrackRecHitsY).insert(std::make_pair(iTk,*yForThisTk));
-    (*tkTrackRecHitsZ).insert(std::make_pair(iTk,*zForThisTk));
-    
-    idsForThisTk->clear();
-    subidsForThisTk->clear();
-    statusForThisTk->clear();
-    xForThisTk->clear();
-    yForThisTk->clear();
-    zForThisTk->clear();
-    
-    bool associated = false;
-    // With the detector-level things filled, time to start doing the associations to sim
-    int sim_index = 0;
-    for (reco::RecoToSimCollection::const_iterator findRefTk = tkRecSimColl.begin(); findRefTk != tkRecSimColl.end(); ++findRefTk) {
-      const edm::RefToBase<reco::Track> & tkRecSimMatch = findRefTk->key;
-      if (tkRecSimMatch->pt() == refTk->pt()) {
-	associated = true;
-	const std::vector<std::pair<TrackingParticleRef,double> > & tp = findRefTk->val;
-	const TrackingParticleRef & trp = tp.begin()->first;
-	
-	(*tkTrackAssociationVar).push_back(tp.begin()->second);
-	
-	int particle_ID = trp->pdgId();
-	//	int myBin = wantMotherBin.GetBinNum(particle_ID);
-	
-	if(abs(particle_ID) == 13){
-	  // put in the associated pt,eta,phi
-	  (*tkTrackAssociatedSimMuonPt).push_back(trp->pt());
-	  (*tkTrackAssociatedSimMuonEta).push_back(trp->eta());
-	  (*tkTrackAssociatedSimMuonPhi).push_back(trp->phi());
-	  if (fabs(trp->phi() - refTk->phi()) > 1) {
-	    //Note: keeping this in.  This happens sometimes when the associator used is the
-	    //steppingHelixPropagatorAny
-	    edm::LogInfo("MuonRecoTreeUtility") << "Something's gone wrong here. First our indexes";
-	    edm::LogInfo("MuonRecoTreeUtility") << "iTk, sim_index = " << iTk <<" " << sim_index;
-	    edm::LogInfo("MuonRecoTreeUtility") << "What about recSimMatch vs trp phi?" << tkRecSimMatch->phi() <<" " << trp->phi();
-	  }
-	  // put in the detIDs for this sim muon
-	  std::vector<int> *idsForSimTk = new std::vector<int>;
-	  int simHitCounter = 0;
-	  for (PSimHitContainer::const_iterator tkSimHit = trp->pSimHit_begin(); tkSimHit != trp->pSimHit_end(); ++tkSimHit) {
-	    (*idsForSimTk).push_back((*tkSimHit).detUnitId());
-	    DetId theDetUnitId(tkSimHit->detUnitId());
-	    simHitCounter++;
-	  }
-	  (*tkTrackAssociatedSimMuonNHits).push_back(simHitCounter);
-	  (*tkTrackAssociatedSimMuonDetIds).insert(std::make_pair(sim_index,*idsForSimTk));
-	  idsForSimTk->clear();
-	  sim_index++;
-	  //---------------------- MOTHERHOOD --------------------------------
-	  //find the parent of tracking particle
-	  for(TrackingParticle::g4t_iterator isimtk = trp->g4Track_begin();isimtk!=trp->g4Track_end();isimtk++)
-	    {
-	      LogDebug(theCategory)<<"I am here 1";
-	      if(isimtk->type()==13||isimtk->type()==-13)
-		{
-		  // This is the sim track for this tracking particle.  Time to put in the parameters
-		  FreeTrajectoryState
-		    ftsAtProduction(GlobalPoint(trp->vertex().x(),trp->vertex().y(),trp->vertex().z()),
-				    GlobalVector(isimtk->momentum().x(),isimtk->momentum().y(),isimtk->momentum().z()),
-				    TrackCharge(trp->charge()),
-				    field.product());
-		  TSCBLBuilderNoMaterial tscblBuilder;
-		  TrajectoryStateClosestToBeamLine tsAtClosestApproach = tscblBuilder(ftsAtProduction,bs);//as in TrackProducerAlgorithm
-		  GlobalPoint v1 = tsAtClosestApproach.trackStateAtPCA().position();
-		  GlobalVector p = tsAtClosestApproach.trackStateAtPCA().momentum();
-		  GlobalPoint v(v1.x()-bs.x0(),v1.y()-bs.y0(),v1.z()-bs.z0());
-		  
-		  double qoverpSim = tsAtClosestApproach.trackStateAtPCA().charge()/p.mag();
-		  double lambdaSim = M_PI/2-p.theta();
-		  double dxySim    = (-v.x()*sin(p.phi())+v.y()*cos(p.phi()));
-		  double dzSim     = v.z() - (v.x()*p.x()+v.y()*p.y())/p.perp() * p.z()/p.perp();
-		  
-		  (*tkTrackAssociatedSimMuonDsz).push_back(dzSim);
-		  (*tkTrackAssociatedSimMuonDxy).push_back(dxySim);
-		  (*tkTrackAssociatedSimMuonLambda).push_back(lambdaSim);
-		  (*tkTrackAssociatedSimMuonQoverP).push_back(qoverpSim);
-		  
-		  //calculate mother hood
-		  MotherSearch mother(&*isimtk, SimTk, SimVtx, hepmc);
-		  //FIXME, use reco::Particle mother.mother();
-		  //                double pt,eta,phi;
-		  //                int parentID;
-		  //                int motherBinNumber;
-		  
-		  if (mother.IsValid()){
-		    if (mother.SimIsValid()){
-		      (*tkTrackParentID).push_back(mother.Sim_mother->type());
-		      (*tkTrackMotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Sim_mother->type()));
+      edm::LogInfo("MuonRecoTreeUtility") << "iteration finished";
+      
+      (*tkTrackDetIds).insert(std::make_pair(iMu,*idsForThisTk));
+      (*tkTrackSubdetIds).insert(std::make_pair(iMu,*subidsForThisTk));
+      (*tkTrackRecHitsStatus).insert(std::make_pair(iMu,*statusForThisTk));
+      (*tkTrackRecHitsX).insert(std::make_pair(iMu,*xForThisTk));
+      (*tkTrackRecHitsY).insert(std::make_pair(iMu,*yForThisTk));
+      (*tkTrackRecHitsZ).insert(std::make_pair(iMu,*zForThisTk));
+      
+      idsForThisTk->clear();
+      subidsForThisTk->clear();
+      statusForThisTk->clear();
+      xForThisTk->clear();
+      yForThisTk->clear();
+      zForThisTk->clear();
+      
+      bool associated = false;
+      // With the detector-level things filled, time to start doing the associations to sim
+      int sim_index = 0;
+      for (reco::RecoToSimCollection::const_iterator findRefTk = tkRecSimColl.begin(); findRefTk != tkRecSimColl.end(); ++findRefTk) {
+	const edm::RefToBase<reco::Track> & tkRecSimMatch = findRefTk->key;
+	if (tkRecSimMatch->pt() == refTk->pt()) {
+	  associated = true;
+	  const std::vector<std::pair<TrackingParticleRef,double> > & tp = findRefTk->val;
+	  const TrackingParticleRef & trp = tp.begin()->first;
+	  
+	  (*tkTrackAssociationVar).push_back(tp.begin()->second);
+	  
+	  int particle_ID = trp->pdgId();
+	  //	int myBin = wantMotherBin.GetBinNum(particle_ID);
+	  
+	  if(abs(particle_ID) == 13){
+	    // put in the associated pt,eta,phi
+	    (*tkTrackAssociatedSimMuonPt).push_back(trp->pt());
+	    (*tkTrackAssociatedSimMuonEta).push_back(trp->eta());
+	    (*tkTrackAssociatedSimMuonPhi).push_back(trp->phi());
+	    if (fabs(trp->phi() - refTk->phi()) > 1) {
+	      //Note: keeping this in.  This happens sometimes when the associator used is the
+	      //steppingHelixPropagatorAny
+	      edm::LogInfo("MuonRecoTreeUtility") << "Something's gone wrong here. First our indexes";
+	      edm::LogInfo("MuonRecoTreeUtility") << "iTk, sim_index = " << iMu <<" " << sim_index;
+	      edm::LogInfo("MuonRecoTreeUtility") << "What about recSimMatch vs trp phi?" << tkRecSimMatch->phi() <<" " << trp->phi();
+	    }
+	    // put in the detIDs for this sim muon
+	    std::vector<int> *idsForSimTk = new std::vector<int>;
+	    int simHitCounter = 0;
+	    for (PSimHitContainer::const_iterator tkSimHit = trp->pSimHit_begin(); tkSimHit != trp->pSimHit_end(); ++tkSimHit) {
+	      (*idsForSimTk).push_back((*tkSimHit).detUnitId());
+	      DetId theDetUnitId(tkSimHit->detUnitId());
+	      simHitCounter++;
+	    }
+	    (*tkTrackAssociatedSimMuonNHits).push_back(simHitCounter);
+	    (*tkTrackAssociatedSimMuonDetIds).insert(std::make_pair(sim_index,*idsForSimTk));
+	    idsForSimTk->clear();
+	    sim_index++;
+	    //---------------------- MOTHERHOOD ---------------------------
+	    //find the parent of tracking particle
+	    for(TrackingParticle::g4t_iterator isimtk = trp->g4Track_begin();isimtk!=trp->g4Track_end();isimtk++)
+	      {
+		LogDebug(theCategory)<<"I am here 1";
+		if(isimtk->type()==13||isimtk->type()==-13)
+		  {
+		    // This is the sim track for this tracking particle.  Time to put in the parameters
+		    FreeTrajectoryState
+		      ftsAtProduction(GlobalPoint(trp->vertex().x(),trp->vertex().y(),trp->vertex().z()),
+				      GlobalVector(isimtk->momentum().x(),isimtk->momentum().y(),isimtk->momentum().z()),
+				      TrackCharge(trp->charge()),
+				      field.product());
+		    TSCBLBuilderNoMaterial tscblBuilder;
+		    TrajectoryStateClosestToBeamLine tsAtClosestApproach = tscblBuilder(ftsAtProduction,bs);//as in TrackProducerAlgorithm
+		    GlobalPoint v1 = tsAtClosestApproach.trackStateAtPCA().position();
+		    GlobalVector p = tsAtClosestApproach.trackStateAtPCA().momentum();
+		    GlobalPoint v(v1.x()-bs.x0(),v1.y()-bs.y0(),v1.z()-bs.z0());
+		    
+		    double qoverpSim = tsAtClosestApproach.trackStateAtPCA().charge()/p.mag();
+		    double lambdaSim = M_PI/2-p.theta();
+		    double dxySim    = (-v.x()*sin(p.phi())+v.y()*cos(p.phi()));
+		    double dzSim     = v.z() - (v.x()*p.x()+v.y()*p.y())/p.perp() * p.z()/p.perp();
+		    
+		    (*tkTrackAssociatedSimMuonDsz).push_back(dzSim);
+		    (*tkTrackAssociatedSimMuonDxy).push_back(dxySim);
+		    (*tkTrackAssociatedSimMuonLambda).push_back(lambdaSim);
+		    (*tkTrackAssociatedSimMuonQoverP).push_back(qoverpSim);
+		    
+		    //calculate mother hood
+		    MotherSearch mother(&*isimtk, SimTk, SimVtx, hepmc);
+		    //FIXME, use reco::Particle mother.mother();
+		    //                double pt,eta,phi;
+		    //                int parentID;
+		    //                int motherBinNumber;
+		    
+		    if (mother.IsValid()){
+		      if (mother.SimIsValid()){
+			(*tkTrackParentID).push_back(mother.Sim_mother->type());
+			(*tkTrackMotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Sim_mother->type()));
+		      }
+		      else {
+			(*tkTrackParentID).push_back(mother.Gen_mother->pdg_id());
+			(*tkTrackMotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Gen_mother->pdg_id()));
+		      }
+		      //do it once per tracking particle once it succeeds
+		      break;
 		    }
-		    else {
-		      (*tkTrackParentID).push_back(mother.Gen_mother->pdg_id());
-		      (*tkTrackMotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Gen_mother->pdg_id()));
+		    else{
+		      // This handles cases when we have an associated sim muon, but "tricky" muon without
+		      // valid parent (e.g. singleMu)
+		      (*tkTrackParentID).push_back(0);
+		      (*tkTrackMotherBinNumber).push_back(wantMotherBin.GetBinNum(0));
+		      edm::LogError(theCategory)<<"tricky muon from TrackingParticle.";
 		    }
-		    //do it once per tracking particle once it succeeds
-		    break;
-		  }
-		  else{
-		    // This handles cases when we have an associated sim muon, but "tricky" muon without
-		    // valid parent (e.g. singleMu)
-		    (*tkTrackParentID).push_back(0);
-		    (*tkTrackMotherBinNumber).push_back(wantMotherBin.GetBinNum(0));
-		    edm::LogError(theCategory)<<"tricky muon from TrackingParticle.";
-		  }
-		}//sim track is a muon
-	      else{
-		(*tkTrackParentID).push_back(isimtk->type());
-		(*tkTrackMotherBinNumber).push_back(777);
-		edm::LogError(theCategory)<<"the sim track attached to the tracking particle is not a muon.";
-	      }
-	    }//loop over SimTrack of tracking particle
-	}//muon associated
+		  }//sim track is a muon
+		else{
+		  (*tkTrackParentID).push_back(isimtk->type());
+		  (*tkTrackMotherBinNumber).push_back(777);
+		  edm::LogError(theCategory)<<"the sim track attached to the tracking particle is not a muon.";
+		}
+	      }//loop over SimTrack of tracking particle
+	  }//muon associated
+	  else{
+	    //a reco muon is associated to something else than a muon
+	    edm::LogError(theCategory)<<"a reconstructed muon is associated to: "<<particle_ID;
+	    (*tkTrackParentID).push_back(particle_ID);
+	    (*tkTrackMotherBinNumber).push_back(-777);
+	  }
+	}//track has an association
 	else{
-	  //a reco muon is associated to something else than a muon
-	  edm::LogError(theCategory)<<"a reconstructed muon is associated to: "<<particle_ID;
-	  (*tkTrackParentID).push_back(particle_ID);
-	  (*tkTrackMotherBinNumber).push_back(-777);
+	  //this track was not associated.
+	  edm::LogError(theCategory)<<"a reconstructed muon is not associated.";
 	}
-      }//track has an association
-      else{
-	//this track was not associated.
-	edm::LogError(theCategory)<<"a reconstructed muon is not associated.";
       }
-    }
-    if (associated) {
-      //      std::cout << "Associated..." << std::endl;
-      (*tkTrackIsAssociated).push_back(1);
-    }
-    else {
+      if (associated) {
+	//      std::cout << "Associated..." << std::endl;
+	(*tkTrackIsAssociated).push_back(1);
+      }
+      else {
+	(*tkTrackIsAssociated).push_back(0);
+	(*tkTrackAssociationVar).push_back(-999);
+	(*tkTrackAssociatedSimMuonPt).push_back(-999);
+	(*tkTrackAssociatedSimMuonEta).push_back(-999);
+	(*tkTrackAssociatedSimMuonPhi).push_back(-999);
+	(*tkTrackAssociatedSimMuonNHits).push_back(-999);
+	(*tkTrackAssociatedSimMuonQoverP).push_back(-999);
+	(*tkTrackAssociatedSimMuonLambda).push_back(-999);
+	(*tkTrackAssociatedSimMuonDxy).push_back(-999);
+	(*tkTrackAssociatedSimMuonDsz).push_back(-999);
+	(*tkTrackParentID).push_back(-666);
+	(*tkTrackMotherBinNumber).push_back(-999);
+      }
+    } else { // loop over hltL3TkTracksFromL2
+      double crap = -999;
+      (*tkTrackP).push_back(crap);
+      (*tkTrackPx).push_back(crap);
+      (*tkTrackPy).push_back(crap);
+      (*tkTrackPz).push_back(crap);
+      (*tkTrackPt).push_back(crap);
+      (*tkTrackPtError).push_back(crap);
+      //(*tkTrackPt90).push_back(crap);
+      (*tkTrackEta).push_back(crap);
+      (*tkTrackEtaError).push_back(crap);
+      (*tkTrackPhi).push_back(crap);
+      (*tkTrackPhiError).push_back(crap);
+      (*tkTrackD0).push_back(crap);
+      (*tkTrackD0Error).push_back(crap);
+      (*tkTrackNHits).push_back(0);
+      (*tkTrackCharge).push_back(crap);
+      (*tkTrackChi2).push_back(crap);
+      (*tkTrackNdof).push_back(crap);
+      // Fill in the track fitting parameters (with phi filled in above)
+      (*tkTrackDsz).push_back(crap);
+      (*tkTrackDszError).push_back(crap);
+      (*tkTrackDxy).push_back(crap);
+      (*tkTrackDxyError).push_back(crap);
+      (*tkTrackLambda).push_back(crap);
+      (*tkTrackLambdaError).push_back(crap);
+      (*tkTrackQoverp).push_back(crap);
+      (*tkTrackQoverpError).push_back(crap);
+      //adam (*l3ErrorMatrix).push_back(NULL);
+      
+      (*tkTrackDetIds).insert(std::make_pair(iMu,0));    
+      (*tkTrackSubdetIds).insert(std::make_pair(iMu,0));
+      //(*tkTrackComponent).insert(std::make_pair(iMu,0));
+      (*tkTrackRecHitsStatus).insert(std::make_pair(iMu,0));
+      //(*tkTrackNMuHits).insert(std::make_pair(iMu,0));
+      //(*tkTrackMuStationNumber).insert(std::make_pair(iMu,0));
+      (*tkTrackRecHitsX).insert(std::make_pair(iMu,0));
+      (*tkTrackRecHitsY).insert(std::make_pair(iMu,0));
+      (*tkTrackRecHitsZ).insert(std::make_pair(iMu,0));
+      
+      //(*tkTrackIsoTrackDR).push_back(crap);
+      //(*tkTrackIsoTrackDRMinDelPt).push_back(crap);
+      //(*tkTrackTrackIsoDeposit).push_back(0);
+      
+      (*tkTrackAssociationVar).push_back(crap);
+      (*tkTrackAssociationPdgId).push_back(-999);
+      (*tkTrackAssociationMyBit).push_back(0);
+      (*tkTrackAssociationVtxX).push_back(crap);
+      (*tkTrackAssociationVtxY).push_back(crap);
+      (*tkTrackAssociationVtxZ).push_back(crap);
+      (*tkTrackAssociatedSimMuonPt).push_back(crap);
+      (*tkTrackAssociatedSimMuonEta).push_back(crap);
+      (*tkTrackAssociatedSimMuonPhi).push_back(crap);
+      
+      (*tkTrackAssociatedSimMuonNHits).push_back(0);
+      (*tkTrackAssociatedSimMuonDetIds).insert(std::make_pair(iMu,0));
+      //(*tkTrackAssociatedSimMuonMuStationNumber).insert(std::make_pair(iMu,0));
+      //(*tkTrackAssociatedSimMuonNMuHits).insert(std::make_pair(iMu,0));
+      
       (*tkTrackIsAssociated).push_back(0);
       (*tkTrackAssociationVar).push_back(-999);
       (*tkTrackAssociatedSimMuonPt).push_back(-999);
@@ -1694,309 +1897,381 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*tkTrackParentID).push_back(-666);
       (*tkTrackMotherBinNumber).push_back(-999);
     }
-  } // loop over hltL3TkTracksFromL2
-
-  for(int iL2 = 0;iL2!=nL2;++iL2){
-    reco::TrackRef refL2(l2Muons, iL2);
     
-    // Fill in basic information of l2Muons
-    (*l2P).push_back(refL2->p());
-    (*l2Px).push_back(refL2->px());
-    (*l2Py).push_back(refL2->py());
-    (*l2Pz).push_back(refL2->pz());
-    (*l2Pt).push_back(refL2->pt());
-    (*l2PtError).push_back(refL2->ptError());
-    (*l2Pt90).push_back(pt90(refL2,iEvent));
-    (*l2Eta).push_back(refL2->eta());
-    (*l2EtaError).push_back(refL2->etaError());
-    (*l2Phi).push_back(refL2->phi());
-    (*l2PhiError).push_back(refL2->phiError());
-    (*l2D0).push_back(refL2->d0());
-    (*l2D0Error).push_back(refL2->d0Error());
-    (*l2NHits).push_back(refL2->recHitsSize());
-    (*l2Charge).push_back(refL2->charge());
-    (*l2Chi2).push_back(refL2->chi2());
-    (*l2Ndof).push_back(refL2->ndof());
-    // Fill in the track fitting parameters (with phi filled in above)
-    (*l2Dsz).push_back(refL2->dsz());
-    (*l2DszError).push_back(refL2->dszError());
-    (*l2Dxy).push_back(refL2->dxy());
-    (*l2DxyError).push_back(refL2->dxyError());
-    (*l2Lambda).push_back(refL2->lambda());
-    (*l2LambdaError).push_back(refL2->lambdaError());
-    (*l2Qoverp).push_back(refL2->qoverp());
-    (*l2QoverpError).push_back(refL2->qoverpError());
-    (*l2ErrorMatrix).push_back(refL2->covariance());
-    // Filling in THE muon error matrix
-    //    edm::LogInfo("MuonRecoTreeUtility") << "Trying to fill the muon error matrix.";
+    if(staTrack.isAvailable()) {  
+      const reco::TrackRef refL2(staTrack);
+      int iL2 = iMu;
 
-    std::vector<double> *matrixValuesForThisL2 = new std::vector<double>;
-    std::vector<int> *idsForThisL2 = new std::vector<int>;
-    std::vector<int> *subidsForThisL2 = new std::vector<int>;
-    std::vector<int> *detsForThisL2 = new std::vector<int>;
-    std::vector<int> *statusForThisL2 = new std::vector<int>;
-    std::vector<double> *xForThisL2 = new std::vector<double>;
-    std::vector<double> *yForThisL2 = new std::vector<double>;
-    std::vector<double> *zForThisL2 = new std::vector<double>;
-    std::vector<int> *stationsForThisL2 = new std::vector<int>;
-    int nMuHitsForThisL2 = 0;
-
-    // We first start with checking for a valid FTS from the IP: i.e. do we have a valid L2 to seed an L3?  
-    // Then we rescale the errorMatrix at the IP.
-
-    TrajectoryStateTransform transform; 
-
-    // To get our error matrix things, we need a MuonServiceProxy.  Declared here.
-
-    MuonServiceProxy *proxy = new MuonServiceProxy(muonServiceParams);
-    proxy->update(iSetup);
-
-    // And this we need to do because the f.t.s. doesn't take TrackRefs
-    const reco::Track *tk = const_cast<const reco::Track *>(&*refL2);
-
-    FreeTrajectoryState fts = transform.initialFreeState(*tk,&*proxy->magneticField());
-   
-    //rescale the error at IP, but only if I have to.  And I have to.
-    // matrixForThisL2 is the rescaling matrix to be applied.
-    AlgebraicSymMatrix55 matrixForThisL2 = theErrorMatrix->get(GlobalVector(refL2->px(),refL2->py(),refL2->pz())).matrix();
-
-    if (theErrorMatrix && theAdjustAtIp){ 
-      CurvilinearTrajectoryError oMat = fts.curvilinearError();
-      CurvilinearTrajectoryError sfMat = theErrorMatrix->get(fts.momentum());//FIXME with position    
-      MuonErrorMatrix::multiply(oMat, sfMat);
-      fts = FreeTrajectoryState(fts.parameters(),oMat); 
-    }
-    
-    edm::ESHandle<Propagator> testProp = proxy->propagator(thePropagatorName);
-
-    if (testProp.isValid()) {
+      // Fill in basic information of l2Muons
+      (*l2P).push_back(refL2->p());
+      (*l2Px).push_back(refL2->px());
+      (*l2Py).push_back(refL2->py());
+      (*l2Pz).push_back(refL2->pz());
+      (*l2Pt).push_back(refL2->pt());
+      (*l2PtError).push_back(refL2->ptError());
+      (*l2Pt90).push_back(pt90(refL2,iEvent));
+      (*l2Eta).push_back(refL2->eta());
+      (*l2EtaError).push_back(refL2->etaError());
+      (*l2Phi).push_back(refL2->phi());
+      (*l2PhiError).push_back(refL2->phiError());
+      (*l2D0).push_back(refL2->d0());
+      (*l2D0Error).push_back(refL2->d0Error());
+      (*l2NHits).push_back(refL2->recHitsSize());
+      (*l2Charge).push_back(refL2->charge());
+      (*l2Chi2).push_back(refL2->chi2());
+      (*l2Ndof).push_back(refL2->ndof());
+      // Fill in the track fitting parameters (with phi filled in above)
+      (*l2Dsz).push_back(refL2->dsz());
+      (*l2DszError).push_back(refL2->dszError());
+      (*l2Dxy).push_back(refL2->dxy());
+      (*l2DxyError).push_back(refL2->dxyError());
+      (*l2Lambda).push_back(refL2->lambda());
+      (*l2LambdaError).push_back(refL2->lambdaError());
+      (*l2Qoverp).push_back(refL2->qoverp());
+      (*l2QoverpError).push_back(refL2->qoverpError());
+      (*l2ErrorMatrix).push_back(refL2->covariance());
+      // Filling in THE muon error matrix
+      //    edm::LogInfo("MuonRecoTreeUtility") << "Trying to fill the muon error matrix.";
       
-      StateOnTrackerBound onBounds(testProp.product());
+      std::vector<double> *matrixValuesForThisL2 = new std::vector<double>;
+      std::vector<int> *idsForThisL2 = new std::vector<int>;
+      std::vector<int> *subidsForThisL2 = new std::vector<int>;
+      std::vector<int> *detsForThisL2 = new std::vector<int>;
+      std::vector<int> *statusForThisL2 = new std::vector<int>;
+      std::vector<double> *xForThisL2 = new std::vector<double>;
+      std::vector<double> *yForThisL2 = new std::vector<double>;
+      std::vector<double> *zForThisL2 = new std::vector<double>;
+      std::vector<int> *stationsForThisL2 = new std::vector<int>;
+      int nMuHitsForThisL2 = 0;
       
-      TrajectoryStateOnSurface outer = onBounds(fts);
+      // We first start with checking for a valid FTS from the IP: i.e. do we have a valid L2 to seed an L3?  
+      // Then we rescale the errorMatrix at the IP.
       
-      if (theErrorMatrix && !theAdjustAtIp){ 
-	CurvilinearTrajectoryError oMat = outer.curvilinearError();
-	CurvilinearTrajectoryError sfMat = theErrorMatrix->get(outer.globalMomentum());//FIXME with position
-	MuonErrorMatrix::multiply(oMat, sfMat);   
-	outer = TrajectoryStateOnSurface(outer.globalParameters(),
-					 oMat,
-					 outer.surface(),
-					 outer.surfaceSide(),
-					 outer.weight());
+      TrajectoryStateTransform transform; 
+      
+      // To get our error matrix things, we need a MuonServiceProxy.  Declared here.
+      
+      MuonServiceProxy *proxy = new MuonServiceProxy(muonServiceParams);
+      proxy->update(iSetup);
+      
+      // And this we need to do because the f.t.s. doesn't take TrackRefs
+      const reco::Track *tk = const_cast<const reco::Track *>(&*refL2);
+      
+      FreeTrajectoryState fts = transform.initialFreeState(*tk,&*proxy->magneticField());
+      
+      //rescale the error at IP, but only if I have to.  And I have to.
+      // matrixForThisL2 is the rescaling matrix to be applied.
+      AlgebraicSymMatrix55 matrixForThisL2 = theErrorMatrix->get(GlobalVector(refL2->px(),refL2->py(),refL2->pz())).matrix();
+      
+      if (theErrorMatrix && theAdjustAtIp){ 
+	CurvilinearTrajectoryError oMat = fts.curvilinearError();
+	CurvilinearTrajectoryError sfMat = theErrorMatrix->get(fts.momentum());//FIXME with position    
+	MuonErrorMatrix::multiply(oMat, sfMat);
+	fts = FreeTrajectoryState(fts.parameters(),oMat); 
       }
       
-      if (outer.isValid()) {
-	AlgebraicSymMatrix55 matrixForThisL2 = outer.curvilinearError().matrix();
-	for (int i = 0; i < 5; i++) {
-	  for (int j = 0; j < 5; j++) {
-	    double temp = matrixForThisL2(i,j);
-	    (*matrixValuesForThisL2).push_back(temp);
+      edm::ESHandle<Propagator> testProp = proxy->propagator(thePropagatorName);
+      
+      if (testProp.isValid()) {
+	
+	StateOnTrackerBound onBounds(testProp.product());
+	
+	TrajectoryStateOnSurface outer = onBounds(fts);
+	
+	if (theErrorMatrix && !theAdjustAtIp){ 
+	  CurvilinearTrajectoryError oMat = outer.curvilinearError();
+	  CurvilinearTrajectoryError sfMat = theErrorMatrix->get(outer.globalMomentum());//FIXME with position
+	  MuonErrorMatrix::multiply(oMat, sfMat);   
+	  outer = TrajectoryStateOnSurface(outer.globalParameters(),
+					   oMat,
+					   outer.surface(),
+					   outer.surfaceSide(),
+					   outer.weight());
+	}
+	
+	if (outer.isValid()) {
+	  AlgebraicSymMatrix55 matrixForThisL2 = outer.curvilinearError().matrix();
+	  for (int i = 0; i < 5; i++) {
+	    for (int j = 0; j < 5; j++) {
+	      double temp = matrixForThisL2(i,j);
+	      (*matrixValuesForThisL2).push_back(temp);
+	    }
 	  }
 	}
+	(*muonErrorMatrix).insert(std::make_pair(iL2,*matrixValuesForThisL2));
       }
-      (*muonErrorMatrix).insert(std::make_pair(iL2,*matrixValuesForThisL2));
-    }
-    matrixValuesForThisL2->clear();
-
-
-
-    edm::ESHandle<TransientTrackingRecHitBuilder> muonBuilder;
-    std::string muonBuilderName = "MuonRecHitBuilder";
-    iSetup.get<TransientRecHitRecord>().get(muonBuilderName,muonBuilder);
-
-    for (trackingRecHit_iterator l2Hit = refL2->recHitsBegin(); l2Hit != refL2->recHitsEnd(); ++l2Hit) {
-      if ((*l2Hit)->isValid()) {
-	(*idsForThisL2).push_back((*l2Hit)->geographicalId().rawId());
-	(*subidsForThisL2).push_back((*l2Hit)->geographicalId().subdetId());
-	(*detsForThisL2).push_back((*l2Hit)->geographicalId().det());
-	(*statusForThisL2).push_back((*l2Hit)->type());
-	if ((*l2Hit)->geographicalId().det() == 2) { // Muon System
-	  nMuHitsForThisL2++;
-	  TransientTrackingRecHit::RecHitPointer globL2 = muonBuilder->build(&**l2Hit);
-	  (*xForThisL2).push_back(globL2->globalPosition().x());
-	  (*yForThisL2).push_back(globL2->globalPosition().y());
-	  (*zForThisL2).push_back(globL2->globalPosition().z());
-	  if ( (*l2Hit)->geographicalId().subdetId() == 1) { // DT hit
-	    const DTChamberId& id = DTChamberId((*l2Hit)->geographicalId());
-	    (*stationsForThisL2).push_back(id.station());
+      matrixValuesForThisL2->clear();
+      
+      
+      
+      edm::ESHandle<TransientTrackingRecHitBuilder> muonBuilder;
+      std::string muonBuilderName = "MuonRecHitBuilder";
+      iSetup.get<TransientRecHitRecord>().get(muonBuilderName,muonBuilder);
+      
+      for (trackingRecHit_iterator l2Hit = refL2->recHitsBegin(); l2Hit != refL2->recHitsEnd(); ++l2Hit) {
+	if ((*l2Hit)->isValid()) {
+	  (*idsForThisL2).push_back((*l2Hit)->geographicalId().rawId());
+	  (*subidsForThisL2).push_back((*l2Hit)->geographicalId().subdetId());
+	  (*detsForThisL2).push_back((*l2Hit)->geographicalId().det());
+	  (*statusForThisL2).push_back((*l2Hit)->type());
+	  if ((*l2Hit)->geographicalId().det() == 2) { // Muon System
+	    nMuHitsForThisL2++;
+	    TransientTrackingRecHit::RecHitPointer globL2 = muonBuilder->build(&**l2Hit);
+	    (*xForThisL2).push_back(globL2->globalPosition().x());
+	    (*yForThisL2).push_back(globL2->globalPosition().y());
+	    (*zForThisL2).push_back(globL2->globalPosition().z());
+	    if ( (*l2Hit)->geographicalId().subdetId() == 1) { // DT hit
+	      const DTChamberId& id = DTChamberId((*l2Hit)->geographicalId());
+	      (*stationsForThisL2).push_back(id.station());
+	    }
+	    if ( (*l2Hit)->geographicalId().subdetId() == 2) { // CSC hit
+	      const CSCDetId& id = CSCDetId((*l2Hit)->geographicalId());
+	      (*stationsForThisL2).push_back(id.station());
+	    }
+	    if ( (*l2Hit)->geographicalId().subdetId() == 3) { // RPC hit
+	      const RPCDetId& id = RPCDetId((*l2Hit)->geographicalId());
+	      (*stationsForThisL2).push_back(id.station());
+	    }
 	  }
-	  if ( (*l2Hit)->geographicalId().subdetId() == 2) { // CSC hit
-	    const CSCDetId& id = CSCDetId((*l2Hit)->geographicalId());
-	    (*stationsForThisL2).push_back(id.station());
-	  }
-	  if ( (*l2Hit)->geographicalId().subdetId() == 3) { // RPC hit
-	    const RPCDetId& id = RPCDetId((*l2Hit)->geographicalId());
-	    (*stationsForThisL2).push_back(id.station());
-	  }
+	  else edm::LogError(theCategory)<<"Hits for L2 muon outside muon system.";
 	}
-	else edm::LogError(theCategory)<<"Hits for L2 muon outside muon system.";
       }
-    }
-
-    (*l2DetIds).insert(std::make_pair(iL2,*idsForThisL2));
-    (*l2SubdetIds).insert(std::make_pair(iL2,*subidsForThisL2));
-    (*l2Component).insert(std::make_pair(iL2,*detsForThisL2));
-    (*l2RecHitsStatus).insert(std::make_pair(iL2,*statusForThisL2));
-    (*l2NMuHits).insert(std::make_pair(iL2,nMuHitsForThisL2));
-    (*l2MuStationNumber).insert(std::make_pair(iL2,*stationsForThisL2));
-    (*l2RecHitsX).insert(std::make_pair(iL2,*xForThisL2));
-    (*l2RecHitsY).insert(std::make_pair(iL2,*yForThisL2));
-    (*l2RecHitsZ).insert(std::make_pair(iL2,*zForThisL2));
-
-    idsForThisL2->clear();
-    subidsForThisL2->clear();
-    detsForThisL2->clear();
-    statusForThisL2->clear();
-    stationsForThisL2->clear();
-    xForThisL2->clear();
-    yForThisL2->clear();
-    zForThisL2->clear();
-    nMuHitsForThisL2 = 0;
-
-    // Determine whether this L2 muon seeds L3
-    int seedsL3 = 0;
-    for (unsigned int i = 0; i < indexL2SeedingL3->size(); i++) {
-      if (iL2 == indexL2SeedingL3->at(i)) seedsL3 = 1;
-    }
-    (*l2SeedsL3).push_back(seedsL3);
-    
-    // get the Calorimeter isolation deposits for this L2 muon
-    reco::IsoDeposit calDeposit = caloDepositExtractor->deposit(iEvent, iSetup, *refL2);
-    // cutting for the L2 muon isolation
-    muonisolation::Cuts::CutSpec calo_cuts_here = L2IsoCalCuts(refL2->eta());
-    // and deposit for the L2 muon isolation
-    double conesize = calo_cuts_here.conesize;
-    (*l2CalIsoDeposit).push_back(calDeposit.depositWithin(conesize));
-    
-    // With the detector-level things filled, time to start doing the associations to sim
-    bool associated = false;
-    // With the detector-level things filled, time to start doing the associations to sim
-    for (reco::RecoToSimCollection::const_iterator findRefL2 = l2RecSimColl.begin(); findRefL2 != l2RecSimColl.end(); ++findRefL2) {
-      const edm::RefToBase<reco::Track> & l2RecSimMatch = findRefL2->key;
-      int sim_index = 0;
-      if (l2RecSimMatch->pt() == refL2->pt()) {
-	associated = true;
-	const std::vector<std::pair<TrackingParticleRef,double> > & tp = findRefL2->val;
-	const TrackingParticleRef & trp = tp.begin()->first;
-
-        (*l2AssociationVar).push_back(tp.begin()->second);
-
-	int particle_ID = trp->pdgId();
-	// int myBin = wantMotherBin.GetBinNum(particle_ID);
-
-	if(abs(particle_ID) == 13){
-          // put in the associated pt,eta,phi
-          (*l2AssociatedSimMuonPt).push_back(trp->pt());
-          (*l2AssociatedSimMuonEta).push_back(trp->eta());
-          (*l2AssociatedSimMuonPhi).push_back(trp->phi());
-          // put in the detIDs for this sim muon
-	  std::vector<int> *idsForSimL2 = new std::vector<int>;
-	  std::vector<int> *stationsForSim = new std::vector<int>;
-          int simHitCounter = 0;
-          int simMuHitCounter = 0;
-          for (PSimHitContainer::const_iterator l2SimHit = trp->pSimHit_begin(); l2SimHit != trp->pSimHit_end(); ++l2SimHit) {
-            (*idsForSimL2).push_back((*l2SimHit).detUnitId());
-	    DetId theDetUnitId(l2SimHit->detUnitId());
-            int detector = theDetUnitId.det();
-            int subdetector = theDetUnitId.subdetId();
-            if (detector == 2) { //Muon system
-              simMuHitCounter ++;
-              if (subdetector == 1) { //DT
-                const DTChamberId& id = DTChamberId(l2SimHit->detUnitId());
-                (*stationsForSim).push_back(id.station());
-              }
-              if (subdetector == 2) { //CSC
-                const CSCDetId& id=CSCDetId(l2SimHit->detUnitId());
-                (*stationsForSim).push_back(id.station());
-              }
-              if (subdetector == 3) { //RPC
-                const RPCDetId& id = RPCDetId(l2SimHit->detUnitId());
-                (*stationsForSim).push_back(id.station());
-              }
-            }
-            simHitCounter++;
-          }
-          (*l2AssociatedSimMuonNHits).push_back(simHitCounter);
-          (*l2AssociatedSimMuonDetIds).insert(std::make_pair(sim_index,*idsForSimL2));
-	  (*l2AssociatedSimMuonMuStationNumber).insert(std::make_pair(sim_index,*stationsForSim));
-          (*l2AssociatedSimMuonNMuHits).insert(std::make_pair(sim_index,simMuHitCounter));
-          idsForSimL2->clear();
-	  stationsForSim->clear();
-          sim_index++;
-	  //---------------------- MOTHERHOOD --------------------------------
-	  //find the parent of tracking particle
-	  for(TrackingParticle::g4t_iterator isimtk = trp->g4Track_begin();isimtk!=trp->g4Track_end();isimtk++)
-	    {
-	      LogDebug(theCategory)<<"I am here 1";
-	      if(isimtk->type()==13||isimtk->type()==-13)
-		{
-		  // This is the sim track for this tracking particle.  Time to put in the parameters
-		  FreeTrajectoryState 
-		    ftsAtProduction(GlobalPoint(trp->vertex().x(),trp->vertex().y(),trp->vertex().z()),
-				    GlobalVector(isimtk->momentum().x(),isimtk->momentum().y(),isimtk->momentum().z()),
-				    TrackCharge(trp->charge()),
-				    field.product());
-		  TSCBLBuilderNoMaterial tscblBuilder;
-		  TrajectoryStateClosestToBeamLine tsAtClosestApproach = tscblBuilder(ftsAtProduction,bs);//as in TrackProducerAlgorithm
-		  GlobalPoint v1 = tsAtClosestApproach.trackStateAtPCA().position();
-		  GlobalVector p = tsAtClosestApproach.trackStateAtPCA().momentum();
-		  GlobalPoint v(v1.x()-bs.x0(),v1.y()-bs.y0(),v1.z()-bs.z0());
-		  
-		  double qoverpSim = tsAtClosestApproach.trackStateAtPCA().charge()/p.mag();
-		  double lambdaSim = M_PI/2-p.theta();
-		  double dxySim    = (-v.x()*sin(p.phi())+v.y()*cos(p.phi()));
-		  double dzSim     = v.z() - (v.x()*p.x()+v.y()*p.y())/p.perp() * p.z()/p.perp();
-		  
-		  (*l2AssociatedSimMuonDsz).push_back(dzSim);
-		  (*l2AssociatedSimMuonDxy).push_back(dxySim);
-		  (*l2AssociatedSimMuonLambda).push_back(lambdaSim);
-		  (*l2AssociatedSimMuonQoverP).push_back(qoverpSim);
-		  //calculate mother hood
-		  MotherSearch mother(&*isimtk, SimTk, SimVtx, hepmc);
-		  //FIXME, use reco::Particle mother.mother();
-		  //                double pt,eta,phi;
-		  //                int parentID;
-		  //                int motherBinNumber;
-		  if (mother.IsValid()){
-		    if (mother.SimIsValid()){
-		      (*l2ParentID).push_back(mother.Sim_mother->type());
-		      (*l2MotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Sim_mother->type()));
-		    }
-		    else {
-		      (*l2ParentID).push_back(mother.Gen_mother->pdg_id());
-		      (*l2MotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Gen_mother->pdg_id()));
-		    }
-		    //do it once per tracking particle once it succeed
-		    break;
-		  }
-		  else{
-		    (*l2ParentID).push_back(0);
-		    (*l2MotherBinNumber).push_back(wantMotherBin.GetBinNum(0));
-		    edm::LogError(theCategory)<<"tricky muon from TrackingParticle.";
-		  }
-		}//sim track is a muon
-	      else{
-		edm::LogError(theCategory)<<"the sim track attached to the tracking particle is not a muon.";
-		(*l2ParentID).push_back(isimtk->type());
-		(*l2MotherBinNumber).push_back(777);
+      
+      (*l2DetIds).insert(std::make_pair(iL2,*idsForThisL2));
+      (*l2SubdetIds).insert(std::make_pair(iL2,*subidsForThisL2));
+      (*l2Component).insert(std::make_pair(iL2,*detsForThisL2));
+      (*l2RecHitsStatus).insert(std::make_pair(iL2,*statusForThisL2));
+      (*l2NMuHits).insert(std::make_pair(iL2,nMuHitsForThisL2));
+      (*l2MuStationNumber).insert(std::make_pair(iL2,*stationsForThisL2));
+      (*l2RecHitsX).insert(std::make_pair(iL2,*xForThisL2));
+      (*l2RecHitsY).insert(std::make_pair(iL2,*yForThisL2));
+      (*l2RecHitsZ).insert(std::make_pair(iL2,*zForThisL2));
+      
+      idsForThisL2->clear();
+      subidsForThisL2->clear();
+      detsForThisL2->clear();
+      statusForThisL2->clear();
+      stationsForThisL2->clear();
+      xForThisL2->clear();
+      yForThisL2->clear();
+      zForThisL2->clear();
+      nMuHitsForThisL2 = 0;
+      
+      // Determine whether this L2 muon seeds L3
+      int seedsL3 = 0;
+      for (unsigned int i = 0; i < indexL2SeedingL3->size(); i++) {
+	if (iL2 == indexL2SeedingL3->at(i)) seedsL3 = 1;
+      }
+      (*l2SeedsL3).push_back(seedsL3);
+      
+      // get the Calorimeter isolation deposits for this L2 muon
+      reco::IsoDeposit calDeposit = caloDepositExtractor->deposit(iEvent, iSetup, *refL2);
+      // cutting for the L2 muon isolation
+      muonisolation::Cuts::CutSpec calo_cuts_here = L2IsoCalCuts(refL2->eta());
+      // and deposit for the L2 muon isolation
+      double conesize = calo_cuts_here.conesize;
+      (*l2CalIsoDeposit).push_back(calDeposit.depositWithin(conesize));
+      
+      // With the detector-level things filled, time to start doing the associations to sim
+      bool associated = false;
+      // With the detector-level things filled, time to start doing the associations to sim
+      for (reco::RecoToSimCollection::const_iterator findRefL2 = l2RecSimColl.begin(); findRefL2 != l2RecSimColl.end(); ++findRefL2) {
+	const edm::RefToBase<reco::Track> & l2RecSimMatch = findRefL2->key;
+	int sim_index = 0;
+	if (l2RecSimMatch->pt() == refL2->pt()) {
+	  associated = true;
+	  const std::vector<std::pair<TrackingParticleRef,double> > & tp = findRefL2->val;
+	  const TrackingParticleRef & trp = tp.begin()->first;
+	  
+	  (*l2AssociationVar).push_back(tp.begin()->second);
+	  
+	  int particle_ID = trp->pdgId();
+	  // int myBin = wantMotherBin.GetBinNum(particle_ID);
+	  
+	  if(abs(particle_ID) == 13){
+	    // put in the associated pt,eta,phi
+	    (*l2AssociatedSimMuonPt).push_back(trp->pt());
+	    (*l2AssociatedSimMuonEta).push_back(trp->eta());
+	    (*l2AssociatedSimMuonPhi).push_back(trp->phi());
+	    // put in the detIDs for this sim muon
+	    std::vector<int> *idsForSimL2 = new std::vector<int>;
+	    std::vector<int> *stationsForSim = new std::vector<int>;
+	    int simHitCounter = 0;
+	    int simMuHitCounter = 0;
+	    for (PSimHitContainer::const_iterator l2SimHit = trp->pSimHit_begin(); l2SimHit != trp->pSimHit_end(); ++l2SimHit) {
+	      (*idsForSimL2).push_back((*l2SimHit).detUnitId());
+	      DetId theDetUnitId(l2SimHit->detUnitId());
+	      int detector = theDetUnitId.det();
+	      int subdetector = theDetUnitId.subdetId();
+	      if (detector == 2) { //Muon system
+		simMuHitCounter ++;
+		if (subdetector == 1) { //DT
+		  const DTChamberId& id = DTChamberId(l2SimHit->detUnitId());
+		  (*stationsForSim).push_back(id.station());
+		}
+		if (subdetector == 2) { //CSC
+		  const CSCDetId& id=CSCDetId(l2SimHit->detUnitId());
+		  (*stationsForSim).push_back(id.station());
+		}
+		if (subdetector == 3) { //RPC
+		  const RPCDetId& id = RPCDetId(l2SimHit->detUnitId());
+		  (*stationsForSim).push_back(id.station());
+		}
 	      }
-	    }//loop over SimTrack of tracking particle
-	}//muon associated
+	      simHitCounter++;
+	    }
+	    (*l2AssociatedSimMuonNHits).push_back(simHitCounter);
+	    (*l2AssociatedSimMuonDetIds).insert(std::make_pair(sim_index,*idsForSimL2));
+	    (*l2AssociatedSimMuonMuStationNumber).insert(std::make_pair(sim_index,*stationsForSim));
+	    (*l2AssociatedSimMuonNMuHits).insert(std::make_pair(sim_index,simMuHitCounter));
+	    idsForSimL2->clear();
+	    stationsForSim->clear();
+	    sim_index++;
+	    //---------------------- MOTHERHOOD ---------------------------
+	    //find the parent of tracking particle
+	    for(TrackingParticle::g4t_iterator isimtk = trp->g4Track_begin();isimtk!=trp->g4Track_end();isimtk++)
+	      {
+		LogDebug(theCategory)<<"I am here 1";
+		if(isimtk->type()==13||isimtk->type()==-13)
+		  {
+		    // This is the sim track for this tracking particle.  Time to put in the parameters
+		    FreeTrajectoryState 
+		      ftsAtProduction(GlobalPoint(trp->vertex().x(),trp->vertex().y(),trp->vertex().z()),
+				      GlobalVector(isimtk->momentum().x(),isimtk->momentum().y(),isimtk->momentum().z()),
+				      TrackCharge(trp->charge()),
+				      field.product());
+		    TSCBLBuilderNoMaterial tscblBuilder;
+		    TrajectoryStateClosestToBeamLine tsAtClosestApproach = tscblBuilder(ftsAtProduction,bs);//as in TrackProducerAlgorithm
+		    GlobalPoint v1 = tsAtClosestApproach.trackStateAtPCA().position();
+		    GlobalVector p = tsAtClosestApproach.trackStateAtPCA().momentum();
+		    GlobalPoint v(v1.x()-bs.x0(),v1.y()-bs.y0(),v1.z()-bs.z0());
+		    
+		    double qoverpSim = tsAtClosestApproach.trackStateAtPCA().charge()/p.mag();
+		    double lambdaSim = M_PI/2-p.theta();
+		    double dxySim    = (-v.x()*sin(p.phi())+v.y()*cos(p.phi()));
+		    double dzSim     = v.z() - (v.x()*p.x()+v.y()*p.y())/p.perp() * p.z()/p.perp();
+		    
+		    (*l2AssociatedSimMuonDsz).push_back(dzSim);
+		    (*l2AssociatedSimMuonDxy).push_back(dxySim);
+		    (*l2AssociatedSimMuonLambda).push_back(lambdaSim);
+		    (*l2AssociatedSimMuonQoverP).push_back(qoverpSim);
+		    //calculate mother hood
+		    MotherSearch mother(&*isimtk, SimTk, SimVtx, hepmc);
+		    //FIXME, use reco::Particle mother.mother();
+		    //                double pt,eta,phi;
+		    //                int parentID;
+		    //                int motherBinNumber;
+		    if (mother.IsValid()){
+		      if (mother.SimIsValid()){
+			(*l2ParentID).push_back(mother.Sim_mother->type());
+			(*l2MotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Sim_mother->type()));
+		      }
+		      else {
+			(*l2ParentID).push_back(mother.Gen_mother->pdg_id());
+			(*l2MotherBinNumber).push_back(wantMotherBin.GetBinNum(mother.Gen_mother->pdg_id()));
+		      }
+		      //do it once per tracking particle once it succeed
+		      break;
+		    }
+		    else{
+		      (*l2ParentID).push_back(0);
+		      (*l2MotherBinNumber).push_back(wantMotherBin.GetBinNum(0));
+		      edm::LogError(theCategory)<<"tricky muon from TrackingParticle.";
+		    }
+		  }//sim track is a muon
+		else{
+		  edm::LogError(theCategory)<<"the sim track attached to the tracking particle is not a muon.";
+		  (*l2ParentID).push_back(isimtk->type());
+		  (*l2MotherBinNumber).push_back(777);
+		}
+	      }//loop over SimTrack of tracking particle
+	  }//muon associated
+	  else{
+	    //a reco muon is associated to something else than a muon
+	    edm::LogError(theCategory)<<"a reconstructed muon is associated to: "<<particle_ID;
+	    (*l2ParentID).push_back(particle_ID);
+	    (*l2MotherBinNumber).push_back(-777);
+	  }
+	}//track has an association
 	else{
-	  //a reco muon is associated to something else than a muon
-	  edm::LogError(theCategory)<<"a reconstructed muon is associated to: "<<particle_ID;
-	  (*l2ParentID).push_back(particle_ID);
-	  (*l2MotherBinNumber).push_back(-777);
+	  //this track was not associated.
+	  edm::LogError(theCategory)<<"a reconstructed muon is not associated.";
 	}
-      }//track has an association
-      else{
-	//this track was not associated.
-	edm::LogError(theCategory)<<"a reconstructed muon is not associated.";
       }
-    }
-    if (associated) (*l2IsAssociated).push_back(1);
-    else {
+      if (associated) (*l2IsAssociated).push_back(1);
+      else {
+	(*l2IsAssociated).push_back(0);
+	(*l2AssociationVar).push_back(-999);
+	(*l2AssociatedSimMuonPt).push_back(-999);
+	(*l2AssociatedSimMuonEta).push_back(-999);
+	(*l2AssociatedSimMuonPhi).push_back(-999);
+	(*l2AssociatedSimMuonNHits).push_back(-999);
+	(*l2AssociatedSimMuonQoverP).push_back(-999);
+	(*l2AssociatedSimMuonLambda).push_back(-999);
+	(*l2AssociatedSimMuonDxy).push_back(-999);
+	(*l2AssociatedSimMuonDsz).push_back(-999);
+	(*l2ParentID).push_back(-666);
+	(*l2MotherBinNumber).push_back(-999);
+      }
+    } else { //loop over l2Muons
+      double crap = -999;
+      (*l2P).push_back(crap);
+      (*l2Px).push_back(crap);
+      (*l2Py).push_back(crap);
+      (*l2Pz).push_back(crap);
+      (*l2Pt).push_back(crap);
+      (*l2PtError).push_back(crap);
+      (*l2Pt90).push_back(crap);
+      (*l2Eta).push_back(crap);
+      (*l2EtaError).push_back(crap);
+      (*l2Phi).push_back(crap);
+      (*l2PhiError).push_back(crap);
+      (*l2D0).push_back(crap);
+      (*l2D0Error).push_back(crap);
+      (*l2NHits).push_back(0);
+      (*l2Charge).push_back(crap);
+      (*l2Chi2).push_back(crap);
+      (*l2Ndof).push_back(crap);
+      // Fill in the track fitting parameters (with phi filled in above)
+      (*l2Dsz).push_back(crap);
+      (*l2DszError).push_back(crap);
+      (*l2Dxy).push_back(crap);
+      (*l2DxyError).push_back(crap);
+      (*l2Lambda).push_back(crap);
+      (*l2LambdaError).push_back(crap);
+      (*l2Qoverp).push_back(crap);
+      (*l2QoverpError).push_back(crap);
+      //adam (*l2ErrorMatrix).push_back(NULL);
+      
+      (*l2DetIds).insert(std::make_pair(iMu,0));    
+      (*l2SubdetIds).insert(std::make_pair(iMu,0));
+      (*l2Component).insert(std::make_pair(iMu,0));
+      (*l2RecHitsStatus).insert(std::make_pair(iMu,0));
+      (*l2NMuHits).insert(std::make_pair(iMu,0));
+      (*l2MuStationNumber).insert(std::make_pair(iMu,0));
+      (*l2RecHitsX).insert(std::make_pair(iMu,0));
+      (*l2RecHitsY).insert(std::make_pair(iMu,0));
+      (*l2RecHitsZ).insert(std::make_pair(iMu,0));
+      
+      //(*l2IsoTrackDR).push_back(crap);
+      //(*l2IsoTrackDRMinDelPt).push_back(crap);
+      //(*l2TrackIsoDeposit).push_back(0);
+      
+      (*l2AssociationVar).push_back(crap);
+      (*l2AssociationPdgId).push_back(-999);
+      (*l2AssociationMyBit).push_back(0);
+      (*l2AssociationVtxX).push_back(crap);
+      (*l2AssociationVtxY).push_back(crap);
+      (*l2AssociationVtxZ).push_back(crap);
+      (*l2AssociatedSimMuonPt).push_back(crap);
+      (*l2AssociatedSimMuonEta).push_back(crap);
+      (*l2AssociatedSimMuonPhi).push_back(crap);
+      
+      (*l2AssociatedSimMuonNHits).push_back(0);
+      (*l2AssociatedSimMuonDetIds).insert(std::make_pair(iMu,0));
+      (*l2AssociatedSimMuonMuStationNumber).insert(std::make_pair(iMu,0));
+      (*l2AssociatedSimMuonNMuHits).insert(std::make_pair(iMu,0));
+      
       (*l2IsAssociated).push_back(0);
       (*l2AssociationVar).push_back(-999);
       (*l2AssociatedSimMuonPt).push_back(-999);
@@ -2010,8 +2285,10 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*l2ParentID).push_back(-666);
       (*l2MotherBinNumber).push_back(-999);
     }
-  } //loop over l2Muons
-
+    
+    iMu++;
+  } // this brace migrates to swallow GLB STA TK
+  
   // Loop over all tracking particles
 
   int sim_index = 0;
@@ -2127,72 +2404,83 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       */
     
     std::vector<std::pair<RefToBase<reco::Track>, double> > rt;
+
     if(l3SimRecColl.find(trp) != l3SimRecColl.end()){
       rt = (std::vector<std::pair<RefToBase<reco::Track>, double> >) l3SimRecColl[trp];
       if (rt.size()!=0) { // Association to L3 successful
 	(*simToL3Associated).push_back(1);
 	(*simToL3AssociationVar).push_back(rt.begin()->second);
-	for (int iL3 = 0; iL3 != nL3; iL3++) {
-	  if (rt.begin()->first->pt() == (*l3Pt).at(iL3)) {
+	int iL3 = 0;
+	for(View<Muon>::const_iterator iMuon = muonColl.begin();
+	    iMuon != muonColl.end(); ++iMuon) {
+	  if (iMuon->combinedMuon().isAvailable() && iMuon->combinedMuon()->pt() == (rt.begin()->first->pt() ) ) {
 	    (*simToL3RecoIndex).push_back(iL3);
 	  }
+	  iL3++;
 	}
       }
       else { // Something went wrong
 	edm::LogInfo("MuonRecoTreeUtility")<<"rt.size = 0, but l3SimRec finds trp";
-	(*simToL3Associated).push_back(-666);
+	(*simToL3Associated).push_back(0);
 	(*simToL3AssociationVar).push_back(-999);
 	(*simToL3RecoIndex).push_back(-999);
       }
     }
     else { // Association to L3 unsuccessful
-      (*simToL3Associated).push_back(-666);
+      (*simToL3Associated).push_back(0);
       (*simToL3AssociationVar).push_back(-999);
       (*simToL3RecoIndex).push_back(-999);
     }
+
     if(tkSimRecColl.find(trp) != tkSimRecColl.end()){
       rt = (std::vector<std::pair<RefToBase<reco::Track>, double> >) tkSimRecColl[trp];
       if (rt.size()!=0) { // Association to TK successful
         (*simToTkAssociated).push_back(1);
         (*simToTkAssociationVar).push_back(rt.begin()->second);
-        for (int iL3 = 0; iL3 != nL3; iL3++) {
-          if (rt.begin()->first->pt() == (*l3Pt).at(iL3)) {
-            (*simToTkRecoIndex).push_back(iL3);
+	int iTk = 0;
+	for(View<Muon>::const_iterator iMuon = muonColl.begin();
+	    iMuon != muonColl.end(); ++iMuon) {
+	  if (iMuon->innerTrack().isAvailable() && iMuon->innerTrack()->pt() == (rt.begin()->first->pt() ) ) {
+            (*simToTkRecoIndex).push_back(iTk);
           }
+	  iTk++;
         }
       }
       else { // Something went wrong
 	edm::LogInfo("MuonRecoTreeUtility")<<"rt.size = 0, but l3SimRec finds trp";
-        (*simToTkAssociated).push_back(-666);
+        (*simToTkAssociated).push_back(0);
         (*simToTkAssociationVar).push_back(-999);
         (*simToTkRecoIndex).push_back(-999);
       }
     }
     else { // Association to L3 unsuccessful
-      (*simToTkAssociated).push_back(-666);
+      (*simToTkAssociated).push_back(0);
       (*simToTkAssociationVar).push_back(-999);
       (*simToTkRecoIndex).push_back(-999);
     }
+
     if(l2SimRecColl.find(trp) != l2SimRecColl.end()){
       rt = (std::vector<std::pair<RefToBase<reco::Track>, double> >) l2SimRecColl[trp];
       if (rt.size()!=0) { // Association to L2 successful
 	(*simToL2Associated).push_back(1);
 	(*simToL2AssociationVar).push_back(rt.begin()->second);
-	for (int iL2 = 0; iL2 != nL2; iL2++) {
-	  if (rt.begin()->first->pt() == (*l2Pt).at(iL2)) {
+	int iL2 = 0;
+	for(View<Muon>::const_iterator iMuon = muonColl.begin();
+	    iMuon != muonColl.end(); ++iMuon) {
+	  if (iMuon->outerTrack().isAvailable() && iMuon->outerTrack()->pt() == (rt.begin()->first->pt() ) ) {
 	    (*simToL2RecoIndex).push_back(iL2);
 	  }
 	}
       }
       else { // Something went wrong
 	edm::LogInfo("MuonRecoTreeUtility")<<"rt.size = 0, but l2SimRec finds trp";
-	(*simToL2Associated).push_back(-666);
+	(*simToL2Associated).push_back(0);
 	(*simToL2AssociationVar).push_back(-999);
 	(*simToL2RecoIndex).push_back(-999);
       }
     }
     else { // Association to L2 unsuccessful
-      (*simToL2Associated).push_back(-666);
+      (*simToL2Associated).push_back(0);
       (*simToL2AssociationVar).push_back(-999);
       (*simToL2RecoIndex).push_back(-999);
     }
@@ -2207,9 +2495,11 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   MuTrigData->Fill();
   MuTrigMC->Fill();
 
+  /*
   triggerDecisions->clear(); 
   triggerNames->clear();
-
+  */
+  /*
   muonDigiModuleTimes->clear();
   muonLocalRecModuleTimes->clear();
   muonL2RecModuleTimes->clear();
@@ -2220,6 +2510,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   trackerRecModuleTimes->clear();
   caloDigiModuleTimes->clear();
   caloRecModuleTimes->clear();
+  */
 
   l3P->clear();
   l3Px->clear();
@@ -2454,6 +2745,7 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   //Event-level information
   MuTrigData->Branch("RunNumber",&RunNumber,"RunNumber/I");
   MuTrigData->Branch("EventNumber",&EventNumber,"EventNumber/I");
+  /*
   // Execution times
   MuTrigData->Branch("totalMuonHLTTime",&totalMuonHLTTime,"totalMuonHLTTime/D");
   MuTrigData->Branch("muonDigiModuleTimes",&muonDigiModuleTimes);  
@@ -2466,7 +2758,8 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigData->Branch("trackerRecModuleTimes",&trackerRecModuleTimes);
   MuTrigData->Branch("caloDigiModuleTimes",&caloDigiModuleTimes);
   MuTrigData->Branch("caloRecModuleTimes",&caloRecModuleTimes);
-
+  */
+  /*
   //Trigger information
   MuTrigData->Branch("l1SingleMuNonIsoTriggered",&l1SingleMuNonIsoTriggered,"l1SingleMuNonIsoTriggered/I");
   MuTrigData->Branch("l2SingleMuNonIsoTriggered",&l2SingleMuNonIsoTriggered,"l2SingleMuNonIsoTriggered/I");
@@ -2486,6 +2779,7 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigData->Branch("l3DiMuIsoTriggered",&l3DiMuIsoTriggered,"l3DiMuIsoTriggered/I"); 
   MuTrigData->Branch("triggerDecisions",&triggerDecisions);
   MuTrigData->Branch("triggerNames",&triggerNames);
+  */
   // number of muons at each level
   MuTrigData->Branch("nL2",&nL2,"nL2/I");
   MuTrigData->Branch("nL3",&nL3,"nL3/I");
@@ -2621,6 +2915,7 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   //Event-level information
   MuTrigMC->Branch("RunNumber",&RunNumber,"RunNumber/I");
   MuTrigMC->Branch("EventNumber",&EventNumber,"EventNumber/I");
+  /*
   // Execution times
   MuTrigMC->Branch("totalMuonHLTTime",&totalMuonHLTTime,"totalMuonHLTTime/D");
   MuTrigMC->Branch("muonDigiModuleTimes",&muonDigiModuleTimes);
@@ -2633,6 +2928,8 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigMC->Branch("trackerRecModuleTimes",&trackerRecModuleTimes);
   MuTrigMC->Branch("caloDigiModuleTimes",&caloDigiModuleTimes);
   MuTrigMC->Branch("caloRecModuleTimes",&caloRecModuleTimes);
+  */
+  /*
   //Trigger information
   MuTrigMC->Branch("l1SingleMuNonIsoTriggered",&l1SingleMuNonIsoTriggered,"l1SingleMuNonIsoTriggered/I");
   MuTrigMC->Branch("l2SingleMuNonIsoTriggered",&l2SingleMuNonIsoTriggered,"l2SingleMuNonIsoTriggered/I");
@@ -2652,6 +2949,7 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigMC->Branch("l3DiMuIsoTriggered",&l3DiMuIsoTriggered,"l3DiMuIsoTriggered/I"); 
   MuTrigMC->Branch("triggerDecisions",&triggerDecisions);
   MuTrigMC->Branch("triggerNames",&triggerNames);
+  */
   // number of muons at each level
   MuTrigMC->Branch("nL2",&nL2,"nL2/I");
   MuTrigMC->Branch("nL3",&nL3,"nL3/I");
