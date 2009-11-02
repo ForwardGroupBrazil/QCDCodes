@@ -5,8 +5,12 @@ from RecoMuon.MuonIsolationProducers.caloExtractorByAssociatorBlocks_cff import 
 from RecoMuon.MuonIsolationProducers.trackExtractorBlocks_cff import *
 from RecoMuon.MuonIsolationProducers.jetExtractorBlock_cff import *
 
+from RecoMuon.GlobalTrackingTools.GlobalMuonRefitter_cff import *
+from RecoMuon.TrackingTools.MuonServiceProxy_cff import *
+
 hltMuonTreeMaker = cms.EDAnalyzer(
     "MuonRecoTreeUtility",
+    MuonServiceProxy,
     outputFileName = cms.untracked.string("RecoMuonTree.root"),
     isRecoLevel = cms.untracked.bool(True),
     CaloExtractorPSet = cms.PSet(
@@ -24,7 +28,7 @@ hltMuonTreeMaker = cms.EDAnalyzer(
     l2MuonLabel = cms.InputTag("standAloneMuons","UpdatedAtVtx"),
     propagatorName = cms.string('SteppingHelixPropagatorAlong'),
     trackLabel = cms.InputTag("generalTracks"),
-
+#    MuonServiceProxy,
     caloCutsPSet = cms.PSet(
         ConeSizes = cms.vdouble(0.24, 0.24, 0.24, 0.24, 0.24, 
                                 0.24, 0.24, 0.24, 0.24, 0.24, 
@@ -123,15 +127,15 @@ hltMuonTreeMaker = cms.EDAnalyzer(
     ),
     # InputTag l2MuonLabel = hltL2Muons
     # InputTag muSysTransientRecHitsLabel = MuonTransientTrackingRecHitBuilderESProducer
-    ServiceParameters = cms.PSet(
-        Propagators = cms.untracked.vstring('SteppingHelixPropagatorAny', 
-            'SteppingHelixPropagatorAlong', 
-            'SteppingHelixPropagatorOpposite', 
-            'PropagatorWithMaterial', 
-            'PropagatorWithMaterialOpposite'),
-        RPCLayers = cms.bool(True),
-        UseMuonNavigation = cms.untracked.bool(True)
-    ),
+##     ServiceParameters = cms.PSet(
+##         Propagators = cms.untracked.vstring('SteppingHelixPropagatorAny', 
+##             'SteppingHelixPropagatorAlong', 
+##             'SteppingHelixPropagatorOpposite', 
+##             'PropagatorWithMaterial', 
+##             'PropagatorWithMaterialOpposite'),
+##         RPCLayers = cms.bool(True),
+##         UseMuonNavigation = cms.untracked.bool(True)
+##     ),
     triggerResults_ = cms.InputTag("TriggerResults","","HLT"),
     linkLabel = cms.InputTag("globalMuons"),
     muonLabel = cms.InputTag("muons"),
@@ -285,5 +289,8 @@ hltMuonTreeMaker = cms.EDAnalyzer(
        signalOnly = cms.bool(True),
        chargedOnly = cms.bool(True)
        ),    
+    RefitterParameters = cms.PSet(
+    GlobalMuonRefitter
+    ),
 
 )

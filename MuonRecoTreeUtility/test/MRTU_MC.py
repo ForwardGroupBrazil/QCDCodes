@@ -53,12 +53,12 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.1 $'),
+    version = cms.untracked.string('$Revision: 1.2 $'),
     annotation = cms.untracked.string('MHTU nevts:100'),
     name = cms.untracked.string('PyReleaseValidation')
 )
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(10)
+    input = cms.untracked.int32(150)
 )
 process.options = cms.untracked.PSet(
     Rethrow = cms.untracked.vstring('ProductNotFound')
@@ -66,7 +66,9 @@ process.options = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-     '/store/user/aeverett/CMSSW_3_2_1/SingleMuPt200//aeverett//SingleMuPt200_CMSSW_3_2_1_step1//SingleMuPt200_CMSSW_3_2_1_step1//3f9251f9631b9dac27d828bfadc5f286//step1_29.root',
+#     '/store/user/aeverett/CMSSW_3_2_1/SingleMuPt200//aeverett//SingleMuPt200_CMSSW_3_2_1_step1//SingleMuPt200_CMSSW_3_2_1_step1//3f9251f9631b9dac27d828bfadc5f286//step1_29.root',
+#     "/store/user/aeverett//CMSSW_3_1_2//DYmumu_Mcut200-MC_31X_V3//PYTHIA6_DYmumu_Mcut200_10TeV_cff_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_HLT8E29_RECO_MC_31X_V3_8.root",
+     "/store/user/aeverett//CMSSW_3_2_1//TTbar_Tauola//aeverett//TTbar_Tauola_CMSSW_3_2_1_step1//TTbar_Tauola_CMSSW_3_2_1_step1//b947059661a5e0b4111d8e6607110054//step1_8.root"    
     )
 )
 
@@ -84,7 +86,7 @@ process.output = cms.OutputModule("PoolOutputModule",
 # Additional output definition
 
 # Other statements
-process.GlobalTag.globaltag = 'MC_31X_V1::All'
+process.GlobalTag.globaltag = 'MC_31X_V9::All'
 process.ttrhbwor.ComputeCoarseLocalPositionFromDisk = True
 process.ttrhbwr.ComputeCoarseLocalPositionFromDisk = True
 
