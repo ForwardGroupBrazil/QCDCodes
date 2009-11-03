@@ -111,8 +111,8 @@ makeCMS1Files( TChain* ev ) {
   codef << "#include \"test.h\"" << endl << endl;
   codef << "int ScanTree ( TTree* tree) {" << endl << endl;
   codef << "Init(tree);" << endl;
-  codef << "  TH1F *l3TestPt = new TH1F("l3TestPt","histogram of L3 p_{T}",100,0,100);" << endl;
-  codef << "  TH1F *l3deltaPt = new TH1F("l3deltaPt","histogram of L3 #Delta p_{T}",100,-10.,10.);" << endl;
+  codef << "  TH1F *l3TestPt = new TH1F(\"l3TestPt\",\"histogram of L3 p_{T}\",100,0,100);" << endl;
+  codef << "  TH1F *l3deltaPt = new TH1F(\"l3deltaPt\",\"histogram of L3 #Delta p_{T}\",100,-10.,10.);" << endl;
   codef << endl << "\tint nEntries = tree->GetEntries();" << endl << endl;
   codef << "\t //Event Loop" << endl;
   codef << "\tfor( int i = 0; i < nEntries; i++) {" << endl;
@@ -121,7 +121,7 @@ makeCMS1Files( TChain* ev ) {
   codef << "      l3TestPt->Fill((*l3Pt).at(iL3));" << endl;
   codef << "      l3deltaPt->Fill((*l2Pt).at(iL3)-(*tkTrackPt).at(iL3));" << endl;
   codef << "    }" << endl;
-  codef << "\t\tcout << \"//N L3: \" << nL3 << endl;" << endl;
+  //codef << "\t\tcout << \"//N L3: \" << nL3 << endl;" << endl;
   
   codef << " \t}" << endl << "\treturn 0;" << endl << "}" << endl;
   
