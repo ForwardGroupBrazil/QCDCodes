@@ -11,6 +11,8 @@
 
    myStyle->SetLabelSize(0.03,"xyz"); // size of axis values
 
+   myStyle->SetPalette(1);
+
    // default canvas positioning
    myStyle->SetCanvasBorderMode(0);
    myStyle->SetCanvasColor(0);
