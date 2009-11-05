@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.5 2009/10/28 20:34:56 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.6 2009/11/02 20:30:49 aeverett Exp $
 //
 //
 
@@ -211,6 +211,7 @@ private:
   std::vector<std::string> *triggerNames;
   */
   // HLT and L1 muon information
+  int nMu;
   int nL2;
   int nL3;
   int nTkTracks;
@@ -240,6 +241,13 @@ private:
   std::vector<float> *muGlbKink ;
   std::vector<float> *muTrkRelChi2 ;
   std::vector<float> *muStaRelChi2 ;
+  std::vector<int> *muNumberOfChambers;
+  std::vector<int> *muNumberOfMatches;
+  std::vector<unsigned int> *muStationMask;
+  std::map<int,std::vector<int> > *muNCSCSeg;
+  std::map<int,std::vector<int> > *muNDTSeg;
+  std::map<int,std::vector<int> > *muNRPCSeg;
+ 
 
   std::vector<double> *l3P;
   std::vector<double> *l3Px;
@@ -780,6 +788,12 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   muGlbKink  = 0;
   muTrkRelChi2  = 0;
   muStaRelChi2 = 0;
+  muNumberOfChambers =0;
+  muNumberOfMatches =0;
+  muStationMask =0;
+  muNCSCSeg =  new std::map<int,std::vector<int> >;
+  muNDTSeg =  new std::map<int,std::vector<int> >;
+  muNRPCSeg =  new std::map<int,std::vector<int> >;
   l3P = 0;
   l3Pt = 0;
   l3Px = 0;
@@ -1299,6 +1313,8 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   iEvent.getByLabel(theMuonLabel, muonHandle);
   View<Muon> muonColl = *(muonHandle.product());
 
+  nMu = muonColl.size();
+
   int iMu = 0;
   for(View<Muon>::const_iterator iMuon = muonColl.begin();
       iMuon != muonColl.end(); ++iMuon) {
@@ -1325,6 +1341,25 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 
       (*muCaloCompatibility).push_back(muon::caloCompatibility(*iMuon));
       (*muSegmentCompatibility).push_back(muon::segmentCompatibility(*iMuon));
+
+      (*muNumberOfChambers).push_back(iMuon->numberOfChambers());
+      (*muNumberOfMatches).push_back(iMuon->numberOfMatches());
+      (*muStationMask).push_back(iMuon->stationMask(Muon::SegmentArbitration));
+
+      std::vector<int> *nCSCSeg = new std::vector<int>;
+      std::vector<int> *nDTSeg = new std::vector<int>;
+      std::vector<int> *nRPCSeg = new std::vector<int>;
+      for(int station = 0; station < 4; ++station) {
+	nCSCSeg->push_back(iMuon->numberOfSegments(station+1, MuonSubdetId::CSC, Muon::NoArbitration));
+	nDTSeg->push_back(iMuon->numberOfSegments(station+1, MuonSubdetId::DT, Muon::NoArbitration));
+	nRPCSeg->push_back(iMuon->numberOfSegments(station+1, MuonSubdetId::RPC, Muon::NoArbitration));
+      }
+
+      (*muNCSCSeg).insert(std::make_pair(iMu,*nCSCSeg));
+      (*muNDTSeg).insert(std::make_pair(iMu,*nDTSeg));
+      (*muNRPCSeg).insert(std::make_pair(iMu,*nRPCSeg));
+
+
       if(iMuon->isGlobalMuon() && iMuon->isQualityValid()) {
 	(*muTrkKink).push_back(iMuon->combinedQuality().trkKink);
 	(*muGlbKink).push_back(iMuon->combinedQuality().glbKink);
@@ -2774,6 +2809,13 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   muGlbKink ->clear();
   muTrkRelChi2 ->clear();
   muStaRelChi2 ->clear();
+  muNumberOfChambers->clear();
+  muNumberOfMatches->clear();
+  muStationMask->clear();
+
+  muNCSCSeg->clear();
+  muNDTSeg->clear();
+  muNRPCSeg->clear();
 
   l3P->clear();
   l3Px->clear();
@@ -3054,6 +3096,7 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigData->Branch("triggerNames",&triggerNames);
   */
   // number of muons at each level
+  MuTrigData->Branch("nMu",&nMu,"nMu/I");
   MuTrigData->Branch("nL2",&nL2,"nL2/I");
   MuTrigData->Branch("nL3",&nL3,"nL3/I");
   MuTrigData->Branch("nTkTracks",&nTkTracks,"nTkTracks/I");
@@ -3081,6 +3124,12 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigData->Branch("muGlbKink",&muGlbKink);
   MuTrigData->Branch("muTrkRelChi2",&muTrkRelChi2);
   MuTrigData->Branch("muStaRelChi2",&muStaRelChi2);
+  MuTrigData->Branch("muNumberOfChambers",&muNumberOfChambers);
+  MuTrigData->Branch("muNumberOfMatches",&muNumberOfMatches);
+  MuTrigData->Branch("muStationMask",&muStationMask);
+  MuTrigData->Branch("muNCSCSeg",&muNCSCSeg);
+  MuTrigData->Branch("muNDTSeg",&muNDTSeg);
+  MuTrigData->Branch("muNRPCSeg",&muNRPCSeg);
   //MuTrigData->Branch("nL3Seeds",&nL3Seeds,"nL3Seeds/I");
   // L3 muon information: the basics
   MuTrigData->Branch("l3P",&l3P);
@@ -3256,6 +3305,7 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigMC->Branch("triggerNames",&triggerNames);
   */
   // number of muons at each level
+  MuTrigMC->Branch("nMu",&nMu,"nMu/I");
   MuTrigMC->Branch("nL2",&nL2,"nL2/I");
   MuTrigMC->Branch("nL3",&nL3,"nL3/I");
   MuTrigMC->Branch("nTkTracks",&nTkTracks,"nTkTracks/I");
@@ -3283,6 +3333,12 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigMC->Branch("muGlbKink",&muGlbKink);
   MuTrigMC->Branch("muTrkRelChi2",&muTrkRelChi2);
   MuTrigMC->Branch("muStaRelChi2",&muStaRelChi2);
+  MuTrigMC->Branch("muNumberOfChambers",&muNumberOfChambers);
+  MuTrigMC->Branch("muNumberOfMatches",&muNumberOfMatches);
+  MuTrigMC->Branch("muStationMask",&muStationMask);
+  MuTrigMC->Branch("muNCSCSeg",&muNCSCSeg);
+  MuTrigMC->Branch("muNDTSeg",&muNDTSeg);
+  MuTrigMC->Branch("muNRPCSeg",&muNRPCSeg);
   //MuTrigMC->Branch("nL3Seeds",&nL3Seeds,"nL3Seeds/I");
   // L3 muon information: the basics
   MuTrigMC->Branch("l3P",&l3P);
