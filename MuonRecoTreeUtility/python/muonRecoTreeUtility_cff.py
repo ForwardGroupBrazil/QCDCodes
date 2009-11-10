@@ -31,17 +31,19 @@ from Workspace.MuonRecoTreeUtility.muonRecoTreeUtility_reco_cfi import *
 #redo tracking particles
 import SimGeneral.TrackingAnalysis.trackingParticles_cfi
 mytrackingParticles = SimGeneral.TrackingAnalysis.trackingParticles_cfi.mergedtruth.clone()
-mytrackingParticles.vertexDistanceCut = 1000
+#aaa mytrackingParticles.vertexDistanceCut = 1000
 
 #muon tracking particles
 import Validation.RecoTrack.cutsTPEffic_cfi
 tpMuon = Validation.RecoTrack.cutsTPEffic_cfi.cutsTPEffic.clone()
 #only muons
-#aaa tpMuon.pdgId = cms.vint32(13,-13)
+#aaa
+tpMuon.pdgId = cms.vint32(13,-13)
 #allows decays in flight
 tpMuon.tip = cms.double(10000.0)
 tpMuon.lip = cms.double(10000.0)
 tpMuon.src = cms.InputTag('mytrackingParticles')
+#tpMuon.ptMin = 0.9
 
 
 #define the basic sequence of modules for muon HLT reconstruction

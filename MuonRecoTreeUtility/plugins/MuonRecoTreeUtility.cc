@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.6 2009/11/02 20:30:49 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.7 2009/11/05 15:54:05 aeverett Exp $
 //
 //
 
@@ -131,6 +131,7 @@
 #include "RecoMuon/MuonIsolation/interface/Cuts.h"
 #include "DataFormats/RecoCandidate/interface/IsoDeposit.h"
 #include "RecoMuon/MuonIsolation/interface/Range.h"
+//#include "DataFormats/MuonReco/interface/MuonIsolation.h"
 
 #include "RecoMuon/GlobalTrackingTools/interface/GlobalMuonRefitter.h"
 
@@ -241,6 +242,12 @@ private:
   std::vector<float> *muGlbKink ;
   std::vector<float> *muTrkRelChi2 ;
   std::vector<float> *muStaRelChi2 ;
+  //  std::vector<int> *muIso03Valid;
+  //  std::vector<float> *muIso03sumPt;
+  //  std::vector<float> *muIso03emEt;
+  //  std::vector<float> *muIso03hadEt;
+  //  std::vector<int> *muIso03nTracks;
+  //  std::vector<float> *muIso03trackerVetoPt;
   std::vector<int> *muNumberOfChambers;
   std::vector<int> *muNumberOfMatches;
   std::vector<unsigned int> *muStationMask;
@@ -569,6 +576,7 @@ private:
 
 
 public:
+  static const unsigned int noBit             =  1<<0;
   static const unsigned int primaryMuon       =  1<<1;
   static const unsigned int siliconMuon       =  1<<2;
   static const unsigned int calConversionMuon =  1<<3;
@@ -588,8 +596,8 @@ double pt90(const reco::TrackRef & tk, const edm::Event & ev){
 
   double nsigma_Pt=0;
 
-  if (prov.find("L2")!= std::string::npos){ nsigma_Pt=3.9;}
-  else if (prov.find("L3")!= std::string::npos){
+  if (prov.find("standAlone")!= std::string::npos){ nsigma_Pt=3.9;}
+  else if (prov.find("global")!= std::string::npos){
     if (instance=="") nsigma_Pt=2.2;
     else nsigma_Pt=1.64; //90% for sure
   }
@@ -788,6 +796,12 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   muGlbKink  = 0;
   muTrkRelChi2  = 0;
   muStaRelChi2 = 0;
+  //  muIso03Valid = 0;
+  //  muIso03sumPt = 0;
+  //  muIso03emEt = 0;
+  //  muIso03hadEt = 0;
+  //  muIso03nTracks = 0;
+  //  muIso03trackerVetoPt = 0;
   muNumberOfChambers =0;
   muNumberOfMatches =0;
   muStationMask =0;
@@ -1359,6 +1373,19 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*muNDTSeg).insert(std::make_pair(iMu,*nDTSeg));
       (*muNRPCSeg).insert(std::make_pair(iMu,*nRPCSeg));
 
+      //      bool isoValid = iMuon->isIsolationValid();
+      //      MuonIsolation muIso03 = iMuon->isolationR03();
+      //      float sumPt = isoValid ? muIso03.sumPt : -999.;
+      //      float emEt = isoValid ? muIso03.emEt : -999.;
+      //      float hadEt = isoValid ? muIso03.hadEt : -999.;
+      //      int nTracks = isoValid ? muIso03.nTracks : 0;
+      //      float trackerVetoPt = isoValid ? muIso03.trackerVetoPt : -999.;
+      //      (*muIso03Valid).push_back(isoValid);
+      //      (*muIso03sumPt).push_back(sumPt);
+      //      (*muIso03emEt).push_back(emEt);
+      //      (*muIso03hadEt).push_back(hadEt);
+      //      (*muIso03nTracks).push_back(nTracks);
+      //      (*muIso03trackerVetoPt).push_back(trackerVetoPt);
 
       if(iMuon->isGlobalMuon() && iMuon->isQualityValid()) {
 	(*muTrkKink).push_back(iMuon->combinedQuality().trkKink);
@@ -1383,7 +1410,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     
     const reco::TrackRef staTrack = ( iMuon->isStandAloneMuon() ) ? 
       iMuon->outerTrack() : TrackRef();
-    
+
     if(glbTrack.isAvailable()) {
       int iL3 = iMu;
       const reco::TrackRef refL3(glbTrack);
@@ -1416,7 +1443,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*l3Qoverp).push_back(refL3->qoverp());
       (*l3QoverpError).push_back(refL3->qoverpError());
       (*l3ErrorMatrix).push_back(refL3->covariance());
-      
+
       std::vector<int> *idsForThisL3 = new std::vector<int>;
       std::vector<int> *subidsForThisL3 = new std::vector<int>;
       std::vector<int> *detsForThisL3 = new std::vector<int>;
@@ -1435,14 +1462,13 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       std::vector<double> *phiForThisL3TSOS = new std::vector<double>;
       std::vector<int> *stationsForThisL3 = new std::vector<int>;
       int nMuHitsForThisL3 = 0;
-      
+
       edm::ESHandle<TransientTrackingRecHitBuilder> trackBuilder;
       edm::ESHandle<TransientTrackingRecHitBuilder> muonBuilder;
       std::string trackBuilderName = "WithTrackAngle";
       std::string muonBuilderName = "MuonRecHitBuilder";
       iSetup.get<TransientRecHitRecord>().get(trackBuilderName,trackBuilder);
       iSetup.get<TransientRecHitRecord>().get(muonBuilderName,muonBuilder);
- 
 
 
       //Adams additions for KINK
@@ -1454,7 +1480,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	typedef std::vector<TrajectoryMeasurement>::const_iterator TMI;
 	
 	std::vector<TrajectoryMeasurement> meas = muon.measurements();
-	
+
 	for ( TMI m = meas.begin(); m != meas.end(); m++ ) {
 	  TransientTrackingRecHit::ConstRecHitPointer hit = m->recHit();
 	  RecHit rhit = (*m).recHit();
@@ -1506,7 +1532,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	}	
       }
       //end Adams KINK 
-      
+
       for (trackingRecHit_iterator l3Hit = refL3->recHitsBegin(); l3Hit != refL3->recHitsEnd(); ++l3Hit) {
 	if ((*l3Hit)->isValid()) {
 	  (*idsForThisL3).push_back((*l3Hit)->geographicalId().rawId());
@@ -1541,7 +1567,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  }
 	}
       }
-      
+
       (*l3DetIds).insert(std::make_pair(iMu,*idsForThisL3));    
       (*l3SubdetIds).insert(std::make_pair(iMu,*subidsForThisL3));
       (*l3Component).insert(std::make_pair(iMu,*detsForThisL3));
@@ -1560,7 +1586,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*l3RecHitsErrorTM).insert(std::make_pair(iMu,*errorForThisL3TM));
       (*l3RecHitsPhiTM).insert(std::make_pair(iMu,*phiForThisL3TM));
       (*l3RecHitsPhiTSOS).insert(std::make_pair(iMu,*phiForThisL3TSOS));
-      
+
       idsForThisL3->clear();
       subidsForThisL3->clear();
       detsForThisL3->clear();
@@ -1579,7 +1605,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       phiForThisL3TM->clear();
       phiForThisL3TSOS->clear();
       nMuHitsForThisL3 = 0;
-      
+
       /*  
       // Find the correct L2 muon using track links.  Start with borrowed code.
       bool correctTrackLink = false;
@@ -1636,7 +1662,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       const muonisolation::Cuts::CutSpec & trackCut = L3IsoTrackCuts(refL3->eta());
       // get the Tracking deposits for our muon
       (*l3TrackIsoDeposit).push_back(trackDeposit.depositWithin(trackCut.conesize, trackVetos));
-      
+
       bool associated = false;
       // With the detector-level things filled, time to start doing the associations to sim
       int sim_index = 0;
@@ -1647,12 +1673,26 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  const std::vector<std::pair<TrackingParticleRef,double> > & tp = findRefL3->val;
 	  const TrackingParticleRef & trp = tp.begin()->first;
 	  
+	  //Start adam hack to only use muons
+
+	  //end adam hack to only use muons
+
 	  (*l3AssociationVar).push_back(tp.begin()->second);
 	  
 	  int particle_ID = trp->pdgId();
 	  //	int myBin = wantMotherBin.GetBinNum(particle_ID);
 	  (*l3AssociationPdgId).push_back(particle_ID);
+	  LogDebug("SpecialBit")<<"SpecialBit pdgId " << particle_ID;
 	  unsigned int thisBit = getBit(trp);
+	  //
+	  int muClass = 0;
+	  if (isPrimaryMuon(thisBit)) muClass = 1;
+	  else if (isSiliconMuon(thisBit)) muClass = 2;
+	  else if (isCalConversionMuon(thisBit)) muClass = 3;
+	  else if (isOtherMuon(thisBit)) muClass = 4;
+	  else muClass = 5;
+	  LogDebug("SpecialBit")<<"RecoTree muon " << iMu << " of " << muonColl.size() << " has theBit: " << thisBit << " and muClass " << muClass << " and pT " << refL3->pt();
+	  //
 	  (*l3AssociationMyBit).push_back(thisBit);
 	  (*l3AssociationVtxX).push_back(trp->vertex().x());
 	  (*l3AssociationVtxY).push_back(trp->vertex().y());
@@ -2581,7 +2621,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     (*simMuonPt).push_back(trp->pt());
     (*simMuonEta).push_back(trp->eta());
     (*simMuonPhi).push_back(trp->phi());
-
+    LogDebug("SpecialBit");
     unsigned int thisBit = getBit(trp);
     (*simMuonMyBit).push_back(thisBit);
     (*simMuonVtxX).push_back(trp->vertex().x());
@@ -2809,6 +2849,12 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   muGlbKink ->clear();
   muTrkRelChi2 ->clear();
   muStaRelChi2 ->clear();
+  //  muIso03Valid->clear();
+  //  muIso03sumPt->clear();
+  //  muIso03emEt->clear();
+  //  muIso03hadEt->clear();
+  //  muIso03nTracks->clear();
+  //  muIso03trackerVetoPt->clear();
   muNumberOfChambers->clear();
   muNumberOfMatches->clear();
   muStationMask->clear();
@@ -3124,6 +3170,12 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigData->Branch("muGlbKink",&muGlbKink);
   MuTrigData->Branch("muTrkRelChi2",&muTrkRelChi2);
   MuTrigData->Branch("muStaRelChi2",&muStaRelChi2);
+  //  MuTrigData->Branch("muIso03Valid",&muIso03Valid);
+  //  MuTrigData->Branch("muIso03sumPt",&muIso03sumPt);
+  //  MuTrigData->Branch("muIso03emEt",&muIso03emEt);
+  //  MuTrigData->Branch("muIso03hadEt",&muIso03hadEt);
+  //  MuTrigData->Branch("muIso03nTracks",&muIso03nTracks);
+  //  MuTrigData->Branch("muIso03trackerVetoPt",&muIso03trackerVetoPt);
   MuTrigData->Branch("muNumberOfChambers",&muNumberOfChambers);
   MuTrigData->Branch("muNumberOfMatches",&muNumberOfMatches);
   MuTrigData->Branch("muStationMask",&muStationMask);
@@ -3333,6 +3385,12 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigMC->Branch("muGlbKink",&muGlbKink);
   MuTrigMC->Branch("muTrkRelChi2",&muTrkRelChi2);
   MuTrigMC->Branch("muStaRelChi2",&muStaRelChi2);
+  //  MuTrigMC->Branch("muIso03Valid",&muIso03Valid);
+  //  MuTrigMC->Branch("muIso03sumPt",&muIso03sumPt);
+  //  MuTrigMC->Branch("muIso03emEt",&muIso03emEt);
+  //  MuTrigMC->Branch("muIso03hadEt",&muIso03hadEt);
+  //  MuTrigMC->Branch("muIso03nTracks",&muIso03nTracks);
+  //  MuTrigMC->Branch("muIso03trackerVetoPt",&muIso03trackerVetoPt);
   MuTrigMC->Branch("muNumberOfChambers",&muNumberOfChambers);
   MuTrigMC->Branch("muNumberOfMatches",&muNumberOfMatches);
   MuTrigMC->Branch("muStationMask",&muStationMask);
@@ -3591,15 +3649,30 @@ MuonRecoTreeUtility::endJob() {
 
 unsigned int MuonRecoTreeUtility::getBit(const TrackingParticleRef& simRef) const
 {
-  unsigned int thisBit = 0;
+  /*  
+  LogDebug("SpecialBit") << "\nRecoTree\nTrackingParticle " << simRef->pdgId()
+			 << " with pt= " << sqrt(simRef->momentum().perp2())
+			 << " at r " << sqrt(simRef->vertex().x()*simRef->vertex().x() + simRef->vertex().y()*simRef->vertex().y()) << " and z " << simRef->vertex().z() << "\n";
+  */
+
+  unsigned int thisBit = noBit;
   
-  if ( tpSelector_primary(*simRef) ) thisBit = primaryMuon;
-  else if ( tpSelector_silicon(*simRef) && ! (isPrimaryMuon(thisBit)) )
+  if ( tpSelector_primary(*simRef) ) {
+    thisBit = primaryMuon;
+    LogDebug("SpecialBit") << "b1";
+  }
+  else if ( tpSelector_silicon(*simRef) && !(isPrimaryMuon(thisBit)) ){
     thisBit = siliconMuon;
-  else if ( tpSelector_calConversion(*simRef) && ! (isSiliconMuon(thisBit) ||  isPrimaryMuon(thisBit)) ) 
+    LogDebug("SpecialBit") << "b2";
+  }
+  else if ( tpSelector_calConversion(*simRef) && ! (isSiliconMuon(thisBit) ||  isPrimaryMuon(thisBit)) ) {
     thisBit = calConversionMuon;
-  else if ( fabs(simRef->pdgId())==13 && simRef->pt() >= 1.5 && ! (isPrimaryMuon(thisBit) ||  isSiliconMuon(thisBit) ||  isCalConversionMuon(thisBit)) ) 
+    LogDebug("SpecialBit") << "b3";
+  }
+  else if ( fabs(simRef->pdgId())==13 && simRef->pt() >= 0.9 && ! (isPrimaryMuon(thisBit) ||  isSiliconMuon(thisBit) ||  isCalConversionMuon(thisBit)) ) {
     thisBit = otherMuon;
+    LogDebug("SpecialBit") << "b4";
+  }
   
   return thisBit; 
 }
