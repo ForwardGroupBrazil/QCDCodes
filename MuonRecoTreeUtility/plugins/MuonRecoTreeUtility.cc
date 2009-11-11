@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.7 2009/11/05 15:54:05 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.8 2009/11/10 07:25:00 aeverett Exp $
 //
 //
 
@@ -526,6 +526,7 @@ private:
   edm::InputTag trackLabel;
   edm::InputTag triggerResults_;
   edm::InputTag trackingParticleLabel;
+  edm::InputTag allTrackingParticleLabel;
   // To get the seeds for the L2 muons
   edm::InputTag l2SeedCollectionLabel;
 
@@ -631,6 +632,7 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
 
   triggerResults_ = iConfig.getParameter<edm::InputTag>("triggerResults_");
   trackingParticleLabel = iConfig.getParameter<edm::InputTag>("trackingParticleLabel");
+  allTrackingParticleLabel = iConfig.getParameter<edm::InputTag>("allTrackingParticleLabel");
   bsSrc = iConfig.getParameter<edm::InputTag>("beamSpotLabel");
 
   edm::LogInfo("MuonRecoTreeUtility") << "got the first block of things.  Now getting errorMatrixPset.";
@@ -1096,6 +1098,8 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   //open a collection of Tracking Particles
   edm::Handle<TrackingParticleCollection> TPtracks;
   iEvent.getByLabel(trackingParticleLabel,TPtracks);
+  edm::Handle<TrackingParticleCollection> allTPtracks;
+  iEvent.getByLabel(allTrackingParticleLabel,allTPtracks);
 
   //get a hold off simulated information
   Handle<SimTrackContainer> SimTk;
@@ -1117,11 +1121,13 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   reco::RecoToSimCollection l2RecSimColl = l2Associator->associateRecoToSim(l2MuonsForAssociation, TPtracks, &iEvent);
   reco::RecoToSimCollection l3RecSimColl = l3Associator->associateRecoToSim(l3MuonsForAssociation, TPtracks, &iEvent);
   reco::RecoToSimCollection tkRecSimColl = l3Associator->associateRecoToSim(l3MuonsForAssociation, TPtracks, &iEvent);
+  reco::RecoToSimCollection l3RecAllSimColl = l3Associator->associateRecoToSim(l3MuonsForAssociation, allTPtracks, &iEvent);
 
   //associate SimToReco
   reco::SimToRecoCollection l2SimRecColl = l2Associator->associateSimToReco(l2MuonsForAssociation, TPtracks, &iEvent);
   reco::SimToRecoCollection l3SimRecColl = l3Associator->associateSimToReco(l3MuonsForAssociation, TPtracks, &iEvent);
   reco::SimToRecoCollection tkSimRecColl = l3Associator->associateSimToReco(l3MuonsForAssociation, TPtracks, &iEvent);
+  reco::SimToRecoCollection l3AllSimRecColl = l3Associator->associateSimToReco(l3MuonsForAssociation, allTPtracks, &iEvent);
 
   // Event-level information: run, event, and Trigger Table
   EventNumber = iEvent.id().event();
@@ -1666,6 +1672,8 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       bool associated = false;
       // With the detector-level things filled, time to start doing the associations to sim
       int sim_index = 0;
+      TrackingParticleRef muTP;
+      TrackingParticleRef anyTP;
       for (reco::RecoToSimCollection::const_iterator findRefL3 = l3RecSimColl.begin(); findRefL3 != l3RecSimColl.end(); ++findRefL3) {
 	const edm::RefToBase<reco::Track> & l3RecSimMatch = findRefL3->key;
 	if (l3RecSimMatch->pt() == refL3->pt()) {
@@ -1769,11 +1777,11 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 				      field.product());
 		    TSCBLBuilderNoMaterial tscblBuilder;
 		    TrajectoryStateClosestToBeamLine tsAtClosestApproach = tscblBuilder(ftsAtProduction,bs);//as in TrackProducerAlgorithm
-		    GlobalPoint v1 = tsAtClosestApproach.trackStateAtPCA().position();
-		    GlobalVector p = tsAtClosestApproach.trackStateAtPCA().momentum();
+		    GlobalPoint v1 = tsAtClosestApproach.isValid() ? tsAtClosestApproach.trackStateAtPCA().position() : GlobalPoint() ;
+		    GlobalVector p = tsAtClosestApproach.isValid() ? tsAtClosestApproach.trackStateAtPCA().momentum() : GlobalVector() ;
 		    GlobalPoint v(v1.x()-bs.x0(),v1.y()-bs.y0(),v1.z()-bs.z0());
 		    
-		    double qoverpSim = tsAtClosestApproach.trackStateAtPCA().charge()/p.mag();
+		    double qoverpSim = tsAtClosestApproach.isValid() ? tsAtClosestApproach.trackStateAtPCA().charge()/p.mag() : 0.;
 		    double lambdaSim = M_PI/2-p.theta();
 		    double dxySim    = (-v.x()*sin(p.phi())+v.y()*cos(p.phi()));
 		    double dzSim     = v.z() - (v.x()*p.x()+v.y()*p.y())/p.perp() * p.z()/p.perp();
@@ -1826,7 +1834,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	}//track has an association
 	else{
 	  //this track was not associated.
-	  edm::LogError(theCategory)<<"a reconstructed muon is not associated.";
+	  edm::LogError(theCategory)<<"a reconstructed muon is not associated to a muonTP";
 	}
       }
       if (associated) {
@@ -2060,11 +2068,11 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 				      field.product());
 		    TSCBLBuilderNoMaterial tscblBuilder;
 		    TrajectoryStateClosestToBeamLine tsAtClosestApproach = tscblBuilder(ftsAtProduction,bs);//as in TrackProducerAlgorithm
-		    GlobalPoint v1 = tsAtClosestApproach.trackStateAtPCA().position();
-		    GlobalVector p = tsAtClosestApproach.trackStateAtPCA().momentum();
+		    GlobalPoint v1 = tsAtClosestApproach.isValid() ? tsAtClosestApproach.trackStateAtPCA().position() : GlobalPoint();
+		    GlobalVector p = tsAtClosestApproach.isValid() ? tsAtClosestApproach.trackStateAtPCA().momentum() : GlobalVector();
 		    GlobalPoint v(v1.x()-bs.x0(),v1.y()-bs.y0(),v1.z()-bs.z0());
 		    
-		    double qoverpSim = tsAtClosestApproach.trackStateAtPCA().charge()/p.mag();
+		    double qoverpSim = tsAtClosestApproach.isValid() ? tsAtClosestApproach.trackStateAtPCA().charge()/p.mag() : 0.;
 		    double lambdaSim = M_PI/2-p.theta();
 		    double dxySim    = (-v.x()*sin(p.phi())+v.y()*cos(p.phi()));
 		    double dzSim     = v.z() - (v.x()*p.x()+v.y()*p.y())/p.perp() * p.z()/p.perp();
@@ -2455,11 +2463,11 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 				      field.product());
 		    TSCBLBuilderNoMaterial tscblBuilder;
 		    TrajectoryStateClosestToBeamLine tsAtClosestApproach = tscblBuilder(ftsAtProduction,bs);//as in TrackProducerAlgorithm
-		    GlobalPoint v1 = tsAtClosestApproach.trackStateAtPCA().position();
-		    GlobalVector p = tsAtClosestApproach.trackStateAtPCA().momentum();
+		    GlobalPoint v1 = tsAtClosestApproach.isValid() ? tsAtClosestApproach.trackStateAtPCA().position() : GlobalPoint();
+		    GlobalVector p = tsAtClosestApproach.isValid() ? tsAtClosestApproach.trackStateAtPCA().momentum() : GlobalVector();
 		    GlobalPoint v(v1.x()-bs.x0(),v1.y()-bs.y0(),v1.z()-bs.z0());
 		    
-		    double qoverpSim = tsAtClosestApproach.trackStateAtPCA().charge()/p.mag();
+		    double qoverpSim = tsAtClosestApproach.isValid() ? tsAtClosestApproach.trackStateAtPCA().charge()/p.mag() : 0.;
 		    double lambdaSim = M_PI/2-p.theta();
 		    double dxySim    = (-v.x()*sin(p.phi())+v.y()*cos(p.phi()));
 		    double dzSim     = v.z() - (v.x()*p.x()+v.y()*p.y())/p.perp() * p.z()/p.perp();
@@ -2671,11 +2679,11 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 			  field.product());
 	TSCBLBuilderNoMaterial tscblBuilder;
 	TrajectoryStateClosestToBeamLine tsAtClosestApproach = tscblBuilder(ftsAtProduction,bs);//as in TrackProducerAlgorithm
-	GlobalPoint v1 = tsAtClosestApproach.trackStateAtPCA().position();
-	GlobalVector p = tsAtClosestApproach.trackStateAtPCA().momentum();
+	GlobalPoint v1 = tsAtClosestApproach.isValid() ? tsAtClosestApproach.trackStateAtPCA().position() : GlobalPoint();
+	GlobalVector p = tsAtClosestApproach.isValid() ? tsAtClosestApproach.trackStateAtPCA().momentum() : GlobalVector();
 	GlobalPoint v(v1.x()-bs.x0(),v1.y()-bs.y0(),v1.z()-bs.z0());
 	
-	double qoverpSim = tsAtClosestApproach.trackStateAtPCA().charge()/p.mag();
+	double qoverpSim = tsAtClosestApproach.isValid() ? tsAtClosestApproach.trackStateAtPCA().charge()/p.mag() : 0.;
 	double lambdaSim = M_PI/2-p.theta();
 	double dxySim    = (-v.x()*sin(p.phi())+v.y()*cos(p.phi()));
 	double dzSim     = v.z() - (v.x()*p.x()+v.y()*p.y())/p.perp() * p.z()/p.perp();
