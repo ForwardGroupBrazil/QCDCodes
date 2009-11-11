@@ -245,6 +245,7 @@ hltMuonTreeMaker = cms.EDAnalyzer(
         )
     ),
     trackingParticleLabel = cms.InputTag("tpMuon"),
+    allTrackingParticleLabel = cms.InputTag("mergedtruth","MergedTrackTruth"),
     l2AssociatorName = cms.string('AssociatorByDeltaR1.0'),
     beamSpotLabel = cms.InputTag("offlineBeamSpot"),
 
