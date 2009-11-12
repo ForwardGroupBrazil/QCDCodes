@@ -1,13 +1,14 @@
 #include <vector>
 #ifdef __MAKECINT__
-//#pragma link C++ class vector<vector<float> >+;
+//#pragma link C++ class vector<vector<double> >+;
 //#pragma link C++ class vector<vector<int> >+;
 #endif
-
+#include <vector>
 #include "TTree.h"
-#include "map.h"
+#include <map>
 #include "utility.h"
-#include "string.h"
+#include <string>
+using namespace std;
 	Int_t	RunNumber;
 	Int_t	EventNumber;
 	Int_t	nMu;
@@ -52,9 +53,9 @@
 	vector<int>	*muNumberOfChambers;
 	vector<int>	*muNumberOfMatches;
 	vector<unsigned int>	*muStationMask;
-	map<int,vector<int> >	*muNCSCSeg;
-	map<int,vector<int> >	*muNDTSeg;
-	map<int,vector<int> >	*muNRPCSeg;
+	map<int,std::vector<int> >	*muNCSCSeg;
+	map<int,std::vector<int> >	*muNDTSeg;
+	map<int,std::vector<int> >	*muNRPCSeg;
 	vector<double>	*l3P;
 	vector<double>	*l3Px;
 	vector<double>	*l3Py;
@@ -91,18 +92,18 @@
 	map<int,int>	*l3NMuHits;
 	map<int,vector<int> >	*l3MuStationNumber;
 	map<int,vector<int> >	*l3RecHitsStatus;
-	map<int,vector<double> >	*l3RecHitsX;
-	map<int,vector<double> >	*l3RecHitsY;
-	map<int,vector<double> >	*l3RecHitsZ;
-	map<int,vector<double> >	*l3RecHitsXTM;
-	map<int,vector<double> >	*l3RecHitsYTM;
-	map<int,vector<double> >	*l3RecHitsZTM;
-	map<int,vector<double> >	*l3RecHitsXTSOS;
-	map<int,vector<double> >	*l3RecHitsYTSOS;
-	map<int,vector<double> >	*l3RecHitsZTSOS;
-	map<int,vector<double> >	*l3RecHitsPhiTM;
-	map<int,vector<double> >	*l3RecHitsErrorTM;
-	map<int,vector<double> >	*l3RecHitsPhiTSOS;
+	map<int,std::vector<double> >	*l3RecHitsX;
+	map<int,std::vector<double> >	*l3RecHitsY;
+	map<int,std::vector<double> >	*l3RecHitsZ;
+	map<int,std::vector<double> >	*l3RecHitsXTM;
+	map<int,std::vector<double> >	*l3RecHitsYTM;
+	map<int,std::vector<double> >	*l3RecHitsZTM;
+	map<int,std::vector<double> >	*l3RecHitsXTSOS;
+	map<int,std::vector<double> >	*l3RecHitsYTSOS;
+	map<int,std::vector<double> >	*l3RecHitsZTSOS;
+	map<int,std::vector<double> >	*l3RecHitsPhiTM;
+	map<int,std::vector<double> >	*l3RecHitsErrorTM;
+	map<int,std::vector<double> >	*l3RecHitsPhiTSOS;
 	vector<int>	*indexL2SeedingL3;
 	vector<int>	*indexL3SeededFromL2;
 	vector<int>	*l2SeedsL3;
@@ -161,7 +162,7 @@
 	map<int,int>	*l2NMuHits;
 	map<int,vector<int> >	*l2MuStationNumber;
 	map<int,vector<int> >	*l2RecHitsStatus;
-	map<int,vector<double> >	*l2RecHitsX;
+	map<int,std::vector<double> >	*l2RecHitsX;
 	map<int,vector<double> >	*l2RecHitsY;
 	map<int,vector<double> >	*l2RecHitsZ;
 	vector<double>	*l2CalIsoDeposit;
