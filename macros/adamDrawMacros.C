@@ -8,6 +8,36 @@ convertTH1toTGraph(TH1* histo_)
   return myGraph;
 }
 
+TH1* distributionToEff(TH1* dis, bool greaterThanCut) {
+
+  std::ostringstream pprint;
+  pprint.str("");
+
+  pprint<<dis->GetName()<<"_integEff";
+
+  TH1* _h2 = dis->Clone(pprint.str().c_str());
+  _h2->Sumw2();
+
+   if ( greaterThanCut ) {
+      for (int ii = 0; ii != dis->GetNbinsX()+1; ii++) {
+        _h2->SetBinContent(ii, dis->Integral(ii, dis->GetNbinsX()+1));
+      }
+      float intge = dis->Integral(0, dis->GetNbinsX()+1);
+      if ( intge > 1e-6)  _h2->Scale(1.0/intge );
+
+   } else {
+      for (int ii = 0; ii != dis->GetNbinsX()+1; ii++) {
+        _h2->SetBinContent(ii, dis->Integral(0, ii));
+      }
+      float intge = dis->Integral(0, dis->GetNbinsX());
+      if ( intge > 1e-6)  _h2->Scale(1.0/intge );
+
+   }
+   return _h2;
+
+}
+
+
 TLegend *
 drawObjectCollection(TList * objectList_, bool draw_=true, TString * legend_ = 0)
 {
@@ -35,7 +65,8 @@ drawObjectCollection(TList * objectList_, bool draw_=true, TString * legend_ = 0
     switch(type){
     case 1: {
       TString opt1(color[i]==1 ? "" : "same");
-      TString opt2 = ("E1X0") + opt1;
+      //TString opt2 = ("E1X0") + opt1;
+      TString opt2 = (" PL ") + opt1;
       TH1 * h1 = (TH1*)obj;
       h1->SetLineColor(color[i]);
       h1->SetMarkerColor(color[i]);

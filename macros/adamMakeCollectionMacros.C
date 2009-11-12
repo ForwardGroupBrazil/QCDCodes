@@ -34,6 +34,7 @@ makeDirectoryCollection(TList * fileList_ , TString * inDirs, Int_t size)
   while ( (file = (TFile *)iter()) ) {
     for (int i = 0; i<size; ++i) {
       TString theDir(inDirs[i]);
+      //cout << "Adding << " << theDir.Data() << endl;
       dir = getDirectory(file,theDir);
       dirList->Add(dir);
     }
@@ -115,4 +116,23 @@ makeTGfromTHCollection(TList * objectlist_)
   }
   graphList->SetOwner();
   return graphList;
+}
+
+TList *
+makeCutEffFromTHCollection(TList* objectlist_, bool greaterThan=false)
+{
+  TList * graphList = new TList();
+  
+  TObject * obj;
+  TIter iter(objectlist_);
+  while ( (obj=(TObject*)iter()) ) {
+    if( ! (obj->IsA()->InheritsFrom("TH1") && ! obj->IsA()->InheritsFrom("TH2") ) ) {
+      cout << "Not a TH1!" << endl;
+      continue;
+    }
+    TH1* h1 = (TH1*)obj;
+    graphList->Add(distributionToEff(h1,greaterThan));
+  }
+  graphList->SetOwner();
+  return graphList;  
 }
