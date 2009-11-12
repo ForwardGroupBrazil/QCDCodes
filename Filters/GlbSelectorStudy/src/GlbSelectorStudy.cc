@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam A Everett
 //         Created:  Tue Mar 31 16:20:19 EDT 2009
-// $Id: GlbSelectorStudy.cc,v 1.7 2009/06/08 20:30:12 aeverett Exp $
+// $Id: GlbSelectorStudy.cc,v 1.11 2009/09/17 19:13:07 aeverett Exp $
 //
 //
 
@@ -41,18 +41,24 @@
 #include "TrackingTools/GeomPropagators/interface/TrackerBounds.h"
 //#include "TrackingTools/GeomPropagators/interface/MuonBounds.h"
 
-#include "UserCode/GlbSelectorStudy/interface/IDconverttoBinNum.h"
-#include "UserCode/GlbSelectorStudy/interface/MotherSearch.h"
+//#include "UserCode/GlbSelectorStudy/interface/IDconverttoBinNum.h"
+//#include "UserCode/GlbSelectorStudy/interface/MotherSearch.h"
+
+#include "RecoMuon/MuonXRay/interface/IDconverttoBinNum.h"
+#include "RecoMuon/MuonXRay/interface/MotherSearch.h"
 
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "DataFormats/MuonReco/interface/MuonSelectors.h"
 #include "DataFormats/MuonReco/interface/Muon.h"
 #include "DataFormats/MuonReco/interface/MuonFwd.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticleFwd.h"
 
 #include "SimTracker/Records/interface/TrackAssociatorRecord.h"
 #include "SimTracker/TrackAssociation/interface/TrackAssociatorByChi2.h"
 #include "SimTracker/TrackAssociation/interface/TrackAssociatorByHits.h"
+#include "SimTracker/TrackAssociation/interface/TrackAssociatorByPosition.h"
 
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/MuonDetId/interface/DTChamberId.h"
@@ -68,7 +74,7 @@
 #include "Geometry/CommonDetUnit/interface/GeomDetType.h"
 #include "DataFormats/DetId/interface/DetId.h"
 
-#include "PhysicsTools/RecoAlgos/interface/TrackingParticleSelector.h"
+#include "CommonTools/RecoAlgos/interface/TrackingParticleSelector.h"
 
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingVertex.h"
 
@@ -102,6 +108,7 @@ public:
   explicit GlbSelectorStudy(const edm::ParameterSet&);
   ~GlbSelectorStudy();
   
+  static const unsigned int noBit       =  1<<0;
   static const unsigned int primaryMuon       =  1<<1;
   static const unsigned int siliconMuon       =  1<<2;
   static const unsigned int calConversionMuon =  1<<3;
@@ -490,25 +497,25 @@ struct GlbSelectorStudy::MuonME {
     hm_nChamberMatch_seg->Fill(iMuon.numberOfMatches(reco::Muon::SegmentArbitration));
     hm_nChamberMatch_segTrack->Fill(iMuon.numberOfMatches(reco::Muon::SegmentAndTrackArbitration));
 
-    if(iMuon.isCaloCompatibilityValid()) hm_caloComp->Fill(iMuon.caloCompatibility());
-    hm_segComp->Fill(iMuon.segmentCompatibility());
+    if(iMuon.isCaloCompatibilityValid()) hm_caloComp->Fill(muon::caloCompatibility(iMuon));
+    hm_segComp->Fill(muon::segmentCompatibility(iMuon));
     if(iMuon.isCaloCompatibilityValid()) 
-      hm_2DComp->Fill(iMuon.caloCompatibility(),iMuon.segmentCompatibility());
+      hm_2DComp->Fill(muon::caloCompatibility(iMuon),muon::segmentCompatibility(iMuon));
     else
-      hm_2DComp->Fill(0.,iMuon.segmentCompatibility());
+      hm_2DComp->Fill(0.,muon::segmentCompatibility(iMuon));
 
     
     hm_tm_sel->Fill(0);
-    if(iMuon.isGood(reco::Muon::TMLastStationLoose)) hm_tm_sel->Fill(1);
-    if(iMuon.isGood(reco::Muon::TMLastStationTight)) hm_tm_sel->Fill(2);
-    if(iMuon.isGood(reco::Muon::TM2DCompatibilityLoose)) hm_tm_sel->Fill(3);
-    if(iMuon.isGood(reco::Muon::TM2DCompatibilityTight)) hm_tm_sel->Fill(4);
-    if(iMuon.isGood(reco::Muon::TMOneStationLoose)) hm_tm_sel->Fill(5);
-    if(iMuon.isGood(reco::Muon::TMOneStationTight)) hm_tm_sel->Fill(6);
-    if(iMuon.isGood(reco::Muon::AllTrackerMuons)) hm_tm_sel->Fill(7);
-    if(iMuon.isGood(reco::Muon::TrackerMuonArbitrated)) hm_tm_sel->Fill(8);
-    if(iMuon.isGood(reco::Muon::TMLastStationOptimizedLowPtLoose)) hm_tm_sel->Fill(9);
-    if(iMuon.isGood(reco::Muon::TMLastStationOptimizedLowPtTight)) hm_tm_sel->Fill(10);
+    if(muon::isGoodMuon(iMuon,muon::TMLastStationLoose)) hm_tm_sel->Fill(1);
+    if(muon::isGoodMuon(iMuon,muon::TMLastStationTight)) hm_tm_sel->Fill(2);
+    if(muon::isGoodMuon(iMuon,muon::TM2DCompatibilityLoose)) hm_tm_sel->Fill(3);
+    if(muon::isGoodMuon(iMuon,muon::TM2DCompatibilityTight)) hm_tm_sel->Fill(4);
+    if(muon::isGoodMuon(iMuon,muon::TMOneStationLoose)) hm_tm_sel->Fill(5);
+    if(muon::isGoodMuon(iMuon,muon::TMOneStationTight)) hm_tm_sel->Fill(6);
+    if(muon::isGoodMuon(iMuon,muon::AllTrackerMuons)) hm_tm_sel->Fill(7);
+    if(muon::isGoodMuon(iMuon,muon::TrackerMuonArbitrated)) hm_tm_sel->Fill(8);
+    if(muon::isGoodMuon(iMuon,muon::TMLastStationOptimizedLowPtLoose)) hm_tm_sel->Fill(9);
+    if(muon::isGoodMuon(iMuon,muon::TMLastStationOptimizedLowPtTight)) hm_tm_sel->Fill(10);
     //ADAM insert GM golds here
 
     float outerX = glbTrack->outerX();
@@ -900,53 +907,56 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
   float primaryPt = 0.0;
 
-  const TrackingParticleCollection::size_type nSim = simColl.size();
+  const TrackingParticleCollection::size_type nSim = simColl.size(); LogDebug(theCategory);
   for(TrackingParticleCollection::size_type i=0; i<nSim; i++) {
     TrackingParticleRef simRef(simHandle, i);
     const TrackingParticle* simTP = simRef.get();
     
     unsigned int thisBit = getBit(simRef);
-
+    //    LogDebug("SpecialBit")<<"GlbSel TP " << i << " of " << nSim << " has theBit " << thisBit;
     ///// cccc
     if(i==0) primaryPt = simTP->pt() ;
  
     int muClass = 0;
-    
-    if (isPrimaryMuon(thisBit)) muClass = 1;
-    else if (isSiliconMuon(thisBit)) muClass = 2;
-    else if (isCalConversionMuon(thisBit)) muClass = 3;
-    else if (isOtherMuon(thisBit)) muClass = 4;
-    else muClass = 5;
-    
+    LogDebug(theCategory);
+    if (isPrimaryMuon(thisBit)) {muClass = 1; LogDebug(theCategory);}
+    else if (isSiliconMuon(thisBit)) {muClass = 2; LogDebug(theCategory);}
+    else if (isCalConversionMuon(thisBit)) {muClass = 3; LogDebug(theCategory);}
+    else if (isOtherMuon(thisBit)) {muClass = 4; LogDebug(theCategory);}
+    else {muClass = 5; LogDebug(theCategory);}
+     LogDebug(theCategory);
     MuonME * thisME = 0;
-    
+ LogDebug(theCategory);    
     if(muClass==1) thisME = aME_;
     if(muClass==2) thisME = bME_;
     if(muClass==3) thisME = cME_;
     if(muClass==4) thisME = dME_;
     if(muClass==5) thisME = eME_;
-    
+     LogDebug(theCategory);
     thisME->hm_primaryPt->Fill(primaryPt);
 
     float decayx = 0.0;
     float decayy = 0.0;
     float decayz = 0.0;
-
+ LogDebug(theCategory);
+ /* start the vtx crash in 330
     //    if(i==0 || i==1){      
-    tv_iterator dv = simTP->decayVertices_end();
-    decayx = (*dv)->position().x();
-    decayy = (*dv)->position().y();
-    decayz = (*dv)->position().z();
-    if(i==0 || i==1){      
+    tv_iterator dv = simTP->decayVertices_end(); LogDebug(theCategory);
+    decayx = (*dv)->position().x(); LogDebug(theCategory);
+    decayy = (*dv)->position().y(); LogDebug(theCategory);
+    decayz = (*dv)->position().z(); LogDebug(theCategory);
+    if(i==0 || i==1){ LogDebug(theCategory);
       thisME->hm_primary_Decay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy+decayz*decayz));
       thisME->hm_primary_tranDecay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy));
-    } else {
+    } else { LogDebug(theCategory);
       //ADAM change this to primaryPt
       thisME->hm_allTp_Decay->Fill(primaryPt,sqrt(simTP->vertex().z()*simTP->vertex().z()+(simTP->vertex().perp2()) ) );
       thisME->hm_allTp_tranDecay->Fill(primaryPt,sqrt( simTP->vertex().perp2() ) );
       thisME->hm_allTp_Decay2->Fill(simTP->pt(),sqrt(simTP->vertex().z()*simTP->vertex().z()+(simTP->vertex().perp2()) ) );
       thisME->hm_allTp_tranDecay2->Fill(simTP->pt(),sqrt( simTP->vertex().perp2() ) );
     }
+ */ //end the vtx craxh in 330
+ LogDebug(theCategory);
     //thisME->hm_primary_Decay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy+decayz*decayz));
     //thisME->hm_primary_tranDecay->Fill(simTP->pt(),sqrt(decayx*decayx+decayy*decayy));
     ///// ccc
@@ -954,16 +964,16 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     // if ( ! (isPrimaryMuon(thisBit) || isSiliconMuon(thisBit) || isCalConversionMuon(thisBit) || isOtherMuon(thisBit) ) ) continue;
     
     std::vector<std::pair<RefToBase<Track>, double> > rt;
-    
+     LogDebug(theCategory);
     /////start aaa
     if ( isSiliconMuon(thisBit) ) LogTrace(theCategory)<<"SimTP isSilicon";
     //if ( simTP->pt() > 2.0 ) { //b
     if ( (isPrimaryMuon(thisBit) || isSiliconMuon(thisBit) || isCalConversionMuon(thisBit) || isOtherMuon(thisBit) ) ) {
-
+ LogDebug(theCategory);
       thisME->hm_simMuPt->Fill(simTP->pt());
-    
-      printTruth(simRef, i);
-      
+ LogDebug(theCategory);    
+ // printTruth(simRef, i);
+       LogDebug(theCategory);
       if(simToGlbMuColl.find(simRef) != simToGlbMuColl.end()){
 	rt = simToGlbMuColl[simRef];
 	if (rt.size()!=0) {
@@ -982,26 +992,28 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	  << " and bit " << thisBit
 	  << " NOT associated to any reco::Track" << "\n";
       }
-    }    
+    }     LogDebug(theCategory);
     //}//a
     //}//b
     ///////end aaa
     
     if (rt.size()==0) continue;
-
+ LogDebug(theCategory);
     reco::TrackRef glbMuTrackRef = rt.begin()->first.castTo<TrackRef >();
-
+ LogDebug(theCategory);
     tpBitMap_.insert(simRef,thisBit);
     recoBitMap_.insert( glbMuTrackRef, thisBit );
     recoTpMap_.insert( glbMuTrackRef, simRef );
+ LogDebug(theCategory);
   }
 
   ///////////////////////  
 
   LogDebug(theCategory)<<"MuonColl size " << muonColl.size();  
   // Analyzer reco::Muon
+  int jj =0;
   for(View<Muon>::const_iterator iMuon = muonColl.begin();
-      iMuon != muonColl.end(); ++iMuon) {
+      iMuon != muonColl.end(); ++iMuon,jj++) {
 
     int muClass = 0;
 
@@ -1050,7 +1062,7 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	  LogTrace(theCategory) <<"                 " 
 				<<  TrackCategories::Names[index]; 
       }
-
+ LogDebug(theCategory);
 
       std::vector<std::pair<TrackingParticleRef,double> > tpRefV;
       if ( glbTrack.isAvailable() && glbMuToSimColl.find(glbTrackRB) != glbMuToSimColl.end() ) {//get TP
@@ -1068,22 +1080,36 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	    unsigned int iBit = getBit(iIter->first);
 	    LogTrace(theCategory) << " . . . " << iBit;
 	  }
-	}
+	} LogDebug(theCategory);
 	///
 
 	//const TrackingParticleRef & trp = tpRefV.begin()->first;
 	TrackingParticleRef  trp = tpRefV.begin()->first;
-
+ LogDebug(theCategory);
 	theTrp = trp;
-
+ LogDebug(theCategory);
       }//get TP
-      
+
       if (isPrimaryMuon(theBit)) muClass = 1;
       else if (isSiliconMuon(theBit)) muClass = 2;
       else if (isCalConversionMuon(theBit)) muClass = 3;
       else if (isOtherMuon(theBit)) muClass = 4;
       else muClass = 5;
+      LogDebug("SpecialBit")<<"GlbSel muon " << jj << " of " << muonColl.size() << " has theBit: " << theBit << " and muClass " << muClass;
+      if(glbTrack.isAvailable()) LogDebug("SpecialBit") << " and pT " << glbTrack->pt();
+
       
+      if(theTrp.isAvailable()) LogDebug("SpecialBit") << "\nGlbSel\nTrackingParticle theTrp " << theTrp->pdgId()
+						       << " with pt= " << sqrt(theTrp->momentum().perp2())
+						       << " at r " << sqrt(theTrp->vertex().x()*theTrp->vertex().x() + theTrp->vertex().y()*theTrp->vertex().y()) << " and z " << theTrp->vertex().z() << "\n";
+      
+      
+      if(muTp.isAvailable()) LogDebug("SpecialBit") << "\nGlbSel\nTrackingParticle muTP " << muTp->pdgId()
+			     << " with pt= " << sqrt(muTp->momentum().perp2());
+      if(muTp.isAvailable()) LogDebug("SpecialBit") << " at r " << sqrt(muTp->vertex().x()*muTp->vertex().x() + muTp->vertex().y()*muTp->vertex().y()) << " and z " << muTp->vertex().z() << "\n";
+      
+      
+      LogDebug(theCategory)<<" muCLass: " << muClass;
       MuonME * thisME = 0;
       
       if(muClass==1) thisME = aME_;
@@ -1091,24 +1117,25 @@ GlbSelectorStudy::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       if(muClass==3) thisME = cME_;
       if(muClass==4) thisME = dME_;
       if(muClass==5) thisME = eME_;
-      
+ LogDebug(theCategory);      
+ /* start the second crash in 330
       thisME->fill(*iMuon,theTrp,muTp);
-
+ LogDebug(theCategory);
       thisME->ht_kink->Fill(thisKink.first);
       thisME->hg_kink->Fill(thisKink.second);
-
+ LogDebug(theCategory);
       thisME->hs_nchi2_a->Fill(stachi.first/staTrack->ndof());
       thisME->hs_chivschi_a->Fill(stachi.first/staTrack->ndof(),glbTrack->normalizedChi2());
       thisME->hs_nchi2_b->Fill(stachi.second/staTrack->ndof());
       thisME->hs_chivschi_b->Fill(stachi.second/staTrack->ndof(),glbTrack->normalizedChi2());
-
+ LogDebug(theCategory);
       thisME->ht_nchi2_a->Fill(tkchi.first/tkTrack->ndof());
       thisME->ht_chivschi_a->Fill(tkchi.first/tkTrack->ndof(),glbTrack->normalizedChi2());
       thisME->ht_nchi2_b->Fill(tkchi.second/tkTrack->ndof());
       thisME->ht_chivschi_b->Fill(tkchi.second/tkTrack->ndof(),glbTrack->normalizedChi2());
-      
+       LogDebug(theCategory);
       LogTrace(theCategory)<<"MuClass " << muClass;
-
+ */ //end the second crash in 330
     }// isGlobal()
   }// loop over muon
   
@@ -1393,14 +1420,28 @@ std::string GlbSelectorStudy::vertexString(
 }
 
 unsigned int GlbSelectorStudy::getBit(const TrackingParticleRef& simRef) const{
-    unsigned int thisBit = 0;
+  
+  unsigned int thisBit = 0;
     
-    if ( tpSelector_primary(*simRef) ) thisBit = primaryMuon;
-    else if ( tpSelector_silicon(*simRef) && ! (isPrimaryMuon(thisBit)) ) thisBit = siliconMuon;
-    else if ( tpSelector_calConversion(*simRef) && ! (isSiliconMuon(thisBit) ||  isPrimaryMuon(thisBit)) ) thisBit = calConversionMuon;
-    else if ( fabs(simRef->pdgId())==13 && simRef->pt() >= 1.5 && ! (isPrimaryMuon(thisBit) ||  isSiliconMuon(thisBit) ||  isCalConversionMuon(thisBit)) ) thisBit = otherMuon;
-
-    return thisBit;
+  if ( tpSelector_primary(*simRef) ) {
+    thisBit = primaryMuon;
+    //    LogDebug("SpecialBit") << "a1";
+  }
+  else if ( tpSelector_silicon(*simRef) && ! (isPrimaryMuon(thisBit)) ) {
+    thisBit = siliconMuon;
+    //      LogDebug("SpecialBit") << "a2";
+  }
+  else if ( tpSelector_calConversion(*simRef) && ! (isSiliconMuon(thisBit) ||  isPrimaryMuon(thisBit)) ) {
+    thisBit = calConversionMuon;
+    //      LogDebug("SpecialBit") << "a3";
+  }
+  else if ( fabs(simRef->pdgId())==13 && simRef->pt() >= 1.5 && ! (isPrimaryMuon(thisBit) ||  isSiliconMuon(thisBit) ||  isCalConversionMuon(thisBit)) ) {
+    thisBit = otherMuon;
+    //      LogDebug("SpecialBit") << "a4";
+  }
+  else thisBit = noBit;
+  
+  return thisBit;
 }
 
 std::pair<double,double> GlbSelectorStudy::staChi2(Trajectory& muon) const {

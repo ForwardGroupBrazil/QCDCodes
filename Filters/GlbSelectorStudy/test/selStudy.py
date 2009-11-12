@@ -61,7 +61,7 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.99.2.8 $'),
+    version = cms.untracked.string('$Revision: 1.1 $'),
     annotation = cms.untracked.string('step2 nevts:100'),
     name = cms.untracked.string('PyReleaseValidation')
 )
@@ -74,7 +74,8 @@ process.options = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-    '/store/user/aeverett/CMSSW_2_2_5//TTbar_Tauola//aeverett//TTbar_Tauola_CMSSW_2_2_5_IDEAL_step1//TTbar_Tauola_CMSSW_2_2_5_IDEAL_step1//95b7e266de590e364b9bb2c4d2a6f567//TTbar_Tauola_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_37.root',
+     '/store/relval/CMSSW_3_3_0/RelValInclusiveppMuX/GEN-SIM-DIGI-RAW-HLTDEBUG/MC_31X_V9-v1/0002/889D6338-C4B7-DE11-BE10-001A928116FC.root',
+#    '/store/user/aeverett/CMSSW_2_2_5//TTbar_Tauola//aeverett//TTbar_Tauola_CMSSW_2_2_5_IDEAL_step1//TTbar_Tauola_CMSSW_2_2_5_IDEAL_step1//95b7e266de590e364b9bb2c4d2a6f567//TTbar_Tauola_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_37.root',
 #    '/store/user/aeverett/SingleMuPt0_500_CMSSW_2_2_5_IDEAL_step1/SingleMuPt0_500_CMSSW_2_2_5_IDEAL_step1/3ea6209a8f9200d32c9696f6c7430454/SingleMuPt0_500_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_180.root',
 #    '/store/user/aeverett/SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1/SingleKPt2_200_CMSSW_2_2_5_IDEAL_step1/abc92f2ca79c035bec8931c1df74b704/SingleKPt2_200_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_19.root',
     )
@@ -95,7 +96,7 @@ process.output.outputCommands.append("keep *_MEtoEDMConverter_*_*")
 # Additional output definition
 
 # Other statements
-process.GlobalTag.globaltag = 'IDEAL_V11::All'
+process.GlobalTag.globaltag = 'MC_31X_V9::All'
 
 # Path and EndPath definitions
 process.raw2digi_step = cms.Path(process.RawToDigi)
@@ -115,12 +116,12 @@ process.glbSelStudy.trackAssociator = "TrackAssociatorByPosition"
 process.p = cms.Path(process.muonAssociation_seq*process.glbSelStudy)
 process.TFileService = cms.Service("TFileService", fileName = cms.string("TFS_selStudy.root"))
 
-process.muAnalyzer = cms.EDAnalyzer('MuAnalyzer',
-                                    simLabel = cms.InputTag("mergedtruth","MergedTrackTruth"),)
-process.p2 = cms.Path(process.muAnalyzer)
+#process.muAnalyzer = cms.EDAnalyzer('MuAnalyzer',
+#                                    simLabel = cms.InputTag("mergedtruth","MergedTrackTruth"),)
+#process.p2 = cms.Path(process.muAnalyzer)
 
 # Schedule definition
-process.schedule = cms.Schedule(process.raw2digi_step,process.reconstruction_step,process.postreco_step,process.validation_step,process.p,process.p2,process.endjob_step,process.out_step)
+process.schedule = cms.Schedule(process.raw2digi_step,process.reconstruction_step,process.postreco_step,process.validation_step,process.p,process.endjob_step,process.out_step)
 
 
 
