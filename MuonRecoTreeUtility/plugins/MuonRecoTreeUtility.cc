@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.9 2009/11/11 18:11:11 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.10 2009/11/11 21:18:52 aeverett Exp $
 //
 //
 
@@ -244,12 +244,12 @@ private:
   std::vector<float> *muGlbKink ;
   std::vector<float> *muTrkRelChi2 ;
   std::vector<float> *muStaRelChi2 ;
-  //  std::vector<int> *muIso03Valid;
-  //  std::vector<float> *muIso03sumPt;
-  //  std::vector<float> *muIso03emEt;
-  //  std::vector<float> *muIso03hadEt;
-  //  std::vector<int> *muIso03nTracks;
-  //  std::vector<float> *muIso03trackerVetoPt;
+  std::vector<int> *muIso03Valid;
+  std::vector<float> *muIso03sumPt;
+  std::vector<float> *muIso03emEt;
+  std::vector<float> *muIso03hadEt;
+  std::vector<int> *muIso03nTracks;
+  std::vector<float> *muIso03trackerVetoPt;
   std::vector<int> *muNumberOfChambers;
   std::vector<int> *muNumberOfMatches;
   std::vector<unsigned int> *muStationMask;
@@ -801,12 +801,12 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   muGlbKink  = 0;
   muTrkRelChi2  = 0;
   muStaRelChi2 = 0;
-  //  muIso03Valid = 0;
-  //  muIso03sumPt = 0;
-  //  muIso03emEt = 0;
-  //  muIso03hadEt = 0;
-  //  muIso03nTracks = 0;
-  //  muIso03trackerVetoPt = 0;
+  muIso03Valid = 0;
+  muIso03sumPt = 0;
+  muIso03emEt = 0;
+  muIso03hadEt = 0;
+  muIso03nTracks = 0;
+  muIso03trackerVetoPt = 0;
   muNumberOfChambers =0;
   muNumberOfMatches =0;
   muStationMask =0;
@@ -1382,19 +1382,19 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*muNDTSeg).insert(std::make_pair(iMu,*nDTSeg));
       (*muNRPCSeg).insert(std::make_pair(iMu,*nRPCSeg));
 
-      //      bool isoValid = iMuon->isIsolationValid();
-      //      MuonIsolation muIso03 = iMuon->isolationR03();
-      //      float sumPt = isoValid ? muIso03.sumPt : -999.;
-      //      float emEt = isoValid ? muIso03.emEt : -999.;
-      //      float hadEt = isoValid ? muIso03.hadEt : -999.;
-      //      int nTracks = isoValid ? muIso03.nTracks : 0;
-      //      float trackerVetoPt = isoValid ? muIso03.trackerVetoPt : -999.;
-      //      (*muIso03Valid).push_back(isoValid);
-      //      (*muIso03sumPt).push_back(sumPt);
-      //      (*muIso03emEt).push_back(emEt);
-      //      (*muIso03hadEt).push_back(hadEt);
-      //      (*muIso03nTracks).push_back(nTracks);
-      //      (*muIso03trackerVetoPt).push_back(trackerVetoPt);
+      bool isoValid = iMuon->isIsolationValid();
+      MuonIsolation muIso03 = iMuon->isolationR03();
+      float sumPt = isoValid ? muIso03.sumPt : -999.;
+      float emEt = isoValid ? muIso03.emEt : -999.;
+      float hadEt = isoValid ? muIso03.hadEt : -999.;
+      int nTracks = isoValid ? muIso03.nTracks : 0;
+      float trackerVetoPt = isoValid ? muIso03.trackerVetoPt : -999.;
+      (*muIso03Valid).push_back(isoValid);
+      (*muIso03sumPt).push_back(sumPt);
+      (*muIso03emEt).push_back(emEt);
+      (*muIso03hadEt).push_back(hadEt);
+      (*muIso03nTracks).push_back(nTracks);
+      (*muIso03trackerVetoPt).push_back(trackerVetoPt);
 
       if(iMuon->isGlobalMuon() && iMuon->isQualityValid()) {
 	(*muTrkKink).push_back(iMuon->combinedQuality().trkKink);
@@ -2914,12 +2914,12 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   muGlbKink ->clear();
   muTrkRelChi2 ->clear();
   muStaRelChi2 ->clear();
-  //  muIso03Valid->clear();
-  //  muIso03sumPt->clear();
-  //  muIso03emEt->clear();
-  //  muIso03hadEt->clear();
-  //  muIso03nTracks->clear();
-  //  muIso03trackerVetoPt->clear();
+  muIso03Valid->clear();
+  muIso03sumPt->clear();
+  muIso03emEt->clear();
+  muIso03hadEt->clear();
+  muIso03nTracks->clear();
+  muIso03trackerVetoPt->clear();
   muNumberOfChambers->clear();
   muNumberOfMatches->clear();
   muStationMask->clear();
@@ -3235,12 +3235,12 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigData->Branch("muGlbKink",&muGlbKink);
   MuTrigData->Branch("muTrkRelChi2",&muTrkRelChi2);
   MuTrigData->Branch("muStaRelChi2",&muStaRelChi2);
-  //  MuTrigData->Branch("muIso03Valid",&muIso03Valid);
-  //  MuTrigData->Branch("muIso03sumPt",&muIso03sumPt);
-  //  MuTrigData->Branch("muIso03emEt",&muIso03emEt);
-  //  MuTrigData->Branch("muIso03hadEt",&muIso03hadEt);
-  //  MuTrigData->Branch("muIso03nTracks",&muIso03nTracks);
-  //  MuTrigData->Branch("muIso03trackerVetoPt",&muIso03trackerVetoPt);
+    MuTrigData->Branch("muIso03Valid",&muIso03Valid);
+    MuTrigData->Branch("muIso03sumPt",&muIso03sumPt);
+    MuTrigData->Branch("muIso03emEt",&muIso03emEt);
+    MuTrigData->Branch("muIso03hadEt",&muIso03hadEt);
+    MuTrigData->Branch("muIso03nTracks",&muIso03nTracks);
+    MuTrigData->Branch("muIso03trackerVetoPt",&muIso03trackerVetoPt);
   MuTrigData->Branch("muNumberOfChambers",&muNumberOfChambers);
   MuTrigData->Branch("muNumberOfMatches",&muNumberOfMatches);
   MuTrigData->Branch("muStationMask",&muStationMask);
@@ -3450,12 +3450,12 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigMC->Branch("muGlbKink",&muGlbKink);
   MuTrigMC->Branch("muTrkRelChi2",&muTrkRelChi2);
   MuTrigMC->Branch("muStaRelChi2",&muStaRelChi2);
-  //  MuTrigMC->Branch("muIso03Valid",&muIso03Valid);
-  //  MuTrigMC->Branch("muIso03sumPt",&muIso03sumPt);
-  //  MuTrigMC->Branch("muIso03emEt",&muIso03emEt);
-  //  MuTrigMC->Branch("muIso03hadEt",&muIso03hadEt);
-  //  MuTrigMC->Branch("muIso03nTracks",&muIso03nTracks);
-  //  MuTrigMC->Branch("muIso03trackerVetoPt",&muIso03trackerVetoPt);
+    MuTrigMC->Branch("muIso03Valid",&muIso03Valid);
+    MuTrigMC->Branch("muIso03sumPt",&muIso03sumPt);
+    MuTrigMC->Branch("muIso03emEt",&muIso03emEt);
+    MuTrigMC->Branch("muIso03hadEt",&muIso03hadEt);
+    MuTrigMC->Branch("muIso03nTracks",&muIso03nTracks);
+    MuTrigMC->Branch("muIso03trackerVetoPt",&muIso03trackerVetoPt);
   MuTrigMC->Branch("muNumberOfChambers",&muNumberOfChambers);
   MuTrigMC->Branch("muNumberOfMatches",&muNumberOfMatches);
   MuTrigMC->Branch("muStationMask",&muStationMask);

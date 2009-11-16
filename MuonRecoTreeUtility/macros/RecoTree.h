@@ -1,13 +1,13 @@
 #include <vector>
 #ifdef __MAKECINT__
-//#pragma link C++ class vector<vector<double> >+;
+//#pragma link C++ class vector<vector<float> >+;
 //#pragma link C++ class vector<vector<int> >+;
 #endif
-#include <vector>
+
 #include "TTree.h"
-#include <map>
+#include "map.h"
 #include "utility.h"
-#include <string>
+#include "string.h"
 using namespace std;
 	Int_t	RunNumber;
 	Int_t	EventNumber;
@@ -50,6 +50,12 @@ using namespace std;
 	vector<float>	*muGlbKink;
 	vector<float>	*muTrkRelChi2;
 	vector<float>	*muStaRelChi2;
+	vector<int>	*muIso03Valid;
+	vector<float>	*muIso03sumPt;
+	vector<float>	*muIso03emEt;
+	vector<float>	*muIso03hadEt;
+	vector<int>	*muIso03nTracks;
+	vector<float>	*muIso03trackerVetoPt;
 	vector<int>	*muNumberOfChambers;
 	vector<int>	*muNumberOfMatches;
 	vector<unsigned int>	*muStationMask;
@@ -86,12 +92,12 @@ using namespace std;
 	vector<double>	*l3Qoverp;
 	vector<double>	*l3QoverpError;
 	vector<ROOT::Math::SMatrix<double,5,5,ROOT::Math::MatRepSym<double,5> > >	*l3ErrorMatrix;
-	map<int,vector<int> >	*l3DetIds;
-	map<int,vector<int> >	*l3SubdetIds;
-	map<int,vector<int> >	*l3Component;
+	map<int,std::vector<int> >	*l3DetIds;
+	map<int,std::vector<int> >	*l3SubdetIds;
+	map<int,std::vector<int> >	*l3Component;
 	map<int,int>	*l3NMuHits;
-	map<int,vector<int> >	*l3MuStationNumber;
-	map<int,vector<int> >	*l3RecHitsStatus;
+	map<int,std::vector<int> >	*l3MuStationNumber;
+	map<int,std::vector<int> >	*l3RecHitsStatus;
 	map<int,std::vector<double> >	*l3RecHitsX;
 	map<int,std::vector<double> >	*l3RecHitsY;
 	map<int,std::vector<double> >	*l3RecHitsZ;
@@ -156,15 +162,15 @@ using namespace std;
 	vector<double>	*l2Charge;
 	vector<double>	*l2Chi2;
 	vector<double>	*l2Ndof;
-	map<int,vector<int> >	*l2DetIds;
-	map<int,vector<int> >	*l2SubdetIds;
-	map<int,vector<int> >	*l2Component;
+	map<int,std::vector<int> >	*l2DetIds;
+	map<int,std::vector<int> >	*l2SubdetIds;
+	map<int,std::vector<int> >	*l2Component;
 	map<int,int>	*l2NMuHits;
-	map<int,vector<int> >	*l2MuStationNumber;
-	map<int,vector<int> >	*l2RecHitsStatus;
+	map<int,std::vector<int> >	*l2MuStationNumber;
+	map<int,std::vector<int> >	*l2RecHitsStatus;
 	map<int,std::vector<double> >	*l2RecHitsX;
-	map<int,vector<double> >	*l2RecHitsY;
-	map<int,vector<double> >	*l2RecHitsZ;
+	map<int,std::vector<double> >	*l2RecHitsY;
+	map<int,std::vector<double> >	*l2RecHitsZ;
 	vector<double>	*l2CalIsoDeposit;
 	vector<double>	*l2Dsz;
 	vector<double>	*l2DszError;
@@ -292,6 +298,12 @@ void Init(TTree *tree) {
 	tree->SetBranchAddress("muGlbKink", &muGlbKink);
 	tree->SetBranchAddress("muTrkRelChi2", &muTrkRelChi2);
 	tree->SetBranchAddress("muStaRelChi2", &muStaRelChi2);
+	tree->SetBranchAddress("muIso03Valid", &muIso03Valid);
+	tree->SetBranchAddress("muIso03sumPt", &muIso03sumPt);
+	tree->SetBranchAddress("muIso03emEt", &muIso03emEt);
+	tree->SetBranchAddress("muIso03hadEt", &muIso03hadEt);
+	tree->SetBranchAddress("muIso03nTracks", &muIso03nTracks);
+	tree->SetBranchAddress("muIso03trackerVetoPt", &muIso03trackerVetoPt);
 	tree->SetBranchAddress("muNumberOfChambers", &muNumberOfChambers);
 	tree->SetBranchAddress("muNumberOfMatches", &muNumberOfMatches);
 	tree->SetBranchAddress("muStationMask", &muStationMask);

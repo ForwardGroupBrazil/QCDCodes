@@ -25,7 +25,10 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
   Init(tree);
 
   TH1F* glb_pt[8];
-  TH1F* glb_deltaPt[8];
+  TH1F* glb_deltaPtSTA[8];
+  TH1F* glb_deltaPtTK[8];
+  TH1F* glb_norm_deltaPtSTA[8];
+  TH1F* glb_norm_deltaPtTK[8];
   TH1F* glb_calComp[8];
   TH1F* glb_segComp[8];
   TH1F* glb_nChamber[8];
@@ -41,6 +44,8 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
   TH1F* glb_NCSC_total[8];
   TH1F* glb_NDT_total[8];
   TH1F* glb_NSeg_total[8];
+  TH1F* glb_NHits[8];
+  TH1F* glb_NMuHits[8];
   TH1F* glb_muTrkKink[8];
   TH1F* glb_muGlbKink[8];
   TH1F* glb_muTrkRelChi2[8];
@@ -48,6 +53,13 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
   TH1F* glb_muDeltaTrkRelChi2[8];
   TH1F* glb_muDeltaStaRelChi2[8];
   TH1F* glb_nChi2[8];
+
+  TH1F* glb_tkIso[8];
+  TH1F* glb_calIso[8];
+
+  TH1F* glb_d0[8];
+  TH1F* sta_d0[8];
+  TH1F* trk_d0[8];
 
   TH1F* mu_TMLastStationLoose[8];
   TH1F* mu_TMLastStationTight[8];
@@ -72,7 +84,10 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
     tmp = new TH1F(name2,"histogram of L3 p_{T}",250,0,500);
     tmp->SetDirectory(tmpDir);
     glb_pt[ww] = tmp;
-    glb_deltaPt[ww] = new TH1F("deltaPt","histogram of L3 p_{T}",100,-10,10);
+    glb_deltaPtSTA[ww] = new TH1F("deltaPtSTA","histogram of #Delta p_{T}",100,0,10);
+    glb_deltaPtTK[ww] = new TH1F("deltaPtTK","histogram of #Delta p_{T}",100,-10,0);
+    glb_norm_deltaPtSTA[ww] = new TH1F("normDeltaPtSTA","histogram of #Delta p_{T}",100,0,5);
+    glb_norm_deltaPtTK[ww] = new TH1F("normDeltaPtTK","histogram of #Delta p_{T}",100,-5,0);
     mu_TMLastStationLoose[ww] = new TH1F("mu_TMLastStationLoose","mu_TMLastStationLoose",3,-1.5,1.5);
     mu_TMLastStationTight[ww] = new TH1F("mu_TMLastStationTight","mu_TMLastStationTight",3,-1.5,1.5);;
     mu_TM2DCompatibilityLoose[ww] = new TH1F("mu_TM2DCompatibilityLoose","mu_TM2DCompatibilityLoose",3,-1.5,1.5);;
@@ -94,6 +109,8 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
     glb_NCSC_total[ww] = new TH1F("glb_nCSC_total","Number of segments in all CSC stations",11,-0.5,10.5);
     glb_NDT_total[ww] = new TH1F("glb_nDT_total","Number of segments in all DT stations",11,-0.5,10.5);
     glb_NSeg_total[ww] = new TH1F("glb_nSeg_total","Number of segments in all stations",16,-0.5,15.5);
+    glb_NMuHits[ww] = new TH1F("glb_nMuHits","Number of muon hits",76,-0.5,75.5);
+    glb_NHits[ww] = new TH1F("glb_nHits","Number of hits",76,-0.5,75.5);
     glb_muTrkKink[ww] = new TH1F("glb_trkKink","Tracker Kink",500,0,500);
     glb_muGlbKink[ww] = new TH1F("glb_glbKink","Global Kink",500,0,500);
     glb_muTrkRelChi2[ww] = new TH1F("glb_trkRelChi2","Tracker Relative #Chi^{2}",50,0,50);
@@ -101,6 +118,13 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
     glb_muDeltaTrkRelChi2[ww] = new TH1F("glb_trkDeltaRelChi2","#Delta Tracker Relative #Chi^{2}",10,0,5);
     glb_muDeltaStaRelChi2[ww] = new TH1F("glb_staDeltaRelChi2","#Delta Standalone Relative #Chi^{2}",10,0,5);
     glb_nChi2[ww] = new TH1F("glb_nChi2","Global #Chi^{2}/DoF",50,0,50);
+
+    glb_tkIso[ww] = new TH1F("glb_tkIso","Tracker Isolation",100,0,20);
+    glb_calIso[ww] = new TH1F("glb_calIso","Calo Isolation",100,0,20);
+
+    glb_d0[ww] = new TH1F("glb_d0","Global impact parameter",200,0,2);
+    sta_d0[ww] = new TH1F("sta_d0","Stand-alone impact parameter",200,0,2);
+    trk_d0[ww] = new TH1F("trk_d0","Tracker impact parameter",200,0,2);
   }
   histDirAlgo->cd();
 
@@ -145,7 +169,22 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 	  mu_TM2DCompatibilityTight[ii]->Fill((*muTM2DCompatibilityTight).at(iMu),weight);
 	  mu_GlobalMuonPromptTight[ii]->Fill((*muGlobalMuonPromptTight).at(iMu),weight);
 	  glb_pt[ii]->Fill((*l3Pt).at(iMu),weight);
-	  glb_deltaPt[ii]->Fill((*l2Pt).at(iMu)-(*tkTrackPt).at(iMu),weight);
+
+	  if((*muIso03Valid).at(iMu)) glb_tkIso[ii]->Fill((*muIso03sumPt).at(iMu),weight);
+	  if((*muIso03Valid).at(iMu)) glb_calIso[ii]->Fill((*muIso03emEt).at(iMu),weight);
+	  
+	  glb_d0[ii]->Fill(-1.*(*l3D0).at(iMu),weight);
+	  sta_d0[ii]->Fill(-1.*(*l2D0).at(iMu),weight);
+	  trk_d0[ii]->Fill(-1.*(*tkTrackD0).at(iMu),weight);
+
+	  if((*l2Pt).at(iMu) >= (*tkTrackPt).at(iMu))
+	    glb_deltaPtSTA[ii]->Fill((*l2Pt).at(iMu)-(*tkTrackPt).at(iMu),weight);
+	  if((*l2Pt).at(iMu) < (*tkTrackPt).at(iMu))
+	    glb_deltaPtTK[ii]->Fill((*l2Pt).at(iMu)-(*tkTrackPt).at(iMu),weight);
+	  if((*l2Pt).at(iMu) >= (*tkTrackPt).at(iMu))
+	    glb_norm_deltaPtSTA[ii]->Fill(((*l2Pt).at(iMu)-(*tkTrackPt).at(iMu)) / (*l2Pt).at(iMu),weight);
+	  if((*l2Pt).at(iMu) < (*tkTrackPt).at(iMu))
+	    glb_norm_deltaPtTK[ii]->Fill(((*l2Pt).at(iMu)-(*tkTrackPt).at(iMu)) / (*tkTrackPt).at(iMu),weight);
 	  glb_calComp[ii]->Fill((*muCaloCompatibility).at(iMu),weight);
 	  glb_segComp[ii]->Fill((*muSegmentCompatibility).at(iMu),weight);
 	  glb_nChamber[ii]->Fill((*muNumberOfChambers).at(iMu),weight);
@@ -162,7 +201,7 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 	  if((*muAllGlobalMuons).at(iMu)==1 && (*l3Ndof).at(iMu)>0 ) glb_nChi2[ii]->Fill((*l3Chi2).at(iMu)/(*l3Ndof).at(iMu),weight);
 
 	  ////for (int station = 0; station < 4; station++) {
-	  double CSC1=CSC2=CSC3=CSC4=0.;
+	  double CSC1,CSC2,CSC3,CSC4;
 	  for (map<int,std::vector<int> >::const_iterator ggg = (*muNCSCSeg).begin(); ggg != (*muNCSCSeg).end(); ggg++) {        
 	    CSC1 = ggg->second.at(0);
 	    CSC2 = ggg->second.at(1);
@@ -174,7 +213,7 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 	    glb_NCSC_4[ii]->Fill(ggg->second.at(3),weight);
 	  }
 	  glb_NCSC_total[ii]->Fill(CSC1+CSC2+CSC3+CSC4,weight);
-	  double DT1=DT2=DT3=DT4=0.;
+	  double DT1,DT2,DT3,DT4;
 	  for (map<int,std::vector<int> >::const_iterator ggg = (*muNDTSeg).begin(); ggg != (*muNDTSeg).end(); ggg++) {        
 	    DT1 = ggg->second.at(0);
 	    DT2 = ggg->second.at(1);
@@ -186,6 +225,16 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 	    glb_NDT_4[ii]->Fill(ggg->second.at(3),weight);	    
 	  }
 	  glb_NDT_total[ii]->Fill(DT1+DT2+DT3+DT4,weight);
+	  glb_NSeg_total[ii]->Fill(CSC1+CSC2+CSC3+CSC4+DT1+DT2+DT3+DT4,weight);
+
+	  
+	  for (map<int, int>::const_iterator hits = (*l3NMuHits).begin(); hits != (*l3NMuHits).end(); hits++) {
+	    if(hits->first==iMu) glb_NMuHits[ii]->Fill(hits->second,weight);
+	  }
+	  
+	  glb_NHits[ii]->Fill((*l3NHits).at(iMu),weight);
+	  
+
 	  ////}
 	  //for(map<int,std::vector<int> >::const_iterator hits = (*l3MuStationNumber)->begin(,weight); hits != (*l3MuStationNumber)->end(,weight); hits++){
 	  //if(hits.first=iMu) cout << "iMu " << iMu << " hits last " << hits.second.last() << endl;
