@@ -24,11 +24,15 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 
   Init(tree);
 
+  TH2F* mu_vtx[8];
+
   TH1F* glb_pt[8];
   TH1F* glb_deltaPtSTA[8];
   TH1F* glb_deltaPtTK[8];
   TH1F* glb_norm_deltaPtSTA[8];
   TH1F* glb_norm_deltaPtTK[8];
+  TH1F* glb_deltaPt[8];
+  TH2F* glb_pt2D[8];
   TH1F* glb_calComp[8];
   TH1F* glb_segComp[8];
   TH1F* glb_nChamber[8];
@@ -55,6 +59,7 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
   TH1F* glb_nChi2[8];
 
   TH1F* glb_tkIso[8];
+  TH1F* glb_normTkIso[8];
   TH1F* glb_calIso[8];
 
   TH1F* glb_d0[8];
@@ -84,6 +89,11 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
     tmp = new TH1F(name2,"histogram of L3 p_{T}",250,0,500);
     tmp->SetDirectory(tmpDir);
     glb_pt[ww] = tmp;
+
+    mu_vtx[ww] = new TH2F("mu_vtx","Muon Decay Vertex",2000,-1000.,1000.,1000,0.,1000.);
+
+    glb_pt2D[ww] = new TH2F("glb_pt2D","histogram of p_{T}",100,0,500,100,0,500);
+    glb_deltaPt[ww] = new TH1F("deltaPt","histogram of #Delta p_{T}",100,0,50);
     glb_deltaPtSTA[ww] = new TH1F("deltaPtSTA","histogram of #Delta p_{T}",100,0,10);
     glb_deltaPtTK[ww] = new TH1F("deltaPtTK","histogram of #Delta p_{T}",100,-10,0);
     glb_norm_deltaPtSTA[ww] = new TH1F("normDeltaPtSTA","histogram of #Delta p_{T}",100,0,5);
@@ -120,6 +130,7 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
     glb_nChi2[ww] = new TH1F("glb_nChi2","Global #Chi^{2}/DoF",50,0,50);
 
     glb_tkIso[ww] = new TH1F("glb_tkIso","Tracker Isolation",100,0,20);
+    glb_normTkIso[ww] = new TH1F("glb_normTkIso","Normalized Tracker Isolation",100,0,20);
     glb_calIso[ww] = new TH1F("glb_calIso","Calo Isolation",100,0,20);
 
     glb_d0[ww] = new TH1F("glb_d0","Global impact parameter",200,0,2);
@@ -163,19 +174,30 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 
       	if( (*l3AssociationMyBit).at(iMu) & 1<<ii ) {
 
+	  float r = sqrt((*l3AssociationVtxX).at(iMu) 
+			 * (*l3AssociationVtxX).at(iMu)
+			 + (*l3AssociationVtxY).at(iMu) 
+			 * (*l3AssociationVtxY).at(iMu));
+	  float z = (*l3AssociationVtxZ).at(iMu);
+	  mu_vtx[ii]->Fill(z,r,weight);
+
 	  mu_TMLastStationLoose[ii]->Fill((*muTMLastStationLoose).at(iMu),weight);
 	  mu_TMLastStationTight[ii]->Fill((*muTMLastStationTight).at(iMu),weight);
 	  mu_TM2DCompatibilityLoose[ii]->Fill((*muTM2DCompatibilityLoose).at(iMu),weight);
 	  mu_TM2DCompatibilityTight[ii]->Fill((*muTM2DCompatibilityTight).at(iMu),weight);
 	  mu_GlobalMuonPromptTight[ii]->Fill((*muGlobalMuonPromptTight).at(iMu),weight);
 	  glb_pt[ii]->Fill((*l3Pt).at(iMu),weight);
+	  glb_pt2D[ii]->Fill((*tkTrackPt).at(iMu),(*l2Pt).at(iMu),weight);
 
 	  if((*muIso03Valid).at(iMu)) glb_tkIso[ii]->Fill((*muIso03sumPt).at(iMu),weight);
+	  if((*muIso03Valid).at(iMu)) glb_normTkIso[ii]->Fill((*muIso03sumPt).at(iMu)/(*l3Pt).at(iMu),weight);
 	  if((*muIso03Valid).at(iMu)) glb_calIso[ii]->Fill((*muIso03emEt).at(iMu),weight);
 	  
 	  glb_d0[ii]->Fill(-1.*(*l3D0).at(iMu),weight);
 	  sta_d0[ii]->Fill(-1.*(*l2D0).at(iMu),weight);
 	  trk_d0[ii]->Fill(-1.*(*tkTrackD0).at(iMu),weight);
+
+	  glb_deltaPt[ii]->Fill((*tkTrackPt).at(iMu)-(*l2Pt).at(iMu),weight);
 
 	  if((*l2Pt).at(iMu) >= (*tkTrackPt).at(iMu))
 	    glb_deltaPtSTA[ii]->Fill((*l2Pt).at(iMu)-(*tkTrackPt).at(iMu),weight);
@@ -185,6 +207,7 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 	    glb_norm_deltaPtSTA[ii]->Fill(((*l2Pt).at(iMu)-(*tkTrackPt).at(iMu)) / (*l2Pt).at(iMu),weight);
 	  if((*l2Pt).at(iMu) < (*tkTrackPt).at(iMu))
 	    glb_norm_deltaPtTK[ii]->Fill(((*l2Pt).at(iMu)-(*tkTrackPt).at(iMu)) / (*tkTrackPt).at(iMu),weight);
+
 	  glb_calComp[ii]->Fill((*muCaloCompatibility).at(iMu),weight);
 	  glb_segComp[ii]->Fill((*muSegmentCompatibility).at(iMu),weight);
 	  glb_nChamber[ii]->Fill((*muNumberOfChambers).at(iMu),weight);
