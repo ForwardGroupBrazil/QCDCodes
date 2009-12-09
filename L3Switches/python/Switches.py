@@ -434,7 +434,7 @@ def SwitchToIterative3(process):
         )
 
     process.l3MuonsCombination = cms.EDProducer(
-        "L3TrackLinksCombiner",
+        "L3TrackCombiner",
         labels = cms.VInputTag(
         cms.InputTag("hltL3MuonsOIState"),
         cms.InputTag("hltL3MuonsOIHit"),
@@ -444,33 +444,39 @@ def SwitchToIterative3(process):
 
     process.hltL3TkTracksFromL2 = process.l3TkFromL2Combination
     process.hltL3TrackCandidateFromL2 = process.l3TkCandFromL2Combination
-#    process.hltL3Muons = process.l3MuonsCombination
+    process.hltL3Muons = process.l3MuonsCombination
 
     process.HLTL3muonTkCandidateSequence = cms.Sequence(
-    process.HLTDoLocalPixelSequence +
-    process.HLTDoLocalStripSequence +
-    process.hltL3TrajSeedOIState +
-    process.hltL3TrackCandidateFromL2OIState +
-    process.hltL3TkTracksFromL2OIState +
-#
-    process.hltL3MuonsOIState +
-    process.hltL3TrajSeedOIHit +
-    process.hltL3TrackCandidateFromL2OIHit +
-    process.hltL3TkTracksFromL2OIHit +
-
- #
-    process.hltL3MuonsOIHit +
-    process.l3TkFromL2OICombination +
-     process.hltL3TrajSeedIOHit +
-     process.hltL3TrackCandidateFromL2IOHit +
-     process.hltL3TkTracksFromL2IOHit +
- #    process.hltL3MuonsIOHit +  
-    
-    process.hltL3TrajectorySeed +
-    process.hltL3TrackCandidateFromL2
-    )
+         process.HLTDoLocalPixelSequence +
+         process.HLTDoLocalStripSequence +
+         #
+         process.hltL3TrajSeedOIState +
+         process.hltL3TrackCandidateFromL2OIState +
+         process.hltL3TkTracksFromL2OIState +
+         #
+         process.hltL3MuonsOIState +
+         #
+         process.hltL3TrajSeedOIHit +
+         process.hltL3TrackCandidateFromL2OIHit +
+         process.hltL3TkTracksFromL2OIHit +        
+         #
+         process.hltL3MuonsOIHit +
+         #
+         process.l3TkFromL2OICombination + ######
+         #
+         process.hltL3TrajSeedIOHit +
+         process.hltL3TrackCandidateFromL2IOHit +
+         process.hltL3TkTracksFromL2IOHit +
+         #
+         process.hltL3MuonsIOHit +    #????
+         #
+         process.hltL3TrajectorySeed + ######
+         process.hltL3TrackCandidateFromL2 ######
+         )
 
     process.HLTL3muonrecoNocandSequence = cms.Sequence(
-    process.HLTL3muonTkCandidateSequence +
-    process.hltL3TkTracksFromL2 +
-    process.hltL3Muons )
+        process.HLTL3muonTkCandidateSequence +
+        process.hltL3TkTracksFromL2 +  ######
+        process.hltL3Muons ######
+        )
+    
