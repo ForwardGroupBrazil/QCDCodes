@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.10 2009/11/11 21:18:52 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.11 2009/11/16 18:02:51 aeverett Exp $
 //
 //
 
@@ -1110,28 +1110,39 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   //get a hold on generated information
   Handle<HepMCProduct> hepmc;
 
-  iEvent.getByType(hepmc);
-  iEvent.getByLabel("g4SimHits",SimVtx);
-  iEvent.getByLabel("g4SimHits",SimTk);
+  reco::RecoToSimCollection l2RecSimColl;
+  reco::RecoToSimCollection l3RecSimColl;
+  reco::RecoToSimCollection tkRecSimColl;
+  reco::RecoToSimCollection l3RecAllSimColl;
+  reco::SimToRecoCollection l2SimRecColl;
+  reco::SimToRecoCollection l3SimRecColl;
+  reco::SimToRecoCollection tkSimRecColl;
+  reco::SimToRecoCollection l3AllSimRecColl;
 
-  //get the associators
-  iSetup.get<TrackAssociatorRecord>().get(l2AssocLabel,l2Associator);
-  iSetup.get<TrackAssociatorRecord>().get(l3AssocLabel,l3Associator);
-  //  iSetup.get<TrackAssociatorRecord>().get(k3AssocLabel,l3Associator);
-
-  //ADAM: associator
-  //associate RecoToSim
-  reco::RecoToSimCollection l2RecSimColl = l2Associator->associateRecoToSim(l2MuonsForAssociation, TPtracks, &iEvent);
-  reco::RecoToSimCollection l3RecSimColl = l3Associator->associateRecoToSim(l3MuonsForAssociation, TPtracks, &iEvent);
-  reco::RecoToSimCollection tkRecSimColl = l3Associator->associateRecoToSim(l3MuonsForAssociation, TPtracks, &iEvent);
-  reco::RecoToSimCollection l3RecAllSimColl = l3Associator->associateRecoToSim(l3MuonsForAssociation, allTPtracks, &iEvent);
-
-  //associate SimToReco
-  reco::SimToRecoCollection l2SimRecColl = l2Associator->associateSimToReco(l2MuonsForAssociation, TPtracks, &iEvent);
-  reco::SimToRecoCollection l3SimRecColl = l3Associator->associateSimToReco(l3MuonsForAssociation, TPtracks, &iEvent);
-  reco::SimToRecoCollection tkSimRecColl = l3Associator->associateSimToReco(l3MuonsForAssociation, TPtracks, &iEvent);
-  reco::SimToRecoCollection l3AllSimRecColl = l3Associator->associateSimToReco(l3MuonsForAssociation, allTPtracks, &iEvent);
-
+  if (!TPtracks.failedToGet()) {
+    iEvent.getByType(hepmc);
+    iEvent.getByLabel("g4SimHits",SimVtx);
+    iEvent.getByLabel("g4SimHits",SimTk);
+  
+    //get the associators
+    iSetup.get<TrackAssociatorRecord>().get(l2AssocLabel,l2Associator);
+    iSetup.get<TrackAssociatorRecord>().get(l3AssocLabel,l3Associator);
+    //  iSetup.get<TrackAssociatorRecord>().get(k3AssocLabel,l3Associator);
+    
+    //ADAM: associator
+    //associate RecoToSim
+    l2RecSimColl = l2Associator->associateRecoToSim(l2MuonsForAssociation, TPtracks, &iEvent);
+    l3RecSimColl = l3Associator->associateRecoToSim(l3MuonsForAssociation, TPtracks, &iEvent);
+    tkRecSimColl = l3Associator->associateRecoToSim(l3MuonsForAssociation, TPtracks, &iEvent);
+    l3RecAllSimColl = l3Associator->associateRecoToSim(l3MuonsForAssociation, allTPtracks, &iEvent);
+    
+    //associate SimToReco
+    l2SimRecColl = l2Associator->associateSimToReco(l2MuonsForAssociation, TPtracks, &iEvent);
+    l3SimRecColl = l3Associator->associateSimToReco(l3MuonsForAssociation, TPtracks, &iEvent);
+    tkSimRecColl = l3Associator->associateSimToReco(l3MuonsForAssociation, TPtracks, &iEvent);
+    l3AllSimRecColl = l3Associator->associateSimToReco(l3MuonsForAssociation, allTPtracks, &iEvent);
+  }
+  
   // Event-level information: run, event, and Trigger Table
   EventNumber = iEvent.id().event();
   RunNumber = iEvent.id().run();   
@@ -1685,6 +1696,8 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       TrackingParticleRef anyTP;
       
       double muAssocVal = 0.;
+      double anyAssocVal = 0.;
+      if(!TPtracks.failedToGet()) { //start Adam for Data
       if ( l3RecSimColl.find(glbTrackRB) != l3RecSimColl.end() ) {
 	//get TP
 	const std::vector<std::pair<TrackingParticleRef,double> > & tp = l3RecSimColl[glbTrackRB];
@@ -1692,13 +1705,14 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	muAssocVal = tp.begin()->second;
       }
       
-      double anyAssocVal = 0.;
+
       if ( l3RecAllSimColl.find(glbTrackRB) != l3RecAllSimColl.end() ) {
 	//get TP
 	const std::vector<std::pair<TrackingParticleRef,double> > & tp = l3RecAllSimColl[glbTrackRB];
 	anyTP = tp.begin()->first;
 	anyAssocVal = tp.begin()->second;
       }
+      } //end Adam for Data
 
       TrackingParticleRef theTP;
       double theAssocVal = 0.;
@@ -1891,8 +1905,8 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	else{
 	  //this track was not associated.
 	  edm::LogError(theCategory)<<"a reconstructed muon is not associated to a muonTP";
-	}
-      }
+	} //end theTP.isAvailable
+      } // end theTP.isAvailable
       else { //this track was not associated.
 	double crap = -999;
 	(*l3IsAssociated).push_back(0);
@@ -1917,7 +1931,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	(*l3AssociatedSimMuonDsz).push_back(-999);
 	(*l3ParentID).push_back(-777);
 	(*l3MotherBinNumber).push_back(-777);
-      }
+      } //Adam this would be the other place to "end Adam for Data"
     } else { //ifGlbTrack isAvailable  //loop over l3Muons
       double crap = -999;
       (*l3P).push_back(crap);
@@ -2074,6 +2088,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       bool associated = false;
       // With the detector-level things filled, time to start doing the associations to sim
       int sim_index = 0;
+      if(!TPtracks.failedToGet()) { //start Adam for Data
       for (reco::RecoToSimCollection::const_iterator findRefTk = tkRecSimColl.begin(); findRefTk != tkRecSimColl.end(); ++findRefTk) {
 	const edm::RefToBase<reco::Track> & tkRecSimMatch = findRefTk->key;
 	if (tkRecSimMatch->pt() == refTk->pt()) {
@@ -2185,6 +2200,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  edm::LogError(theCategory)<<"a reconstructed muon is not associated.";
 	}
       }
+      } // end Adam for Data
       if (associated) {
 	//      std::cout << "Associated..." << std::endl;
 	(*tkTrackIsAssociated).push_back(1);
@@ -2453,6 +2469,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       // With the detector-level things filled, time to start doing the associations to sim
       bool associated = false;
       // With the detector-level things filled, time to start doing the associations to sim
+      if(!TPtracks.failedToGet()) { // start Adam for Data
       for (reco::RecoToSimCollection::const_iterator findRefL2 = l2RecSimColl.begin(); findRefL2 != l2RecSimColl.end(); ++findRefL2) {
 	const edm::RefToBase<reco::Track> & l2RecSimMatch = findRefL2->key;
 	int sim_index = 0;
@@ -2576,6 +2593,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  edm::LogError(theCategory)<<"a reconstructed muon is not associated.";
 	}
       }
+      } //end Adam for Data
       if (associated) (*l2IsAssociated).push_back(1);
       else {
 	(*l2IsAssociated).push_back(0);
@@ -2669,8 +2687,8 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   } // this brace migrates to swallow GLB STA TK
   
   // Loop over all tracking particles
-
   int sim_index = 0;
+  if(!TPtracks.failedToGet()) { //start Adam for Data
   nSimMuon = 0;
   //  for (TrackingParticleCollection::const_iterator trp = (*TPtracks).begin();
   //       trp != (*TPtracks).end(); ++trp) {
@@ -2868,7 +2886,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     
     //    } //trackingParticle is a muon
   }//loop over all trackingparticles
-  
+  } //end Adam for Data
   nSimMuon = sim_index;
 
   MuTrigData->Fill();
