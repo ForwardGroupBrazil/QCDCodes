@@ -8,7 +8,7 @@ from RecoMuon.MuonIsolationProducers.jetExtractorBlock_cff import *
 from RecoMuon.GlobalTrackingTools.GlobalMuonRefitter_cff import *
 from RecoMuon.TrackingTools.MuonServiceProxy_cff import *
 
-hltMuonTreeMaker = cms.EDAnalyzer(
+recoMuonTreeMaker = cms.EDAnalyzer(
     "MuonRecoTreeUtility",
     MuonServiceProxy,
     outputFileName = cms.untracked.string("RecoMuonTree.root"),
