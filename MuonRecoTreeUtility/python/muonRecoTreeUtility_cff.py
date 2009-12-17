@@ -78,7 +78,7 @@ MRTU_Path = cms.Path( tpProduction )
 TimerService = cms.Service("TimerService",useCPUtime = cms.untracked.bool(True))
 import HLTrigger.Timer.timer_cfi
 hltTimer = HLTrigger.Timer.timer_cfi.myTimer.clone()
-MRTU_EndPath = cms.EndPath( hltTimer * hltMuonTreeMaker )
+MRTU_EndPath = cms.EndPath( hltTimer * recoMuonTreeMaker )
 
 #MHTUSchedule = cms.Schedule( reDIGI_Path + MHTU_Path )
 MRTUSchedule = cms.Schedule( MRTU_Path )
