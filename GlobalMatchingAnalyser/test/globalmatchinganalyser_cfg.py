@@ -47,7 +47,7 @@ process.out = cms.OutputModule("PoolOutputModule",
 #)
 #process.p1 = cms.Path(process.iSpy_sequence)
 
-process.load("FastAnalysis.GlobalMatchingAnalyser.globalmatchinganalyser_cfi")
+process.load("UserCode.GlobalMatchingAnalyser.globalmatchinganalyser_cfi")
 
 process.analyser_step = cms.Path(process.globalMatchingAnalyser) 
 
