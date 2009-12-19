@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Fri Dec 18 12:47:08 CST 2009
-// $Id: GlobalMatchingAnalyser.cc,v 1.2 2009/12/18 20:12:59 aeverett Exp $
+// $Id: GlobalMatchingAnalyser.cc,v 1.3 2009/12/18 21:34:56 aeverett Exp $
 //
 //
 
@@ -34,10 +34,14 @@
 #include "DataFormats/MuonReco/interface/MuonFwd.h"
 #include "DataFormats/MuonReco/interface/Muon.h"
 #include <DataFormats/TrackReco/interface/Track.h>
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
 
 #include "RecoMuon/TrackingTools/interface/MuonServiceProxy.h"
 #include "RecoMuon/GlobalTrackingTools/interface/MuonTrackingRegionBuilder.h"
+#include "RecoMuon/GlobalTrackingTools/interface/GlobalMuonTrackMatcher.h"
 #include "RecoTracker/TkTrackingRegions/interface/RectangularEtaPhiTrackingRegion.h"
+
+#include "TrackingTools/PatternTools/interface/Trajectory.h"
 
 
 #include "TFile.h"
@@ -53,7 +57,8 @@ class GlobalMatchingAnalyser : public edm::EDAnalyzer {
 public:
   explicit GlobalMatchingAnalyser(const edm::ParameterSet&);
   ~GlobalMatchingAnalyser();
-  
+
+  typedef std::pair<const Trajectory*, reco::TrackRef> TrackCand;
   
 private:
   virtual void beginJob() ;
@@ -62,18 +67,22 @@ private:
   
   RectangularEtaPhiTrackingRegion defineRegionOfInterest(const reco::TrackRef&) const;
   
-  std::vector<reco::Track> chooseRegionalTrackerTracksFixed(const reco::TrackRef& staCand,
-							    const edm::View<reco::Track>& tkTs,
-							    int iSta);
+  std::vector<TrackCand> 
+  chooseRegionalTrackerTracksFixed(const reco::TrackRef& staCand,
+				   const std::vector<TrackCand>& tkTs,
+				   int iSta);
   
-  std::vector<reco::Track> chooseRegionalTrackerTracks(const reco::TrackRef& staCand,
-						       const edm::View<reco::Track>& tkTs,
-						       int iSta);
+  std::vector<TrackCand> 
+  chooseRegionalTrackerTracks(const reco::TrackRef& staCand,
+			      const std::vector<TrackCand>& tkTs,
+			      int iSta);
   
   // ----------member data ---------------------------
   MuonTrackingRegionBuilder* theRegionBuilder;
 
   MuonServiceProxy* theService;
+
+  GlobalMuonTrackMatcher* theTrackMatcher;
 
   TFile *theFile; // self-explanatory
   TGraphErrors *tg1;
@@ -83,19 +92,20 @@ private:
 
   TGraphErrors *region_dynamic, *region_fixed;
 
-  TGraphErrors *tkCand, *tkCandFixed;
+  TGraphErrors *pos_tkCand, *pos_tkCandFixed;
+  TGraphErrors *pos_selectedTkCand, *pos_selectedTkCandFixed;
 
   std::string outputFileName;
 
   edm::InputTag theTrackLabel;
   edm::InputTag theMuonLabel;
 
-
 };
 
 //
 // constants, enums and typedefs
 //
+typedef std::pair<const Trajectory*, reco::TrackRef> TrackCand;
 
 //
 // static data member definitions
@@ -108,7 +118,7 @@ using namespace std;
 //
 // constructors and destructor
 //
-GlobalMatchingAnalyser::GlobalMatchingAnalyser(const edm::ParameterSet& iConfig) : theRegionBuilder(0), theService(0)
+GlobalMatchingAnalyser::GlobalMatchingAnalyser(const edm::ParameterSet& iConfig) : theRegionBuilder(0), theService(0), theTrackMatcher(0)
 
 {
   //using namespace edm;
@@ -126,6 +136,8 @@ GlobalMatchingAnalyser::GlobalMatchingAnalyser(const edm::ParameterSet& iConfig)
   ParameterSet regionBuilderPSet = iConfig.getParameter<ParameterSet>("MuonTrackingRegionBuilder");  
   theRegionBuilder = new MuonTrackingRegionBuilder(regionBuilderPSet,theService);
 
+  ParameterSet trackMatcherPSet = iConfig.getParameter<ParameterSet>("GlobalMuonTrackMatcher");
+  theTrackMatcher = new GlobalMuonTrackMatcher(trackMatcherPSet,theService);
 
 }
 
@@ -138,6 +150,7 @@ GlobalMatchingAnalyser::~GlobalMatchingAnalyser()
   if(theFile) delete theFile;
   if(theRegionBuilder) delete theRegionBuilder;
   if(theService) delete theService;
+  if(theTrackMatcher) delete theTrackMatcher;
 
   if(tg1) delete tg1;
 }
@@ -179,6 +192,17 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
   iEvent.getByLabel(theTrackLabel, trkHandle);
   View<Track> trkColl = *(trkHandle.product());
 
+  edm::Handle<reco::TrackCollection> allTrackerTracks;
+  iEvent.getByLabel(theTrackLabel,allTrackerTracks);
+
+  vector<TrackCand> tkTrackCands;
+  
+  for ( unsigned int position = 0; position != allTrackerTracks->size(); ++position ) {
+    reco::TrackRef tkTrackRef(allTrackerTracks,position);
+    TrackCand tkCand = TrackCand((Trajectory*)(0),tkTrackRef);
+    tkTrackCands.push_back(tkCand); 
+  }
+  
   tg1->SetPoint(0,1,1);
   tg1->SetPoint(1,2,1);
   tg1->SetPointError(0,1,.5);
@@ -190,6 +214,8 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
   int iSta = 0;
   int iTkFixed = 0;
   int iTkDynamic = 0;
+  int iSelTkFixed = 0;
+  int iSelTkDynamic = 0;
   for(View<Muon>::const_iterator iMuon = muonColl.begin();
       iMuon != muonColl.end(); ++iMuon, iMu++) {
 
@@ -217,8 +243,8 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       }
     }
 
-    vector<Track> tkCandColl;
-    vector<Track> tkCandCollFixed;
+    vector<TrackCand> tkPreCandColl;
+    vector<TrackCand> tkPreCandCollFixed;
 
     if(iMuon->isStandAloneMuon()) {
       if(staTrack.isAvailable()) {
@@ -226,21 +252,50 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	sta_muon->SetPointError(iMu,staTrack->etaError(),staTrack->phiError());
       }
       
-      tkCandColl = chooseRegionalTrackerTracks(staTrack,trkColl,iSta);
-      tkCandCollFixed = chooseRegionalTrackerTracksFixed(staTrack,trkColl,iSta);
+      tkPreCandColl = chooseRegionalTrackerTracks(staTrack,tkTrackCands,iSta);
+      tkPreCandCollFixed = chooseRegionalTrackerTracksFixed(staTrack,tkTrackCands,iSta);
 
-      for(vector<Track>::const_iterator iTk = tkCandColl.begin();
-	  iTk != tkCandColl.end(); ++iTk) {
-	tkCand->SetPoint(iTkDynamic,iTk->eta(),iTk->phi());
-	tkCand->SetPointError(iTkDynamic,iTk->etaError(),iTk->phiError());
+      //vector<TrackCand> tkCandColl;
+      //vector<TrackCand> tkCandCollFixed;
+      //int position = 0;
+      for(vector<TrackCand>::const_iterator iTk = tkPreCandColl.begin();
+	  iTk != tkPreCandColl.end(); ++iTk) {
+	//TrackRef tkRef(tkPreCandColl,position);
+	//position++;
+	pos_tkCand->SetPoint(iTkDynamic,iTk->second->eta(),iTk->second->phi());
+	pos_tkCand->SetPointError(iTkDynamic,iTk->second->etaError(),iTk->second->phiError());
 	iTkDynamic++;
+
+	//tkCandColl.push_back(TrackCand((Trajectory*)(0),tkRef));
       }
 
-      for(vector<Track>::const_iterator iTk = tkCandCollFixed.begin();
-	  iTk != tkCandCollFixed.end(); ++iTk) {
-	tkCandFixed->SetPoint(iTkFixed,iTk->eta(),iTk->phi());
-	tkCandFixed->SetPointError(iTkFixed,iTk->etaError(),iTk->phiError());
+      //position = 0;
+      for(vector<TrackCand>::const_iterator iTk = tkPreCandCollFixed.begin();
+	  iTk != tkPreCandCollFixed.end(); ++iTk) {
+	//TrackRef tkRef(tkPreCandCollFixed,position);
+	//position++;
+	pos_tkCandFixed->SetPoint(iTkFixed,iTk->second->eta(),iTk->second->phi());
+	pos_tkCandFixed->SetPointError(iTkFixed,iTk->second->etaError(),iTk->second->phiError());
 	iTkFixed++;
+
+	//tkCandCollFixed.push_back(TrackCand((Trajectory*)(0),tkRef));
+      }
+
+      vector<TrackCand> selectedTrackerTracks = theTrackMatcher->match(TrackCand((Trajectory*)(0),staTrack), tkPreCandColl);
+      for(vector<TrackCand>::const_iterator iTk=selectedTrackerTracks.begin();
+	  iTk != selectedTrackerTracks.end(); ++iTk) {
+	pos_selectedTkCand->SetPoint(iSelTkDynamic,iTk->second->eta(),iTk->second->phi());
+	pos_selectedTkCand->SetPointError(iSelTkDynamic,iTk->second->etaError(),iTk->second->phiError());
+	iSelTkDynamic++;
+      }
+
+
+      vector<TrackCand> selectedTrackerTracksFixed = theTrackMatcher->match(TrackCand((Trajectory*)(0),staTrack), tkPreCandCollFixed);
+      for(vector<TrackCand>::const_iterator iTk=selectedTrackerTracksFixed.begin();
+	  iTk != selectedTrackerTracksFixed.end(); ++iTk) {
+	pos_selectedTkCandFixed->SetPoint(iSelTkFixed,iTk->second->eta(),iTk->second->phi());
+	pos_selectedTkCandFixed->SetPointError(iSelTkFixed,iTk->second->etaError(),iTk->second->phiError());
+	iSelTkFixed++;
       }
       
       iSta++;
@@ -276,30 +331,38 @@ GlobalMatchingAnalyser::beginJob()
   glb_combined->SetTitle("Global Combined Muon");
   glb_combined->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
   glb_combined->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+  glb_combined->SetLineColor(4);
 
   glb_inner = new TGraphErrors();
   glb_inner->SetName("glb_inner");
   glb_inner->SetTitle("Global Inner Muon");
   glb_inner->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
   glb_inner->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+  glb_inner->SetLineColor(3);
 
   glb_outer = new TGraphErrors();
   glb_outer->SetName("glb_outer");
   glb_outer->SetTitle("Global Outer Muon");
   glb_outer->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
   glb_outer->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+  glb_outer->SetLineColor(2);
 
   sta_muon = new TGraphErrors();
   sta_muon->SetName("sta_muon");
   sta_muon->SetTitle("Stand-alone Muon");
   sta_muon->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
   sta_muon->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+  sta_muon->SetLineColor(kRed);
+  sta_muon->SetMarkerStyle(3);
+  sta_muon->SetMarkerColor(2);
 
   tk_muon = new TGraphErrors();
   tk_muon->SetName("tk_muon");
   tk_muon->SetTitle("Tracker Muon");
   tk_muon->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
   tk_muon->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+  tk_muon->SetMarkerStyle(28);
+  tk_muon->SetMarkerColor(3);
 
   region_fixed = new TGraphErrors();
   region_fixed->SetName("region_fixed");
@@ -313,17 +376,31 @@ GlobalMatchingAnalyser::beginJob()
   region_dynamic->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
   region_dynamic->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
 
-  tkCand = new TGraphErrors();
-  tkCand->SetName("tkCand");
-  tkCand->SetTitle("TK Candidates");
-  tkCand->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
-  tkCand->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+  pos_tkCand = new TGraphErrors();
+  pos_tkCand->SetName("pos_tkCand");
+  pos_tkCand->SetTitle("TK Candidates");
+  pos_tkCand->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
+  pos_tkCand->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
 
-  tkCandFixed = new TGraphErrors();
-  tkCandFixed->SetName("tkCandFixed");
-  tkCandFixed->SetTitle("TK Candidates");
-  tkCandFixed->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
-  tkCandFixed->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+  pos_tkCandFixed = new TGraphErrors();
+  pos_tkCandFixed->SetName("pos_tkCandFixed");
+  pos_tkCandFixed->SetTitle("TK Candidates");
+  pos_tkCandFixed->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
+  pos_tkCandFixed->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+
+  pos_selectedTkCand = new TGraphErrors();
+  pos_selectedTkCand->SetName("pos_selectedTkCand");
+  pos_selectedTkCand->SetTitle("Matched TK Candidates");
+  pos_selectedTkCand->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
+  pos_selectedTkCand->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+  pos_selectedTkCand->SetMarkerStyle(24);
+
+  pos_selectedTkCandFixed = new TGraphErrors();
+  pos_selectedTkCandFixed->SetName("pos_selectedTkCandFixed");
+  pos_selectedTkCandFixed->SetTitle("Matched TK Candidates");
+  pos_selectedTkCandFixed->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
+  pos_selectedTkCandFixed->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+  pos_selectedTkCandFixed->SetMarkerStyle(24);
 
 }
 
@@ -343,8 +420,10 @@ GlobalMatchingAnalyser::endJob() {
  region_fixed->Write("",TObject::kOverwrite);
  region_dynamic->Write("",TObject::kOverwrite);
 
- tkCand->Write("",TObject::kOverwrite);
- tkCandFixed->Write("",TObject::kOverwrite);
+ pos_tkCand->Write("",TObject::kOverwrite);
+ pos_tkCandFixed->Write("",TObject::kOverwrite);
+ pos_selectedTkCand->Write("",TObject::kOverwrite);
+ pos_selectedTkCandFixed->Write("",TObject::kOverwrite);
 
  theFile->Close();
 }
@@ -376,9 +455,9 @@ GlobalMatchingAnalyser::defineRegionOfInterest(const reco::TrackRef& staTrack) c
 //
 // select tracker tracks within a region of interest
 //
-vector<Track> 
+vector<TrackCand> 
 GlobalMatchingAnalyser::chooseRegionalTrackerTracksFixed(const reco::TrackRef& staCand, 
-                                                         const View<Track>& tkTs,
+                                                         const vector<TrackCand>& tkTs,
 							 int iSta) {
   
   // define eta-phi region
@@ -391,22 +470,21 @@ GlobalMatchingAnalyser::chooseRegionalTrackerTracksFixed(const reco::TrackRef& s
   region_fixed->SetPoint(iSta,regionOfInterest.direction().eta(),regionOfInterest.direction().phi());
   region_fixed->SetPointError(iSta,1.,1.);
 
-  vector<Track> result;
+  vector<TrackCand> result;
 
   double deltaR_max = 1.0;
 
-  for ( View<Track>::const_iterator is = tkTs.begin(); 
+  for ( vector<TrackCand>::const_iterator is = tkTs.begin(); 
 	is != tkTs.end(); ++is ) {
 
     double deltaR_tmp = deltaR(static_cast<double>(regionOfInterest.direction().eta()),
 			       static_cast<double>(regionOfInterest.direction().phi()),
-			       is->eta(), is->phi());
+			       is->second->eta(), is->second->phi());
 
     // for each trackCand in region, add trajectory and add to result
     if (deltaR_tmp < deltaR_max) {
-      //Track tmpCand = TrackCand(*is);
-      //result.push_back(tmpCand);
-      result.push_back(*is);
+      TrackCand tmpCand = TrackCand(*is);
+      result.push_back(tmpCand);
     }
   }
 
@@ -417,9 +495,9 @@ GlobalMatchingAnalyser::chooseRegionalTrackerTracksFixed(const reco::TrackRef& s
 //
 // select tracker tracks within a region of interest
 //
-vector<Track> 
+vector<TrackCand> 
 GlobalMatchingAnalyser::chooseRegionalTrackerTracks( const TrackRef& staCand, 
-						     const View<Track>& tkTs,
+						     const vector<TrackCand>& tkTs,
 						     int iSta) {
   
   // define eta-phi region
@@ -438,13 +516,13 @@ GlobalMatchingAnalyser::chooseRegionalTrackerTracks( const TrackRef& staCand,
   region_dynamic->SetPoint(iSta,region.direction().eta(),region.direction().phi());
   region_dynamic->SetPointError(iSta,etaLimit,phiLimit);
 
-  vector<Track> result;
+  vector<TrackCand> result;
 
-  for ( View<Track>::const_iterator is = tkTs.begin(); 
+  for ( vector<TrackCand>::const_iterator is = tkTs.begin(); 
 	is != tkTs.end(); ++is ) {
     
-    double trackEta = is->eta();
-    double trackPhi = is->phi();
+    double trackEta = is->second->eta();
+    double trackPhi = is->second->phi();
     
     // Clean  
     bool inEtaRange = trackEta >= (etaRange.mean() - etaLimit) && trackEta <= (etaRange.mean() + etaLimit) ;
