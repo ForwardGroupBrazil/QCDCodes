@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Fri Dec 18 12:47:08 CST 2009
-// $Id: GlobalMatchingAnalyser.cc,v 1.3 2009/12/18 21:34:56 aeverett Exp $
+// $Id: GlobalMatchingAnalyser.cc,v 1.4 2009/12/19 05:37:27 aeverett Exp $
 //
 //
 
@@ -42,7 +42,7 @@
 #include "RecoTracker/TkTrackingRegions/interface/RectangularEtaPhiTrackingRegion.h"
 
 #include "TrackingTools/PatternTools/interface/Trajectory.h"
-
+#include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
 
 #include "TFile.h"
 #include <TGraph.h>
@@ -94,6 +94,9 @@ private:
 
   TGraphErrors *pos_tkCand, *pos_tkCandFixed;
   TGraphErrors *pos_selectedTkCand, *pos_selectedTkCandFixed;
+
+  TGraphErrors *surface_error1;
+  TGraphErrors *surface_error2;
 
   std::string outputFileName;
 
@@ -212,6 +215,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 
   int iMu = 0;
   int iSta = 0;
+  int surfaceOffset = 0;
   int iTkFixed = 0;
   int iTkDynamic = 0;
   int iSelTkFixed = 0;
@@ -247,6 +251,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
     vector<TrackCand> tkPreCandCollFixed;
 
     if(iMuon->isStandAloneMuon()) {
+      TrackCand staCand((Trajectory*)(0),staTrack);     
       if(staTrack.isAvailable()) {
 	sta_muon->SetPoint(iMu,staTrack->eta(),staTrack->phi());
 	sta_muon->SetPointError(iMu,staTrack->etaError(),staTrack->phiError());
@@ -270,16 +275,39 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       }
 
       //position = 0;
+      int iTkSurf = 0;
       for(vector<TrackCand>::const_iterator iTk = tkPreCandCollFixed.begin();
 	  iTk != tkPreCandCollFixed.end(); ++iTk) {
 	//TrackRef tkRef(tkPreCandCollFixed,position);
 	//position++;
 	pos_tkCandFixed->SetPoint(iTkFixed,iTk->second->eta(),iTk->second->phi());
 	pos_tkCandFixed->SetPointError(iTkFixed,iTk->second->etaError(),iTk->second->phiError());
+
+	//std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface>
+	//tsosPair = theTrackMatcher->convertToTSOSMuHit(staCand,*iTk);
+
+	//double x1 = tsosPair.first.localPosition().x();
+	//double y1 = tsosPair.first.localPosition().y();
+	//double xx1 = tsosPair.first.localError().positionError().xx();
+	//double yy1 = tsosPair.first.localError().positionError().yy();
+
+	//double x2 = tsosPair.second.localPosition().x();
+	//double y2 = tsosPair.second.localPosition().y();
+	//double xx2 = tsosPair.second.localError().positionError().xx();
+	//double yy2 = tsosPair.second.localError().positionError().yy();
+
+	//surface_error1->SetPoint(iSta,x1,y1);
+	//surface_error2->SetPoint(surfaceOffset+iTkSurf,x2,y2);
+	//surface_error1->SetPointError(iSta,xx1,yy1);
+	//surface_error2->SetPoint(surfaceOffset+iTkSurf,xx2,yy2);
+
+	iTkSurf++;
 	iTkFixed++;
 
 	//tkCandCollFixed.push_back(TrackCand((Trajectory*)(0),tkRef));
       }
+
+      surfaceOffset = surfaceOffset + iTkSurf + 1;
 
       vector<TrackCand> selectedTrackerTracks = theTrackMatcher->match(TrackCand((Trajectory*)(0),staTrack), tkPreCandColl);
       for(vector<TrackCand>::const_iterator iTk=selectedTrackerTracks.begin();
@@ -402,6 +430,18 @@ GlobalMatchingAnalyser::beginJob()
   pos_selectedTkCandFixed->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
   pos_selectedTkCandFixed->SetMarkerStyle(24);
 
+  //surface_error1 = new TGraphErrors();
+  //surface_error1->SetName("surface_error1");
+  //surface_error1->SetTitle("Common Surface1");
+  //surface_error1->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
+  //surface_error1->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+
+  //surface_error2 = new TGraphErrors();
+  //surface_error2->SetName("surface_error2");
+  //surface_error2->SetTitle("Common Surface2");
+  //surface_error2->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
+  //surface_error2->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
@@ -424,6 +464,9 @@ GlobalMatchingAnalyser::endJob() {
  pos_tkCandFixed->Write("",TObject::kOverwrite);
  pos_selectedTkCand->Write("",TObject::kOverwrite);
  pos_selectedTkCandFixed->Write("",TObject::kOverwrite);
+
+ //surface_error1->Write("",TObject::kOverwrite);
+ //surface_error2->Write("",TObject::kOverwrite);
 
  theFile->Close();
 }

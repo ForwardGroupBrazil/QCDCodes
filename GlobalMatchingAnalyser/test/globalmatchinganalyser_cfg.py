@@ -26,6 +26,7 @@ process.load("Configuration.StandardSequences.Reconstruction_cff")
 process.source = cms.Source("PoolSource",
                             fileNames = cms.untracked.vstring(
     'file:/uscms_data/d2/aeverett/RealData/CMSSW_3_3_5/src/myFastReco.root',
+    #'file:/uscms_data/d2/aeverett/RealData/CMSSW_3_3_5/src/myFastReco123592.root',
     )
                             )
 
@@ -33,7 +34,7 @@ process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(-1)
     )
 process.out = cms.OutputModule("PoolOutputModule",
-                               fileName = cms.untracked.string('myJustMuonReco.root')
+                               fileName = cms.untracked.string('myJustMuonReco124120.root')
                                )
 
 #process.p = cms.Path(process.muonrecoComplete)
@@ -48,6 +49,8 @@ process.out = cms.OutputModule("PoolOutputModule",
 #process.p1 = cms.Path(process.iSpy_sequence)
 
 process.load("UserCode.GlobalMatchingAnalyser.globalmatchinganalyser_cfi")
+
+process.globalMatchingAnalyser.outputFileName = 'matchAnalyser124120.root'
 
 process.analyser_step = cms.Path(process.globalMatchingAnalyser) 
 
