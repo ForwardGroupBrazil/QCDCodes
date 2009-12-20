@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Fri Dec 18 12:47:08 CST 2009
-// $Id: GlobalMatchingAnalyser.cc,v 1.4 2009/12/19 05:37:27 aeverett Exp $
+// $Id: GlobalMatchingAnalyser.cc,v 1.5 2009/12/19 07:18:10 aeverett Exp $
 //
 //
 
@@ -283,24 +283,46 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	pos_tkCandFixed->SetPoint(iTkFixed,iTk->second->eta(),iTk->second->phi());
 	pos_tkCandFixed->SetPointError(iTkFixed,iTk->second->etaError(),iTk->second->phiError());
 
-	//std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface>
-	//tsosPair = theTrackMatcher->convertToTSOSMuHit(staCand,*iTk);
+	std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface>
+	  tsosPair = theTrackMatcher->convertToTSOSMuHit(staCand,*iTk);
 
-	//double x1 = tsosPair.first.localPosition().x();
-	//double y1 = tsosPair.first.localPosition().y();
-	//double xx1 = tsosPair.first.localError().positionError().xx();
-	//double yy1 = tsosPair.first.localError().positionError().yy();
+	cout << "first " << tsosPair.first.isValid() << " second " << tsosPair.second.isValid() << endl;
 
-	//double x2 = tsosPair.second.localPosition().x();
-	//double y2 = tsosPair.second.localPosition().y();
-	//double xx2 = tsosPair.second.localError().positionError().xx();
-	//double yy2 = tsosPair.second.localError().positionError().yy();
+	if(!tsosPair.first.isValid() || !tsosPair.second.isValid()) continue;
 
-	//surface_error1->SetPoint(iSta,x1,y1);
-	//surface_error2->SetPoint(surfaceOffset+iTkSurf,x2,y2);
-	//surface_error1->SetPointError(iSta,xx1,yy1);
-	//surface_error2->SetPoint(surfaceOffset+iTkSurf,xx2,yy2);
+	// calculate matching variables
+	double distance = theTrackMatcher->match_d(tsosPair.first,tsosPair.second);
+	double chi2 = theTrackMatcher->match_Chi2(tsosPair.first,tsosPair.second);
+	double loc_chi2 = theTrackMatcher->match_dist(tsosPair.first,tsosPair.second);
+	double deltaR = theTrackMatcher->match_Rpos(tsosPair.first,tsosPair.second);
+	cout << "eta " << iTk->second->eta() << " phi " << iTk->second->phi() << endl; 
+	cout << "distance " << distance << endl;
+	cout << "chi2 " << chi2 << endl;
+	cout << "loc_chi2 " << loc_chi2 << endl;
+	cout << "deltaR " << deltaR << endl;
 
+	cout << "dR1 " << fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta()<1.5*0.2) << endl;
+	cout << "dR2 " << (fabs(deltaPhi(tsosPair.second.globalPosition().phi(),tsosPair.first.globalPosition().phi())) < 0.2) << endl;
+
+	cout << "dR1redo " << (fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta()) < 1.5 * 0.2) << " " << fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta()) << endl;
+
+	cout << "dR2redo " << fabs(deltaPhi(tsosPair.second.globalPosition().phi(),tsosPair.first.globalPosition().phi()) ) << endl;
+	
+	double x1 = tsosPair.first.localPosition().x();
+	double y1 = tsosPair.first.localPosition().y();
+	double xx1 = tsosPair.first.localError().positionError().xx();
+	double yy1 = tsosPair.first.localError().positionError().yy();
+
+	double x2 = tsosPair.second.localPosition().x();
+	double y2 = tsosPair.second.localPosition().y();
+	double xx2 = tsosPair.second.localError().positionError().xx();
+	double yy2 = tsosPair.second.localError().positionError().yy();
+
+	surface_error1->SetPoint(iSta,x1,y1);
+	surface_error2->SetPoint(surfaceOffset+iTkSurf,x2,y2);
+	surface_error1->SetPointError(iSta,xx1,yy1);
+	surface_error2->SetPoint(surfaceOffset+iTkSurf,xx2,yy2);
+	
 	iTkSurf++;
 	iTkFixed++;
 
@@ -429,19 +451,19 @@ GlobalMatchingAnalyser::beginJob()
   pos_selectedTkCandFixed->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
   pos_selectedTkCandFixed->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
   pos_selectedTkCandFixed->SetMarkerStyle(24);
-
-  //surface_error1 = new TGraphErrors();
-  //surface_error1->SetName("surface_error1");
-  //surface_error1->SetTitle("Common Surface1");
+  
+  surface_error1 = new TGraphErrors();
+  surface_error1->SetName("surface_error1");
+  surface_error1->SetTitle("Common Surface1");
   //surface_error1->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
   //surface_error1->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
 
-  //surface_error2 = new TGraphErrors();
-  //surface_error2->SetName("surface_error2");
-  //surface_error2->SetTitle("Common Surface2");
+  surface_error2 = new TGraphErrors();
+  surface_error2->SetName("surface_error2");
+  surface_error2->SetTitle("Common Surface2");
   //surface_error2->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
   //surface_error2->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
-
+  
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
@@ -464,10 +486,10 @@ GlobalMatchingAnalyser::endJob() {
  pos_tkCandFixed->Write("",TObject::kOverwrite);
  pos_selectedTkCand->Write("",TObject::kOverwrite);
  pos_selectedTkCandFixed->Write("",TObject::kOverwrite);
-
- //surface_error1->Write("",TObject::kOverwrite);
- //surface_error2->Write("",TObject::kOverwrite);
-
+ 
+ surface_error1->Write("",TObject::kOverwrite);
+ surface_error2->Write("",TObject::kOverwrite);
+ 
  theFile->Close();
 }
 
