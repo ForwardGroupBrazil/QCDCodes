@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Fri Dec 18 12:47:08 CST 2009
-// $Id: GlobalMatchingAnalyser.cc,v 1.5 2009/12/19 07:18:10 aeverett Exp $
+// $Id: GlobalMatchingAnalyser.cc,v 1.6 2009/12/20 03:25:07 aeverett Exp $
 //
 //
 
@@ -185,6 +185,8 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
    iSetup.get<SetupRecord>().get(pSetup);
 #endif
 
+   cout << endl << "********************" << endl << "********************" << endl << "********************" << endl << "Run " << iEvent.id().run() << " Event " << iEvent.id().event() << endl;
+
   // Get Muons
   Handle<View<Muon> > muonHandle;
   iEvent.getByLabel(theMuonLabel, muonHandle);
@@ -222,7 +224,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
   int iSelTkDynamic = 0;
   for(View<Muon>::const_iterator iMuon = muonColl.begin();
       iMuon != muonColl.end(); ++iMuon, iMu++) {
-
+    cout << "*****" << endl << "Muon " << iMu+1 << " of " << nMu << endl;
     const reco::TrackRef glbTrack = ( iMuon->isGlobalMuon()) ? 
       iMuon->combinedMuon() : reco::TrackRef();
 
@@ -256,9 +258,13 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	sta_muon->SetPoint(iMu,staTrack->eta(),staTrack->phi());
 	sta_muon->SetPointError(iMu,staTrack->etaError(),staTrack->phiError());
       }
+
+      cout << endl << "**********" << endl << "StaMuon " << iSta+1 << " of " << "999" << endl;
       
       tkPreCandColl = chooseRegionalTrackerTracks(staTrack,tkTrackCands,iSta);
       tkPreCandCollFixed = chooseRegionalTrackerTracksFixed(staTrack,tkTrackCands,iSta);
+
+      cout << "     " << endl << "Tk in Region " << tkPreCandCollFixed.size() << endl;
 
       //vector<TrackCand> tkCandColl;
       //vector<TrackCand> tkCandCollFixed;
@@ -276,8 +282,11 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 
       //position = 0;
       int iTkSurf = 0;
+      int iiTk = 1;
       for(vector<TrackCand>::const_iterator iTk = tkPreCandCollFixed.begin();
 	  iTk != tkPreCandCollFixed.end(); ++iTk) {
+	cout << "*****" << endl << "Tk " << iiTk << " of " << tkPreCandCollFixed.size() << endl;
+	iiTk++;
 	//TrackRef tkRef(tkPreCandCollFixed,position);
 	//position++;
 	pos_tkCandFixed->SetPoint(iTkFixed,iTk->second->eta(),iTk->second->phi());
@@ -343,6 +352,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       vector<TrackCand> selectedTrackerTracksFixed = theTrackMatcher->match(TrackCand((Trajectory*)(0),staTrack), tkPreCandCollFixed);
       for(vector<TrackCand>::const_iterator iTk=selectedTrackerTracksFixed.begin();
 	  iTk != selectedTrackerTracksFixed.end(); ++iTk) {
+	cout << "-----" << endl << "selected pt " << iTk->second->pt() << " eta " << iTk->second->eta() << " phi " << iTk->second->phi() << endl; 
 	pos_selectedTkCandFixed->SetPoint(iSelTkFixed,iTk->second->eta(),iTk->second->phi());
 	pos_selectedTkCandFixed->SetPointError(iSelTkFixed,iTk->second->etaError(),iTk->second->phiError());
 	iSelTkFixed++;

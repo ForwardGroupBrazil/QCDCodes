@@ -11,7 +11,6 @@
 <use name="RecoTracker/TkTrackingRegions">
 <flags EDM_PLUGIN=1>
 <export>
-   <lib name=FastAnalysisGlobalMatchingAnalyser>
    <use name=FWCore/Framework>
    <use name=FWCore/PluginManager>
    <use name=FWCore/ParameterSet>
