@@ -9,7 +9,6 @@ globalMatchingAnalyser = cms.EDAnalyzer(
     MuonServiceProxy,
     MuonTrackingRegionCommon,
     GlobalMuonTrackMatcher,
-    outputFileName = cms.untracked.string("matchAnalyser.root"),
     trackLabel = cms.InputTag("generalTracks"),
     muonLabel = cms.InputTag("muons"),
 )
