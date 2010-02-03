@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Fri Dec 18 12:47:08 CST 2009
-// $Id: GlobalMatchingAnalyser.cc,v 1.7 2010/01/26 03:44:40 aeverett Exp $
+// $Id: GlobalMatchingAnalyser.cc,v 1.8 2010/02/02 21:56:15 aeverett Exp $
 //
 //
 
@@ -185,7 +185,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
    iSetup.get<SetupRecord>().get(pSetup);
 #endif
 
-   LogTrace("MatchAnalyzer") << endl << "********************" << endl << "********************" << endl << "********************" << endl << "Run " << iEvent.id().run() << " Event " << iEvent.id().event() << endl;
+   LogTrace("MatchAnalyzer") << "********************" << "Run " << iEvent.id().run() << " Event " << iEvent.id().event() ;
 
   // Get Muons
   Handle<View<Muon> > muonHandle;

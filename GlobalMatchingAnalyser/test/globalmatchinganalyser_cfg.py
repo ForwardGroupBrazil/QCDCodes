@@ -6,13 +6,15 @@ process = cms.Process("DebugMuon")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1
 process.MessageLogger.destinations += ['AnalyzerMessages',
-                                       'DetailedMessages']
+                                       'DetailedMessages',
+                                       'FitterMessages']
 process.MessageLogger.categories   += ['MatchAnalyzer',
                                        'GlobalMuonTrackMatcher']
 process.MessageLogger.categories   += ['GlobalMuonTrajectoryBuilder',
                                        'GlobalTrajectoryBuilderBase',
                                        'GlobalMuonProducer',
                                        'MuonTrajectoryCleaner']
+process.MessageLogger.categories   += ['MuonTrackLoader','TrackFitters']
 process.MessageLogger.debugModules += ['globalMuons','globalMatchingAnalyser']
 
 process.MessageLogger.DetailedMessages = cms.untracked.PSet(
@@ -30,6 +32,15 @@ process.MessageLogger.AnalyzerMessages = cms.untracked.PSet(
     default    = cms.untracked.PSet(limit = cms.untracked.int32(0)),
     MatchAnalyzer = cms.untracked.PSet(limit = cms.untracked.int32(-1))
     )
+
+process.MessageLogger.FitterMessages  = cms.untracked.PSet(
+    threshold  = cms.untracked.string('DEBUG'),
+    default    = cms.untracked.PSet(limit = cms.untracked.int32(0)),
+    INFO = cms.untracked.PSet(limit = cms.untracked.int32(0)),
+    MuonTrackLoader = cms.untracked.PSet(limit = cms.untracked.int32(-1)),
+    TrackFitters = cms.untracked.PSet(limit = cms.untracked.int32(-1)),
+    )
+
 
 # Muon Reco
 process.load("RecoLocalMuon.Configuration.RecoLocalMuon_cff")
@@ -55,13 +66,14 @@ process.source = cms.Source(
     fileNames = cms.untracked.vstring(
     
     # 'file:/scratch/scratch96/a/aeverett/FastAnalysis/split-mc-matched.root',
-    'file:/scratch/scratch96/a/aeverett/FastAnalysis/data/badGlb/fastReco-badGlobalMuons_10/myFastReco.root',
+    # 'file:/scratch/scratch96/a/aeverett/FastAnalysis/data/badGlb/fastReco-badGlobalMuons_10/myFastReco.root',
+    'file:/scratch/scratch96/a/aeverett/FastAnalysis/data/goodGlb/fastReco-goodGlobalMuons_21/myFastReco.root',
     
     )
     )
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(-1)
+    input = cms.untracked.int32(2)
     )
 
 process.out = cms.OutputModule("PoolOutputModule",
