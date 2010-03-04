@@ -54,11 +54,17 @@ drawObjectCollection(TList * objectList_, bool draw_=true, TString * legend_ = 0
   TIter hIter(objectList_);
   TObject * obj;
   int i = -1;
+  float numerator = 1.;
   while ( (obj=(TObject*)hIter()) ) {
     i++;
     if( obj->IsA()->InheritsFrom("TH1") ) type = 1;
     if( obj->IsA()->InheritsFrom("TH2") ) type = 2;
     if( obj->IsA()->InheritsFrom("TGraph") ) type = 3;
+
+    if(i==0 && type == 1) {
+      TH1 * h1 = (TH1*)obj;
+      numerator = h1->Integral();
+    }
 
     TString legEntry = (legend_) ? legend_[i] : obj->GetTitle();
 
@@ -68,6 +74,8 @@ drawObjectCollection(TList * objectList_, bool draw_=true, TString * legend_ = 0
       //TString opt2 = ("E1X0") + opt1;
       TString opt2 = (" PL ") + opt1;
       TH1 * h1 = (TH1*)obj;
+      float denominator = (h1->Integral() > 0) ? h1->Integral() : 1.;
+      //aaa h1->Scale(numerator/denominator);
       h1->SetLineColor(color[i]);
       h1->SetMarkerColor(color[i]);
       h1->SetMarkerStyle(style[i]);

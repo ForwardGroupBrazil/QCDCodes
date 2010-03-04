@@ -42,8 +42,8 @@
 
    myStyle->SetPadBottomMargin(0.1);
    myStyle->SetPadTopMargin(0.1);
-   myStyle->SetPadLeftMargin(0.1);
-   myStyle->SetPadRightMargin(0.1);
+   myStyle->SetPadLeftMargin(0.2);
+   myStyle->SetPadRightMargin(0.2);
 
    /*
   myStyle->SetHistLineColor(1);
@@ -59,7 +59,7 @@
    myStyle->SetPaperSize(20, 24);
 
 
-   // gROOT->SetStyle("MyStyle"); //uncomment to set this style
+   //gROOT->SetStyle("MyStyle"); //uncomment to set this style
 
    bool foundIt=true;
    // see if CMSSW has been setup
@@ -90,7 +90,9 @@
      cout << "Loading: " << FWLiteLib << endl;
      gSystem->Load(FWLiteLib);
      AutoLibraryLoader::enable();
+     gSystem->Load("libSmatrix");
      gSystem->Load("libTreeLib.so");
+     cout << "Done loading libraries . . . " << endl;
    }
 }
 

@@ -1,6 +1,59 @@
 /////////
 // the Style Section
 /////////
+void setHLTStyle() {
+  setTDRStyle();
+
+  //  TStyle *hltStyle = new TStyle(*tdrStyle);
+  TStyle *hltStyle  = new TStyle("hltStyle","My HLT Styles");
+  gStyle->Copy(*hltStyle);
+
+  hltStyle->SetCanvasColor(-1);
+
+  hltStyle->SetCanvasDefH(600);
+  hltStyle->SetCanvasDefW(600);
+  hltStyle->SetPadColor(-1);  
+  hltStyle->SetPadGridX(false);
+  hltStyle->SetPadGridY(false);
+  hltStyle->SetGridWidth(0.25);
+  
+  hltStyle->SetFrameFillColor(-1); // Transparent
+
+  hltStyle->SetHistFillColor(-1); // Transparent
+  hltStyle->SetHistFillStyle(0);  // None
+  hltStyle->SetHistLineWidth(3);
+
+  hltStyle->SetPadTopMargin(0.08);
+  hltStyle->SetPadBottomMargin(0.12);
+  hltStyle->SetPadLeftMargin(0.15);
+  hltStyle->SetPadRightMargin(0.04);
+
+  hltStyle->SetTitleSize(0.05);
+  hltStyle->SetTitleFillColor(-1); // Transparent
+  hltStyle->SetTitleH(0.05); // Set the height of the title box
+  hltStyle->SetTitleW(0.); // Set the width of the title box
+
+  hltStyle->SetTitleSize(0.04, "XYZ");     
+  hltStyle->SetTitleOffset(1.2, "X"); // Another way to set the Offset
+  hltStyle->SetTitleOffset(1.8, "Y"); // Another way to set the Offset
+
+  hltStyle->SetLabelSize(0.035, "XYZ");
+
+  hltStyle->SetPalette(1,0);
+  hltStyle->SetFillColor(0);    // White
+  hltStyle->SetFillStyle(4000); // Transparent
+
+  hltStyle->SetStatStyle(0);
+  hltStyle->SetTitleStyle(0);
+  hltStyle->SetCanvasBorderSize(0);
+  hltStyle->SetFrameBorderSize(0);
+  hltStyle->SetLegendBorderSize(0);
+  hltStyle->SetStatBorderSize(0);
+  hltStyle->SetTitleBorderSize(0);
+
+  hltStyle->cd();
+}
+
 void setTDRStyle() {
   TStyle *tdrStyle = new TStyle("tdrStyle","Style for P-TDR");
 
@@ -34,7 +87,7 @@ void setTDRStyle() {
 // For the histo:
   // tdrStyle->SetHistFillColor(1);
   // tdrStyle->SetHistFillStyle(0);
-  tdrStyle->SetHistLineColor(1);
+  //aaa tdrStyle->SetHistLineColor(1);
   tdrStyle->SetHistLineStyle(0);
   tdrStyle->SetHistLineWidth(1);
   // tdrStyle->SetLegoInnerR(Float_t rad = 0.5);
@@ -44,12 +97,12 @@ void setTDRStyle() {
   //tdrStyle->SetErrorMarker(20);
   tdrStyle->SetErrorX(0.);
   
-  tdrStyle->SetMarkerStyle(20);
+  //aaa  tdrStyle->SetMarkerStyle(20);
 
 //For the fit/function:
   tdrStyle->SetOptFit(1);
   tdrStyle->SetFitFormat("5.4g");
-  tdrStyle->SetFuncColor(2);
+  //aaa tdrStyle->SetFuncColor(2);
   tdrStyle->SetFuncStyle(1);
   tdrStyle->SetFuncWidth(1);
 
@@ -81,7 +134,7 @@ void setTDRStyle() {
 
 // For the Global title:
 
-  tdrStyle->SetOptTitle(1);
+  tdrStyle->SetOptTitle(0);
   tdrStyle->SetTitleFont(42);
   tdrStyle->SetTitleColor(1);
   tdrStyle->SetTitleTextColor(1);
