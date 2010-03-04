@@ -25,18 +25,18 @@ TLegend * note_glb_figures()
   TString figLongName_("Global Muons");
   TString figDirName2_("FigGLB");
 
-  bool doAlgEff_ = true;
+  bool doAlgEff_ = false;
 
-  TList * fileList = makeFileCollection("my2112FileList.txt");
+  TList * fileList = makeFileCollection("my312FileList.txt");
 
   TString directories[] = {
-    "/DQMData/Run 1/RecoMuonV/Run summary/"+dirName_
+    "/DQMData/Run 1/Muons/Run summary/RecoMuonV/"+dirName_
   }
 
   TList * dirList = makeDirectoryCollection(fileList,directories,1);
 
   TString directoriesComposites[] = {
-    "/DQMData/Run 1/RecoMuonV/Run summary/MultiTrack"
+    "/DQMData/Run 1/Muons/Run summary/RecoMuonV/MultiTrack"
   };
 
   TList * dirListComposites = makeDirectoryCollection(fileList,directoriesComposites,1);
