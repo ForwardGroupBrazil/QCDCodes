@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.11 2009/11/16 18:02:51 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.12 2009/12/11 20:12:23 aeverett Exp $
 //
 //
 
@@ -132,6 +132,8 @@
 #include "DataFormats/RecoCandidate/interface/IsoDeposit.h"
 #include "RecoMuon/MuonIsolation/interface/Range.h"
 //#include "DataFormats/MuonReco/interface/MuonIsolation.h"
+#include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/VertexReco/interface/VertexFwd.h"
 
 #include "RecoMuon/GlobalTrackingTools/interface/GlobalMuonRefitter.h"
 
@@ -176,7 +178,10 @@ private:
   // Members of both MuTrigData and MuTrigMC
   // Event-level information
   int RunNumber;
-  int EventNumber;  
+  int EventNumber;
+
+  double vtxX, vtxY, vtxZ;
+  double bsX, bsY, bsZ;
   /*
   // Overall MuonHLT execution time, and execution time for each module.
   double totalMuonHLTTime;
@@ -229,6 +234,10 @@ private:
   std::vector<int> *muGlobalMuonPromptTight ;
   std::vector<int> *muTMLastStationLoose ;
   std::vector<int> *muTMLastStationTight ;
+  std::vector<int> *muTMLastStationAngLoose ;
+  std::vector<int> *muTMLastStationAngTight ;
+  std::vector<int> *muTMOneStationAngLoose ;
+  std::vector<int> *muTMOneStationAngTight ;
   std::vector<int> *muTM2DCompatibilityLoose ;
   std::vector<int> *muTM2DCompatibilityTight ;
   std::vector<int> *muTMOneStationLoose ;
@@ -428,6 +437,7 @@ private:
   std::vector<double> *tkTrackAssociationVtxX;
   std::vector<double> *tkTrackAssociationVtxY;
   std::vector<double> *tkTrackAssociationVtxZ;
+  std::vector<int> *tkTrackAssociatedSimMuonIndex;
   std::vector<double> *tkTrackAssociatedSimMuonPt;
   std::vector<double> *tkTrackAssociatedSimMuonEta;
   std::vector<double> *tkTrackAssociatedSimMuonPhi;
@@ -552,6 +562,7 @@ private:
   edm::ESHandle<MagneticField> field;
   edm::ESHandle<HepPDT::ParticleDataTable> fPDGTable;
   edm::InputTag bsSrc;
+  edm::InputTag vtxSrc;
 
   IDconverttoBinNum wantMotherBin;
 
@@ -637,6 +648,9 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   trackingParticleLabel = iConfig.getParameter<edm::InputTag>("trackingParticleLabel");
   allTrackingParticleLabel = iConfig.getParameter<edm::InputTag>("allTrackingParticleLabel");
   bsSrc = iConfig.getParameter<edm::InputTag>("beamSpotLabel");
+
+  vtxSrc = iConfig.getParameter<edm::InputTag>("vertexSource");
+
 
   edm::LogInfo("MuonRecoTreeUtility") << "got the first block of things.  Now getting errorMatrixPset.";
   errorMatrixPset = iConfig.getParameter<edm::ParameterSet>("matrixPset");
@@ -786,6 +800,10 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   muGlobalMuonPromptTight  = 0;
   muTMLastStationLoose  = 0;
   muTMLastStationTight  = 0;
+  muTMLastStationAngLoose  = 0;
+  muTMLastStationAngTight  = 0;
+  muTMOneStationAngLoose  = 0;
+  muTMOneStationAngTight  = 0;
   muTM2DCompatibilityLoose  = 0;
   muTM2DCompatibilityTight  = 0;
   muTMOneStationLoose  = 0;
@@ -1077,6 +1095,20 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   iEvent.getByLabel(bsSrc,recoBeamSpotHandle);
   reco::BeamSpot bs = *recoBeamSpotHandle;      
 
+  edm::Handle<reco::VertexCollection> recoVtxHandle;
+  iEvent.getByLabel(vtxSrc,recoVtxHandle);
+  //reco::Vertex vtx = *recoVtxHandle;    
+
+  const reco::Vertex* theEventVertex = ( recoVtxHandle->size() > 0 ) ? &(recoVtxHandle->at(0)) : 0;
+
+  vtxX = theEventVertex->x();
+  vtxY = theEventVertex->y();
+  vtxZ = theEventVertex->z();
+
+  bsX = bs.x0();
+  bsY = bs.y0();
+  bsZ = bs.z0();
+
   /*
   edm::Handle<EventTime> evtTime;
   iEvent.getByLabel(theTimerLabel, evtTime); 
@@ -1114,10 +1146,12 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   reco::RecoToSimCollection l3RecSimColl;
   reco::RecoToSimCollection tkRecSimColl;
   reco::RecoToSimCollection l3RecAllSimColl;
+  reco::RecoToSimCollection tkRecAllSimColl;
   reco::SimToRecoCollection l2SimRecColl;
   reco::SimToRecoCollection l3SimRecColl;
   reco::SimToRecoCollection tkSimRecColl;
   reco::SimToRecoCollection l3AllSimRecColl;
+  reco::SimToRecoCollection tkAllSimRecColl;
 
   if (!TPtracks.failedToGet()) {
     iEvent.getByType(hepmc);
@@ -1133,14 +1167,16 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     //associate RecoToSim
     l2RecSimColl = l2Associator->associateRecoToSim(l2MuonsForAssociation, TPtracks, &iEvent);
     l3RecSimColl = l3Associator->associateRecoToSim(l3MuonsForAssociation, TPtracks, &iEvent);
-    tkRecSimColl = l3Associator->associateRecoToSim(l3MuonsForAssociation, TPtracks, &iEvent);
+    tkRecSimColl = l3Associator->associateRecoToSim(tkTracksForAssociation, TPtracks, &iEvent);
     l3RecAllSimColl = l3Associator->associateRecoToSim(l3MuonsForAssociation, allTPtracks, &iEvent);
+    tkRecAllSimColl = l3Associator->associateRecoToSim(tkTracksForAssociation, allTPtracks, &iEvent);
     
     //associate SimToReco
     l2SimRecColl = l2Associator->associateSimToReco(l2MuonsForAssociation, TPtracks, &iEvent);
     l3SimRecColl = l3Associator->associateSimToReco(l3MuonsForAssociation, TPtracks, &iEvent);
-    tkSimRecColl = l3Associator->associateSimToReco(l3MuonsForAssociation, TPtracks, &iEvent);
+    tkSimRecColl = l3Associator->associateSimToReco(tkTracksForAssociation, TPtracks, &iEvent);
     l3AllSimRecColl = l3Associator->associateSimToReco(l3MuonsForAssociation, allTPtracks, &iEvent);
+    tkAllSimRecColl = l3Associator->associateSimToReco(tkTracksForAssociation, allTPtracks, &iEvent);
   }
   
   // Event-level information: run, event, and Trigger Table
@@ -1372,6 +1408,10 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*muGMTkChiCompatibility ).push_back( muon::isGoodMuon(*iMuon,muon::GMTkChiCompatibility));
       (*muGMStaChiCompatibility ).push_back( muon::isGoodMuon(*iMuon,muon::GMStaChiCompatibility));
       (*muGMTkKinkTight ).push_back( muon::isGoodMuon(*iMuon,muon::GMTkKinkTight));
+      (*muTMLastStationAngLoose ).push_back( muon::isGoodMuon(*iMuon,muon::TMLastStationAngLoose));
+      (*muTMLastStationAngTight ).push_back( muon::isGoodMuon(*iMuon,muon::TMLastStationAngTight));
+      (*muTMOneStationAngLoose ).push_back( muon::isGoodMuon(*iMuon,muon::TMOneStationAngLoose));
+      (*muTMOneStationAngTight ).push_back( muon::isGoodMuon(*iMuon,muon::TMOneStationAngTight));
 
       (*muCaloCompatibility).push_back(muon::caloCompatibility(*iMuon));
       (*muSegmentCompatibility).push_back(muon::segmentCompatibility(*iMuon));
@@ -1422,11 +1462,15 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 
     const reco::TrackRef glbTrack = ( iMuon->isGlobalMuon()) ? 
       iMuon->combinedMuon() : reco::TrackRef();
+    const reco::TrackRef innerTrack = ( iMuon->isGlobalMuon()) ? 
+      iMuon->innerTrack() : reco::TrackRef();
 
     const RefToBase<Track> glbTrackRB(glbTrack);
     
     const reco::TrackRef tkTrack = ( iMuon->isTrackerMuon() ) ? 
       iMuon->innerTrack() : TrackRef();
+
+    const RefToBase<Track> tkTrackRB(tkTrack);
     
     const reco::TrackRef staTrack = ( iMuon->isStandAloneMuon() ) ? 
       iMuon->outerTrack() : TrackRef();
@@ -2084,34 +2128,100 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       xForThisTk->clear();
       yForThisTk->clear();
       zForThisTk->clear();
-      
+
       bool associated = false;
       // With the detector-level things filled, time to start doing the associations to sim
       int sim_index = 0;
+      TrackingParticleRef muTP;
+      TrackingParticleRef anyTP;
+      
+      double muAssocVal = 0.;
+      double anyAssocVal = 0.;
       if(!TPtracks.failedToGet()) { //start Adam for Data
-      for (reco::RecoToSimCollection::const_iterator findRefTk = tkRecSimColl.begin(); findRefTk != tkRecSimColl.end(); ++findRefTk) {
-	const edm::RefToBase<reco::Track> & tkRecSimMatch = findRefTk->key;
-	if (tkRecSimMatch->pt() == refTk->pt()) {
+      if ( tkRecSimColl.find(tkTrackRB) != tkRecSimColl.end() ) {
+	//get TP
+	const std::vector<std::pair<TrackingParticleRef,double> > & tp = tkRecSimColl[tkTrackRB];
+	muTP = tp.begin()->first;
+	muAssocVal = tp.begin()->second;
+      }
+
+      if ( tkRecAllSimColl.find(tkTrackRB) != tkRecAllSimColl.end() ) {
+	//get TP
+	const std::vector<std::pair<TrackingParticleRef,double> > & tp = tkRecAllSimColl[tkTrackRB];
+	anyTP = tp.begin()->first;
+	anyAssocVal = tp.begin()->second;
+      }
+      } //end Adam for Data
+      
+      TrackingParticleRef theTP;
+      double theAssocVal = 0.;
+      if(muTP.isAvailable()) {
+	theTP = muTP;
+	theAssocVal = muAssocVal;
+      } else if (anyTP.isAvailable()) {
+	theTP = anyTP;
+	theAssocVal = anyAssocVal;
+      }
+     
+      if(theTP.isAvailable()) {
+	if(theTP.isAvailable()){
+	  //for (reco::RecoToSimCollection::const_iterator findRefTk = tkRecSimColl.begin(); findRefTk != tkRecSimColl.end(); ++findRefTk) {
+	  //const edm::RefToBase<reco::Track> & tkRecSimMatch = findRefTk->key;
+	  //if (tkRecSimMatch->pt() == refTk->pt()) {
 	  associated = true;
-	  const std::vector<std::pair<TrackingParticleRef,double> > & tp = findRefTk->val;
-	  const TrackingParticleRef & trp = tp.begin()->first;
+	  const TrackingParticleRef & trp = theTP;
+	  //const std::vector<std::pair<TrackingParticleRef,double> > & tp = findRefTk->val;
+	  //const TrackingParticleRef & trp = tp.begin()->first;
 	  
-	  (*tkTrackAssociationVar).push_back(tp.begin()->second);
+	  (*tkTrackIsAssociated).push_back(1);
+	  (*tkTrackAssociationVar).push_back(theAssocVal);
 	  
 	  int particle_ID = trp->pdgId();
+	  (*tkTrackAssociationPdgId).push_back(particle_ID);
+	  LogDebug("SpecialBit")<<"SpecialBit tk pdgId " << particle_ID;
+	  unsigned int thisBit = getBit(trp);
 	  //	int myBin = wantMotherBin.GetBinNum(particle_ID);
-	  
+	  //break;//aaa
+	  int muClass = 0;
+	  if (isPrimaryMuon(thisBit)) muClass = 1;
+	  else if (isSiliconMuon(thisBit)) muClass = 2;
+	  else if (isCalConversionMuon(thisBit)) muClass = 3;
+	  else if (isOtherMuon(thisBit)) muClass = 4;
+	  else if (isMysteryMuon(thisBit)) muClass = 5;
+	  else if (isPunchThrough(thisBit)) muClass = 6;
+
+	  LogDebug("SpecialBit")<<"RecoTree tkMuon " << iMu << " of " << muonColl.size() << " has theBit: " << thisBit << " and muClass " << muClass << " and pT " << refTk->pt();
+	  //
+	  (*tkTrackAssociationMyBit).push_back(thisBit);
+	  (*tkTrackAssociationVtxX).push_back(trp->vertex().x());
+	  (*tkTrackAssociationVtxY).push_back(trp->vertex().y());
+	  (*tkTrackAssociationVtxZ).push_back(trp->vertex().z());
+	  //break;//aaa
 	  if(abs(particle_ID) == 13){
+// 	    //Adam 1 start
+// 	    int iSimMu = -1;
+// 	    for (unsigned int iSim = 0; iSim != (*TPtracks).size(); iSim++) {
+// 	      TrackingParticleRef trp2(TPtracks, iSim);
+// 	      if(abs(trp2->pdgId()) != 13) continue;
+// 	      iSimMu++;
+// 	      if(trp2 == trp) {
+// 		(*tkTrackAssociatedSimMuonIndex).push_back(iSimMu);
+// 		break;
+// 	      }
+// 	    }
+// 	    break;//aaa
+// 	    //Adam 1 end
 	    // put in the associated pt,eta,phi
 	    (*tkTrackAssociatedSimMuonPt).push_back(trp->pt());
 	    (*tkTrackAssociatedSimMuonEta).push_back(trp->eta());
 	    (*tkTrackAssociatedSimMuonPhi).push_back(trp->phi());
+	    //break;//aaa
 	    if (fabs(trp->phi() - refTk->phi()) > 1) {
 	      //Note: keeping this in.  This happens sometimes when the associator used is the
 	      //steppingHelixPropagatorAny
 	      edm::LogInfo("MuonRecoTreeUtility") << "Something's gone wrong here. First our indexes";
 	      edm::LogInfo("MuonRecoTreeUtility") << "iTk, sim_index = " << iMu <<" " << sim_index;
-	      edm::LogInfo("MuonRecoTreeUtility") << "What about recSimMatch vs trp phi?" << tkRecSimMatch->phi() <<" " << trp->phi();
+	      edm::LogInfo("MuonRecoTreeUtility") << "What about recSimMatch vs trp phi?" << refTk->phi() <<" " << trp->phi();
 	    }
 	    // put in the detIDs for this sim muon
 	    std::vector<int> *idsForSimTk = new std::vector<int>;
@@ -2125,6 +2235,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	    (*tkTrackAssociatedSimMuonDetIds).insert(std::make_pair(sim_index,*idsForSimTk));
 	    idsForSimTk->clear();
 	    sim_index++;
+	    //break;//aaa
 	    //---------------------- MOTHERHOOD ---------------------------
 	    //find the parent of tracking particle
 	    for(TrackingParticle::g4t_iterator isimtk = trp->g4Track_begin();isimtk!=trp->g4Track_end();isimtk++)
@@ -2200,7 +2311,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  edm::LogError(theCategory)<<"a reconstructed muon is not associated.";
 	}
       }
-      } // end Adam for Data
+      //      } // end Adam for Data
       if (associated) {
 	//      std::cout << "Associated..." << std::endl;
 	(*tkTrackIsAssociated).push_back(1);
@@ -2917,6 +3028,10 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   muGlobalMuonPromptTight ->clear();
   muTMLastStationLoose ->clear();
   muTMLastStationTight ->clear();
+  muTMLastStationAngLoose ->clear();
+  muTMLastStationAngTight ->clear();
+  muTMOneStationAngLoose ->clear();
+  muTMOneStationAngTight ->clear();
   muTM2DCompatibilityLoose ->clear();
   muTM2DCompatibilityTight ->clear();
   muTMOneStationLoose ->clear();
@@ -3189,6 +3304,12 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   //Event-level information
   MuTrigData->Branch("RunNumber",&RunNumber,"RunNumber/I");
   MuTrigData->Branch("EventNumber",&EventNumber,"EventNumber/I");
+  MuTrigData->Branch("vtxX",&vtxX,"vtxX/D");
+  MuTrigData->Branch("vtxY",&vtxY,"vtxY/D");
+  MuTrigData->Branch("vtxZ",&vtxZ,"vtxZ/D");
+  MuTrigData->Branch("bsX",&bsX,"bsX/D");
+  MuTrigData->Branch("bsY",&bsY,"bsY/D");
+  MuTrigData->Branch("bsZ",&bsZ,"bsZ/D");
   /*
   // Execution times
   MuTrigData->Branch("totalMuonHLTTime",&totalMuonHLTTime,"totalMuonHLTTime/D");
@@ -3238,6 +3359,10 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigData->Branch("muGlobalMuonPromptTight",&muGlobalMuonPromptTight);
   MuTrigData->Branch("muTMLastStationLoose",&muTMLastStationLoose);
   MuTrigData->Branch("muTMLastStationTight",&muTMLastStationTight);
+  MuTrigData->Branch("muTMLastStationAngLoose",&muTMLastStationAngLoose);
+  MuTrigData->Branch("muTMLastStationAngTight",&muTMLastStationAngTight);
+  MuTrigData->Branch("muTMOneStationAngLoose",&muTMOneStationAngLoose);
+  MuTrigData->Branch("muTMOneStationAngTight",&muTMOneStationAngTight);
   MuTrigData->Branch("muTM2DCompatibilityLoose",&muTM2DCompatibilityLoose);
   MuTrigData->Branch("muTM2DCompatibilityTight",&muTM2DCompatibilityTight);
   MuTrigData->Branch("muTMOneStationLoose",&muTMOneStationLoose);
@@ -3404,6 +3529,12 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   //Event-level information
   MuTrigMC->Branch("RunNumber",&RunNumber,"RunNumber/I");
   MuTrigMC->Branch("EventNumber",&EventNumber,"EventNumber/I");
+  MuTrigMC->Branch("vtxX",&vtxX,"vtxX/D");
+  MuTrigMC->Branch("vtxY",&vtxY,"vtxY/D");
+  MuTrigMC->Branch("vtxZ",&vtxZ,"vtxZ/D");
+  MuTrigMC->Branch("bsX",&bsX,"bsX/D");
+  MuTrigMC->Branch("bsY",&bsY,"bsY/D");
+  MuTrigMC->Branch("bsZ",&bsZ,"bsZ/D");
   /*
   // Execution times
   MuTrigMC->Branch("totalMuonHLTTime",&totalMuonHLTTime,"totalMuonHLTTime/D");
@@ -3453,6 +3584,10 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
   MuTrigMC->Branch("muGlobalMuonPromptTight",&muGlobalMuonPromptTight);
   MuTrigMC->Branch("muTMLastStationLoose",&muTMLastStationLoose);
   MuTrigMC->Branch("muTMLastStationTight",&muTMLastStationTight);
+  MuTrigMC->Branch("muTMLastStationAngLoose",&muTMLastStationAngLoose);
+  MuTrigMC->Branch("muTMLastStationAngTight",&muTMLastStationAngTight);
+  MuTrigMC->Branch("muTMOneStationAngLoose",&muTMOneStationAngLoose);
+  MuTrigMC->Branch("muTMOneStationAngTight",&muTMOneStationAngTight);
   MuTrigMC->Branch("muTM2DCompatibilityLoose",&muTM2DCompatibilityLoose);
   MuTrigMC->Branch("muTM2DCompatibilityTight",&muTM2DCompatibilityTight);
   MuTrigMC->Branch("muTMOneStationLoose",&muTMOneStationLoose);
