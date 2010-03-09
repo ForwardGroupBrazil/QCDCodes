@@ -122,6 +122,10 @@ recoMuonTreeMaker = cms.EDAnalyzer(
             cms.PSet(
                 pdgIDs = cms.vint32(13, -13),
                 label = cms.string('#mu^{+/-}')
+            ),
+            cms.PSet(
+                pdgIDs = cms.vint32(4,5,-4,-5),
+                label = cms.string('b/c')
             )),
         title = cms.string('a set of PDGids')
     ),
@@ -245,15 +249,16 @@ recoMuonTreeMaker = cms.EDAnalyzer(
         )
     ),
     trackingParticleLabel = cms.InputTag("tpMuon"),
-    allTrackingParticleLabel = cms.InputTag("mergedtruth","MergedTrackTruth"),
+    allTrackingParticleLabel = cms.InputTag("mytrackingParticles"),
     l2AssociatorName = cms.string('AssociatorByDeltaR1.0'),
     beamSpotLabel = cms.InputTag("offlineBeamSpot"),
+    vertexSource = cms.InputTag("offlinePrimaryVertices"),
 
 
     TimerLabel = cms.InputTag("hltTimer"),
 
     tpSelector_primary = cms.PSet(
-       src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
+       src = cms.InputTag("mytrackingParticles"),
        pdgId = cms.vint32(13, -13),
        tip = cms.double(3.5),
        lip = cms.double(30.0),
@@ -266,7 +271,7 @@ recoMuonTreeMaker = cms.EDAnalyzer(
        ),
 
     tpSelector_silicon = cms.PSet(
-       src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
+       src = cms.InputTag("mytrackingParticles"),
        pdgId = cms.vint32(13, -13),
        tip = cms.double(120.0),
        lip = cms.double(300.0),
@@ -279,7 +284,7 @@ recoMuonTreeMaker = cms.EDAnalyzer(
        ),
 
     tpSelector_calConversion = cms.PSet(
-       src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
+       src = cms.InputTag("mytrackingParticles"),
        pdgId = cms.vint32(13, -13),
        tip = cms.double(290.0),
        lip = cms.double(560.0),
