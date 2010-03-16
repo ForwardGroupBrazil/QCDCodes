@@ -60,13 +60,16 @@ process.MessageLogger.FitterMessages  = cms.untracked.PSet(
 
 # import of standard configurations
 process.load('Configuration/StandardSequences/Services_cff')
+process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 #process.load('FWCore/MessageService/MessageLogger_cfi')
 process.load('Configuration/StandardSequences/MixingNoPileUp_cff')
 process.load('Configuration/StandardSequences/GeometryIdeal_cff')
 process.load('Configuration/StandardSequences/MagneticField_38T_cff')
+process.load('Configuration.StandardSequences.Sim_cff')
+process.load('Configuration.StandardSequences.Digi_cff')
 process.load('Configuration/StandardSequences/SimL1Emulator_cff')
-#a process.load('Configuration.StandardSequences.DigiToRaw_cff')
-#a process.load('Configuration/StandardSequences/RawToDigi_cff')
+process.load('Configuration.StandardSequences.DigiToRaw_cff')
+process.load('Configuration/StandardSequences/RawToDigi_cff')
 process.load('Configuration/StandardSequences/PostRecoGenerator_cff')
 process.load('Configuration/StandardSequences/Validation_cff')
 process.load('Configuration/StandardSequences/Reconstruction_cff')
@@ -93,9 +96,6 @@ process.source = cms.Source(
      '/store/mc/Summer09/ppMuX/GEN-SIM-RECO/MC_31X_V3_7TeV-v1/0012/626BBC75-C2A3-DE11-8C9F-00E0813006C6.root'
      ),
      secondaryFileNames = cms.untracked.vstring(
-     '/store/mc/Summer09/ppMuX/GEN-SIM-RAW/MC_31X_V3_7TeV-v1/0012/BC60E8CD-C1A3-DE11-AC18-001E68865055.root',
-     '/store/mc/Summer09/ppMuX/GEN-SIM-RAW/MC_31X_V3_7TeV-v1/0012/AC977942-C2A3-DE11-A7E1-001E688650C5.root',
-     '/store/mc/Summer09/ppMuX/GEN-SIM-RAW/MC_31X_V3_7TeV-v1/0012/486417A1-C1A3-DE11-9A46-001E6878FB26.root',
      )
      )
 
@@ -113,33 +113,35 @@ process.output = cms.OutputModule("PoolOutputModule",
 # Additional output definition
 
 # Other statements
-process.GlobalTag.globaltag = 'START3X_V25::All'
+process.GlobalTag.globaltag = 'START3X_V18::All'
 process.ttrhbwor.ComputeCoarseLocalPositionFromDisk = True
 process.ttrhbwr.ComputeCoarseLocalPositionFromDisk = True
 
 # Path and EndPath definitions
 process.L1simulation_step = cms.Path(process.SimL1Emulator)
-#a process.digi2raw_step = cms.Path(process.DigiToRaw)
-#a process.raw2digi_step = cms.Path(process.RawToDigi)
+process.simulation_step = cms.Path(process.psim)
+process.digitisation_step = cms.Path(process.pdigi)
+process.digi2raw_step = cms.Path(process.DigiToRaw)
+process.raw2digi_step = cms.Path(process.RawToDigi)
 process.reconstruction_step = cms.Path(process.reconstruction)
 process.muon_reco_step = cms.Path(process.muonrecoComplete)
+process.validation_step = cms.Path(process.validation)
 process.endjob_step = cms.Path(process.endOfProcess)
 process.out_step = cms.EndPath(process.output)
-#process.validation_step = cms.Path(process.validation)
+
 
 # Schedule definition
 process.schedule = cms.Schedule()
-#process.schedule = cms.Schedule(process.L1simulation_step)
-#process.schedule.extend([process.raw2digi_step,process.reconstruction_step])
+process.schedule.extend([process.simulation_step,process.digitisation_step,process.L1simulation_step])
 process.schedule.extend([process.muon_reco_step])
 #process.schedule.extend([process.validation_step])
 process.schedule.extend([process.endjob_step,process.out_step])
 
 
-#process.TFileService = cms.Service(
-#    "TFileService",
-#    fileName = cms.string("TFS_debug.root")
-#    )
+## process.TFileService = cms.Service(
+##     "TFileService",
+##     fileName = cms.string("TFS_debug.root")
+##     )
 
 
 # Automatic addition of the customisation function

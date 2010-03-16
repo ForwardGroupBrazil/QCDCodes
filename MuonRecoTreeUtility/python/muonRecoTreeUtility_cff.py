@@ -1,8 +1,5 @@
 import FWCore.ParameterSet.Config as cms
 
-#migration to tfile service at some point
-#TFileService = cms.Service("TFileService", fileName = cms.string('TFSReco.root') )
-
 #associators
 import SimTracker.TrackAssociation.TrackAssociatorByPosition_cfi
 # associator
@@ -54,23 +51,23 @@ tkSimDigiLinkAreThere = cms.EDFilter("IsProductAvailable",
                                      src = cms.InputTag('')
                                      )
 from SimTracker.Configuration.SimTracker_cff import *
-#from IOMC.RandomEngine.IOMC_cff import *
-RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
-                                           restoreStateLabel = cms.untracked.string('randomEngineStateProducer'),
-                                           simSiPixelDigis = cms.PSet(
-                                             initialSeed = cms.untracked.uint32(1234567),
-                                             engineName = cms.untracked.string('HepJamesRandom')
-                                             ),
-                                           simSiStripDigis = cms.PSet(
-                                             initialSeed = cms.untracked.uint32(1234567),
-                                             engineName = cms.untracked.string('HepJamesRandom')
-                                             )
-                                           )
+
+from IOMC.RandomEngine.IOMC_cff import *
+
+del RandomNumberGeneratorService.generator
+#RandomNumberGeneratorService.restoreStateLabel = cms.untracked.string('randomEngineStateProducer')   
+RandomNumberGeneratorService.simSiPixelDigis = cms.PSet(
+    initialSeed = cms.untracked.uint32(1234567),
+    engineName = cms.untracked.string('HepJamesRandom')
+    )
+RandomNumberGeneratorService.simSiPixelDigis.simSiStripDigis = cms.PSet(
+    initialSeed = cms.untracked.uint32(1234567),
+    engineName = cms.untracked.string('HepJamesRandom')
+    )
 
 #from Validation.RecoMuon.associators_cff import tpToL3MuonAssociation,tpToL2MuonAssociation
 
-#reDIGI_Path = cms.Paht( !tkSimDigiLinkAreThere + trdigi )
-
+#reDIGI_Path = cms.Path( !tkSimDigiLinkAreThere + trdigi )
 
 MRTU_Path = cms.Path( tpProduction ) 
 

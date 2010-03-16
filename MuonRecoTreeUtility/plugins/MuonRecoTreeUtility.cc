@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.12 2009/12/11 20:12:23 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.13 2010/03/09 20:31:40 aeverett Exp $
 //
 //
 
@@ -161,9 +161,9 @@ public:
  
   
 private:
-  virtual void beginJob(const edm::EventSetup&) ;
+  virtual void beginRun(edm::Run const&, edm::EventSetup const&) ;
   virtual void analyze(const edm::Event&, const edm::EventSetup&);
-  virtual void endJob() ;
+  virtual void endRun(edm::Run const&, edm::EventSetup const&) ;
  
   unsigned int getBit(const TrackingParticleRef&) const;
   // ----------member data ---------------------------
@@ -3290,7 +3290,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
-MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
+MuonRecoTreeUtility::beginRun(edm::Run const&, edm::EventSetup const& setup)
 {
 
   theFile = new TFile(outputFileName.c_str(),"recreate");
@@ -3851,7 +3851,7 @@ MuonRecoTreeUtility::beginJob(const edm::EventSetup&)
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
-MuonRecoTreeUtility::endJob() {
+MuonRecoTreeUtility::endRun(edm::Run const&, edm::EventSetup const&) {
 
   edm::LogInfo("MuonRecoTreeUtility")<<"Starting to write the trees.  Changing to directory";
   theFile->cd();
