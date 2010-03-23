@@ -6,40 +6,46 @@
 #include "RecoTree.h"
 
 //int ScanTree ( TTree* tree) {
-int ScanTree ( TTree* tree, char *fileName) {
+int ScanTreePt ( TTree* tree, char *fileName, bool isData=false,double weight = 1.0) {
 
   // This reads in the tree.  As you might imagine.
   Init(tree);
-  TFile *histFile = new TFile(fileName,"RECREATE");
-  TDirectory *histDir = histFile->mkdir("rate_hist");
+  TFile *histFile = new TFile(fileName,"UPDATE");
+  TDirectory *histDir = histFile->mkdir("PtRate");
 
   histDir->cd();
 
   // Time for some histograms and stacks
 
-  double ptUpperLimit = 15;
+  double ptLowerLimit = 0;
+  double ptUpperLimit = 20;
+  double nBins = 20;
 
-  TH1F *l3PtRate_motherBin_1 = new TH1F("l3PtRate_motherBin_1"," #pi^{+/-}",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_2 = new TH1F("l3PtRate_motherBin_2"," K",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_3 = new TH1F("l3PtRate_motherBin_3"," D",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_4 = new TH1F("l3PtRate_motherBin_4"," B",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_5 = new TH1F("l3PtRate_motherBin_5"," #Lambda_{b}",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_6 = new TH1F("l3PtRate_motherBin_6"," J/#Psi",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_10 = new TH1F("l3PtRate_motherBin_10"," #tau^{+/-}",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_12 = new TH1F("l3PtRate_motherBin_12"," b/c",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_13 = new TH1F("l3PtRate_motherBin_13"," other",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_14 = new TH1F("l3PtRate_motherBin_14"," non-associated",60,0,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_1 = new TH1F("l3PtRate_motherBin_1"," #pi^{+/-}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_2 = new TH1F("l3PtRate_motherBin_2"," K",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_3 = new TH1F("l3PtRate_motherBin_3"," D",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_4 = new TH1F("l3PtRate_motherBin_4"," B",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_5 = new TH1F("l3PtRate_motherBin_5"," #Lambda_{b}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_6 = new TH1F("l3PtRate_motherBin_6"," J/#Psi",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_10 = new TH1F("l3PtRate_motherBin_10"," #tau^{+/-}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_11 = new TH1F("l3PtRate_motherBin_11"," #mu",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_12 = new TH1F("l3PtRate_motherBin_12"," b/c",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_13 = new TH1F("l3PtRate_motherBin_13"," other",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_14 = new TH1F("l3PtRate_motherBin_14"," non-associated",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_15 = new TH1F("l3PtRate_motherBin_15"," Data",nBins,ptLowerLimit,ptUpperLimit);
 
-  TH1F *l3PtRate_motherBin_1_cd = new TH1F("l3PtRate_motherBin_1_cd"," #pi^{+/-}",60,0,ptUpperLimit);  
-  TH1F *l3PtRate_motherBin_2_cd = new TH1F("l3PtRate_motherBin_2_cd"," K",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_3_cd = new TH1F("l3PtRate_motherBin_3_cd"," D",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_4_cd = new TH1F("l3PtRate_motherBin_4_cd"," B",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_5_cd = new TH1F("l3PtRate_motherBin_5_cd"," #Lambda_{b}",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_6_cd = new TH1F("l3PtRate_motherBin_6_cd"," J/#Psi",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_10_cd = new TH1F("l3PtRate_motherBin_10_cd"," #tau^{+/-}",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_12_cd = new TH1F("l3PtRate_motherBin_12_cd"," b/c",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_13_cd = new TH1F("l3PtRate_motherBin_13_cd"," other",60,0,ptUpperLimit);
-  TH1F *l3PtRate_motherBin_14_cd = new TH1F("l3PtRate_motherBin_14_cd"," non-associated",60,0,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_1_cd = new TH1F("l3PtRate_motherBin_1_cd"," #pi^{+/-}",nBins,ptLowerLimit,ptUpperLimit);  
+  TH1F *l3PtRate_motherBin_2_cd = new TH1F("l3PtRate_motherBin_2_cd"," K",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_3_cd = new TH1F("l3PtRate_motherBin_3_cd"," D",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_4_cd = new TH1F("l3PtRate_motherBin_4_cd"," B",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_5_cd = new TH1F("l3PtRate_motherBin_5_cd"," #Lambda_{b}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_6_cd = new TH1F("l3PtRate_motherBin_6_cd"," J/#Psi",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_10_cd = new TH1F("l3PtRate_motherBin_10_cd"," #tau^{+/-}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_12_cd = new TH1F("l3PtRate_motherBin_12_cd"," b/c",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_11_cd = new TH1F("l3PtRate_motherBin_11_cd"," #mu",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_13_cd = new TH1F("l3PtRate_motherBin_13_cd"," other",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_14_cd = new TH1F("l3PtRate_motherBin_14_cd"," non-associated",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l3PtRate_motherBin_15_cd = new TH1F("l3PtRate_motherBin_15_cd"," Data",nBins,ptLowerLimit,ptUpperLimit);
 
 
 
@@ -50,27 +56,31 @@ int ScanTree ( TTree* tree, char *fileName) {
   //  THStack *l3IsoPtRate = new THStack("l3IsoPtRate","L3Iso rate as f(p_{T,L3})");
   //  THStack *l3IsoPtRate_cd = new THStack("l3IsoPtRate_cd","L3Iso rate as f(p_{T,L3})");
 
-  TH1F *l2PtRate_motherBin_1 = new TH1F("l2PtRate_motherBin_1"," #pi^{+/-}",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_2 = new TH1F("l2PtRate_motherBin_2"," K",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_3 = new TH1F("l2PtRate_motherBin_3"," D",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_4 = new TH1F("l2PtRate_motherBin_4"," B",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_5 = new TH1F("l2PtRate_motherBin_5"," #Lambda_{b}",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_6 = new TH1F("l2PtRate_motherBin_6"," J/#Psi",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_10 = new TH1F("l2PtRate_motherBin_10"," #tau^{+/-}",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_12 = new TH1F("l2PtRate_motherBin_12"," b/c",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_13 = new TH1F("l2PtRate_motherBin_13"," other",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_14 = new TH1F("l2PtRate_motherBin_14"," non-associated",60,0,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_1 = new TH1F("l2PtRate_motherBin_1"," #pi^{+/-}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_2 = new TH1F("l2PtRate_motherBin_2"," K",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_3 = new TH1F("l2PtRate_motherBin_3"," D",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_4 = new TH1F("l2PtRate_motherBin_4"," B",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_5 = new TH1F("l2PtRate_motherBin_5"," #Lambda_{b}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_6 = new TH1F("l2PtRate_motherBin_6"," J/#Psi",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_10 = new TH1F("l2PtRate_motherBin_10"," #tau^{+/-}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_11 = new TH1F("l2PtRate_motherBin_11"," #mu",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_12 = new TH1F("l2PtRate_motherBin_12"," b/c",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_13 = new TH1F("l2PtRate_motherBin_13"," other",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_14 = new TH1F("l2PtRate_motherBin_14"," non-associated",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_15 = new TH1F("l2PtRate_motherBin_15"," Data",nBins,ptLowerLimit,ptUpperLimit);
 
-  TH1F *l2PtRate_motherBin_1_cd = new TH1F("l2PtRate_motherBin_1_cd"," #pi^{+/-}",60,0,ptUpperLimit);  
-  TH1F *l2PtRate_motherBin_2_cd = new TH1F("l2PtRate_motherBin_2_cd"," K",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_3_cd = new TH1F("l2PtRate_motherBin_3_cd"," D",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_4_cd = new TH1F("l2PtRate_motherBin_4_cd"," B",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_5_cd = new TH1F("l2PtRate_motherBin_5_cd"," #Lambda_{b}",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_6_cd = new TH1F("l2PtRate_motherBin_6_cd"," J/#Psi",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_10_cd = new TH1F("l2PtRate_motherBin_10_cd"," #tau^{+/-}",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_12_cd = new TH1F("l2PtRate_motherBin_12_cd"," b/c",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_13_cd = new TH1F("l2PtRate_motherBin_13_cd"," other",60,0,ptUpperLimit);
-  TH1F *l2PtRate_motherBin_14_cd = new TH1F("l2PtRate_motherBin_14_cd"," non-associated",60,0,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_1_cd = new TH1F("l2PtRate_motherBin_1_cd"," #pi^{+/-}",nBins,ptLowerLimit,ptUpperLimit);  
+  TH1F *l2PtRate_motherBin_2_cd = new TH1F("l2PtRate_motherBin_2_cd"," K",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_3_cd = new TH1F("l2PtRate_motherBin_3_cd"," D",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_4_cd = new TH1F("l2PtRate_motherBin_4_cd"," B",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_5_cd = new TH1F("l2PtRate_motherBin_5_cd"," #Lambda_{b}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_6_cd = new TH1F("l2PtRate_motherBin_6_cd"," J/#Psi",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_10_cd = new TH1F("l2PtRate_motherBin_10_cd"," #tau^{+/-}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_11_cd = new TH1F("l2PtRate_motherBin_11_cd"," #mu",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_12_cd = new TH1F("l2PtRate_motherBin_12_cd"," b/c",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_13_cd = new TH1F("l2PtRate_motherBin_13_cd"," other",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_14_cd = new TH1F("l2PtRate_motherBin_14_cd"," non-associated",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *l2PtRate_motherBin_15_cd = new TH1F("l2PtRate_motherBin_15_cd"," Data",nBins,ptLowerLimit,ptUpperLimit);
 
 
 
@@ -81,27 +91,31 @@ int ScanTree ( TTree* tree, char *fileName) {
   //  THStack *l2IsoPtRate = new THStack("l2IsoPtRate","L2Iso rate as f(p_{T,L2})");
   //  THStack *l2IsoPtRate_cd = new THStack("l2IsoPtRate_cd","L2Iso rate as f(p_{T,L2})");
 
-  TH1F *tkTrackPtRate_motherBin_1 = new TH1F("tkTrackPtRate_motherBin_1"," #pi^{+/-}",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_2 = new TH1F("tkTrackPtRate_motherBin_2"," K",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_3 = new TH1F("tkTrackPtRate_motherBin_3"," D",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_4 = new TH1F("tkTrackPtRate_motherBin_4"," B",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_5 = new TH1F("tkTrackPtRate_motherBin_5"," #Lambda_{b}",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_6 = new TH1F("tkTrackPtRate_motherBin_6"," J/#Psi",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_10 = new TH1F("tkTrackPtRate_motherBin_10"," #tau^{+/-}",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_12 = new TH1F("tkTrackPtRate_motherBin_12"," b/c",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_13 = new TH1F("tkTrackPtRate_motherBin_13"," other",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_14 = new TH1F("tkTrackPtRate_motherBin_14"," non-associated",60,0,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_1 = new TH1F("tkTrackPtRate_motherBin_1"," #pi^{+/-}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_2 = new TH1F("tkTrackPtRate_motherBin_2"," K",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_3 = new TH1F("tkTrackPtRate_motherBin_3"," D",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_4 = new TH1F("tkTrackPtRate_motherBin_4"," B",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_5 = new TH1F("tkTrackPtRate_motherBin_5"," #Lambda_{b}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_6 = new TH1F("tkTrackPtRate_motherBin_6"," J/#Psi",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_10 = new TH1F("tkTrackPtRate_motherBin_10"," #tau^{+/-}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_11 = new TH1F("tkTrackPtRate_motherBin_11"," #mu",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_12 = new TH1F("tkTrackPtRate_motherBin_12"," b/c",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_13 = new TH1F("tkTrackPtRate_motherBin_13"," other",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_14 = new TH1F("tkTrackPtRate_motherBin_14"," non-associated",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_15 = new TH1F("tkTrackPtRate_motherBin_15"," Data",nBins,ptLowerLimit,ptUpperLimit);
 
-  TH1F *tkTrackPtRate_motherBin_1_cd = new TH1F("tkTrackPtRate_motherBin_1_cd"," #pi^{+/-}",60,0,ptUpperLimit);  
-  TH1F *tkTrackPtRate_motherBin_2_cd = new TH1F("tkTrackPtRate_motherBin_2_cd"," K",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_3_cd = new TH1F("tkTrackPtRate_motherBin_3_cd"," D",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_4_cd = new TH1F("tkTrackPtRate_motherBin_4_cd"," B",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_5_cd = new TH1F("tkTrackPtRate_motherBin_5_cd"," #Lambda_{b}",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_6_cd = new TH1F("tkTrackPtRate_motherBin_6_cd"," J/#Psi",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_10_cd = new TH1F("tkTrackPtRate_motherBin_10_cd"," #tau^{+/-}",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_12_cd = new TH1F("tkTrackPtRate_motherBin_12_cd"," b/c",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_13_cd = new TH1F("tkTrackPtRate_motherBin_13_cd"," other",60,0,ptUpperLimit);
-  TH1F *tkTrackPtRate_motherBin_14_cd = new TH1F("tkTrackPtRate_motherBin_14_cd"," non-associated",60,0,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_1_cd = new TH1F("tkTrackPtRate_motherBin_1_cd"," #pi^{+/-}",nBins,ptLowerLimit,ptUpperLimit);  
+  TH1F *tkTrackPtRate_motherBin_2_cd = new TH1F("tkTrackPtRate_motherBin_2_cd"," K",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_3_cd = new TH1F("tkTrackPtRate_motherBin_3_cd"," D",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_4_cd = new TH1F("tkTrackPtRate_motherBin_4_cd"," B",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_5_cd = new TH1F("tkTrackPtRate_motherBin_5_cd"," #Lambda_{b}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_6_cd = new TH1F("tkTrackPtRate_motherBin_6_cd"," J/#Psi",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_10_cd = new TH1F("tkTrackPtRate_motherBin_10_cd"," #tau^{+/-}",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_11_cd = new TH1F("tkTrackPtRate_motherBin_11_cd"," #mu",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_12_cd = new TH1F("tkTrackPtRate_motherBin_12_cd"," b/c",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_13_cd = new TH1F("tkTrackPtRate_motherBin_13_cd"," other",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_14_cd = new TH1F("tkTrackPtRate_motherBin_14_cd"," non-associated",nBins,ptLowerLimit,ptUpperLimit);
+  TH1F *tkTrackPtRate_motherBin_15_cd = new TH1F("tkTrackPtRate_motherBin_15_cd"," Data",nBins,ptLowerLimit,ptUpperLimit);
 
 
 
@@ -130,9 +144,9 @@ int ScanTree ( TTree* tree, char *fileName) {
   //  gDirectory->Append(l3PreIsoPtRate_cd);
   //  gDirectory->Append(l3IsoPtRate_cd);
 
-  int l2OverFlow[13] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
-  int l3OverFlow[13] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
-  int tkTrackOverFlow[13] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
+  int l2OverFlow[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  int l3OverFlow[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  int tkTrackOverFlow[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   //int l2IsoOverFlow[13] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
   //int l3PreIsoOverFlow[13] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
   //int l3IsoOverFlow[13] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -151,11 +165,14 @@ int ScanTree ( TTree* tree, char *fileName) {
       bool passL2 = false;
       bool passTK = false;
       
-      if ((*muAllGlobalMuons).at(iMu)) passL3 = true;
+      //if ((*muAllGlobalMuons).at(iMu)) passL3 = true;
 
-      if ((*muAllStandAloneMuons).at(iMu)) passL2 = true;
+      //if ((*muAllStandAloneMuons).at(iMu)) passL2 = true;
 
-      if ((*muAllTrackerMuons).at(iMu)) passTK = true;
+      //if ((*muAllGlobalMuons).at(iMu)) passTK = true;
+
+      if (   (*muAllGlobalMuons).at(iMu)
+       ) {passL3 = true; passTK = true;}
 
       //if(passL3) cout << "line 160 " << (*l3Pt).at(iMu) << endl;
 
@@ -165,7 +182,8 @@ int ScanTree ( TTree* tree, char *fileName) {
 	int l3_index = iMu;
 	//if(!(*muAllGlobalMuons).at(iMu)) break;
 	double pt_L3 = (*l3Pt).at(iMu);
-	if ((*l3IsAssociated).at(l3_index) == 1 && (*l3AssociationVar).at(l3_index) > -0.1) {
+	if(!isData){
+	  if ((*l3IsAssociated).at(l3_index) == 1 && (*l3AssociationVar).at(l3_index) > -0.1 && fabs((*l3AssociationPdgId).at(l3_index))==13) {
 	  switch ( (*l3MotherBinNumber).at(l3_index) ) {
 	  case 1 :
 	    l3PtRate_motherBin_1->Fill(pt_L3);
@@ -195,23 +213,32 @@ int ScanTree ( TTree* tree, char *fileName) {
 	    l3PtRate_motherBin_10->Fill(pt_L3);
 	    if (pt_L3 > ptUpperLimit) l3OverFlow[9] ++;
 	    break;
+	  case 11 :
+	    l3PtRate_motherBin_11->Fill(pt_L3);
+	    if (pt_L3 > ptUpperLimit) l3OverFlow[10] ++;
+	    break;
 	  case 12 :
 	    l3PtRate_motherBin_12->Fill(pt_L3);
 	    if (pt_L3 > ptUpperLimit) l3OverFlow[11] ++;
 	    break;
 	  case 13 :
 	    l3PtRate_motherBin_13->Fill(pt_L3);
-	    if (pt_L3 > ptUpperLimit) l3OverFlow[11] ++;
+	    if (pt_L3 > ptUpperLimit) l3OverFlow[12] ++;
 	    break;
 	  default :
 	    //           cout << "oh, cock, this is interesting" << endl;
 	    l3PtRate_motherBin_13->Fill(pt_L3);
-	    if (pt_L3 > ptUpperLimit) l3OverFlow[11] ++;
+	    if (pt_L3 > ptUpperLimit) l3OverFlow[12] ++;
 	  }
 	}
 	else {
 	  l3PtRate_motherBin_14->Fill(pt_L3);
-	  if (pt_L3 > ptUpperLimit) l3OverFlow[12] ++;
+	  if (pt_L3 > ptUpperLimit) l3OverFlow[13] ++;
+	}
+      }
+	else {
+	  l3PtRate_motherBin_15->Fill(pt_L3);
+	  if (pt_L3 > ptUpperLimit) l3OverFlow[14] ++;
 	}
       }
       
@@ -220,6 +247,7 @@ int ScanTree ( TTree* tree, char *fileName) {
 	//int l2_index = findIndexOfMaxPt(l2Pt,l2Eta,l2D0);
 	int l2_index = iMu;
 	double pt_L2 = (*l2Pt).at(iMu);
+	if(!isData){
 	if ((*l2IsAssociated).at(l2_index) == 1 && (*l2AssociationVar).at(l2_index) > -0.1) {
 	  switch ( (*l2MotherBinNumber).at(l2_index) ) {
 	  case 1 :
@@ -250,23 +278,31 @@ int ScanTree ( TTree* tree, char *fileName) {
 	    l2PtRate_motherBin_10->Fill(pt_L2);
 	    if (pt_L2 > ptUpperLimit) l2OverFlow[9] ++;
 	    break;
+	  case 11 :
+	    l2PtRate_motherBin_11->Fill(pt_L2);
+	    if (pt_L2 > ptUpperLimit) l2OverFlow[10] ++;
+	    break;
 	  case 12 :
 	    l2PtRate_motherBin_12->Fill(pt_L2);
 	    if (pt_L2 > ptUpperLimit) l2OverFlow[11] ++;
 	    break;
 	  case 13 :
 	    l2PtRate_motherBin_13->Fill(pt_L2);
-	    if (pt_L2 > ptUpperLimit) l2OverFlow[11] ++;
+	    if (pt_L2 > ptUpperLimit) l2OverFlow[12] ++;
 	    break;
 	  default :
 	    //           cout << "oh, cock, this is interesting" << endl;
 	    l2PtRate_motherBin_13->Fill(pt_L2);
-	    if (pt_L2 > ptUpperLimit) l2OverFlow[11] ++;
+	    if (pt_L2 > ptUpperLimit) l2OverFlow[12] ++;
 	  }
 	}
 	else {
 	  l2PtRate_motherBin_14->Fill(pt_L2);
-	  if (pt_L2 > ptUpperLimit) l2OverFlow[12] ++;
+	  if (pt_L2 > ptUpperLimit) l2OverFlow[13] ++;
+	}
+	} else {
+	  l2PtRate_motherBin_15->Fill(pt_L2);
+	  if (pt_L2 > ptUpperLimit) l2OverFlow[14] ++;
 	}
       }
       
@@ -275,7 +311,8 @@ int ScanTree ( TTree* tree, char *fileName) {
 	//int tkTrack_index = findIndexOfMaxPt(tkTrackPt,tkTrackEta,tkTrackD0);
 	int tkTrack_index = iMu;
 	double pt_tkTrack = (*tkTrackPt).at(iMu);
-	if ((*tkTrackIsAssociated).at(tkTrack_index) == 1 && (*tkTrackAssociationVar).at(tkTrack_index) > -0.1) {
+	if(!isData){
+	if ((*tkTrackIsAssociated).at(tkTrack_index) == 1 && (*tkTrackAssociationVar).at(tkTrack_index) > -0.1 && fabs((*tkTrackAssociationPdgId).at(l3_index))==13) {
 	  switch ( (*tkTrackMotherBinNumber).at(tkTrack_index) ) {
 	  case 1 :
 	    tkTrackPtRate_motherBin_1->Fill(pt_tkTrack);
@@ -305,23 +342,31 @@ int ScanTree ( TTree* tree, char *fileName) {
 	    tkTrackPtRate_motherBin_10->Fill(pt_tkTrack);
 	    if (pt_tkTrack > ptUpperLimit) tkTrackOverFlow[9] ++;
 	    break;
+	  case 11 :
+	    tkTrackPtRate_motherBin_11->Fill(pt_tkTrack);
+	    if (pt_tkTrack > ptUpperLimit) tkTrackOverFlow[10] ++;
+	    break;
 	  case 12 :
 	    tkTrackPtRate_motherBin_12->Fill(pt_tkTrack);
 	    if (pt_tkTrack > ptUpperLimit) tkTrackOverFlow[11] ++;
 	    break;
 	  case 13 :
 	    tkTrackPtRate_motherBin_13->Fill(pt_tkTrack);
-	    if (pt_tkTrack > ptUpperLimit) tkTrackOverFlow[11] ++;
+	    if (pt_tkTrack > ptUpperLimit) tkTrackOverFlow[12] ++;
 	    break;
 	  default :
 	    //           cout << "oh, cock, this is interesting" << endl;
 	    tkTrackPtRate_motherBin_13->Fill(pt_tkTrack);
-	    if (pt_tkTrack > ptUpperLimit) tkTrackOverFlow[11] ++;
+	    if (pt_tkTrack > ptUpperLimit) tkTrackOverFlow[12] ++;
 	  }
 	}
 	else {
 	  tkTrackPtRate_motherBin_14->Fill(pt_tkTrack);
-	  if (pt_tkTrack > ptUpperLimit) tkTrackOverFlow[12] ++;
+	  if (pt_tkTrack > ptUpperLimit) tkTrackOverFlow[13] ++;
+	}
+	} else {
+	   tkTrackPtRate_motherBin_15->Fill(pt_tkTrack);
+	   if (pt_tkTrack > ptUpperLimit) tkTrackOverFlow[14] ++; 
 	}
       }
       
@@ -335,9 +380,11 @@ int ScanTree ( TTree* tree, char *fileName) {
   fill_overflow(l3PtRate_motherBin_5,l3OverFlow[4]);
   fill_overflow(l3PtRate_motherBin_6,l3OverFlow[5]);
   fill_overflow(l3PtRate_motherBin_10,l3OverFlow[9]);
+  fill_overflow(l3PtRate_motherBin_11,l3OverFlow[10]);
   fill_overflow(l3PtRate_motherBin_12,l3OverFlow[11]);
   fill_overflow(l3PtRate_motherBin_13,l3OverFlow[12]);
   fill_overflow(l3PtRate_motherBin_14,l3OverFlow[13]);
+  fill_overflow(l3PtRate_motherBin_15,l3OverFlow[14]);
 
   make_cd_from_histo(l3PtRate_motherBin_1,l3PtRate_motherBin_1_cd);
   make_cd_from_histo(l3PtRate_motherBin_2,l3PtRate_motherBin_2_cd);
@@ -346,32 +393,43 @@ int ScanTree ( TTree* tree, char *fileName) {
   make_cd_from_histo(l3PtRate_motherBin_5,l3PtRate_motherBin_5_cd);
   make_cd_from_histo(l3PtRate_motherBin_6,l3PtRate_motherBin_6_cd);
   make_cd_from_histo(l3PtRate_motherBin_10,l3PtRate_motherBin_10_cd);
+  make_cd_from_histo(l3PtRate_motherBin_11,l3PtRate_motherBin_11_cd);
   make_cd_from_histo(l3PtRate_motherBin_12,l3PtRate_motherBin_12_cd);
   make_cd_from_histo(l3PtRate_motherBin_13,l3PtRate_motherBin_13_cd);
   make_cd_from_histo(l3PtRate_motherBin_14,l3PtRate_motherBin_14_cd);
+  make_cd_from_histo(l3PtRate_motherBin_15,l3PtRate_motherBin_15_cd);
 
-  l3PtRate->Add(l3PtRate_motherBin_1);
-  l3PtRate->Add(l3PtRate_motherBin_2);
-  //l3PtRate->Add(l3PtRate_motherBin_3);
-  //l3PtRate->Add(l3PtRate_motherBin_4);
-  //l3PtRate->Add(l3PtRate_motherBin_5);
-  //l3PtRate->Add(l3PtRate_motherBin_6);
-  l3PtRate->Add(l3PtRate_motherBin_10);
-  l3PtRate->Add(l3PtRate_motherBin_12);
-  l3PtRate->Add(l3PtRate_motherBin_13);
-  l3PtRate->Add(l3PtRate_motherBin_14);
+  if(!isData){
+    l3PtRate->Add(l3PtRate_motherBin_1);
+    l3PtRate->Add(l3PtRate_motherBin_2);
+    //l3PtRate->Add(l3PtRate_motherBin_3);
+    //l3PtRate->Add(l3PtRate_motherBin_4);
+    //l3PtRate->Add(l3PtRate_motherBin_5);
+    //l3PtRate->Add(l3PtRate_motherBin_6);
+    l3PtRate->Add(l3PtRate_motherBin_10);
+    l3PtRate->Add(l3PtRate_motherBin_11);
+    l3PtRate->Add(l3PtRate_motherBin_12);
+    l3PtRate->Add(l3PtRate_motherBin_13);
+    l3PtRate->Add(l3PtRate_motherBin_14);
+  } else {
+    l3PtRate->Add(l3PtRate_motherBin_15);
+  }
 
-  l3PtRate_cd->Add(l3PtRate_motherBin_1_cd);
-  l3PtRate_cd->Add(l3PtRate_motherBin_2_cd);
-  //l3PtRate_cd->Add(l3PtRate_motherBin_3_cd);
-  //l3PtRate_cd->Add(l3PtRate_motherBin_4_cd);
-  //l3PtRate_cd->Add(l3PtRate_motherBin_5_cd);
-  //l3PtRate_cd->Add(l3PtRate_motherBin_6_cd);
-  l3PtRate_cd->Add(l3PtRate_motherBin_10_cd);
-  l3PtRate_cd->Add(l3PtRate_motherBin_12_cd);
-  l3PtRate_cd->Add(l3PtRate_motherBin_13_cd);
-  l3PtRate_cd->Add(l3PtRate_motherBin_14_cd);
-
+  if(!isData){
+    l3PtRate_cd->Add(l3PtRate_motherBin_1_cd);
+    l3PtRate_cd->Add(l3PtRate_motherBin_2_cd);
+    //l3PtRate_cd->Add(l3PtRate_motherBin_3_cd);
+    //l3PtRate_cd->Add(l3PtRate_motherBin_4_cd);
+    //l3PtRate_cd->Add(l3PtRate_motherBin_5_cd);
+    //l3PtRate_cd->Add(l3PtRate_motherBin_6_cd);
+    l3PtRate_cd->Add(l3PtRate_motherBin_10_cd);
+    l3PtRate_cd->Add(l3PtRate_motherBin_11_cd);
+    l3PtRate_cd->Add(l3PtRate_motherBin_12_cd);
+    l3PtRate_cd->Add(l3PtRate_motherBin_13_cd);
+    l3PtRate_cd->Add(l3PtRate_motherBin_14_cd);
+  } else {
+    l3PtRate_cd->Add(l3PtRate_motherBin_15_cd);
+  }
   //aaa
   
   fill_overflow(l2PtRate_motherBin_1,l2OverFlow[0]);
@@ -381,9 +439,11 @@ int ScanTree ( TTree* tree, char *fileName) {
   fill_overflow(l2PtRate_motherBin_5,l2OverFlow[4]);
   fill_overflow(l2PtRate_motherBin_6,l2OverFlow[5]);
   fill_overflow(l2PtRate_motherBin_10,l2OverFlow[9]);
+  fill_overflow(l2PtRate_motherBin_11,l2OverFlow[10]);
   fill_overflow(l2PtRate_motherBin_12,l2OverFlow[11]);
   fill_overflow(l2PtRate_motherBin_13,l2OverFlow[12]);
   fill_overflow(l2PtRate_motherBin_14,l2OverFlow[13]);
+  fill_overflow(l2PtRate_motherBin_15,l2OverFlow[14]);
 
   make_cd_from_histo(l2PtRate_motherBin_1,l2PtRate_motherBin_1_cd);
   make_cd_from_histo(l2PtRate_motherBin_2,l2PtRate_motherBin_2_cd);
@@ -392,10 +452,13 @@ int ScanTree ( TTree* tree, char *fileName) {
   make_cd_from_histo(l2PtRate_motherBin_5,l2PtRate_motherBin_5_cd);
   make_cd_from_histo(l2PtRate_motherBin_6,l2PtRate_motherBin_6_cd);
   make_cd_from_histo(l2PtRate_motherBin_10,l2PtRate_motherBin_10_cd);
+  make_cd_from_histo(l2PtRate_motherBin_11,l2PtRate_motherBin_11_cd);
   make_cd_from_histo(l2PtRate_motherBin_12,l2PtRate_motherBin_12_cd);
   make_cd_from_histo(l2PtRate_motherBin_13,l2PtRate_motherBin_13_cd);
   make_cd_from_histo(l2PtRate_motherBin_14,l2PtRate_motherBin_14_cd);
+  make_cd_from_histo(l2PtRate_motherBin_15,l2PtRate_motherBin_15_cd);
 
+  if(!isData){
   l2PtRate->Add(l2PtRate_motherBin_1);
   l2PtRate->Add(l2PtRate_motherBin_2);
   //l2PtRate->Add(l2PtRate_motherBin_3);
@@ -403,21 +466,29 @@ int ScanTree ( TTree* tree, char *fileName) {
   //l2PtRate->Add(l2PtRate_motherBin_5);
   //l2PtRate->Add(l2PtRate_motherBin_6);
   l2PtRate->Add(l2PtRate_motherBin_10);
+  l2PtRate->Add(l2PtRate_motherBin_11);
   l2PtRate->Add(l2PtRate_motherBin_12);
   l2PtRate->Add(l2PtRate_motherBin_13);
   l2PtRate->Add(l2PtRate_motherBin_14);
+  } else {
+    l2PtRate->Add(l2PtRate_motherBin_15);
+  }
 
-  l2PtRate_cd->Add(l2PtRate_motherBin_1_cd);
-  l2PtRate_cd->Add(l2PtRate_motherBin_2_cd);
-  //l2PtRate_cd->Add(l2PtRate_motherBin_3_cd);
-  //l2PtRate_cd->Add(l2PtRate_motherBin_4_cd);
-  //l2PtRate_cd->Add(l2PtRate_motherBin_5_cd);
-  //l2PtRate_cd->Add(l2PtRate_motherBin_6_cd);
-  l2PtRate_cd->Add(l2PtRate_motherBin_10_cd);
-  l2PtRate_cd->Add(l2PtRate_motherBin_12_cd);
-  l2PtRate_cd->Add(l2PtRate_motherBin_13_cd);
-  l2PtRate_cd->Add(l2PtRate_motherBin_14_cd);
-
+  if(!isData){
+    l2PtRate_cd->Add(l2PtRate_motherBin_1_cd);
+    l2PtRate_cd->Add(l2PtRate_motherBin_2_cd);
+    //l2PtRate_cd->Add(l2PtRate_motherBin_3_cd);
+    //l2PtRate_cd->Add(l2PtRate_motherBin_4_cd);
+    //l2PtRate_cd->Add(l2PtRate_motherBin_5_cd);
+    //l2PtRate_cd->Add(l2PtRate_motherBin_6_cd);
+    l2PtRate_cd->Add(l2PtRate_motherBin_10_cd);
+    l2PtRate_cd->Add(l2PtRate_motherBin_11_cd);
+    l2PtRate_cd->Add(l2PtRate_motherBin_12_cd);
+    l2PtRate_cd->Add(l2PtRate_motherBin_13_cd);
+    l2PtRate_cd->Add(l2PtRate_motherBin_14_cd);
+  } else {
+    l2PtRate_cd->Add(l2PtRate_motherBin_15_cd);
+  }
   //aaa
 
   fill_overflow(tkTrackPtRate_motherBin_1,tkTrackOverFlow[0]);
@@ -427,9 +498,11 @@ int ScanTree ( TTree* tree, char *fileName) {
   fill_overflow(tkTrackPtRate_motherBin_5,tkTrackOverFlow[4]);
   fill_overflow(tkTrackPtRate_motherBin_6,tkTrackOverFlow[5]);
   fill_overflow(tkTrackPtRate_motherBin_10,tkTrackOverFlow[9]);
+  fill_overflow(tkTrackPtRate_motherBin_11,tkTrackOverFlow[10]);
   fill_overflow(tkTrackPtRate_motherBin_12,tkTrackOverFlow[11]);
   fill_overflow(tkTrackPtRate_motherBin_13,tkTrackOverFlow[12]);
   fill_overflow(tkTrackPtRate_motherBin_14,tkTrackOverFlow[13]);
+  fill_overflow(tkTrackPtRate_motherBin_15,tkTrackOverFlow[14]);
 
   make_cd_from_histo(tkTrackPtRate_motherBin_1,tkTrackPtRate_motherBin_1_cd);
   make_cd_from_histo(tkTrackPtRate_motherBin_2,tkTrackPtRate_motherBin_2_cd);
@@ -438,32 +511,43 @@ int ScanTree ( TTree* tree, char *fileName) {
   make_cd_from_histo(tkTrackPtRate_motherBin_5,tkTrackPtRate_motherBin_5_cd);
   make_cd_from_histo(tkTrackPtRate_motherBin_6,tkTrackPtRate_motherBin_6_cd);
   make_cd_from_histo(tkTrackPtRate_motherBin_10,tkTrackPtRate_motherBin_10_cd);
+  make_cd_from_histo(tkTrackPtRate_motherBin_11,tkTrackPtRate_motherBin_11_cd);
   make_cd_from_histo(tkTrackPtRate_motherBin_12,tkTrackPtRate_motherBin_12_cd);
   make_cd_from_histo(tkTrackPtRate_motherBin_13,tkTrackPtRate_motherBin_13_cd);
   make_cd_from_histo(tkTrackPtRate_motherBin_14,tkTrackPtRate_motherBin_14_cd);
+  make_cd_from_histo(tkTrackPtRate_motherBin_15,tkTrackPtRate_motherBin_15_cd);
 
-  tkTrackPtRate->Add(tkTrackPtRate_motherBin_1);
-  tkTrackPtRate->Add(tkTrackPtRate_motherBin_2);
-  //tkTrackPtRate->Add(tkTrackPtRate_motherBin_3);
-  //tkTrackPtRate->Add(tkTrackPtRate_motherBin_4);
-  //tkTrackPtRate->Add(tkTrackPtRate_motherBin_5);
-  //tkTrackPtRate->Add(tkTrackPtRate_motherBin_6);
-  tkTrackPtRate->Add(tkTrackPtRate_motherBin_10);
-  tkTrackPtRate->Add(tkTrackPtRate_motherBin_12);
-  tkTrackPtRate->Add(tkTrackPtRate_motherBin_13);
-  tkTrackPtRate->Add(tkTrackPtRate_motherBin_14);
-
-  tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_1_cd);
-  tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_2_cd);
-  //tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_3_cd);
-  //tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_4_cd);
-  //tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_5_cd);
-  //tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_6_cd);
-  tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_10_cd);
-  tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_12_cd);
-  tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_13_cd);
-  tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_14_cd);
+  if(!isData){
+    tkTrackPtRate->Add(tkTrackPtRate_motherBin_1);
+    tkTrackPtRate->Add(tkTrackPtRate_motherBin_2);
+    //tkTrackPtRate->Add(tkTrackPtRate_motherBin_3);
+    //tkTrackPtRate->Add(tkTrackPtRate_motherBin_4);
+    //tkTrackPtRate->Add(tkTrackPtRate_motherBin_5);
+    //tkTrackPtRate->Add(tkTrackPtRate_motherBin_6);
+    tkTrackPtRate->Add(tkTrackPtRate_motherBin_10);
+    tkTrackPtRate->Add(tkTrackPtRate_motherBin_11);
+    tkTrackPtRate->Add(tkTrackPtRate_motherBin_12);
+    tkTrackPtRate->Add(tkTrackPtRate_motherBin_13);
+    tkTrackPtRate->Add(tkTrackPtRate_motherBin_14);
+  } else {
+    tkTrackPtRate->Add(tkTrackPtRate_motherBin_15);
+  }
   
+  if(!isData){
+    tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_1_cd);
+    tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_2_cd);
+    //tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_3_cd);
+    //tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_4_cd);
+    //tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_5_cd);
+    //tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_6_cd);
+    tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_10_cd);
+    tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_11_cd);
+    tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_12_cd);
+    tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_13_cd);
+    tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_14_cd);
+  } else {
+    tkTrackPtRate_cd->Add(tkTrackPtRate_motherBin_15_cd);
+  }
   //aaaa
 
   //  double crossSection_mb = 75.28; // MinBias
@@ -486,7 +570,11 @@ int ScanTree ( TTree* tree, char *fileName) {
 
   double mbInvToHz=L/eventNumberUnit;
   //  double rateFactor=crossSection / numberOfEvents * mbInvToHz ;
-  double rateFactor = 0.10742153510525515 ;
+  double rateFactorMC = 0.048492353331627547;
+  rateFactorMC = rateFactorMC * 4;
+
+  double rateFactor = (weight==0) ? rateFactorMC : weight;
+
   cout << "rateFactor = " << rateFactor << endl;
 
   histDir->cd();
@@ -494,69 +582,14 @@ int ScanTree ( TTree* tree, char *fileName) {
 
 
   histDir->Write("",TObject::kOverwrite);
+
+  histFile->Close();
   
   return 0;
 }
 
-double etaCalIsoDepositCut (double eta) {
-  if (abs(eta) < 0.435) return 4.0;
-  else if (abs(eta) < 0.1305) return 3.7;
-  else if (abs(eta) < 0.2175) return 4.0;
-  else if (abs(eta) < 0.3045) return 3.5;
-  else if (abs(eta) < 0.3915) return 3.4;
-  else if (abs(eta) < 0.4785) return 3.4;
-  else if (abs(eta) < 0.5655) return 3.2;
-  else if (abs(eta) < 0.6525) return 3.4;
-  else if (abs(eta) < 0.7395) return 3.1;
-  else if (abs(eta) < 0.8265) return 2.9;
-  else if (abs(eta) < 0.9135) return 2.9;
-  else if (abs(eta) < 1.0005) return 2.7;
-  else if (abs(eta) < 1.0875) return 3.1;
-  else if (abs(eta) < 1.1745) return 3.0;
-  else if (abs(eta) < 1.2615) return 2.4;
-  else if (abs(eta) < 1.3485) return 2.1;
-  else if (abs(eta) < 1.4355) return 2.0;
-  else if (abs(eta) < 1.5225) return 2.3;
-  else if (abs(eta) < 1.6095) return 2.2;
-  else if (abs(eta) < 1.6965) return 2.4;
-  else if (abs(eta) < 1.785) return 2.5;
-  else if (abs(eta) < 1.88) return 2.5;
-  else if (abs(eta) < 1.9865) return 2.6;
-  else if (abs(eta) < 2.1075) return 2.9;
-  else if (abs(eta) < 2.247) return 3.1;
-  else if (abs(eta) < 2.411) return 2.9;
-  else return 2.9;
-}
 
-double etaTrackIsoDepositCut (double eta) {
-  if (abs(eta) < 0.435) return 1.1;
-  else if (abs(eta) < 0.1305) return 1.1;
-  else if (abs(eta) < 0.2175) return 1.1;
-  else if (abs(eta) < 0.3045) return 1.1;
-  else if (abs(eta) < 0.3915) return 1.2;
-  else if (abs(eta) < 0.4785) return 1.1;
-  else if (abs(eta) < 0.5655) return 1.2;
-  else if (abs(eta) < 0.6525) return 1.1;
-  else if (abs(eta) < 0.7395) return 1.2;
-  else if (abs(eta) < 0.8265) return 1.0;
-  else if (abs(eta) < 0.9135) return 1.1;
-  else if (abs(eta) < 1.0005) return 1.0;
-  else if (abs(eta) < 1.0875) return 1.0;
-  else if (abs(eta) < 1.1745) return 1.1;
-  else if (abs(eta) < 1.2615) return 1.0;
-  else if (abs(eta) < 1.3485) return 1.0;
-  else if (abs(eta) < 1.4355) return 1.1;
-  else if (abs(eta) < 1.5225) return 0.9;
-  else if (abs(eta) < 1.6095) return 1.1;
-  else if (abs(eta) < 1.6965) return 0.9;
-  else if (abs(eta) < 1.785) return 1.1;
-  else if (abs(eta) < 1.88) return 1.0;
-  else if (abs(eta) < 1.9865) return 1.0;
-  else if (abs(eta) < 2.1075) return 0.9;
-  else if (abs(eta) < 2.247) return 0.8;
-  else if (abs(eta) < 2.411) return 0.1;
-  else return 0.1;
-}
+
 
 double findMaxPt(vector<double> *pts) { // just a simple "find max"
   double maxPt = -999;
