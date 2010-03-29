@@ -2,74 +2,25 @@
 {
    printf("\n Beginning new ROOT session\n");
 
-   TStyle *myStyle  = new TStyle("MyStyle","My Root Styles");
-
-   // from ROOT plain style
-
-   myStyle->SetTitleColor(1);
-   myStyle->SetStatColor(0);
-
-   myStyle->SetLabelSize(0.03,"xyz"); // size of axis values
-
-   myStyle->SetPalette(1);
-
-   // default canvas positioning
-   myStyle->SetCanvasBorderMode(0);
-   myStyle->SetCanvasColor(0);
-   myStyle->SetCanvasDefX(900);
-   myStyle->SetCanvasDefY(20);
-   myStyle->SetCanvasDefH(550);
-   myStyle->SetCanvasDefW(540);
-
-   myStyle->SetPadBorderMode(0);
-   myStyle->SetPadColor(0);
-   myStyle->SetPadGridX(true);
-   myStyle->SetPadGridY(true);
-   myStyle->SetGridColor(0);
-   myStyle->SetGridStyle(3);
-   myStyle->SetGridWidth(1);
-   myStyle->SetPadTickX(1);
-   myStyle->SetPadTickY(1);
-
-// For the frame:
-  myStyle->SetFrameBorderMode(0);
-  myStyle->SetFrameBorderSize(1);
-  myStyle->SetFrameFillColor(0);
-  myStyle->SetFrameFillStyle(0);
-  myStyle->SetFrameLineColor(1);
-  myStyle->SetFrameLineStyle(1);
-  myStyle->SetFrameLineWidth(1);
-
-   myStyle->SetPadBottomMargin(0.1);
-   myStyle->SetPadTopMargin(0.1);
-   myStyle->SetPadLeftMargin(0.2);
-   myStyle->SetPadRightMargin(0.2);
-
-   /*
-  myStyle->SetHistLineColor(1);
-  myStyle->SetHistLineStyle(0);
-  myStyle->SetHistLineWidth(1);
- myStyle->SetEndErrorSize(2);
- myStyle->SetErrorX(0.);
-  myStyle->SetMarkerStyle(20);
- */
-
+   int macroAvailable = gROOT->LoadMacro("adamStyles.C");
+   printf("\n macroAvailable = %d \n",macroAvailable);
+   if(macroAvailable==0){
+     setTDRStyle();
+     gROOT->SetStyle("tdrStyle");
+     gROOT->ForceStyle();
+   }
 
    // US letter
-   myStyle->SetPaperSize(20, 24);
-
-
-   //gROOT->SetStyle("MyStyle"); //uncomment to set this style
+   //gStyle->SetPaperSize(20, 24);
 
    bool foundIt=true;
    // see if CMSSW has been setup
    char *cmsbase=gSystem->Getenv("CMSSW_BASE");
    if (cmsbase==NULL) {
-     cout << " CMSSW environment has not been setup -- "
-	  << " FWLite libraries will not be loaded\n" << endl;
+     printf("\n CMSSW environment has not been setup -- \n FWLite libraries will not be loaded\n");
      foundIt=false;
    } else {
-     cout << " CMSSW environment has been setup \n" << endl;
+     printf(" CMSSW environment has been setup \n");
 
      char *search=gSystem->Getenv("LD_LIBRARY_PATH");
      string cms_path = search;
@@ -81,18 +32,25 @@
        FWLiteLib = "libPhysicsToolsFWLite.so";
        foundlib =gSystem->Which(search, FWLiteLib, 0);
        if (! foundlib) {
-	 cout << "Could not find any FWLite libraries to load " << endl;       
+	 printf("Could not find any FWLite libraries to load \n");
 	 foundIt=false;
        }
      }
    }
    if (foundIt){
-     cout << "Loading: " << FWLiteLib << endl;
+     printf(" Loading: %s \n",FWLiteLib.Data());
      gSystem->Load(FWLiteLib);
      AutoLibraryLoader::enable();
+     TString treeLib = "libTreeLib.so";
+     const char* foundtreelib =gSystem->Which(search, treeLib, 0);
+     if(foundtreelib) {
+       printf(" Loading: %s \n",treeLib.Data());
+       gSystem->Load(treeLib);
+     } else {
+       printf("\n No TreeLib found \n");
+     }
      gSystem->Load("libSmatrix");
-     gSystem->Load("libTreeLib.so");
-     cout << "Done loading libraries . . . " << endl;
+     printf("\n All loaded . . . \n");
    }
 }
 
