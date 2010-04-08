@@ -14,6 +14,6 @@ LIBS          = $(ROOTLIBS) $(SYSLIBS)
 GLIBS         = $(ROOTGLIBS) $(SYSLIBS)
 
 libTreeLib.so:  MyLibLinkDef.h
-		@rootcint -f MyLibDict.cc -c map.h vector.h MyLibLinkDef.h
+		@rootcint -f MyLibDict.cc -c map vector MyLibLinkDef.h
 		$(CXX) $(LDFLAGS) $(SOFLAGS) $(CXXFLAGS) MyLibDict.cc -o $@ 
 

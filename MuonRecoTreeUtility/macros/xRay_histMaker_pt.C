@@ -17,14 +17,14 @@ std::map<std::string,TH1*> l2PtHistoMap;
 std::map<std::string,TH1*> tkPtHistoMap;
 
 //int ScanTree ( TTree* tree) {
-int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight = 1.0) {
+int ScanTreePt ( TTree* tree, char *fileName, bool isData=false,double weight = 1.0) {
   
   initArrays();
   
   // This reads in the tree.  As you might imagine.
   Init(tree);
   TFile *histFile = new TFile(fileName,"UPDATE");
-  TDirectory *histDir = histFile->mkdir("EtaRate");
+  TDirectory *histDir = histFile->mkdir("PtRate");
   
   histDir->cd();
   
@@ -37,7 +37,7 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
   //Book the L3 histos  
   for (int i = 0; i != Bins.size(); ++i) {    
     char histoName[20];
-    sprintf(histoName,"l3EtaRate_%d",i);
+    sprintf(histoName,"l3PtRate_%d",i);
     TString histoString(histoName);
     // cout << "histoName : " << histoName << endl;
     // cout << "histoString : " << histoString.Data() << endl;
@@ -47,7 +47,7 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
   }
   
   char histoName[20];
-  sprintf(histoName,"l3EtaRate_%d",Bins.size());
+  sprintf(histoName,"l3PtRate_%d",Bins.size());
   TString histoString(histoName);
   // cout << "histoName : " << histoName << endl;
   // cout << "histoString : " << histoString.Data() << endl;
@@ -57,14 +57,14 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
   
   for (int i = 0; i != Bins.size()+1; ++i) {
     char histoName[20];
-    sprintf(histoName,"l3EtaRate_%d",i);
+    sprintf(histoName,"l3PtRate_%d",i);
     cout << "Histo " << i << " " << muonPtHistoMap[histoName]->GetName() << " " << muonPtHistoMap[histoName]->GetTitle() << endl;
   }
 
   //Book the L2 histos  
   for (int i = 0; i != Bins.size(); ++i) {    
     char histoName[20];
-    sprintf(histoName,"l2EtaRate_%d",i);
+    sprintf(histoName,"l2PtRate_%d",i);
     TString histoString(histoName);
     // cout << "histoName : " << histoName << endl;
     // cout << "histoString : " << histoString.Data() << endl;
@@ -74,7 +74,7 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
   }
   
   char histoName2[20];
-  sprintf(histoName2,"l2EtaRate_%d",Bins.size());
+  sprintf(histoName2,"l2PtRate_%d",Bins.size());
   TString histoString2(histoName2);
   // cout << "histoName : " << histoName2 << endl;
   // cout << "histoString : " << histoString2.Data() << endl;
@@ -84,14 +84,14 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
   
   for (int i = 0; i != Bins.size()+1; ++i) {
     char histoName[20];
-    sprintf(histoName,"l2EtaRate_%d",i);
+    sprintf(histoName,"l2PtRate_%d",i);
     cout << "Histo " << i << " " << l2PtHistoMap[histoName]->GetName() << " " << l2PtHistoMap[histoName]->GetTitle() << endl;
   }
 
   //Book the Tk histos  
   for (int i = 0; i != Bins.size(); ++i) {    
     char histoName[20];
-    sprintf(histoName,"tkTrackEtaRate_%d",i);
+    sprintf(histoName,"tkTrackPtRate_%d",i);
     TString histoString(histoName);
     // cout << "histoName : " << histoName << endl;
     // cout << "histoString : " << histoString.Data() << endl;
@@ -101,7 +101,7 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
   }
   
   char histoName3[20];
-  sprintf(histoName3,"tkTrackEtaRate_%d",Bins.size());
+  sprintf(histoName3,"tkTrackPtRate_%d",Bins.size());
   TString histoString3(histoName3);
   // cout << "histoName : " << histoName3 << endl;
   // cout << "histoString : " << histoString3.Data() << endl;
@@ -111,36 +111,36 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
   
   for (int i = 0; i != Bins.size()+1; ++i) {
     char histoName[20];
-    sprintf(histoName,"tkTrackEtaRate_%d",i);
+    sprintf(histoName,"tkTrackPtRate_%d",i);
     cout << "Histo " << i << " " << tkPtHistoMap[histoName]->GetName() << " " << tkPtHistoMap[histoName]->GetTitle() << endl;
   }
     
-  THStack *l3EtaRate = new THStack("l3EtaRate","L3 rate as f(p_{T,L3})");
-  //THStack *l3EtaRate_cd = new THStack("l3EtaRate_cd","L3 rate as f(p_{T,L3})");
+  THStack *l3PtRate = new THStack("l3PtRate","L3 rate as f(p_{T,L3})");
+  //THStack *l3PtRate_cd = new THStack("l3PtRate_cd","L3 rate as f(p_{T,L3})");
     
-  THStack *l2EtaRate = new THStack("l2EtaRate","L2 rate as f(p_{T,L2})");
-  //THStack *l2EtaRate_cd = new THStack("l2EtaRate_cd","L2 rate as f(p_{T,L2})");
+  THStack *l2PtRate = new THStack("l2PtRate","L2 rate as f(p_{T,L2})");
+  //THStack *l2PtRate_cd = new THStack("l2PtRate_cd","L2 rate as f(p_{T,L2})");
   
-  THStack *tkTrackEtaRate = new THStack("tkTrackEtaRate","tkTrack rate as f(p_{T,tkTrack})");
-  //THStack *tkTrackEtaRate_cd = new THStack("tkTrackEtaRate_cd","tkTrack rate as f(p_{T,tkTrack})");
+  THStack *tkTrackPtRate = new THStack("tkTrackPtRate","tkTrack rate as f(p_{T,tkTrack})");
+  //THStack *tkTrackPtRate_cd = new THStack("tkTrackPtRate_cd","tkTrack rate as f(p_{T,tkTrack})");
   
   // There are many comments to be made about ROOT.  Most of them Rated-R or Rated-X.
   // Here, I'll limit myself to saying this is necessary for the TStacks to go into the TDirectory.
-  gDirectory->Append(l2EtaRate);
-  gDirectory->Append(l3EtaRate);
-  gDirectory->Append(tkTrackEtaRate);
+  gDirectory->Append(l2PtRate);
+  gDirectory->Append(l3PtRate);
+  gDirectory->Append(tkTrackPtRate);
   
-  //gDirectory->Append(l2EtaRate_cd);
-  //gDirectory->Append(l3EtaRate_cd);
-  //gDirectory->Append(tkTrackEtaRate_cd);
+  //gDirectory->Append(l2PtRate_cd);
+  //gDirectory->Append(l3PtRate_cd);
+  //gDirectory->Append(tkTrackPtRate_cd);
   
-  //  gDirectory->Append(l2IsoEtaRate);
-  //  gDirectory->Append(l3PreIsoEtaRate);
-  //  gDirectory->Append(l3IsoEtaRate);
+  //  gDirectory->Append(l2IsoPtRate);
+  //  gDirectory->Append(l3PreIsoPtRate);
+  //  gDirectory->Append(l3IsoPtRate);
   
-  //  gDirectory->Append(l2IsoEtaRate_cd);
-  //  gDirectory->Append(l3PreIsoEtaRate_cd);
-  //  gDirectory->Append(l3IsoEtaRate_cd);
+  //  gDirectory->Append(l2IsoPtRate_cd);
+  //  gDirectory->Append(l3PreIsoPtRate_cd);
+  //  gDirectory->Append(l3IsoPtRate_cd);
   
   int l2OverFlow[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   int l3OverFlow[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -213,7 +213,7 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
 	//int l3_index = findIndexOfMaxPt(l3Pt,l3Eta,l3D0);
 	//if(!(*muAllArbitrated).at(iMu)) break;
 	int l3_index = iMu;
-	double pt_L3 = (*l3Eta).at(iMu);
+	double pt_L3 = (*l3Pt).at(iMu);
 		
 	if(!isData) {
 	  //start adam test
@@ -238,7 +238,7 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
 	  //if( fabs(myL3AssociationPdgId) != 13) {
 	  char histoName[20];
 	  if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin = myL3ParentIdBin-2;
-	  sprintf(histoName,"l3EtaRate_%d",myL3ParentIdBin);	  
+	  sprintf(histoName,"l3PtRate_%d",myL3ParentIdBin);	  
 	  muonPtHistoMap[histoName]->Fill(pt_L3,weight);
 	  //}
 	  //adam test 2
@@ -249,7 +249,7 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
 	      && fabs(myL3AssociationPdgId) == 13 ) {
 	    
 	    char histoName[20];
-	    sprintf(histoName,"l3EtaRate_%d",myL3ParentIdBin);
+	    sprintf(histoName,"l3PtRate_%d",myL3ParentIdBin);
 	    
 	    muonPtHistoMap[histoName]->Fill(pt_L3,weight);
 	    
@@ -262,23 +262,23 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
 	      fprintf(pFile,"k %d iMu %d of %d isAssoc %d pdgId %d parentID %d mother bin %d lBin %d %d\n", iEntry, iMu, nMu, myIsAssociated, myL3AssociationPdgId, myL3ParentID, myL3MotherBinNumber,myL3TPIdBin,myL3ParentIdBin);
 	    } 
 	  } else if (myIsAssociated == 1 && (*l3AssociationVar).at(l3_index) > -0.1 && fabs(myL3AssociationPdgId)!=13 && myL3MotherBinNumber == -888) {	    
-	    //muonPtHistoMap["l3EtaRate_9"]->Fill(pt_L3,weight);
+	    //muonPtHistoMap["l3PtRate_9"]->Fill(pt_L3,weight);
 	    char histoName[20];
-	    sprintf(histoName,"l3EtaRate_%d",myL3ParentIdBin);
+	    sprintf(histoName,"l3PtRate_%d",myL3ParentIdBin);
 	    
 	    muonPtHistoMap[histoName]->Fill(pt_L3,weight);
 	  } else if (myIsAssociated == 1 && (*l3AssociationVar).at(l3_index) > -0.1 && fabs(myL3AssociationPdgId)!=13 && myL3MotherBinNumber == -777) {
-	    muonPtHistoMap["l3EtaRate_8"]->Fill(pt_L3,weight);
+	    muonPtHistoMap["l3PtRate_8"]->Fill(pt_L3,weight);
 	  } else {
-	    muonPtHistoMap["l3EtaRate_9"]->Fill(pt_L3,weight);
+	    muonPtHistoMap["l3PtRate_9"]->Fill(pt_L3,weight);
 	  } */
 	} else {
 	  //cout << "line 273 Data" << endl;
 	  char histoName[20];
 	  //if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin--;
-	  sprintf(histoName,"l3EtaRate_%d",Bins.size()-1);	  
+	  sprintf(histoName,"l3PtRate_%d",Bins.size()-1);	  
 	  muonPtHistoMap[histoName]->Fill(pt_L3,weight);	  
-	  //muonPtHistoMap["l3EtaRate_9"]->Fill(pt_L3,weight);
+	  //muonPtHistoMap["l3PtRate_9"]->Fill(pt_L3,weight);
 	}
       }
       
@@ -286,7 +286,7 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
 	//double pt_L2 = findMaxPt(l2Pt,l2Eta,l2D0);
 	//int l2_index = findIndexOfMaxPt(l2Pt,l2Eta,l2D0);
 	int l2_index = iMu;
-	double pt_L2 = (*l2Eta).at(iMu);
+	double pt_L2 = (*l2Pt).at(iMu);
 	if(!isData) {
 
       }
@@ -296,7 +296,7 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
 	//double pt_tkTrack = findMaxPt(tkTrackPt,tkTrackEta,tkTrackD0);
 	//int tkTrack_index = findIndexOfMaxPt(tkTrackPt,tkTrackEta,tkTrackD0);
 	int tkTrack_index = iMu;
-	double pt_tkTrack = (*tkTrackEta).at(iMu);
+	double pt_tkTrack = (*tkTrackPt).at(iMu);
 
 	int myIsAssociated = (*tkTrackIsAssociated).at(iMu);
 	int myL3AssociationPdgId = (*tkTrackAssociationPdgId).at(iMu);
@@ -309,15 +309,15 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
 	if(!isData) {
 	  char histoName[20];
 	  if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin = myL3ParentIdBin-2;
-	  sprintf(histoName,"tkTrackEtaRate_%d",myL3ParentIdBin);	  
+	  sprintf(histoName,"tkTrackPtRate_%d",myL3ParentIdBin);	  
 	  tkPtHistoMap[histoName]->Fill(pt_tkTrack,weight);	
 	} else {
 	  //cout << "line 273 Data" << endl;
 	  char histoName[20];
 	  //if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin--;
-	  sprintf(histoName,"tkTrackEtaRate_%d",Bins.size()-1);	  
+	  sprintf(histoName,"tkTrackPtRate_%d",Bins.size()-1);	  
 	  tkPtHistoMap[histoName]->Fill(pt_tkTrack,weight);	  
-	  //muonPtHistoMap["l3EtaRate_9"]->Fill(pt_L3,weight);
+	  //muonPtHistoMap["l3PtRate_9"]->Fill(pt_L3,weight);
 	}
       }
     }//cout << "line 399 loop over muons" << endl;
@@ -328,39 +328,39 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
     //for (int i = 0; i != Bins.size()+1; ++i) {
     for (int i = 1; i != Bins.size()-1; ++i) {
       char histoName[20];
-      sprintf(histoName,"l3EtaRate_%d",i);
-      l3EtaRate->Add(muonPtHistoMap[histoName]);
+      sprintf(histoName,"l3PtRate_%d",i);
+      l3PtRate->Add(muonPtHistoMap[histoName]);
     }
   } else {
     char histoName[20];
-    sprintf(histoName,"l3EtaRate_%d",Bins.size()-1);
-    l3EtaRate->Add(muonPtHistoMap[histoName]);
+    sprintf(histoName,"l3PtRate_%d",Bins.size()-1);
+    l3PtRate->Add(muonPtHistoMap[histoName]);
   }
 
   if(!isData){
     //for (int i = 0; i != Bins.size()+1; ++i) {
     for (int i = 1; i != Bins.size()-1; ++i) {
       char histoName[20];
-      sprintf(histoName,"l2EtaRate_%d",i);
-      l2EtaRate->Add(l2PtHistoMap[histoName]);
+      sprintf(histoName,"l2PtRate_%d",i);
+      l2PtRate->Add(l2PtHistoMap[histoName]);
     }
   } else {
     char histoName[20];
-    sprintf(histoName,"l2EtaRate_%d",Bins.size()-1);
-    l2EtaRate->Add(l2PtHistoMap[histoName]);
+    sprintf(histoName,"l2PtRate_%d",Bins.size()-1);
+    l2PtRate->Add(l2PtHistoMap[histoName]);
   }
 
   if(!isData){
     //for (int i = 0; i != Bins.size()+1; ++i) {
     for (int i = 1; i != Bins.size()-1; ++i) {
       char histoName[20];
-      sprintf(histoName,"tkTrackEtaRate_%d",i);
-      tkTrackEtaRate->Add(tkPtHistoMap[histoName]);
+      sprintf(histoName,"tkTrackPtRate_%d",i);
+      tkTrackPtRate->Add(tkPtHistoMap[histoName]);
     }
   } else {
     char histoName[20];
-    sprintf(histoName,"tkTrackEtaRate_%d",Bins.size()-1);
-    tkTrackEtaRate->Add(tkPtHistoMap[histoName]);
+    sprintf(histoName,"tkTrackPtRate_%d",Bins.size()-1);
+    tkTrackPtRate->Add(tkPtHistoMap[histoName]);
   }
 
   double crossSection_mb = 51.6; // ppMuX
@@ -387,7 +387,7 @@ int ScanTreeEta ( TTree* tree, char *fileName, bool isData=false,double weight =
   cout << "rateFactor = " << rateFactor << endl;
 
   histDir->cd();
-  //scaleToRate("*EtaRate*", rateFactor);
+  //scaleToRate("*PtRate*", rateFactor);
 
 
   histDir->Write("",TObject::kOverwrite);

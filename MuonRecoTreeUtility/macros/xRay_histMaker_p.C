@@ -3,156 +3,157 @@
 #include "TFile.h"
 //#include "Math/LorentzVector.h"
 #include <vector>
+#include <map>
 #include "RecoTree.h"
+#include <stdio.h>
+
+typedef std::pair< std::string, std::vector<int> > bin;
+std::vector<bin> Bins;
+//in which bin a pdgID goes
+std::map<int, int> mymap;
+
+std::map<std::string,TH1*> muonPtHistoMap;
+std::map<std::string,TH1*> l2PtHistoMap;
+std::map<std::string,TH1*> tkPtHistoMap;
 
 //int ScanTree ( TTree* tree) {
-int ScanTreeP ( TTree* tree, char *fileName, bool isData=false, double weight = 1.0) {
-
+int ScanTreeP ( TTree* tree, char *fileName, bool isData=false,double weight = 1.0) {
+  
+  initArrays();
+  
   // This reads in the tree.  As you might imagine.
   Init(tree);
   TFile *histFile = new TFile(fileName,"UPDATE");
   TDirectory *histDir = histFile->mkdir("PRate");
-
+  
   histDir->cd();
-
+  
   // Time for some histograms and stacks
+  
+  double ptLowerLimit = 0;
+  double ptUpperLimit = 20;
+  int nBins = 20;
 
-  double lowerLimit = 0;
-  double upperLimit = 20;
-  double int nBins    = 20;
+  //Book the L3 histos  
+  for (int i = 0; i != Bins.size(); ++i) {    
+    char histoName[20];
+    sprintf(histoName,"l3PRate_%d",i);
+    TString histoString(histoName);
+    // cout << "histoName : " << histoName << endl;
+    // cout << "histoString : " << histoString.Data() << endl;
+    TString histoTitle(GetBinName(i));
+    TH1 * tmpTh1 = new TH1F(histoString,histoTitle,nBins,ptLowerLimit,ptUpperLimit);
+    muonPtHistoMap[histoName] = tmpTh1;
+  }
+  
+  char histoName[20];
+  sprintf(histoName,"l3PRate_%d",Bins.size());
+  TString histoString(histoName);
+  // cout << "histoName : " << histoName << endl;
+  // cout << "histoString : " << histoString.Data() << endl;
+  TString histoTitle("Overflow");
+  TH1 * tmpTh1 = new TH1F(histoString,histoTitle,nBins,ptLowerLimit,ptUpperLimit);
+  muonPtHistoMap[histoName] = tmpTh1;
+  
+  for (int i = 0; i != Bins.size()+1; ++i) {
+    char histoName[20];
+    sprintf(histoName,"l3PRate_%d",i);
+    cout << "Histo " << i << " " << muonPtHistoMap[histoName]->GetName() << " " << muonPtHistoMap[histoName]->GetTitle() << endl;
+  }
 
-  TH1F *l3PRate_motherBin_1 = new TH1F("l3PRate_motherBin_1"," #pi^{+/-}",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_2 = new TH1F("l3PRate_motherBin_2"," K",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_3 = new TH1F("l3PRate_motherBin_3"," D",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_4 = new TH1F("l3PRate_motherBin_4"," B",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_5 = new TH1F("l3PRate_motherBin_5"," #Lambda_{b}",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_6 = new TH1F("l3PRate_motherBin_6"," J/#Psi",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_10 = new TH1F("l3PRate_motherBin_10"," #tau^{+/-}",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_11 = new TH1F("l3PRate_motherBin_11"," #mu",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_12 = new TH1F("l3PRate_motherBin_12"," b/c",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_13 = new TH1F("l3PRate_motherBin_13"," other",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_14 = new TH1F("l3PRate_motherBin_14"," non-associated",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_15 = new TH1F("l3PRate_motherBin_15"," Data",nBins,lowerLimit,upperLimit);
+  //Book the L2 histos  
+  for (int i = 0; i != Bins.size(); ++i) {    
+    char histoName[20];
+    sprintf(histoName,"l2PRate_%d",i);
+    TString histoString(histoName);
+    // cout << "histoName : " << histoName << endl;
+    // cout << "histoString : " << histoString.Data() << endl;
+    TString histoTitle(GetBinName(i));
+    TH1 * tmpTh1 = new TH1F(histoString,histoTitle,nBins,ptLowerLimit,ptUpperLimit);
+    l2PtHistoMap[histoName] = tmpTh1;
+  }
+  
+  char histoName2[20];
+  sprintf(histoName2,"l2PRate_%d",Bins.size());
+  TString histoString2(histoName2);
+  // cout << "histoName : " << histoName2 << endl;
+  // cout << "histoString : " << histoString2.Data() << endl;
+  TString histoTitle2("Overflow");
+  TH1 * tmpTh2 = new TH1F(histoString2,histoTitle2,nBins,ptLowerLimit,ptUpperLimit);
+  l2PtHistoMap[histoName2] = tmpTh2;
+  
+  for (int i = 0; i != Bins.size()+1; ++i) {
+    char histoName[20];
+    sprintf(histoName,"l2PRate_%d",i);
+    cout << "Histo " << i << " " << l2PtHistoMap[histoName]->GetName() << " " << l2PtHistoMap[histoName]->GetTitle() << endl;
+  }
 
-  TH1F *l3PRate_motherBin_1_cd = new TH1F("l3PRate_motherBin_1_cd"," #pi^{+/-}",nBins,lowerLimit,upperLimit);  
-  TH1F *l3PRate_motherBin_2_cd = new TH1F("l3PRate_motherBin_2_cd"," K",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_3_cd = new TH1F("l3PRate_motherBin_3_cd"," D",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_4_cd = new TH1F("l3PRate_motherBin_4_cd"," B",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_5_cd = new TH1F("l3PRate_motherBin_5_cd"," #Lambda_{b}",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_6_cd = new TH1F("l3PRate_motherBin_6_cd"," J/#Psi",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_10_cd = new TH1F("l3PRate_motherBin_10_cd"," #tau^{+/-}",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_11_cd = new TH1F("l3PRate_motherBin_11_cd"," #mu",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_12_cd = new TH1F("l3PRate_motherBin_12_cd"," b/c",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_13_cd = new TH1F("l3PRate_motherBin_13_cd"," other",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_14_cd = new TH1F("l3PRate_motherBin_14_cd"," non-associated",nBins,lowerLimit,upperLimit);
-  TH1F *l3PRate_motherBin_15_cd = new TH1F("l3PRate_motherBin_15_cd"," Data",nBins,lowerLimit,upperLimit);
-
-
-
+  //Book the Tk histos  
+  for (int i = 0; i != Bins.size(); ++i) {    
+    char histoName[20];
+    sprintf(histoName,"tkTrackPRate_%d",i);
+    TString histoString(histoName);
+    // cout << "histoName : " << histoName << endl;
+    // cout << "histoString : " << histoString.Data() << endl;
+    TString histoTitle(GetBinName(i));
+    TH1 * tmpTh1 = new TH1F(histoString,histoTitle,nBins,ptLowerLimit,ptUpperLimit);
+    tkPtHistoMap[histoName] = tmpTh1;
+  }
+  
+  char histoName3[20];
+  sprintf(histoName3,"tkTrackPRate_%d",Bins.size());
+  TString histoString3(histoName3);
+  // cout << "histoName : " << histoName3 << endl;
+  // cout << "histoString : " << histoString3.Data() << endl;
+  TString histoTitle3("Overflow");
+  TH1 * tmpTh3 = new TH1F(histoString3,histoTitle3,nBins,ptLowerLimit,ptUpperLimit);
+  tkPtHistoMap[histoName3] = tmpTh3;
+  
+  for (int i = 0; i != Bins.size()+1; ++i) {
+    char histoName[20];
+    sprintf(histoName,"tkTrackPRate_%d",i);
+    cout << "Histo " << i << " " << tkPtHistoMap[histoName]->GetName() << " " << tkPtHistoMap[histoName]->GetTitle() << endl;
+  }
+    
   THStack *l3PRate = new THStack("l3PRate","L3 rate as f(p_{T,L3})");
-  THStack *l3PRate_cd = new THStack("l3PRate_cd","L3 rate as f(p_{T,L3})");
-  //  THStack *l3PreIsoPRate = new THStack("l3PreIsoPRate","L3PreIso rate as f(p_{T,L3})");
-  //  THStack *l3PreIsoPRate_cd = new THStack("l3PreIsoPRate_cd","L3PreIso rate as f(p_{T,L3})");
-  //  THStack *l3IsoPRate = new THStack("l3IsoPRate","L3Iso rate as f(p_{T,L3})");
-  //  THStack *l3IsoPRate_cd = new THStack("l3IsoPRate_cd","L3Iso rate as f(p_{T,L3})");
-
-  TH1F *l2PRate_motherBin_1 = new TH1F("l2PRate_motherBin_1"," #pi^{+/-}",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_2 = new TH1F("l2PRate_motherBin_2"," K",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_3 = new TH1F("l2PRate_motherBin_3"," D",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_4 = new TH1F("l2PRate_motherBin_4"," B",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_5 = new TH1F("l2PRate_motherBin_5"," #Lambda_{b}",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_6 = new TH1F("l2PRate_motherBin_6"," J/#Psi",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_10 = new TH1F("l2PRate_motherBin_10"," #tau^{+/-}",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_11 = new TH1F("l2PRate_motherBin_11"," #mu",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_12 = new TH1F("l2PRate_motherBin_12"," b/c",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_13 = new TH1F("l2PRate_motherBin_13"," other",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_14 = new TH1F("l2PRate_motherBin_14"," non-associated",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_15 = new TH1F("l2PRate_motherBin_15"," Data",nBins,lowerLimit,upperLimit);
-
-  TH1F *l2PRate_motherBin_1_cd = new TH1F("l2PRate_motherBin_1_cd"," #pi^{+/-}",nBins,lowerLimit,upperLimit);  
-  TH1F *l2PRate_motherBin_2_cd = new TH1F("l2PRate_motherBin_2_cd"," K",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_3_cd = new TH1F("l2PRate_motherBin_3_cd"," D",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_4_cd = new TH1F("l2PRate_motherBin_4_cd"," B",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_5_cd = new TH1F("l2PRate_motherBin_5_cd"," #Lambda_{b}",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_6_cd = new TH1F("l2PRate_motherBin_6_cd"," J/#Psi",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_10_cd = new TH1F("l2PRate_motherBin_10_cd"," #tau^{+/-}",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_11_cd = new TH1F("l2PRate_motherBin_11_cd"," #mu",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_12_cd = new TH1F("l2PRate_motherBin_12_cd"," b/c",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_13_cd = new TH1F("l2PRate_motherBin_13_cd"," other",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_14_cd = new TH1F("l2PRate_motherBin_14_cd"," non-associated",nBins,lowerLimit,upperLimit);
-  TH1F *l2PRate_motherBin_15_cd = new TH1F("l2PRate_motherBin_15_cd"," Data",nBins,lowerLimit,upperLimit);
-
-
-
+  //THStack *l3PRate_cd = new THStack("l3PRate_cd","L3 rate as f(p_{T,L3})");
+    
   THStack *l2PRate = new THStack("l2PRate","L2 rate as f(p_{T,L2})");
-  THStack *l2PRate_cd = new THStack("l2PRate_cd","L2 rate as f(p_{T,L2})");
-  //  THStack *l2PreIsoPRate = new THStack("l2PreIsoPRate","L2PreIso rate as f(p_{T,L2})");
-  //  THStack *l2PreIsoPRate_cd = new THStack("l2PreIsoPRate_cd","L2PreIso rate as f(p_{T,L2})");
-  //  THStack *l2IsoPRate = new THStack("l2IsoPRate","L2Iso rate as f(p_{T,L2})");
-  //  THStack *l2IsoPRate_cd = new THStack("l2IsoPRate_cd","L2Iso rate as f(p_{T,L2})");
-
-  TH1F *tkTrackPRate_motherBin_1 = new TH1F("tkTrackPRate_motherBin_1"," #pi^{+/-}",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_2 = new TH1F("tkTrackPRate_motherBin_2"," K",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_3 = new TH1F("tkTrackPRate_motherBin_3"," D",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_4 = new TH1F("tkTrackPRate_motherBin_4"," B",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_5 = new TH1F("tkTrackPRate_motherBin_5"," #Lambda_{b}",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_6 = new TH1F("tkTrackPRate_motherBin_6"," J/#Psi",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_10 = new TH1F("tkTrackPRate_motherBin_10"," #tau^{+/-}",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_11 = new TH1F("tkTrackPRate_motherBin_11"," #mu",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_12 = new TH1F("tkTrackPRate_motherBin_12"," b/c",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_13 = new TH1F("tkTrackPRate_motherBin_13"," other",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_14 = new TH1F("tkTrackPRate_motherBin_14"," non-associated",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_15 = new TH1F("tkTrackPRate_motherBin_15"," Data",nBins,lowerLimit,upperLimit);
-
-  TH1F *tkTrackPRate_motherBin_1_cd = new TH1F("tkTrackPRate_motherBin_1_cd"," #pi^{+/-}",nBins,lowerLimit,upperLimit);  
-  TH1F *tkTrackPRate_motherBin_2_cd = new TH1F("tkTrackPRate_motherBin_2_cd"," K",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_3_cd = new TH1F("tkTrackPRate_motherBin_3_cd"," D",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_4_cd = new TH1F("tkTrackPRate_motherBin_4_cd"," B",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_5_cd = new TH1F("tkTrackPRate_motherBin_5_cd"," #Lambda_{b}",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_6_cd = new TH1F("tkTrackPRate_motherBin_6_cd"," J/#Psi",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_10_cd = new TH1F("tkTrackPRate_motherBin_10_cd"," #tau^{+/-}",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_11_cd = new TH1F("tkTrackPRate_motherBin_11_cd"," #mu",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_12_cd = new TH1F("tkTrackPRate_motherBin_12_cd"," b/c",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_13_cd = new TH1F("tkTrackPRate_motherBin_13_cd"," other",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_14_cd = new TH1F("tkTrackPRate_motherBin_14_cd"," non-associated",nBins,lowerLimit,upperLimit);
-  TH1F *tkTrackPRate_motherBin_15_cd = new TH1F("tkTrackPRate_motherBin_15_cd"," Data",nBins,lowerLimit,upperLimit);
-
-
-
+  //THStack *l2PRate_cd = new THStack("l2PRate_cd","L2 rate as f(p_{T,L2})");
+  
   THStack *tkTrackPRate = new THStack("tkTrackPRate","tkTrack rate as f(p_{T,tkTrack})");
-  THStack *tkTrackPRate_cd = new THStack("tkTrackPRate_cd","tkTrack rate as f(p_{T,tkTrack})");
-  //  THStack *tkTrackPreIsoPRate = new THStack("tkTrackPreIsoPRate","tkTrackPreIso rate as f(p_{T,tkTrack})");
-  //  THStack *tkTrackPreIsoPRate_cd = new THStack("tkTrackPreIsoPRate_cd","tkTrackPreIso rate as f(p_{T,tkTrack})");
-  //  THStack *tkTrackIsoPRate = new THStack("tkTrackIsoPRate","tkTrackIso rate as f(p_{T,tkTrack})");
-  //  THStack *tkTrackIsoPRate_cd = new THStack("tkTrackIsoPRate_cd","tkTrackIso rate as f(p_{T,tkTrack})");
-
+  //THStack *tkTrackPRate_cd = new THStack("tkTrackPRate_cd","tkTrack rate as f(p_{T,tkTrack})");
+  
   // There are many comments to be made about ROOT.  Most of them Rated-R or Rated-X.
   // Here, I'll limit myself to saying this is necessary for the TStacks to go into the TDirectory.
   gDirectory->Append(l2PRate);
   gDirectory->Append(l3PRate);
   gDirectory->Append(tkTrackPRate);
-
-  gDirectory->Append(l2PRate_cd);
-  gDirectory->Append(l3PRate_cd);
-  gDirectory->Append(tkTrackPRate_cd);
-
+  
+  //gDirectory->Append(l2PRate_cd);
+  //gDirectory->Append(l3PRate_cd);
+  //gDirectory->Append(tkTrackPRate_cd);
+  
   //  gDirectory->Append(l2IsoPRate);
   //  gDirectory->Append(l3PreIsoPRate);
   //  gDirectory->Append(l3IsoPRate);
-
+  
   //  gDirectory->Append(l2IsoPRate_cd);
   //  gDirectory->Append(l3PreIsoPRate_cd);
   //  gDirectory->Append(l3IsoPRate_cd);
-
+  
   int l2OverFlow[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   int l3OverFlow[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   int tkTrackOverFlow[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   //int l2IsoOverFlow[13] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
   //int l3PreIsoOverFlow[13] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
   //int l3IsoOverFlow[13] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
-
+  
   int nEntries = tree->GetEntries();
-    
+
+  FILE * pFile;  
+  pFile = fopen ("myL3ParentIdBin.txt","w");
+  
   //Event Loop
   for( int iEntry = 0; iEntry < nEntries; iEntry++) {
     if (iEntry%1000 == 0) cout << "Event " << iEntry << endl;
@@ -166,79 +167,118 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false, double weight = 
       bool passTK = false;
       
       //if ((*muAllGlobalMuons).at(iMu)) passL3 = true;
-
+      
       //if ((*muAllStandAloneMuons).at(iMu)) passL2 = true;
-
-      //if ((*muAllGlobalMuons).at(iMu)) passTK = true;
-
+      
+      //if ((*muTrackerMuonArbitrated).at(iMu)) passTK = true;
+      
       if (   (*muAllGlobalMuons).at(iMu)
-       ) {passL3 = true; passTK = true;}
+      	     ) {passL3 = true; passTK = true;}
 
-      //if(passL3) cout << "line 160 " << (*l3Pt).at(iMu) << endl;
+      int myIsAssociated = (*l3IsAssociated).at(iMu);
+      int myL3AssociationPdgId = (*l3AssociationPdgId).at(iMu);
+      int myL3ParentID = (*l3ParentID).at(iMu);
+      int myL3MotherBinNumber = (*l3MotherBinNumber).at(iMu);
+      int myL3TPIdBin = GetBinNum((*l3AssociationPdgId).at(iMu));
+      int myL3ParentIdBin = GetBinNum((*l3ParentID).at(iMu));
 
+      /*
+      if (passL3) {
+	cout << "iEntry " << iEntry 
+	     << " iMu " << iMu  << " of " << nMu 
+	     << " isAssoc " << myIsAssociated 
+	     << " pdgId " << myL3AssociationPdgId
+	     << " parentID " << myL3ParentID 
+	     << " mother bin " << myL3MotherBinNumber
+	     << endl;
+      }
+      */
+
+      if (passL3) {
+	fprintf(pFile,"i %d iMu %d of %d isAssoc %d pdgId %d parentID %d mother bin %d lBin %d %d\n", iEntry, iMu, nMu, myIsAssociated, myL3AssociationPdgId, myL3ParentID, myL3MotherBinNumber,myL3TPIdBin,myL3ParentIdBin);
+      }
+      
+      /*
+	if(myL3TPIdBin == 10) {
+	fprintf(pFile,"xEntry %d iMu %d of %d isAssoc %d pdgId %d parentID %d mother bin %d \n", iEntry, iMu, nMu, myIsAssociated, myL3AssociationPdgId, myL3ParentID, myL3MotherBinNumber);
+	}
+	
+	if(myL3ParentIdBin == 10) {
+	fprintf(pFile,"yEntry %d iMu %d of %d isAssoc %d pdgId %d parentID %d mother bin %d \n", iEntry, iMu, nMu, myIsAssociated, myL3AssociationPdgId, myL3ParentID, myL3MotherBinNumber);
+	}
+      */
+      
       if (passL3) {
 	//double pt_L3 = findMaxPt(l3Pt,l3Eta,l3D0);
 	//int l3_index = findIndexOfMaxPt(l3Pt,l3Eta,l3D0);
+	//if(!(*muAllArbitrated).at(iMu)) break;
 	int l3_index = iMu;
-	//if(!(*muAllGlobalMuons).at(iMu)) break;
 	double pt_L3 = (*l3P).at(iMu);
-	if(!isData){
-	if ((*l3IsAssociated).at(l3_index) == 1 && (*l3AssociationVar).at(l3_index) > -0.1 && fabs((*l3AssociationPdgId).at(l3_index))==13) {
-	  switch ( (*l3MotherBinNumber).at(l3_index) ) {
-	  case 1 :
-	    l3PRate_motherBin_1->Fill(pt_L3);
-	    if (pt_L3 > upperLimit) l3OverFlow[0] ++;
-	    break;
-	  case 2 :
-	    l3PRate_motherBin_2->Fill(pt_L3);
-	    if (pt_L3 > upperLimit) l3OverFlow[1] ++;
-	    break;
-	  case 3 :
-	    l3PRate_motherBin_3->Fill(pt_L3);
-	    if (pt_L3 > upperLimit) l3OverFlow[2] ++;
-	    break;
-	  case 4 :
-	    l3PRate_motherBin_4->Fill(pt_L3);
-	    if (pt_L3 > upperLimit) l3OverFlow[3] ++;
-	    break;
-	  case 5 :
-	    l3PRate_motherBin_5->Fill(pt_L3);
-	    if (pt_L3 > upperLimit) l3OverFlow[4] ++;
-	    break;
-	  case 6 :
-	    l3PRate_motherBin_6->Fill(pt_L3);
-	    if (pt_L3 > upperLimit) l3OverFlow[5] ++;
-	    break;
-	  case 10 :
-	    l3PRate_motherBin_10->Fill(pt_L3);
-	    if (pt_L3 > upperLimit) l3OverFlow[9] ++;
-	    break;
-	  case 11 :
-	    l3PRate_motherBin_11->Fill(pt_L3);
-	    if (pt_L3 > upperLimit) l3OverFlow[10] ++;
-	    break;
-	  case 12 :
-	    l3PRate_motherBin_12->Fill(pt_L3);
-	    if (pt_L3 > upperLimit) l3OverFlow[11] ++;
-	    break;
-	  case 13 :
-	    l3PRate_motherBin_13->Fill(pt_L3);
-	    if (pt_L3 > upperLimit) l3OverFlow[12] ++;
-	    break;
-	  default :
-	    //           cout << "oh, cock, this is interesting" << endl;
-	    l3PRate_motherBin_13->Fill(pt_L3);
-	    if (pt_L3 > upperLimit) l3OverFlow[12] ++;
+		
+	if(!isData) {
+	  //start adam test
+	  if( ( myIsAssociated == 1 ) && 
+	      (
+	       myL3MotherBinNumber==777 ||
+	       myL3MotherBinNumber==-777 ||
+	       //myL3MotherBinNumber==-888 ||
+	       myL3MotherBinNumber==-999	
+	       )
+	      ) {	    
+	    fprintf(pFile,"j %d iMu %d of %d isAssoc %d pdgId %d parentID %d mother bin %d lBin %d %d\n", iEntry, iMu, nMu, myIsAssociated, myL3AssociationPdgId, myL3ParentID, myL3MotherBinNumber,myL3TPIdBin,myL3ParentIdBin);	    
 	  }
-	}
-	else {
-	  l3PRate_motherBin_14->Fill(pt_L3);
-	  if (pt_L3 > upperLimit) l3OverFlow[13] ++;
-	}
-      }
-	else {
-	  l3PRate_motherBin_15->Fill(pt_L3);
-	  if (pt_L3 > upperLimit) l3OverFlow[14] ++;
+	  
+	  // end adam test
+	  
+	  //int myL3TPId = myL3TPIdBin;
+	  //int myL3ParentId = myL3ParentIdBin;
+	  //int myMotherBinNumber = myL3MotherBinNumber;
+
+	  //adam test 2
+	  //if( fabs(myL3AssociationPdgId) != 13) {
+	  char histoName[20];
+	  if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin = myL3ParentIdBin-2;
+	  sprintf(histoName,"l3PRate_%d",myL3ParentIdBin);	  
+	  muonPtHistoMap[histoName]->Fill(pt_L3,weight);
+	  //}
+	  //adam test 2
+
+	  /*
+	  if (myIsAssociated == 1 
+	      && (*l3AssociationVar).at(l3_index) > -0.1 
+	      && fabs(myL3AssociationPdgId) == 13 ) {
+	    
+	    char histoName[20];
+	    sprintf(histoName,"l3PRate_%d",myL3ParentIdBin);
+	    
+	    muonPtHistoMap[histoName]->Fill(pt_L3,weight);
+	    
+	    if(
+	       myL3MotherBinNumber==777 ||
+	       myL3MotherBinNumber==-777 ||
+	       myL3MotherBinNumber==-888 ||
+	       myL3MotherBinNumber==-999	       
+	       ) {
+	      fprintf(pFile,"k %d iMu %d of %d isAssoc %d pdgId %d parentID %d mother bin %d lBin %d %d\n", iEntry, iMu, nMu, myIsAssociated, myL3AssociationPdgId, myL3ParentID, myL3MotherBinNumber,myL3TPIdBin,myL3ParentIdBin);
+	    } 
+	  } else if (myIsAssociated == 1 && (*l3AssociationVar).at(l3_index) > -0.1 && fabs(myL3AssociationPdgId)!=13 && myL3MotherBinNumber == -888) {	    
+	    //muonPtHistoMap["l3PRate_9"]->Fill(pt_L3,weight);
+	    char histoName[20];
+	    sprintf(histoName,"l3PRate_%d",myL3ParentIdBin);
+	    
+	    muonPtHistoMap[histoName]->Fill(pt_L3,weight);
+	  } else if (myIsAssociated == 1 && (*l3AssociationVar).at(l3_index) > -0.1 && fabs(myL3AssociationPdgId)!=13 && myL3MotherBinNumber == -777) {
+	    muonPtHistoMap["l3PRate_8"]->Fill(pt_L3,weight);
+	  } else {
+	    muonPtHistoMap["l3PRate_9"]->Fill(pt_L3,weight);
+	  } */
+	} else {
+	  //cout << "line 273 Data" << endl;
+	  char histoName[20];
+	  //if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin--;
+	  sprintf(histoName,"l3PRate_%d",Bins.size()-1);	  
+	  muonPtHistoMap[histoName]->Fill(pt_L3,weight);	  
+	  //muonPtHistoMap["l3PRate_9"]->Fill(pt_L3,weight);
 	}
       }
       
@@ -247,318 +287,87 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false, double weight = 
 	//int l2_index = findIndexOfMaxPt(l2Pt,l2Eta,l2D0);
 	int l2_index = iMu;
 	double pt_L2 = (*l2P).at(iMu);
-	if(!isData){
-	if ((*l2IsAssociated).at(l2_index) == 1 && (*l2AssociationVar).at(l2_index) > -0.1) {
-	  switch ( (*l2MotherBinNumber).at(l2_index) ) {
-	  case 1 :
-	    l2PRate_motherBin_1->Fill(pt_L2);
-	    if (pt_L2 > upperLimit) l2OverFlow[0] ++;
-	    break;
-	  case 2 :
-	    l2PRate_motherBin_2->Fill(pt_L2);
-	    if (pt_L2 > upperLimit) l2OverFlow[1] ++;
-	    break;
-	  case 3 :
-	    l2PRate_motherBin_3->Fill(pt_L2);
-	    if (pt_L2 > upperLimit) l2OverFlow[2] ++;
-	    break;
-	  case 4 :
-	    l2PRate_motherBin_4->Fill(pt_L2);
-	    if (pt_L2 > upperLimit) l2OverFlow[3] ++;
-	    break;
-	  case 5 :
-	    l2PRate_motherBin_5->Fill(pt_L2);
-	    if (pt_L2 > upperLimit) l2OverFlow[4] ++;
-	    break;
-	  case 6 :
-	    l2PRate_motherBin_6->Fill(pt_L2);
-	    if (pt_L2 > upperLimit) l2OverFlow[5] ++;
-	    break;
-	  case 10 :
-	    l2PRate_motherBin_10->Fill(pt_L2);
-	    if (pt_L2 > upperLimit) l2OverFlow[9] ++;
-	    break;
-	  case 11 :
-	    l2PRate_motherBin_11->Fill(pt_L2);
-	    if (pt_L2 > upperLimit) l2OverFlow[10] ++;
-	    break;
-	  case 12 :
-	    l2PRate_motherBin_12->Fill(pt_L2);
-	    if (pt_L2 > upperLimit) l2OverFlow[11] ++;
-	    break;
-	  case 13 :
-	    l2PRate_motherBin_13->Fill(pt_L2);
-	    if (pt_L2 > upperLimit) l2OverFlow[12] ++;
-	    break;
-	  default :
-	    //           cout << "oh, cock, this is interesting" << endl;
-	    l2PRate_motherBin_13->Fill(pt_L2);
-	    if (pt_L2 > upperLimit) l2OverFlow[12] ++;
-	  }
-	}
-	else {
-	  l2PRate_motherBin_14->Fill(pt_L2);
-	  if (pt_L2 > upperLimit) l2OverFlow[13] ++;
-	}
-	} else {
-	  l2PRate_motherBin_15->Fill(pt_L2);
-	  if (pt_L2 > upperLimit) l2OverFlow[14] ++;
-	}
+	if(!isData) {
+
       }
-      
+      }
+
       if (passTK) {
 	//double pt_tkTrack = findMaxPt(tkTrackPt,tkTrackEta,tkTrackD0);
 	//int tkTrack_index = findIndexOfMaxPt(tkTrackPt,tkTrackEta,tkTrackD0);
 	int tkTrack_index = iMu;
 	double pt_tkTrack = (*tkTrackP).at(iMu);
-	if(!isData){
-	if ((*tkTrackIsAssociated).at(tkTrack_index) == 1 && (*tkTrackAssociationVar).at(tkTrack_index) > -0.1 && fabs((*tkTrackAssociationPdgId).at(l3_index))==13) {
-	  switch ( (*tkTrackMotherBinNumber).at(tkTrack_index) ) {
-	  case 1 :
-	    tkTrackPRate_motherBin_1->Fill(pt_tkTrack);
-	    if (pt_tkTrack > upperLimit) tkTrackOverFlow[0] ++;
-	    break;
-	  case 2 :
-	    tkTrackPRate_motherBin_2->Fill(pt_tkTrack);
-	    if (pt_tkTrack > upperLimit) tkTrackOverFlow[1] ++;
-	    break;
-	  case 3 :
-	    tkTrackPRate_motherBin_3->Fill(pt_tkTrack);
-	    if (pt_tkTrack > upperLimit) tkTrackOverFlow[2] ++;
-	    break;
-	  case 4 :
-	    tkTrackPRate_motherBin_4->Fill(pt_tkTrack);
-	    if (pt_tkTrack > upperLimit) tkTrackOverFlow[3] ++;
-	    break;
-	  case 5 :
-	    tkTrackPRate_motherBin_5->Fill(pt_tkTrack);
-	    if (pt_tkTrack > upperLimit) tkTrackOverFlow[4] ++;
-	    break;
-	  case 6 :
-	    tkTrackPRate_motherBin_6->Fill(pt_tkTrack);
-	    if (pt_tkTrack > upperLimit) tkTrackOverFlow[5] ++;
-	    break;
-	  case 10 :
-	    tkTrackPRate_motherBin_10->Fill(pt_tkTrack);
-	    if (pt_tkTrack > upperLimit) tkTrackOverFlow[9] ++;
-	    break;
-	  case 11 :
-	    tkTrackPRate_motherBin_11->Fill(pt_tkTrack);
-	    if (pt_tkTrack > upperLimit) tkTrackOverFlow[10] ++;
-	    break;
-	  case 12 :
-	    tkTrackPRate_motherBin_12->Fill(pt_tkTrack);
-	    if (pt_tkTrack > upperLimit) tkTrackOverFlow[11] ++;
-	    break;
-	  case 13 :
-	    tkTrackPRate_motherBin_13->Fill(pt_tkTrack);
-	    if (pt_tkTrack > upperLimit) tkTrackOverFlow[12] ++;
-	    break;
-	  default :
-	    //           cout << "oh, cock, this is interesting" << endl;
-	    tkTrackPRate_motherBin_13->Fill(pt_tkTrack);
-	    if (pt_tkTrack > upperLimit) tkTrackOverFlow[12] ++;
-	  }
-	}
-	else {
-	  tkTrackPRate_motherBin_14->Fill(pt_tkTrack);
-	  if (pt_tkTrack > upperLimit) tkTrackOverFlow[13] ++;
-	}
+
+	int myIsAssociated = (*tkTrackIsAssociated).at(iMu);
+	int myL3AssociationPdgId = (*tkTrackAssociationPdgId).at(iMu);
+	int myL3ParentID = (*tkTrackParentID).at(iMu);
+	int myL3MotherBinNumber = (*tkTrackMotherBinNumber).at(iMu);
+	int myL3TPIdBin = GetBinNum((*tkTrackAssociationPdgId).at(iMu));
+	int myL3ParentIdBin = GetBinNum((*tkTrackParentID).at(iMu));
+
+
+	if(!isData) {
+	  char histoName[20];
+	  if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin = myL3ParentIdBin-2;
+	  sprintf(histoName,"tkTrackPRate_%d",myL3ParentIdBin);	  
+	  tkPtHistoMap[histoName]->Fill(pt_tkTrack,weight);	
 	} else {
-	   tkTrackPRate_motherBin_15->Fill(pt_tkTrack);
-	   if (pt_tkTrack > upperLimit) tkTrackOverFlow[14] ++; 
+	  //cout << "line 273 Data" << endl;
+	  char histoName[20];
+	  //if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin--;
+	  sprintf(histoName,"tkTrackPRate_%d",Bins.size()-1);	  
+	  tkPtHistoMap[histoName]->Fill(pt_tkTrack,weight);	  
+	  //muonPtHistoMap["l3PRate_9"]->Fill(pt_L3,weight);
 	}
       }
-      
+    }//cout << "line 399 loop over muons" << endl;
+  }cout << "line 400 loop over entries" << endl;
+  
+     
+  if(!isData){
+    //for (int i = 0; i != Bins.size()+1; ++i) {
+    for (int i = 1; i != Bins.size()-1; ++i) {
+      char histoName[20];
+      sprintf(histoName,"l3PRate_%d",i);
+      l3PRate->Add(muonPtHistoMap[histoName]);
     }
-  }
-  
-  fill_overflow(l3PRate_motherBin_1,l3OverFlow[0]);
-  fill_overflow(l3PRate_motherBin_2,l3OverFlow[1]);
-  fill_overflow(l3PRate_motherBin_3,l3OverFlow[2]);
-  fill_overflow(l3PRate_motherBin_4,l3OverFlow[3]);
-  fill_overflow(l3PRate_motherBin_5,l3OverFlow[4]);
-  fill_overflow(l3PRate_motherBin_6,l3OverFlow[5]);
-  fill_overflow(l3PRate_motherBin_10,l3OverFlow[9]);
-  fill_overflow(l3PRate_motherBin_11,l3OverFlow[10]);
-  fill_overflow(l3PRate_motherBin_12,l3OverFlow[11]);
-  fill_overflow(l3PRate_motherBin_13,l3OverFlow[12]);
-  fill_overflow(l3PRate_motherBin_14,l3OverFlow[13]);
-  fill_overflow(l3PRate_motherBin_15,l3OverFlow[14]);
-
-  make_cd_from_histo(l3PRate_motherBin_1,l3PRate_motherBin_1_cd);
-  make_cd_from_histo(l3PRate_motherBin_2,l3PRate_motherBin_2_cd);
-  make_cd_from_histo(l3PRate_motherBin_3,l3PRate_motherBin_3_cd);
-  make_cd_from_histo(l3PRate_motherBin_4,l3PRate_motherBin_4_cd);
-  make_cd_from_histo(l3PRate_motherBin_5,l3PRate_motherBin_5_cd);
-  make_cd_from_histo(l3PRate_motherBin_6,l3PRate_motherBin_6_cd);
-  make_cd_from_histo(l3PRate_motherBin_10,l3PRate_motherBin_10_cd);
-  make_cd_from_histo(l3PRate_motherBin_11,l3PRate_motherBin_11_cd);
-  make_cd_from_histo(l3PRate_motherBin_12,l3PRate_motherBin_12_cd);
-  make_cd_from_histo(l3PRate_motherBin_13,l3PRate_motherBin_13_cd);
-  make_cd_from_histo(l3PRate_motherBin_14,l3PRate_motherBin_14_cd);
-  make_cd_from_histo(l3PRate_motherBin_15,l3PRate_motherBin_15_cd);
-
-  if(!isData){
-    l3PRate->Add(l3PRate_motherBin_1);
-    l3PRate->Add(l3PRate_motherBin_2);
-    //l3PRate->Add(l3PRate_motherBin_3);
-    //l3PRate->Add(l3PRate_motherBin_4);
-    //l3PRate->Add(l3PRate_motherBin_5);
-    //l3PRate->Add(l3PRate_motherBin_6);
-    l3PRate->Add(l3PRate_motherBin_10);
-    l3PRate->Add(l3PRate_motherBin_11);
-    l3PRate->Add(l3PRate_motherBin_12);
-    l3PRate->Add(l3PRate_motherBin_13);
-    l3PRate->Add(l3PRate_motherBin_14);
   } else {
-    l3PRate->Add(l3PRate_motherBin_15);
+    char histoName[20];
+    sprintf(histoName,"l3PRate_%d",Bins.size()-1);
+    l3PRate->Add(muonPtHistoMap[histoName]);
   }
 
   if(!isData){
-    l3PRate_cd->Add(l3PRate_motherBin_1_cd);
-    l3PRate_cd->Add(l3PRate_motherBin_2_cd);
-    //l3PRate_cd->Add(l3PRate_motherBin_3_cd);
-    //l3PRate_cd->Add(l3PRate_motherBin_4_cd);
-    //l3PRate_cd->Add(l3PRate_motherBin_5_cd);
-    //l3PRate_cd->Add(l3PRate_motherBin_6_cd);
-    l3PRate_cd->Add(l3PRate_motherBin_10_cd);
-    l3PRate_cd->Add(l3PRate_motherBin_11_cd);
-    l3PRate_cd->Add(l3PRate_motherBin_12_cd);
-    l3PRate_cd->Add(l3PRate_motherBin_13_cd);
-    l3PRate_cd->Add(l3PRate_motherBin_14_cd);
+    //for (int i = 0; i != Bins.size()+1; ++i) {
+    for (int i = 1; i != Bins.size()-1; ++i) {
+      char histoName[20];
+      sprintf(histoName,"l2PRate_%d",i);
+      l2PRate->Add(l2PtHistoMap[histoName]);
+    }
   } else {
-    l3PRate_cd->Add(l3PRate_motherBin_15_cd);
-  }
-  //aaa
-  
-  fill_overflow(l2PRate_motherBin_1,l2OverFlow[0]);
-  fill_overflow(l2PRate_motherBin_2,l2OverFlow[1]);
-  fill_overflow(l2PRate_motherBin_3,l2OverFlow[2]);
-  fill_overflow(l2PRate_motherBin_4,l2OverFlow[3]);
-  fill_overflow(l2PRate_motherBin_5,l2OverFlow[4]);
-  fill_overflow(l2PRate_motherBin_6,l2OverFlow[5]);
-  fill_overflow(l2PRate_motherBin_10,l2OverFlow[9]);
-  fill_overflow(l2PRate_motherBin_11,l2OverFlow[10]);
-  fill_overflow(l2PRate_motherBin_12,l2OverFlow[11]);
-  fill_overflow(l2PRate_motherBin_13,l2OverFlow[12]);
-  fill_overflow(l2PRate_motherBin_14,l2OverFlow[13]);
-  fill_overflow(l2PRate_motherBin_15,l2OverFlow[14]);
-
-  make_cd_from_histo(l2PRate_motherBin_1,l2PRate_motherBin_1_cd);
-  make_cd_from_histo(l2PRate_motherBin_2,l2PRate_motherBin_2_cd);
-  make_cd_from_histo(l2PRate_motherBin_3,l2PRate_motherBin_3_cd);
-  make_cd_from_histo(l2PRate_motherBin_4,l2PRate_motherBin_4_cd);
-  make_cd_from_histo(l2PRate_motherBin_5,l2PRate_motherBin_5_cd);
-  make_cd_from_histo(l2PRate_motherBin_6,l2PRate_motherBin_6_cd);
-  make_cd_from_histo(l2PRate_motherBin_10,l2PRate_motherBin_10_cd);
-  make_cd_from_histo(l2PRate_motherBin_11,l2PRate_motherBin_11_cd);
-  make_cd_from_histo(l2PRate_motherBin_12,l2PRate_motherBin_12_cd);
-  make_cd_from_histo(l2PRate_motherBin_13,l2PRate_motherBin_13_cd);
-  make_cd_from_histo(l2PRate_motherBin_14,l2PRate_motherBin_14_cd);
-  make_cd_from_histo(l2PRate_motherBin_15,l2PRate_motherBin_15_cd);
-
-  if(!isData){
-  l2PRate->Add(l2PRate_motherBin_1);
-  l2PRate->Add(l2PRate_motherBin_2);
-  //l2PRate->Add(l2PRate_motherBin_3);
-  //l2PRate->Add(l2PRate_motherBin_4);
-  //l2PRate->Add(l2PRate_motherBin_5);
-  //l2PRate->Add(l2PRate_motherBin_6);
-  l2PRate->Add(l2PRate_motherBin_10);
-  l2PRate->Add(l2PRate_motherBin_11);
-  l2PRate->Add(l2PRate_motherBin_12);
-  l2PRate->Add(l2PRate_motherBin_13);
-  l2PRate->Add(l2PRate_motherBin_14);
-  } else {
-    l2PRate->Add(l2PRate_motherBin_15);
+    char histoName[20];
+    sprintf(histoName,"l2PRate_%d",Bins.size()-1);
+    l2PRate->Add(l2PtHistoMap[histoName]);
   }
 
   if(!isData){
-    l2PRate_cd->Add(l2PRate_motherBin_1_cd);
-    l2PRate_cd->Add(l2PRate_motherBin_2_cd);
-    //l2PRate_cd->Add(l2PRate_motherBin_3_cd);
-    //l2PRate_cd->Add(l2PRate_motherBin_4_cd);
-    //l2PRate_cd->Add(l2PRate_motherBin_5_cd);
-    //l2PRate_cd->Add(l2PRate_motherBin_6_cd);
-    l2PRate_cd->Add(l2PRate_motherBin_10_cd);
-    l2PRate_cd->Add(l2PRate_motherBin_11_cd);
-    l2PRate_cd->Add(l2PRate_motherBin_12_cd);
-    l2PRate_cd->Add(l2PRate_motherBin_13_cd);
-    l2PRate_cd->Add(l2PRate_motherBin_14_cd);
+    //for (int i = 0; i != Bins.size()+1; ++i) {
+    for (int i = 1; i != Bins.size()-1; ++i) {
+      char histoName[20];
+      sprintf(histoName,"tkTrackPRate_%d",i);
+      tkTrackPRate->Add(tkPtHistoMap[histoName]);
+    }
   } else {
-    l2PRate_cd->Add(l2PRate_motherBin_15_cd);
+    char histoName[20];
+    sprintf(histoName,"tkTrackPRate_%d",Bins.size()-1);
+    tkTrackPRate->Add(tkPtHistoMap[histoName]);
   }
-  //aaa
 
-  fill_overflow(tkTrackPRate_motherBin_1,tkTrackOverFlow[0]);
-  fill_overflow(tkTrackPRate_motherBin_2,tkTrackOverFlow[1]);
-  fill_overflow(tkTrackPRate_motherBin_3,tkTrackOverFlow[2]);
-  fill_overflow(tkTrackPRate_motherBin_4,tkTrackOverFlow[3]);
-  fill_overflow(tkTrackPRate_motherBin_5,tkTrackOverFlow[4]);
-  fill_overflow(tkTrackPRate_motherBin_6,tkTrackOverFlow[5]);
-  fill_overflow(tkTrackPRate_motherBin_10,tkTrackOverFlow[9]);
-  fill_overflow(tkTrackPRate_motherBin_11,tkTrackOverFlow[10]);
-  fill_overflow(tkTrackPRate_motherBin_12,tkTrackOverFlow[11]);
-  fill_overflow(tkTrackPRate_motherBin_13,tkTrackOverFlow[12]);
-  fill_overflow(tkTrackPRate_motherBin_14,tkTrackOverFlow[13]);
-  fill_overflow(tkTrackPRate_motherBin_15,tkTrackOverFlow[14]);
-
-  make_cd_from_histo(tkTrackPRate_motherBin_1,tkTrackPRate_motherBin_1_cd);
-  make_cd_from_histo(tkTrackPRate_motherBin_2,tkTrackPRate_motherBin_2_cd);
-  make_cd_from_histo(tkTrackPRate_motherBin_3,tkTrackPRate_motherBin_3_cd);
-  make_cd_from_histo(tkTrackPRate_motherBin_4,tkTrackPRate_motherBin_4_cd);
-  make_cd_from_histo(tkTrackPRate_motherBin_5,tkTrackPRate_motherBin_5_cd);
-  make_cd_from_histo(tkTrackPRate_motherBin_6,tkTrackPRate_motherBin_6_cd);
-  make_cd_from_histo(tkTrackPRate_motherBin_10,tkTrackPRate_motherBin_10_cd);
-  make_cd_from_histo(tkTrackPRate_motherBin_11,tkTrackPRate_motherBin_11_cd);
-  make_cd_from_histo(tkTrackPRate_motherBin_12,tkTrackPRate_motherBin_12_cd);
-  make_cd_from_histo(tkTrackPRate_motherBin_13,tkTrackPRate_motherBin_13_cd);
-  make_cd_from_histo(tkTrackPRate_motherBin_14,tkTrackPRate_motherBin_14_cd);
-  make_cd_from_histo(tkTrackPRate_motherBin_15,tkTrackPRate_motherBin_15_cd);
-
-  if(!isData){
-    tkTrackPRate->Add(tkTrackPRate_motherBin_1);
-    tkTrackPRate->Add(tkTrackPRate_motherBin_2);
-    //tkTrackPRate->Add(tkTrackPRate_motherBin_3);
-    //tkTrackPRate->Add(tkTrackPRate_motherBin_4);
-    //tkTrackPRate->Add(tkTrackPRate_motherBin_5);
-    //tkTrackPRate->Add(tkTrackPRate_motherBin_6);
-    tkTrackPRate->Add(tkTrackPRate_motherBin_10);
-    tkTrackPRate->Add(tkTrackPRate_motherBin_11);
-    tkTrackPRate->Add(tkTrackPRate_motherBin_12);
-    tkTrackPRate->Add(tkTrackPRate_motherBin_13);
-    tkTrackPRate->Add(tkTrackPRate_motherBin_14);
-  } else {
-    tkTrackPRate->Add(tkTrackPRate_motherBin_15);
-  }
-  
-  if(!isData){
-    tkTrackPRate_cd->Add(tkTrackPRate_motherBin_1_cd);
-    tkTrackPRate_cd->Add(tkTrackPRate_motherBin_2_cd);
-    //tkTrackPRate_cd->Add(tkTrackPRate_motherBin_3_cd);
-    //tkTrackPRate_cd->Add(tkTrackPRate_motherBin_4_cd);
-    //tkTrackPRate_cd->Add(tkTrackPRate_motherBin_5_cd);
-    //tkTrackPRate_cd->Add(tkTrackPRate_motherBin_6_cd);
-    tkTrackPRate_cd->Add(tkTrackPRate_motherBin_10_cd);
-    tkTrackPRate_cd->Add(tkTrackPRate_motherBin_11_cd);
-    tkTrackPRate_cd->Add(tkTrackPRate_motherBin_12_cd);
-    tkTrackPRate_cd->Add(tkTrackPRate_motherBin_13_cd);
-    tkTrackPRate_cd->Add(tkTrackPRate_motherBin_14_cd);
-  } else {
-    tkTrackPRate_cd->Add(tkTrackPRate_motherBin_15_cd);
-  }
-  //aaaa
-
-  //  double crossSection_mb = 75.28; // MinBias
   double crossSection_mb = 51.6; // ppMuX
-  //  double crossSection_mb = 0.000317 ; // ttbar
-  //  double filterEff = 1.0; //MinBias
   double filterEff = 0.00289; // ppMuX
-  //   double filterEff = 0.33;  // ttbar
 
   double eventNumberUnit= 1000000;
-  //   double filterEff = inclusiveppMuX_filterEff;
+
   double numberOfEvents = nEntries /eventNumberUnit /filterEff ;
   cout << "numberOfEvents = " << numberOfEvents << endl;
 
@@ -574,16 +383,19 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false, double weight = 
   rateFactorMC = rateFactorMC * 4;
 
   double rateFactor = (weight==0) ? rateFactorMC : weight;
+
   cout << "rateFactor = " << rateFactor << endl;
 
   histDir->cd();
-  scaleToRate("*PRate*", rateFactor);
+  //scaleToRate("*PRate*", rateFactor);
 
 
   histDir->Write("",TObject::kOverwrite);
-  
+
   histFile->Close();
 
+  fclose (pFile);
+  
   return 0;
 }
 
@@ -707,11 +519,11 @@ void scaleToRate(const char* collectionName, double rateFactor) {
     
     
     TString name = obj->GetName();
-    cout << "Testing name: " << name << " against " << collectionName << endl;
+    //aaa cout << "Testing name: " << name << " against " << collectionName << endl;
     
     if (TString(collectionName).MaybeRegexp()) {
-      cout << "we have a possible match" << endl;
-      cout << "Trying to match to " << TString(obj->GetName()) << endl;
+      //aaa cout << "we have a possible match" << endl;
+      //aaa cout << "Trying to match to " << TString(obj->GetName()) << endl;
       if (TString(obj->GetName()).Index(reg) < 0 ) {
 	cout << "failure here.  Argument returns " << TString(obj->GetName()).Index(reg) << endl;
 	continue;
@@ -719,9 +531,113 @@ void scaleToRate(const char* collectionName, double rateFactor) {
     }
     else if (! name.BeginsWith(collectionName)) continue;
     
-    cout << "We're trying to scale" << name << endl;
+    //aaa cout << "We're trying to scale" << name << endl;
     ((TH1*)obj)->Scale(rateFactor);
     
   }
   
+}
+
+void initArrays()
+{
+  //configured by hand as Finn did it
+  Bins.resize(10);
+
+  Bins[0].first = "ID=0";
+  Bins[0].second.push_back(0);
+
+  Bins[1].first = "#pi+/-";
+  Bins[1].second.push_back(211);
+  Bins[1].second.push_back(-211);
+
+  Bins[2].first = "K";
+  Bins[2].second.push_back(321);
+  Bins[2].second.push_back(-321);
+  Bins[2].second.push_back(130);
+  Bins[2].second.push_back(-130);
+
+  Bins[3].first = "D";
+  Bins[3].second.push_back(411);
+  Bins[3].second.push_back(-411);
+  Bins[3].second.push_back(421);
+  Bins[3].second.push_back(-421);
+  Bins[3].second.push_back(431);
+  Bins[3].second.push_back(-431);
+
+  Bins[4].first = "B";
+  Bins[4].second.push_back(521);
+  Bins[4].second.push_back(-521);
+  Bins[4].second.push_back(511);
+  Bins[4].second.push_back(-511);
+  Bins[4].second.push_back(531);
+  Bins[4].second.push_back(-531);
+
+  Bins[5].first = "#Lambda_{b}";
+  Bins[5].second.push_back(5122);
+  Bins[5].second.push_back(-5122);
+
+  Bins[6].first = "J/#Psi";
+  Bins[6].second.push_back(443);
+  Bins[6].second.push_back(-443);
+
+  Bins[7].first = "#Upsilon(nS)";
+  Bins[7].second.push_back(553);
+  Bins[7].second.push_back(-553);
+  Bins[7].second.push_back(200553);
+  Bins[7].second.push_back(-200553);
+  Bins[7].second.push_back(100553);
+  Bins[7].second.push_back(-100553);
+  Bins[7].second.push_back(300553);
+  Bins[7].second.push_back(-300553);
+  
+  //Bins[8].first = "W^{+/-}";
+  //Bins[8].second.push_back(24);
+  //Bins[8].second.push_back(-24);
+  
+  //Bins[9].first = "Z^{0}";
+  //Bins[9].second.push_back(23);
+  
+  //Bins[10].first = "#tau";
+  //Bins[10].second.push_back(15);
+  //Bins[10].second.push_back(-15);
+  
+  Bins[8].first = "Fakes";
+  Bins[8].second.push_back(-777);
+
+  Bins[9].first = "Data";
+  Bins[9].second.push_back(999);
+  
+  //Bins[9].first = "-888";
+  //Bins[9].second.push_back(-888);
+  
+  //Bins[10].first = "-999";
+  //Bins[10].second.push_back(-999);
+  
+  //Bins[11].first = "+777";
+  //Bins[11].second.push_back(777);
+  
+  //and filling the map
+  for (int r=0;r!=Bins.size();++r){
+    for (int i=0;i!=Bins[r].second.size();++i)
+      {mymap[Bins[r].second[i]] = r;}
+  }
+  //mymap[-999] = Bins.size();
+}
+
+int GetBinNum(int pdgID)
+{
+  std::map<int, int>::iterator i=mymap.find(pdgID);
+  //if registerd pdgid, return the bin
+  if ( i!= mymap.end()){return i->second;}
+  //else return overflow bin
+  else {
+    //cout << "IDconverttoBinNum " << pdgID << " is not a registered pdgID." << endl;
+    return Bins.size();}
+}
+
+std::string GetBinName(int BinNumvalue)
+{
+  if (BinNumvalue>Bins.size()) return "bin number is not valid";
+  else if (BinNumvalue==Bins.size()) return other();
+  else { return Bins[BinNumvalue].first; }
 }
