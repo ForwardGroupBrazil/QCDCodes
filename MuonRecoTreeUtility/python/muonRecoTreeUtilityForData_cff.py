@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 #migration to tfile service at some point
-TFileService = cms.Service("TFileService", fileName = cms.string('TFSReco.root') )
+#TFileService = cms.Service("TFileService", fileName = cms.string('TFSReco.root') )
 
 from Workspace.MuonRecoTreeUtility.muonRecoTreeUtility_reco_cfi import *
 
