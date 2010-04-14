@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.13 2010/03/09 20:31:40 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.14 2010/03/16 19:16:53 aeverett Exp $
 //
 //
 
@@ -161,9 +161,9 @@ public:
  
   
 private:
-  virtual void beginRun(edm::Run const&, edm::EventSetup const&) ;
+  virtual void beginJob() ;
   virtual void analyze(const edm::Event&, const edm::EventSetup&);
-  virtual void endRun(edm::Run const&, edm::EventSetup const&) ;
+  virtual void endJob() ;
  
   unsigned int getBit(const TrackingParticleRef&) const;
   // ----------member data ---------------------------
@@ -696,14 +696,13 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   diMuIsoTriggerName = iConfig.getParameter<std::string>("diMuIsoTriggerName");
   diMuNonIsoTriggerName = iConfig.getParameter<std::string>("diMuNonIsoTriggerName"); 
   */
-  LogDebug("MuonRecoTreeUtility");
+
   l2AssocLabel = iConfig.getParameter<std::string>("l2AssociatorName");
   l3AssocLabel = iConfig.getParameter<std::string>("l3AssociatorName");
   tkAssocLabel = iConfig.getParameter<std::string>("tkAssociatorName");
 
   theLinkLabel = iConfig.getParameter<edm::InputTag>("linkLabel");
   theMuonLabel = iConfig.getParameter<edm::InputTag>("muonLabel");
-  LogDebug("MuonRecoTreeUtility");
 
   //Make the TrackingParticleSelectors
   edm::ParameterSet tpset_primary = iConfig.getParameter<edm::ParameterSet>("tpSelector_primary");
@@ -885,7 +884,7 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   indexL2SeedingL3 = 0;
   indexL3SeededFromL2 = 0;
   l2SeedsL3 = 0;
-  LogDebug("MuonRecoTreeUtility");
+
   muonErrorMatrix = new std::map<int,std::vector<double> >;
 
   l3IsAssociated = 0;
@@ -1198,16 +1197,16 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   //  edm::LogInfo("MuonRecoTreeUtility") << "How many L1, L2, L3 do we have? " << nL1 << " " << nL2 << " " << nL3;
 
   //ISO variables go here
-  LogDebug("MuonRecoTreeUtility");
+
   caloDepositExtractor->fillVetos(iEvent,iSetup,*l2Muons);
   trackDepositExtractor->fillVetos(iEvent,iSetup,*l3Muons);
   edm::LogInfo("MuonRecoTreeUtility") << "veto filled";
 
-  LogDebug("MuonRecoTreeUtility");
+
   reco::IsoDeposit::Vetos trackVetos;
   typedef std::vector< std::pair<reco::TrackRef,reco::IsoDeposit> > MuonsWithDeposits;
   MuonsWithDeposits muonsWithDeposits;
-  LogDebug("MuonRecoTreeUtility");
+
   edm::LogInfo("MuonRecoTreeUtility") << "deposit objects created.";
 
   // get hold of the TriggerResults objects
@@ -1384,11 +1383,11 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   View<Muon> muonColl = *(muonHandle.product());
 
   nMu = muonColl.size();
-
+  LogDebug("MuonRecoTreeUtility")<<"nMu: " << nMu;
   int iMu = 0;
   for(View<Muon>::const_iterator iMuon = muonColl.begin();
       iMuon != muonColl.end(); ++iMuon) {
-
+    //LogDebug("MuonRecoTreeUtility")<<"Looping over nMu";
     //start the recoMuon member block
     {
       (*muAllGlobalMuons).push_back( muon::isGoodMuon(*iMuon,muon::AllGlobalMuons) );
@@ -1478,7 +1477,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     if(glbTrack.isAvailable()) {
       int iL3 = iMu;
       const reco::TrackRef refL3(glbTrack);
-
+      //LogDebug("MuonRecoTreeUtility")<<"L3 is available";
       // Fill in basic information of l3Muons
       (*l3P).push_back(refL3->p());
       (*l3Px).push_back(refL3->px());
@@ -2098,7 +2097,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       std::string trackBuilderName = "WithTrackAngle";
       iSetup.get<TransientRecHitRecord>().get(trackBuilderName,trackBuilder);
       
-      edm::LogInfo("MuonRecoTreeUtility") << "iterating over tracking rechits";
+      LogDebug("MuonRecoTreeUtility") << "iterating over tracking rechits";
       for (trackingRecHit_iterator tkHit = refTk->recHitsBegin(); tkHit != refTk->recHitsEnd(); ++tkHit) {     
 	if ((*tkHit)->isValid()) {
 	  (*idsForThisTk).push_back((*tkHit)->geographicalId().rawId());
@@ -3290,10 +3289,10 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
-MuonRecoTreeUtility::beginRun(edm::Run const&, edm::EventSetup const& setup)
+MuonRecoTreeUtility::beginJob()
 {
 
-  theFile = new TFile(outputFileName.c_str(),"recreate");
+  theFile = new TFile(outputFileName.c_str(),"UPDATE");
   theFile->cd();
   
   MuTrigData = new TTree("MuTrigData","MuTrigData");
@@ -3851,7 +3850,7 @@ MuonRecoTreeUtility::beginRun(edm::Run const&, edm::EventSetup const& setup)
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
-MuonRecoTreeUtility::endRun(edm::Run const&, edm::EventSetup const&) {
+MuonRecoTreeUtility::endJob() {
 
   edm::LogInfo("MuonRecoTreeUtility")<<"Starting to write the trees.  Changing to directory";
   theFile->cd();
