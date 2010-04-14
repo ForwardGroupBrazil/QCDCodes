@@ -30,8 +30,8 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false,double weight = 1
   
   // Time for some histograms and stacks
   
-  double ptLowerLimit = 0;
-  double ptUpperLimit = 20;
+  double ptLowerLimit = 0.;
+  double ptUpperLimit = 20.;
   int nBins = 20;
 
   //Book the L3 histos  
@@ -239,7 +239,7 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false,double weight = 1
 	  char histoName[20];
 	  if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin = myL3ParentIdBin-2;
 	  sprintf(histoName,"l3PRate_%d",myL3ParentIdBin);	  
-	  muonPtHistoMap[histoName]->Fill(pt_L3,weight);
+	  muonPtHistoMap[histoName]->Fill(pt_L3,1.0*weight);
 	  //}
 	  //adam test 2
 
@@ -299,10 +299,10 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false,double weight = 1
 	double pt_tkTrack = (*tkTrackP).at(iMu);
 
 	int myIsAssociated = (*tkTrackIsAssociated).at(iMu);
-	int myL3AssociationPdgId = (*tkTrackAssociationPdgId).at(iMu);
+	int myL3AssociationPdgId = myIsAssociated ? (*tkTrackAssociationPdgId).at(iMu) : -777;
 	int myL3ParentID = (*tkTrackParentID).at(iMu);
 	int myL3MotherBinNumber = (*tkTrackMotherBinNumber).at(iMu);
-	int myL3TPIdBin = GetBinNum((*tkTrackAssociationPdgId).at(iMu));
+	int myL3TPIdBin = myIsAssociated ? GetBinNum((*tkTrackAssociationPdgId).at(iMu)) : -777;
 	int myL3ParentIdBin = GetBinNum((*tkTrackParentID).at(iMu));
 
 
@@ -310,7 +310,7 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false,double weight = 1
 	  char histoName[20];
 	  if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin = myL3ParentIdBin-2;
 	  sprintf(histoName,"tkTrackPRate_%d",myL3ParentIdBin);	  
-	  tkPtHistoMap[histoName]->Fill(pt_tkTrack,weight);	
+	  tkPtHistoMap[histoName]->Fill(pt_tkTrack,1.0*weight);	
 	} else {
 	  //cout << "line 273 Data" << endl;
 	  char histoName[20];

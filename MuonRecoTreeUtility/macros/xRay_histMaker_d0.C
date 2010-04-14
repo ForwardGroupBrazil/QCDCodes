@@ -17,7 +17,7 @@ std::map<std::string,TH1*> l2PtHistoMap;
 std::map<std::string,TH1*> tkPtHistoMap;
 
 //int ScanTree ( TTree* tree) {
-int ScanTreeAlexey ( TTree* tree, char *fileName, bool isData=false,double weight = 1.0) {
+int ScanTreeD0 ( TTree* tree, char *fileName, bool isData=false,double weight = 1.0) {
   
   initArrays();
   
@@ -30,9 +30,9 @@ int ScanTreeAlexey ( TTree* tree, char *fileName, bool isData=false,double weigh
   
   // Time for some histograms and stacks
   
-  double ptLowerLimit = 0;
-  double ptUpperLimit = 20;
-  int nBins = 20;
+  double ptLowerLimit = -5.;
+  double ptUpperLimit = 5.;
+  int nBins = 50;
 
   //Book the L3 histos  
   for (int i = 0; i != Bins.size(); ++i) {    
@@ -239,7 +239,7 @@ int ScanTreeAlexey ( TTree* tree, char *fileName, bool isData=false,double weigh
 	  char histoName[20];
 	  if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin = myL3ParentIdBin-2;
 	  sprintf(histoName,"l3D0Rate_%d",myL3ParentIdBin);	  
-	  muonPtHistoMap[histoName]->Fill(pt_L3,weight);
+	  muonPtHistoMap[histoName]->Fill(pt_L3,1.0*weight);
 	  //}
 	  //adam test 2
 
@@ -299,10 +299,10 @@ int ScanTreeAlexey ( TTree* tree, char *fileName, bool isData=false,double weigh
 	double pt_tkTrack = (*tkTrackD0).at(iMu);
 
 	int myIsAssociated = (*tkTrackIsAssociated).at(iMu);
-	int myL3AssociationPdgId = (*tkTrackAssociationPdgId).at(iMu);
+	int myL3AssociationPdgId = myIsAssociated ? (*tkTrackAssociationPdgId).at(iMu) : -777;
 	int myL3ParentID = (*tkTrackParentID).at(iMu);
 	int myL3MotherBinNumber = (*tkTrackMotherBinNumber).at(iMu);
-	int myL3TPIdBin = GetBinNum((*tkTrackAssociationPdgId).at(iMu));
+	int myL3TPIdBin = myIsAssociated ? GetBinNum((*tkTrackAssociationPdgId).at(iMu)) : -777;
 	int myL3ParentIdBin = GetBinNum((*tkTrackParentID).at(iMu));
 
 
@@ -310,7 +310,7 @@ int ScanTreeAlexey ( TTree* tree, char *fileName, bool isData=false,double weigh
 	  char histoName[20];
 	  if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin = myL3ParentIdBin-2;
 	  sprintf(histoName,"tkTrackD0Rate_%d",myL3ParentIdBin);	  
-	  tkPtHistoMap[histoName]->Fill(pt_tkTrack,weight);	
+	  tkPtHistoMap[histoName]->Fill(pt_tkTrack,1.0*weight);	
 	} else {
 	  //cout << "line 273 Data" << endl;
 	  char histoName[20];

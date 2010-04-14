@@ -56,17 +56,17 @@ int ScanTreeBasics ( TTree* tree, char *fileName, bool isData=false, double weig
 	double p_L3 = (*l3P).at(iMu);
 	double d0_L3 = (*l3D0).at(iMu);
 	double eta_L3 = (*l3Eta).at(iMu);
-	hist_L3_pt ->Fill(pt_L3,!isData?1.5*weight:weight);
-	hist_L3_p ->Fill(p_L3,!isData?1.5*weight:weight);
-	hist_L3_d0 ->Fill(d0_L3,!isData?1.5*weight:weight);
-	hist_L3_eta->Fill(eta_L3,!isData?1.5*weight:weight);
+	hist_L3_pt ->Fill(pt_L3,!isData?1.0*weight:weight);
+	hist_L3_p ->Fill(p_L3,!isData?1.0*weight:weight);
+	hist_L3_d0 ->Fill(d0_L3,!isData?1.0*weight:weight);
+	hist_L3_eta->Fill(eta_L3,!isData?1.0*weight:weight);
      }
 
      if (passTK) {
-       hist_tk_pt ->Fill((*tkTrackPt).at(iMu),weight);
-       hist_tk_p ->Fill((*tkTrackP).at(iMu),weight);
-       hist_tk_eta->Fill((*tkTrackEta).at(iMu),weight);
-       hist_tk_d0 ->Fill((*tkTrackD0).at(iMu),weight);
+       hist_tk_pt ->Fill((*tkTrackPt).at(iMu),!isData?1.0*weight:weight);
+       hist_tk_p ->Fill((*tkTrackP).at(iMu),!isData?1.0*weight:weight);
+       hist_tk_eta->Fill((*tkTrackEta).at(iMu),!isData?1.0*weight:weight);
+       hist_tk_d0 ->Fill((*tkTrackD0).at(iMu),!isData?1.0*weight:weight);
      }
 
     }
