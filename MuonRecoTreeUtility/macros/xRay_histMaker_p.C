@@ -285,7 +285,7 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false,double weight = 1
 	  //cout << "line 273 Data" << endl;
 	  char histoName[20];
 	  //if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin--;
-	  sprintf(histoName,"l3PRate_%d",Bins.size()-1);	  
+	  sprintf(histoName,"l3PRate_%d",GetBinNum(999));	  
 	  muonPtHistoMap[histoName]->Fill(pt_L3,weight);	  
 	  //muonPtHistoMap["l3PRate_9"]->Fill(pt_L3,weight);
 	}
@@ -324,7 +324,7 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false,double weight = 1
 	  //cout << "line 273 Data" << endl;
 	  char histoName[20];
 	  //if(myL3ParentIdBin==Bins.size()) myL3ParentIdBin--;
-	  sprintf(histoName,"tkTrackPRate_%d",Bins.size()-1);	  
+	  sprintf(histoName,"tkTrackPRate_%d",GetBinNum(999));	  
 	  tkPtHistoMap[histoName]->Fill(pt_tkTrack,weight);	  
 	  //muonPtHistoMap["l3PRate_9"]->Fill(pt_L3,weight);
 	}
@@ -334,7 +334,6 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false,double weight = 1
   
      
   if(!isData){
-    //for (int i = 0; i != Bins.size()+1; ++i) {
     for (int i = 1; i != Bins.size()-1; ++i) {
       char histoName[20];
       sprintf(histoName,"l3PRate_%d",i);
@@ -342,12 +341,11 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false,double weight = 1
     }
   } else {
     char histoName[20];
-    sprintf(histoName,"l3PRate_%d",Bins.size()-1);
+    sprintf(histoName,"l3PRate_%d",GetBinNum(999));
     l3PRate->Add(muonPtHistoMap[histoName]);
   }
-
+  
   if(!isData){
-    //for (int i = 0; i != Bins.size()+1; ++i) {
     for (int i = 1; i != Bins.size()-1; ++i) {
       char histoName[20];
       sprintf(histoName,"l2PRate_%d",i);
@@ -355,12 +353,11 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false,double weight = 1
     }
   } else {
     char histoName[20];
-    sprintf(histoName,"l2PRate_%d",Bins.size()-1);
+    sprintf(histoName,"l2PRate_%d",GetBinNum(999));
     l2PRate->Add(l2PtHistoMap[histoName]);
   }
-
+  
   if(!isData){
-    //for (int i = 0; i != Bins.size()+1; ++i) {
     for (int i = 1; i != Bins.size()-1; ++i) {
       char histoName[20];
       sprintf(histoName,"tkTrackPRate_%d",i);
@@ -368,13 +365,13 @@ int ScanTreeP ( TTree* tree, char *fileName, bool isData=false,double weight = 1
     }
   } else {
     char histoName[20];
-    sprintf(histoName,"tkTrackPRate_%d",Bins.size()-1);
+    sprintf(histoName,"tkTrackPRate_%d",GetBinNum(999));
     tkTrackPRate->Add(tkPtHistoMap[histoName]);
   }
-
+  
   double crossSection_mb = 51.6; // ppMuX
   double filterEff = 0.00289; // ppMuX
-
+  
   double eventNumberUnit= 1000000;
 
   double numberOfEvents = nEntries /eventNumberUnit /filterEff ;
@@ -550,80 +547,52 @@ void scaleToRate(const char* collectionName, double rateFactor) {
 void initArrays()
 {
   //configured by hand as Finn did it
-  Bins.resize(10);
+  Bins.resize(6);
 
-  Bins[0].first = "ID=0";
-  Bins[0].second.push_back(0);
+  Bins[0].first = "Data";
+  Bins[0].second.push_back(999);
 
-  Bins[1].first = "#pi+/-";
-  Bins[1].second.push_back(211);
-  Bins[1].second.push_back(-211);
+  Bins[1].first = "Fakes";
+  Bins[1].second.push_back(-777);
 
-  Bins[2].first = "K";
-  Bins[2].second.push_back(321);
-  Bins[2].second.push_back(-321);
-  Bins[2].second.push_back(130);
-  Bins[2].second.push_back(-130);
+  Bins[2].first = "#pi+/-";
+  Bins[2].second.push_back(211);
+  Bins[2].second.push_back(-211);
 
-  Bins[3].first = "D";
-  Bins[3].second.push_back(411);
-  Bins[3].second.push_back(-411);
-  Bins[3].second.push_back(421);
-  Bins[3].second.push_back(-421);
-  Bins[3].second.push_back(431);
-  Bins[3].second.push_back(-431);
+  Bins[3].first = "K";
+  Bins[3].second.push_back(321);
+  Bins[3].second.push_back(-321);
+  Bins[3].second.push_back(130);
+  Bins[3].second.push_back(-130);
 
-  Bins[4].first = "B";
+  Bins[4].first = "b/c";
+  Bins[4].second.push_back(411);
+  Bins[4].second.push_back(-411);
+  Bins[4].second.push_back(421);
+  Bins[4].second.push_back(-421);
+  Bins[4].second.push_back(431);
+  Bins[4].second.push_back(-431);
   Bins[4].second.push_back(521);
   Bins[4].second.push_back(-521);
   Bins[4].second.push_back(511);
   Bins[4].second.push_back(-511);
   Bins[4].second.push_back(531);
   Bins[4].second.push_back(-531);
+  Bins[4].second.push_back(5122);
+  Bins[4].second.push_back(-5122);
+  Bins[4].second.push_back(443);
+  Bins[4].second.push_back(-443);
+  Bins[4].second.push_back(553);
+  Bins[4].second.push_back(-553);
+  Bins[4].second.push_back(200553);
+  Bins[4].second.push_back(-200553);
+  Bins[4].second.push_back(100553);
+  Bins[4].second.push_back(-100553);
+  Bins[4].second.push_back(300553);
+  Bins[4].second.push_back(-300553);
 
-  Bins[5].first = "#Lambda_{b}";
-  Bins[5].second.push_back(5122);
-  Bins[5].second.push_back(-5122);
-
-  Bins[6].first = "J/#Psi";
-  Bins[6].second.push_back(443);
-  Bins[6].second.push_back(-443);
-
-  Bins[7].first = "#Upsilon(nS)";
-  Bins[7].second.push_back(553);
-  Bins[7].second.push_back(-553);
-  Bins[7].second.push_back(200553);
-  Bins[7].second.push_back(-200553);
-  Bins[7].second.push_back(100553);
-  Bins[7].second.push_back(-100553);
-  Bins[7].second.push_back(300553);
-  Bins[7].second.push_back(-300553);
-  
-  //Bins[8].first = "W^{+/-}";
-  //Bins[8].second.push_back(24);
-  //Bins[8].second.push_back(-24);
-  
-  //Bins[9].first = "Z^{0}";
-  //Bins[9].second.push_back(23);
-  
-  //Bins[10].first = "#tau";
-  //Bins[10].second.push_back(15);
-  //Bins[10].second.push_back(-15);
-  
-  Bins[8].first = "Fakes";
-  Bins[8].second.push_back(-777);
-
-  Bins[9].first = "Data";
-  Bins[9].second.push_back(999);
-  
-  //Bins[9].first = "-888";
-  //Bins[9].second.push_back(-888);
-  
-  //Bins[10].first = "-999";
-  //Bins[10].second.push_back(-999);
-  
-  //Bins[11].first = "+777";
-  //Bins[11].second.push_back(777);
+  Bins[5].first = "ID=0";
+  Bins[5].second.push_back(0);
   
   //and filling the map
   for (int r=0;r!=Bins.size();++r){
