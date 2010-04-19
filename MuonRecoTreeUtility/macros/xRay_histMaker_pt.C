@@ -43,6 +43,7 @@ int ScanTreePt ( TTree* tree, char *fileName, bool isData=false,double weight = 
     // cout << "histoString : " << histoString.Data() << endl;
     TString histoTitle(GetBinName(i));
     TH1 * tmpTh1 = new TH1F(histoString,histoTitle,nBins,ptLowerLimit,ptUpperLimit);
+    tmpTh1->GetXaxis()->SetTitle("p_{T} [GeV]");
     muonPtHistoMap[histoName] = tmpTh1;
   }
   
@@ -53,6 +54,7 @@ int ScanTreePt ( TTree* tree, char *fileName, bool isData=false,double weight = 
   // cout << "histoString : " << histoString.Data() << endl;
   TString histoTitle("Overflow");
   TH1 * tmpTh1 = new TH1F(histoString,histoTitle,nBins,ptLowerLimit,ptUpperLimit);
+  tmpTh1->GetXaxis()->SetTitle("p_{T} [GeV]");
   muonPtHistoMap[histoName] = tmpTh1;
   
   for (int i = 0; i != Bins.size()+1; ++i) {
@@ -70,6 +72,7 @@ int ScanTreePt ( TTree* tree, char *fileName, bool isData=false,double weight = 
     // cout << "histoString : " << histoString.Data() << endl;
     TString histoTitle(GetBinName(i));
     TH1 * tmpTh1 = new TH1F(histoString,histoTitle,nBins,ptLowerLimit,ptUpperLimit);
+    tmpTh1->GetXaxis()->SetTitle("p_{T} [GeV]");
     l2PtHistoMap[histoName] = tmpTh1;
   }
   
@@ -80,6 +83,7 @@ int ScanTreePt ( TTree* tree, char *fileName, bool isData=false,double weight = 
   // cout << "histoString : " << histoString2.Data() << endl;
   TString histoTitle2("Overflow");
   TH1 * tmpTh2 = new TH1F(histoString2,histoTitle2,nBins,ptLowerLimit,ptUpperLimit);
+  tmpTh2->GetXaxis()->SetTitle("p_{T} [GeV]");
   l2PtHistoMap[histoName2] = tmpTh2;
   
   for (int i = 0; i != Bins.size()+1; ++i) {
@@ -97,6 +101,7 @@ int ScanTreePt ( TTree* tree, char *fileName, bool isData=false,double weight = 
     // cout << "histoString : " << histoString.Data() << endl;
     TString histoTitle(GetBinName(i));
     TH1 * tmpTh1 = new TH1F(histoString,histoTitle,nBins,ptLowerLimit,ptUpperLimit);
+    tmpTh1->GetXaxis()->SetTitle("p_{T} [GeV]");
     tkPtHistoMap[histoName] = tmpTh1;
   }
   
@@ -107,6 +112,7 @@ int ScanTreePt ( TTree* tree, char *fileName, bool isData=false,double weight = 
   // cout << "histoString : " << histoString3.Data() << endl;
   TString histoTitle3("Overflow");
   TH1 * tmpTh3 = new TH1F(histoString3,histoTitle3,nBins,ptLowerLimit,ptUpperLimit);
+  tmpTh3->GetXaxis()->SetTitle("p_{T} [GeV]");
   tkPtHistoMap[histoName3] = tmpTh3;
   
   for (int i = 0; i != Bins.size()+1; ++i) {
@@ -116,12 +122,15 @@ int ScanTreePt ( TTree* tree, char *fileName, bool isData=false,double weight = 
   }
     
   THStack *l3PtRate = new THStack("l3PtRate","L3 rate as f(p_{T,L3})");
+  //  l3PtRate->GetXaxis()->SetTitle("p_{T} [GeV]");
   //THStack *l3PtRate_cd = new THStack("l3PtRate_cd","L3 rate as f(p_{T,L3})");
     
   THStack *l2PtRate = new THStack("l2PtRate","L2 rate as f(p_{T,L2})");
+  //  l2PtRate->GetXaxis()->SetTitle("p_{T} [GeV]");
   //THStack *l2PtRate_cd = new THStack("l2PtRate_cd","L2 rate as f(p_{T,L2})");
   
   THStack *tkTrackPtRate = new THStack("tkTrackPtRate","tkTrack rate as f(p_{T,tkTrack})");
+  //  tkTrackPtRate->GetXaxis()->SetTitle("p_{T} [GeV]");
   //THStack *tkTrackPtRate_cd = new THStack("tkTrackPtRate_cd","tkTrack rate as f(p_{T,tkTrack})");
   
   // There are many comments to be made about ROOT.  Most of them Rated-R or Rated-X.
