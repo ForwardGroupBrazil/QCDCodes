@@ -247,9 +247,11 @@ recoMuonTreeMaker = cms.EDAnalyzer(
                     1.0, 1.0)
             )
         )
-    ),
+    ),    
     trackingParticleLabel = cms.InputTag("tpMuon"),
     allTrackingParticleLabel = cms.InputTag("mytrackingParticles"),
+    #if TP already in event
+    #allTrackingParticleLabel = cms.InputTag('mergedtruth','MergedTrackTruth'),
     l2AssociatorName = cms.string('AssociatorByDeltaR1.0'),
     beamSpotLabel = cms.InputTag("offlineBeamSpot"),
     vertexSource = cms.InputTag("offlinePrimaryVertices"),
@@ -259,6 +261,8 @@ recoMuonTreeMaker = cms.EDAnalyzer(
 
     tpSelector_primary = cms.PSet(
        src = cms.InputTag("mytrackingParticles"),
+       #if TP already in event
+       #src = cms.InputTag('mergedtruth', 'MergedTrackTruth'),
        pdgId = cms.vint32(13, -13),
        tip = cms.double(3.5),
        lip = cms.double(30.0),
@@ -272,6 +276,8 @@ recoMuonTreeMaker = cms.EDAnalyzer(
 
     tpSelector_silicon = cms.PSet(
        src = cms.InputTag("mytrackingParticles"),
+       #if TP already in event
+       #src = cms.InputTag('mergedtruth', 'MergedTrackTruth'),
        pdgId = cms.vint32(13, -13),
        tip = cms.double(120.0),
        lip = cms.double(300.0),
@@ -285,6 +291,8 @@ recoMuonTreeMaker = cms.EDAnalyzer(
 
     tpSelector_calConversion = cms.PSet(
        src = cms.InputTag("mytrackingParticles"),
+       #if TP already in event
+       #src = cms.InputTag('mergedtruth', 'MergedTrackTruth'),
        pdgId = cms.vint32(13, -13),
        tip = cms.double(290.0),
        lip = cms.double(560.0),

@@ -40,11 +40,15 @@ tpMuon.pdgId = cms.vint32(13,-13)
 tpMuon.tip = cms.double(10000.0)
 tpMuon.lip = cms.double(10000.0)
 tpMuon.src = cms.InputTag('mytrackingParticles')
+#if TP already in event
+#tpMuon.src = cms.InputTag('mergedtruth', 'MergedTrackTruth')
 #tpMuon.ptMin = 0.9
 
 #redo the tracking particle
 from Configuration.StandardSequences.MixingNoPileUp_cff import *
 tpProduction = cms.Sequence ( mix * mytrackingParticles * tpMuon )
+#if TP already in event
+#tpProduction = cms.Sequence ( tpMuon )
 #redigi needed for association by hits only
 tkSimDigiLinkAreThere = cms.EDFilter("IsProductAvailable",
                                      className = cms.string(''),
