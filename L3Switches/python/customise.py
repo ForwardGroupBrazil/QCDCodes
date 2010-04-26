@@ -5,8 +5,7 @@ def customise(process):
     #switch.SwitchToBaseline(process)
     #switch.SwitchToBaselinePP(process)
     #switch.SwitchToOIState(process)
-    #switch.SwitchToOIHit(process)
-    #switch.SwitchToAllCombined(process)
+    #switch.SwitchToOIHit(process)    
     #switch.SwitchToOICombined(process)
     switch.SwitchToIterative3(process)
     
