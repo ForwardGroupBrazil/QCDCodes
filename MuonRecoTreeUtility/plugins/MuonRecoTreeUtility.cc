@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.14 2010/03/16 19:16:53 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.15 2010/04/14 02:06:11 aeverett Exp $
 //
 //
 
@@ -265,6 +265,9 @@ private:
   std::map<int,std::vector<int> > *muNCSCSeg;
   std::map<int,std::vector<int> > *muNDTSeg;
   std::map<int,std::vector<int> > *muNRPCSeg;
+  std::map<int,std::vector<int> > *muNCSCSegArb;
+  std::map<int,std::vector<int> > *muNDTSegArb;
+  std::map<int,std::vector<int> > *muNRPCSegArb;
  
 
   std::vector<double> *l3P;
@@ -301,6 +304,9 @@ private:
   std::map<int,std::vector<double> > *l3RecHitsErrorTM;
   std::map<int,std::vector<double> > *l3RecHitsPhiTSOS;
   std::map<int, int> *l3NMuHits;
+  std::map<int, int> *l3NDTHits;
+  std::map<int, int> *l3NCSCHits;
+  std::map<int, int> *l3NRPCHits;
   std::map<int,std::vector<int> > *l3MuStationNumber;
   // L3 muon isolation quantities
   std::vector<double> *l3CalIsoDeposit;
@@ -830,6 +836,9 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   muNCSCSeg =  new std::map<int,std::vector<int> >;
   muNDTSeg =  new std::map<int,std::vector<int> >;
   muNRPCSeg =  new std::map<int,std::vector<int> >;
+  muNCSCSegArb =  new std::map<int,std::vector<int> >;
+  muNDTSegArb =  new std::map<int,std::vector<int> >;
+  muNRPCSegArb =  new std::map<int,std::vector<int> >;
   l3P = 0;
   l3Pt = 0;
   l3Px = 0;
@@ -850,6 +859,9 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   l3DetIds = new std::map<int,std::vector<int> >;
   l3SubdetIds = new std::map<int,std::vector<int> >;
   l3NMuHits = new std::map<int,int>;
+  l3NDTHits = new std::map<int,int>;
+  l3NCSCHits = new std::map<int,int>;
+  l3NRPCHits = new std::map<int,int>;
   l3MuStationNumber = new std::map<int, std::vector <int> >;
   l3Component = new std::map<int,std::vector<int> >;
   l3RecHitsStatus = new std::map<int,std::vector<int> >;
@@ -1411,27 +1423,39 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*muTMLastStationAngTight ).push_back( muon::isGoodMuon(*iMuon,muon::TMLastStationAngTight));
       (*muTMOneStationAngLoose ).push_back( muon::isGoodMuon(*iMuon,muon::TMOneStationAngLoose));
       (*muTMOneStationAngTight ).push_back( muon::isGoodMuon(*iMuon,muon::TMOneStationAngTight));
-
+      
       (*muCaloCompatibility).push_back(muon::caloCompatibility(*iMuon));
       (*muSegmentCompatibility).push_back(muon::segmentCompatibility(*iMuon));
-
+      
       (*muNumberOfChambers).push_back(iMuon->numberOfChambers());
       (*muNumberOfMatches).push_back(iMuon->numberOfMatches());
-      (*muStationMask).push_back(iMuon->stationMask(Muon::SegmentArbitration));
-
+      //(*muStationMask).push_back(iMuon->stationMask(Muon::SegmentArbitration));
+      (*muStationMask).push_back(iMuon->stationMask());
+      
       std::vector<int> *nCSCSeg = new std::vector<int>;
       std::vector<int> *nDTSeg = new std::vector<int>;
       std::vector<int> *nRPCSeg = new std::vector<int>;
+      std::vector<int> *nCSCSegArb = new std::vector<int>;
+      std::vector<int> *nDTSegArb = new std::vector<int>;
+      std::vector<int> *nRPCSegArb = new std::vector<int>;
       for(int station = 0; station < 4; ++station) {
 	nCSCSeg->push_back(iMuon->numberOfSegments(station+1, MuonSubdetId::CSC, Muon::NoArbitration));
 	nDTSeg->push_back(iMuon->numberOfSegments(station+1, MuonSubdetId::DT, Muon::NoArbitration));
 	nRPCSeg->push_back(iMuon->numberOfSegments(station+1, MuonSubdetId::RPC, Muon::NoArbitration));
-      }
 
+	nCSCSegArb->push_back(iMuon->numberOfSegments(station+1, MuonSubdetId::CSC, Muon::SegmentAndTrackArbitration));
+	nDTSegArb->push_back(iMuon->numberOfSegments(station+1, MuonSubdetId::DT, Muon::SegmentAndTrackArbitration));
+	nRPCSegArb->push_back(iMuon->numberOfSegments(station+1, MuonSubdetId::RPC, Muon::SegmentAndTrackArbitration));
+      }
+      
       (*muNCSCSeg).insert(std::make_pair(iMu,*nCSCSeg));
       (*muNDTSeg).insert(std::make_pair(iMu,*nDTSeg));
       (*muNRPCSeg).insert(std::make_pair(iMu,*nRPCSeg));
 
+      (*muNCSCSegArb).insert(std::make_pair(iMu,*nCSCSegArb));
+      (*muNDTSegArb).insert(std::make_pair(iMu,*nDTSegArb));
+      (*muNRPCSegArb).insert(std::make_pair(iMu,*nRPCSegArb));
+      
       bool isoValid = iMuon->isIsolationValid();
       MuonIsolation muIso03 = iMuon->isolationR03();
       float sumPt = isoValid ? muIso03.sumPt : -999.;
@@ -1445,7 +1469,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*muIso03hadEt).push_back(hadEt);
       (*muIso03nTracks).push_back(nTracks);
       (*muIso03trackerVetoPt).push_back(trackerVetoPt);
-
+      
       if(iMuon->isGlobalMuon() && iMuon->isQualityValid()) {
 	(*muTrkKink).push_back(iMuon->combinedQuality().trkKink);
 	(*muGlbKink).push_back(iMuon->combinedQuality().glbKink);
@@ -1457,23 +1481,23 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	(*muTrkRelChi2).push_back(-999.);
 	(*muStaRelChi2).push_back(-999.);
       }
-    }
-
+    } //end the recoMuon member block
+  
     const reco::TrackRef glbTrack = ( iMuon->isGlobalMuon()) ? 
       iMuon->combinedMuon() : reco::TrackRef();
     const reco::TrackRef innerTrack = ( iMuon->isGlobalMuon()) ? 
       iMuon->innerTrack() : reco::TrackRef();
-
+    
     const RefToBase<Track> glbTrackRB(glbTrack);
     
-    const reco::TrackRef tkTrack = ( iMuon->isTrackerMuon() ) ? 
+    const reco::TrackRef tkTrack = ( iMuon->isTrackerMuon() || iMuon->isGlobalMuon() ) ? 
       iMuon->innerTrack() : TrackRef();
-
+    
     const RefToBase<Track> tkTrackRB(tkTrack);
     
     const reco::TrackRef staTrack = ( iMuon->isStandAloneMuon() ) ? 
       iMuon->outerTrack() : TrackRef();
-
+    
     if(glbTrack.isAvailable()) {
       int iL3 = iMu;
       const reco::TrackRef refL3(glbTrack);
@@ -1525,6 +1549,9 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       std::vector<double> *phiForThisL3TSOS = new std::vector<double>;
       std::vector<int> *stationsForThisL3 = new std::vector<int>;
       int nMuHitsForThisL3 = 0;
+      int nDTHitsForThisL3 = 0;
+      int nCSCHitsForThisL3 = 0;
+      int nRPCHitsForThisL3 = 0;
 
       edm::ESHandle<TransientTrackingRecHitBuilder> trackBuilder;
       edm::ESHandle<TransientTrackingRecHitBuilder> muonBuilder;
@@ -1595,7 +1622,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	}	
       }
       //end Adams KINK 
-
+    
       for (trackingRecHit_iterator l3Hit = refL3->recHitsBegin(); l3Hit != refL3->recHitsEnd(); ++l3Hit) {
 	if ((*l3Hit)->isValid()) {
 	  (*idsForThisL3).push_back((*l3Hit)->geographicalId().rawId());
@@ -1616,26 +1643,32 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	    (*zForThisL3).push_back(globL3->globalPosition().z());
 	    // number station goes here
 	    if ( (*l3Hit)->geographicalId().subdetId() == 1) { // DT hit 
+	      nDTHitsForThisL3++;
 	      const DTChamberId& id = DTChamberId((*l3Hit)->geographicalId());
 	      (*stationsForThisL3).push_back(id.station());
 	    }
 	    if ( (*l3Hit)->geographicalId().subdetId() == 2) { // CSC hit
+	      nCSCHitsForThisL3++;
 	      const CSCDetId& id = CSCDetId((*l3Hit)->geographicalId());
 	      (*stationsForThisL3).push_back(id.station());
 	    }
 	    if ( (*l3Hit)->geographicalId().subdetId() == 3) { // RPC hit
+	      nRPCHitsForThisL3++;
 	      const RPCDetId& id = RPCDetId((*l3Hit)->geographicalId());
 	      (*stationsForThisL3).push_back(id.station());
 	    }
 	  }
 	}
       }
-
+    
       (*l3DetIds).insert(std::make_pair(iMu,*idsForThisL3));    
       (*l3SubdetIds).insert(std::make_pair(iMu,*subidsForThisL3));
       (*l3Component).insert(std::make_pair(iMu,*detsForThisL3));
       (*l3RecHitsStatus).insert(std::make_pair(iMu,*statusForThisL3));
       (*l3NMuHits).insert(std::make_pair(iMu,nMuHitsForThisL3));
+      (*l3NDTHits).insert(std::make_pair(iMu,nDTHitsForThisL3));
+      (*l3NCSCHits).insert(std::make_pair(iMu,nCSCHitsForThisL3));
+      (*l3NRPCHits).insert(std::make_pair(iMu,nRPCHitsForThisL3));
       (*l3MuStationNumber).insert(std::make_pair(iMu,*stationsForThisL3));
       (*l3RecHitsX).insert(std::make_pair(iMu,*xForThisL3));
       (*l3RecHitsY).insert(std::make_pair(iMu,*yForThisL3));
@@ -1668,6 +1701,9 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       phiForThisL3TM->clear();
       phiForThisL3TSOS->clear();
       nMuHitsForThisL3 = 0;
+      nDTHitsForThisL3 = 0;
+      nCSCHitsForThisL3 = 0;
+      nRPCHitsForThisL3 = 0;
 
       /*  
       // Find the correct L2 muon using track links.  Start with borrowed code.
@@ -1718,7 +1754,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  dRMinDelPt = tempdR;
 	  DelPtMin = fabs(refL3->pt() - tempPt);
 	}
-      }
+      } 
       (*l3IsoTrackDR).push_back(dRMin);
       (*l3IsoTrackDRMinDelPt).push_back(dRMinDelPt);
       trackVetos.push_back(trackDeposit.veto());
@@ -1737,26 +1773,26 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       int sim_index = 0;
       TrackingParticleRef muTP;
       TrackingParticleRef anyTP;
-      
+    
       double muAssocVal = 0.;
       double anyAssocVal = 0.;
       if(!TPtracks.failedToGet()) { //start Adam for Data
-      if ( l3RecSimColl.find(glbTrackRB) != l3RecSimColl.end() ) {
-	//get TP
-	const std::vector<std::pair<TrackingParticleRef,double> > & tp = l3RecSimColl[glbTrackRB];
-	muTP = tp.begin()->first;
-	muAssocVal = tp.begin()->second;
-      }
-      
-
-      if ( l3RecAllSimColl.find(glbTrackRB) != l3RecAllSimColl.end() ) {
-	//get TP
-	const std::vector<std::pair<TrackingParticleRef,double> > & tp = l3RecAllSimColl[glbTrackRB];
-	anyTP = tp.begin()->first;
-	anyAssocVal = tp.begin()->second;
-      }
+	if ( l3RecSimColl.find(glbTrackRB) != l3RecSimColl.end() ) {
+	  //get TP
+	  const std::vector<std::pair<TrackingParticleRef,double> > & tp = l3RecSimColl[glbTrackRB];
+	  muTP = tp.begin()->first;
+	  muAssocVal = tp.begin()->second;
+	}
+	
+	
+	if ( l3RecAllSimColl.find(glbTrackRB) != l3RecAllSimColl.end() ) {
+	  //get TP
+	  const std::vector<std::pair<TrackingParticleRef,double> > & tp = l3RecAllSimColl[glbTrackRB];
+	  anyTP = tp.begin()->first;
+	  anyAssocVal = tp.begin()->second;
+	}
       } //end Adam for Data
-
+    
       TrackingParticleRef theTP;
       double theAssocVal = 0.;
       if(muTP.isAvailable()) {
@@ -1766,12 +1802,12 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	theTP = anyTP;
 	theAssocVal = anyAssocVal;
       }
-
+      
       if(theTP.isAvailable()) {
 	if(theTP.isAvailable()){
 	  associated = true;
 	  const TrackingParticleRef & trp = theTP;
-
+	  
 	  (*l3IsAssociated).push_back(1);
 	  (*l3AssociationVar).push_back(theAssocVal);
 	  
@@ -1787,14 +1823,14 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  else if (isOtherMuon(thisBit)) muClass = 4;
 	  else if (isMysteryMuon(thisBit)) muClass = 5;
 	  else if (isPunchThrough(thisBit)) muClass = 6;
-
+	  
 	  LogDebug("SpecialBit")<<"RecoTree muon " << iMu << " of " << muonColl.size() << " has theBit: " << thisBit << " and muClass " << muClass << " and pT " << refL3->pt();
 	  //
 	  (*l3AssociationMyBit).push_back(thisBit);
 	  (*l3AssociationVtxX).push_back(trp->vertex().x());
 	  (*l3AssociationVtxY).push_back(trp->vertex().y());
 	  (*l3AssociationVtxZ).push_back(trp->vertex().z());
-	  
+	
 	  if(abs(particle_ID) == 13){
 	    //Adam 1 start
 	    int iSimMu = -1;
@@ -2010,6 +2046,9 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*l3Component).insert(std::make_pair(iMu,0));
       (*l3RecHitsStatus).insert(std::make_pair(iMu,0));
       (*l3NMuHits).insert(std::make_pair(iMu,0));
+      (*l3NDTHits).insert(std::make_pair(iMu,0));
+      (*l3NCSCHits).insert(std::make_pair(iMu,0));
+      (*l3NRPCHits).insert(std::make_pair(iMu,0));
       (*l3MuStationNumber).insert(std::make_pair(iMu,0));
       (*l3RecHitsX).insert(std::make_pair(iMu,0));
       (*l3RecHitsY).insert(std::make_pair(iMu,0));
@@ -2053,7 +2092,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*l3ParentID).push_back(-999);
       (*l3MotherBinNumber).push_back(-999);
     }
-    
+      
     if(tkTrack.isAvailable()) {
       int iTk = iMu;  
       const reco::TrackRef refTk(tkTrack);
@@ -3060,6 +3099,10 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   muNDTSeg->clear();
   muNRPCSeg->clear();
 
+  muNCSCSegArb->clear();
+  muNDTSegArb->clear();
+  muNRPCSegArb->clear();
+
   l3P->clear();
   l3Px->clear();
   l3Py->clear();
@@ -3081,6 +3124,9 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   l3SubdetIds->clear();
   l3Component->clear();
   l3NMuHits->clear();
+  l3NDTHits->clear();
+  l3NCSCHits->clear();
+  l3NRPCHits->clear();
   l3MuStationNumber->clear();
   l3RecHitsStatus->clear();
   l3RecHitsX->clear();
@@ -3389,6 +3435,9 @@ MuonRecoTreeUtility::beginJob()
   MuTrigData->Branch("muNCSCSeg",&muNCSCSeg);
   MuTrigData->Branch("muNDTSeg",&muNDTSeg);
   MuTrigData->Branch("muNRPCSeg",&muNRPCSeg);
+  MuTrigData->Branch("muNCSCSegArb",&muNCSCSegArb);
+  MuTrigData->Branch("muNDTSegArb",&muNDTSegArb);
+  MuTrigData->Branch("muNRPCSegArb",&muNRPCSegArb);
   //MuTrigData->Branch("nL3Seeds",&nL3Seeds,"nL3Seeds/I");
   // L3 muon information: the basics
   MuTrigData->Branch("l3P",&l3P);
@@ -3427,6 +3476,9 @@ MuonRecoTreeUtility::beginJob()
   MuTrigData->Branch("l3SubdetIds",&l3SubdetIds);
   MuTrigData->Branch("l3Component",&l3Component);
   MuTrigData->Branch("l3NMuHits",&l3NMuHits);
+  MuTrigData->Branch("l3NDTHits",&l3NDTHits);
+  MuTrigData->Branch("l3NCSCHits",&l3NCSCHits);
+  MuTrigData->Branch("l3NRPCHits",&l3NRPCHits);
   MuTrigData->Branch("l3MuStationNumber",&l3MuStationNumber);
   MuTrigData->Branch("l3RecHitsStatus",&l3RecHitsStatus);
   MuTrigData->Branch("l3RecHitsX",&l3RecHitsX);
@@ -3614,6 +3666,9 @@ MuonRecoTreeUtility::beginJob()
   MuTrigMC->Branch("muNCSCSeg",&muNCSCSeg);
   MuTrigMC->Branch("muNDTSeg",&muNDTSeg);
   MuTrigMC->Branch("muNRPCSeg",&muNRPCSeg);
+  MuTrigMC->Branch("muNCSCSegArb",&muNCSCSegArb);
+  MuTrigMC->Branch("muNDTSegArb",&muNDTSegArb);
+  MuTrigMC->Branch("muNRPCSegArb",&muNRPCSegArb);
   //MuTrigMC->Branch("nL3Seeds",&nL3Seeds,"nL3Seeds/I");
   // L3 muon information: the basics
   MuTrigMC->Branch("l3P",&l3P);
@@ -3652,6 +3707,9 @@ MuonRecoTreeUtility::beginJob()
   MuTrigMC->Branch("l3SubdetIds",&l3SubdetIds);
   MuTrigMC->Branch("l3Component",&l3Component);
   MuTrigMC->Branch("l3NMuHits",&l3NMuHits);
+  MuTrigMC->Branch("l3NDTHits",&l3NDTHits);
+  MuTrigMC->Branch("l3NCSCHits",&l3NCSCHits);
+  MuTrigMC->Branch("l3NRPCHits",&l3NRPCHits);
   MuTrigMC->Branch("l3MuStationNumber",&l3MuStationNumber);
   MuTrigMC->Branch("l3RecHitsStatus",&l3RecHitsStatus);
   MuTrigMC->Branch("l3RecHitsX",&l3RecHitsX);
