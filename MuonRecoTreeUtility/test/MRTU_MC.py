@@ -75,12 +75,12 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.5 $'),
+    version = cms.untracked.string('$Revision: 1.6 $'),
     annotation = cms.untracked.string('MHTU nevts:100'),
     name = cms.untracked.string('PyReleaseValidation')
 )
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(5)
+    input = cms.untracked.int32(50)
 )
 process.options = cms.untracked.PSet(
     Rethrow = cms.untracked.vstring('ProductNotFound')
@@ -88,14 +88,17 @@ process.options = cms.untracked.PSet(
 # Input source
 process.source = cms.Source(
      "PoolSource",
-     skipEvents = cms.untracked.uint32(6),
+     skipEvents = cms.untracked.uint32(0),
      fileNames = cms.untracked.vstring(
-     '/store/mc/Summer09/ppMuX/GEN-SIM-RECO/MC_31X_V3_7TeV-v1/0012/626BBC75-C2A3-DE11-8C9F-00E0813006C6.root'
+     #'/store/mc/Summer09/ppMuX/GEN-SIM-RECO/MC_31X_V3_7TeV-v1/0012/626BBC75-C2A3-DE11-8C9F-00E0813006C6.root'
+
+     '/store/user/aeverett/CMSSW_3_4_1/SingleMuPt0_500/aeverett/SingleMuPt0_500_CMSSW_3_4_1_step1/SingleMuPt0_500_CMSSW_3_4_1_step2/bd7cda0b32f61291da1aab637c754773/step2_99.root',
      ),
      secondaryFileNames = cms.untracked.vstring(
-     '/store/mc/Summer09/ppMuX/GEN-SIM-RAW/MC_31X_V3_7TeV-v1/0012/BC60E8CD-C1A3-DE11-AC18-001E68865055.root',
-     '/store/mc/Summer09/ppMuX/GEN-SIM-RAW/MC_31X_V3_7TeV-v1/0012/AC977942-C2A3-DE11-A7E1-001E688650C5.root',
-     '/store/mc/Summer09/ppMuX/GEN-SIM-RAW/MC_31X_V3_7TeV-v1/0012/486417A1-C1A3-DE11-9A46-001E6878FB26.root',
+     #'/store/mc/Summer09/ppMuX/GEN-SIM-RAW/MC_31X_V3_7TeV-v1/0012/BC60E8CD-C1A3-DE11-AC18-001E68865055.root',
+     #'/store/mc/Summer09/ppMuX/GEN-SIM-RAW/MC_31X_V3_7TeV-v1/0012/AC977942-C2A3-DE11-A7E1-001E688650C5.root',
+     #'/store/mc/Summer09/ppMuX/GEN-SIM-RAW/MC_31X_V3_7TeV-v1/0012/486417A1-C1A3-DE11-9A46-001E6878FB26.root',
+     '/store/user/aeverett/CMSSW_3_4_1/SingleMuPt0_500/aeverett/SingleMuPt0_500_CMSSW_3_4_1_step1/SingleMuPt0_500_CMSSW_3_4_1_step1/303085ac8c2e5cb66cbf540be58bcd59/SingleMuPt0_500_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_RAW2DIGI_L1Reco_168.root'
      )
      )
 
@@ -111,6 +114,7 @@ process.output = cms.OutputModule("PoolOutputModule",
 )
 
 # Additional output definition
+process.output.outputCommands.extend(cms.untracked.vstring('drop *'))
 
 # Other statements
 process.GlobalTag.globaltag = 'START3X_V25::All'
