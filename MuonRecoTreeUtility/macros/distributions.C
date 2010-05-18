@@ -43,15 +43,39 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
   TH1F* glb_NCSC_2[8];
   TH1F* glb_NCSC_3[8];
   TH1F* glb_NCSC_4[8];
+  TH1F* glb_NCSCArb_1[8];
+  TH1F* glb_NCSCArb_2[8];
+  TH1F* glb_NCSCArb_3[8];
+  TH1F* glb_NCSCArb_4[8];
   TH1F* glb_NDT_1[8];
   TH1F* glb_NDT_2[8];
   TH1F* glb_NDT_3[8];
   TH1F* glb_NDT_4[8];
+  TH1F* glb_NDTArb_1[8];
+  TH1F* glb_NDTArb_2[8];
+  TH1F* glb_NDTArb_3[8];
+  TH1F* glb_NDTArb_4[8];
+  TH1F* glb_NRPC_1[8];
+  TH1F* glb_NRPC_2[8];
+  TH1F* glb_NRPC_3[8];
+  TH1F* glb_NRPC_4[8];
+  TH1F* glb_NRPCArb_1[8];
+  TH1F* glb_NRPCArb_2[8];
+  TH1F* glb_NRPCArb_3[8];
+  TH1F* glb_NRPCArb_4[8];
   TH1F* glb_NCSC_total[8];
+  TH1F* glb_NCSCArb_total[8];
   TH1F* glb_NDT_total[8];
+  TH1F* glb_NDTArb_total[8];
+  TH1F* glb_NRPC_total[8];
+  TH1F* glb_NRPCArb_total[8];
   TH1F* glb_NSeg_total[8];
+  TH1F* glb_NSegArb_total[8];
   TH1F* glb_NHits[8];
   TH1F* glb_NMuHits[8];
+  TH1F* glb_NDTHits[8];
+  TH1F* glb_NCSCHits[8];
+  TH1F* glb_NRPCHits[8];
   TH1F* glb_hitsIn1Ratio[8];
   TH2F* glb_hitsIn1RatioNMuHits[8];
   TH2F* glb_hitsIn1RatioDepth[8];
@@ -124,14 +148,38 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
     glb_NCSC_2[ww] = new TH1F("glb_nCSC_2","Number of segments in station 2",11,-0.5,10.5);
     glb_NCSC_3[ww] = new TH1F("glb_nCSC_3","Number of segments in station 3",11,-0.5,10.5);
     glb_NCSC_4[ww] = new TH1F("glb_nCSC_4","Number of segments in station 4",11,-0.5,10.5);
+    glb_NCSCArb_1[ww] = new TH1F("glb_nCSCArb_1","Number of segments in station 1",11,-0.5,10.5);
+    glb_NCSCArb_2[ww] = new TH1F("glb_nCSCArb_2","Number of segments in station 2",11,-0.5,10.5);
+    glb_NCSCArb_3[ww] = new TH1F("glb_nCSCArb_3","Number of segments in station 3",11,-0.5,10.5);
+    glb_NCSCArb_4[ww] = new TH1F("glb_nCSCArb_4","Number of segments in station 4",11,-0.5,10.5);
     glb_NDT_1[ww] = new TH1F("glb_nDT_1","Number of segments in DT station 1",11,-0.5,10.5);
     glb_NDT_2[ww] = new TH1F("glb_nDT_2","Number of segments in DT station 2",11,-0.5,10.5);
     glb_NDT_3[ww] = new TH1F("glb_nDT_3","Number of segments in DT station 3",11,-0.5,10.5);
     glb_NDT_4[ww] = new TH1F("glb_nDT_4","Number of segments in DT station 4",11,-0.5,10.5);
+    glb_NDTArb_1[ww] = new TH1F("glb_nDTArb_1","Number of segments in DT station 1",11,-0.5,10.5);
+    glb_NDTArb_2[ww] = new TH1F("glb_nDTArb_2","Number of segments in DT station 2",11,-0.5,10.5);
+    glb_NDTArb_3[ww] = new TH1F("glb_nDTArb_3","Number of segments in DT station 3",11,-0.5,10.5);
+    glb_NDTArb_4[ww] = new TH1F("glb_nDTArb_4","Number of segments in DT station 4",11,-0.5,10.5);
+    glb_NRPC_1[ww] = new TH1F("glb_nRPC_1","Number of segments in RPC station 1",11,-0.5,10.5);
+    glb_NRPC_2[ww] = new TH1F("glb_nRPC_2","Number of segments in RPC station 2",11,-0.5,10.5);
+    glb_NRPC_3[ww] = new TH1F("glb_nRPC_3","Number of segments in RPC station 3",11,-0.5,10.5);
+    glb_NRPC_4[ww] = new TH1F("glb_nRPC_4","Number of segments in RPC station 4",11,-0.5,10.5);
+    glb_NRPCArb_1[ww] = new TH1F("glb_nRPCArb_1","Number of segments in RPC station 1",11,-0.5,10.5);
+    glb_NRPCArb_2[ww] = new TH1F("glb_nRPCArb_2","Number of segments in RPC station 2",11,-0.5,10.5);
+    glb_NRPCArb_3[ww] = new TH1F("glb_nRPCArb_3","Number of segments in RPC station 3",11,-0.5,10.5);
+    glb_NRPCArb_4[ww] = new TH1F("glb_nRPCArb_4","Number of segments in RPC station 4",11,-0.5,10.5);
     glb_NCSC_total[ww] = new TH1F("glb_nCSC_total","Number of segments in all CSC stations",11,-0.5,10.5);
+    glb_NCSCArb_total[ww] = new TH1F("glb_nCSCArb_total","Number of segments in all CSC stations",11,-0.5,10.5);
     glb_NDT_total[ww] = new TH1F("glb_nDT_total","Number of segments in all DT stations",11,-0.5,10.5);
+    glb_NDTArb_total[ww] = new TH1F("glb_nDTArb_total","Number of segments in all DT stations",11,-0.5,10.5);
+    glb_NRPC_total[ww] = new TH1F("glb_nRPC_total","Number of segments in all RPC stations",11,-0.5,10.5);
+    glb_NRPCArb_total[ww] = new TH1F("glb_nRPCArb_total","Number of segments in all RPC stations",11,-0.5,10.5);
     glb_NSeg_total[ww] = new TH1F("glb_nSeg_total","Number of segments in all stations",16,-0.5,15.5);
+    glb_NSegArb_total[ww] = new TH1F("glb_nSegArb_total","Number of segments in all stations",16,-0.5,15.5);
     glb_NMuHits[ww] = new TH1F("glb_nMuHits","Number of muon hits",76,-0.5,75.5);
+    glb_NDTHits[ww] = new TH1F("glb_nDTHits","Number of DT hits",76,-0.5,75.5);
+    glb_NCSCHits[ww] = new TH1F("glb_nCSCHits","Number of CSC hits",76,-0.5,75.5);
+    glb_NRPCHits[ww] = new TH1F("glb_nRPCHits","Number of RPC hits",76,-0.5,75.5);
     glb_NHits[ww] = new TH1F("glb_nHits","Number of hits",76,-0.5,75.5);
     glb_hitsIn1Ratio[ww] = new TH1F("glb_hitsIn1Ratio","Ratio of Station1 Hits",100,0.,1.);
     glb_hitsIn1RatioNMuHits[ww] = new TH2F("glb_hitsIn1RatioNMuHits","Ratio of Station1 Hits",76,-0.5,75.5,100,0.,1.);
@@ -156,7 +204,10 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
   }
   histDirAlgo->cd();
 
-  TH1F *l3TestPtAll = new TH1F("l3TestPtAll","histogram of L3 p_{T}",100,0,100);
+  TH1F *l3TestPtAll = new TH1F("l3TestPtAll","histogram of L3 p_{T}",250,0,500);
+  TH1F *l3TestPtSel = new TH1F("l3TestPtSel","histogram of L3 p_{T}",250,0,500);
+  TH1F *tkTestPtAll = new TH1F("tkTestPtAll","histogram of Tk p_{T}",250,0,500);
+  TH1F *tkTestPtSel = new TH1F("tkTestPtSel","histogram of Tk p_{T}",250,0,500);
   TH1F *l3deltaPt = new TH1F("l3deltaPt","histogram of L3 #Delta p_{T}",100,-50.,50.);
 
   //TH1F *recHitsTest = new TH1F("recHitsTest","test to fill x position of recHits",1600,-800,800); 
@@ -168,13 +219,35 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
   //Event Loop
   for( int i = 0; i < nEntries; i++) {
     tree->GetEntry(i);if(i%500 == 0) cout << "Entry " << i << " of " << nEntries << endl;
-    //aaa if(nL3 > 0) {
-    if(nL3==0) continue;
-    if(nL3 > (*l3AssociationMyBit).size() ) continue;
+    //ccc aaa if(nL3 > 0) {
+    //aaa if(nL3==0) continue;
+    //aaa if(nSimMuon>0) continue;
+    //aaa if(nL3 > (*l3AssociationMyBit).size() ) continue;
     for (int iMu = 0; iMu < nMu; iMu++) {
-      if ( (*l3IsAssociated).at(iMu) == 0) continue;
-      if( (*muAllGlobalMuons).at(iMu) == 0) continue;
-      if(iMu>=nL3) continue;
+      l3TestPtAll->Fill((*l3Pt).at(iMu));
+      tkTestPtAll->Fill((*tkTrackPt).at(iMu));
+      //aaa if ( (*l3IsAssociated).at(iMu) == 0) continue;
+      //aaa if(nSimMuon>0) continue;
+      //aaa if( (*muAllGlobalMuons).at(iMu) == 1) continue;
+      //aaa if(iMu>=nL3) continue;
+      //aaa if(fabs((*l3Eta).at(iMu))>0.8) continue;
+      l3TestPtSel->Fill((*l3Pt).at(iMu));
+      tkTestPtSel->Fill((*tkTrackPt).at(iMu));
+
+      //adam temp depth
+      unsigned int mask = (*muStationMask).at(iMu);
+      bool station1 = ((mask & 1<<0)||(mask & 1<<4));
+      bool station2 = ((mask & 1<<1)||(mask & 1<<5));
+      bool station3 = ((mask & 1<<2)||(mask & 1<<6));
+      bool station4 = ((mask & 1<<3)||(mask & 1<<7));
+      
+      bool depth1 = station1 && !station2 && !station3 && !station4;
+      bool depth2 = station2 && !station3 && !station4;
+      bool depth3 = station3 && !station4;
+      bool depth4 = station4;
+      //if(depth2 || depth3 || depth4) continue;
+      //aaa if(fabs((*l3Eta).at(iMu))>0.8) continue;
+      //end adam temp depth
 
       //cout << iMu << " of " << nMu << " and nL3 " << nL3 << " has MyBit " ; //<< (*l3AssociationMyBit).at(iMu) << endl;
 
@@ -185,7 +258,7 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
       //if((*l3AssociationMyBit).at(iMu) & 1<<4) cout << "4" << endl;
       //if((*l3AssociationMyBit).at(iMu) & 1<<5) cout << "5" << endl;
 
-      l3TestPtAll->Fill((*l3Pt).at(iMu));
+      
 
       for(unsigned int w=0 ; w<8 ; w++){
 	int ii = w;
@@ -264,7 +337,8 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 	  ////for (int station = 0; station < 4; station++) {
 	  double CSC1,CSC2,CSC3,CSC4;
 	  CSC1 = CSC2 = CSC3 = CSC4 = 0;
-	  for (map<int,std::vector<int> >::const_iterator ggg = (*muNCSCSeg).begin(); ggg != (*muNCSCSeg).end(); ggg++) {        
+	  for (map<int,std::vector<int> >::const_iterator ggg = (*muNCSCSeg).begin(); ggg != (*muNCSCSeg).end(); ggg++) {
+	    if(ggg->first != iMu) continue;
 	    CSC1 = ggg->second.at(0);
 	    CSC2 = ggg->second.at(1);
 	    CSC3 = ggg->second.at(2);
@@ -275,9 +349,24 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 	    glb_NCSC_4[ii]->Fill(ggg->second.at(3),weight);
 	  }
 	  glb_NCSC_total[ii]->Fill(CSC1+CSC2+CSC3+CSC4,weight);
+	  double CSC1A,CSC2A,CSC3A,CSC4A;
+	  CSC1A = CSC2A = CSC3A = CSC4A = 0;
+	  for (map<int,std::vector<int> >::const_iterator ggg = (*muNCSCSegArb).begin(); ggg != (*muNCSCSegArb).end(); ggg++) {        
+	    if (ggg->first != iMu) continue;
+	    CSC1A = ggg->second.at(0);
+	    CSC2A = ggg->second.at(1);
+	    CSC3A = ggg->second.at(2);
+	    CSC4A = ggg->second.at(3);
+	    glb_NCSCArb_1[ii]->Fill(ggg->second.at(0),weight);
+	    glb_NCSCArb_2[ii]->Fill(ggg->second.at(1),weight);
+	    glb_NCSCArb_3[ii]->Fill(ggg->second.at(2),weight);
+	    glb_NCSCArb_4[ii]->Fill(ggg->second.at(3),weight);
+	  }
+	  glb_NCSCArb_total[ii]->Fill(CSC1A+CSC2A+CSC3A+CSC4A,weight);
 	  double DT1,DT2,DT3,DT4;
 	  DT1 = DT2 = DT3 = DT4 = 0;
 	  for (map<int,std::vector<int> >::const_iterator ggg = (*muNDTSeg).begin(); ggg != (*muNDTSeg).end(); ggg++) {        
+	    if(ggg->first != iMu) continue;
 	    DT1 = ggg->second.at(0);
 	    DT2 = ggg->second.at(1);
 	    DT3 = ggg->second.at(2);
@@ -288,15 +377,75 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 	    glb_NDT_4[ii]->Fill(ggg->second.at(3),weight);	    
 	  }
 	  glb_NDT_total[ii]->Fill(DT1+DT2+DT3+DT4,weight);
+	  double DT1A,DT2A,DT3A,DT4A;
+	  DT1A = DT2A = DT3A = DT4A = 0;
+	  for (map<int,std::vector<int> >::const_iterator ggg = (*muNDTSegArb).begin(); ggg != (*muNDTSegArb).end(); ggg++) {        
+	    if(ggg->first != iMu) continue;
+	    DT1A = ggg->second.at(0);
+	    DT2A = ggg->second.at(1);
+	    DT3A = ggg->second.at(2);
+	    DT4A = ggg->second.at(3);
+	    glb_NDTArb_1[ii]->Fill(ggg->second.at(0),weight);
+	    glb_NDTArb_2[ii]->Fill(ggg->second.at(1),weight);
+	    glb_NDTArb_3[ii]->Fill(ggg->second.at(2),weight);
+	    glb_NDTArb_4[ii]->Fill(ggg->second.at(3),weight);	    
+	  }
+	  glb_NDTArb_total[ii]->Fill(DT1A+DT2A+DT3A+DT4A,weight);
+	  double RPC1,RPC2,RPC3,RPC4;
+	  RPC1 = RPC2 = RPC3 = RPC4 = 0;
+	  for (map<int,std::vector<int> >::const_iterator ggg = (*muNRPCSeg).begin(); ggg != (*muNRPCSeg).end(); ggg++) {        
+	    if(ggg->first != iMu) continue;
+	    RPC1 = ggg->second.at(0);
+	    RPC2 = ggg->second.at(1);
+	    RPC3 = ggg->second.at(2);
+	    RPC4 = ggg->second.at(3);
+	    glb_NRPC_1[ii]->Fill(ggg->second.at(0),weight);
+	    glb_NRPC_2[ii]->Fill(ggg->second.at(1),weight);
+	    glb_NRPC_3[ii]->Fill(ggg->second.at(2),weight);
+	    glb_NRPC_4[ii]->Fill(ggg->second.at(3),weight);	    
+	  }
+	  glb_NRPC_total[ii]->Fill(RPC1+RPC2+RPC3+RPC4,weight);
+	  double RPC1A,RPC2A,RPC3A,RPC4A;
+	  RPC1A = RPC2A = RPC3A = RPC4A = 0;
+	  for (map<int,std::vector<int> >::const_iterator ggg = (*muNRPCSegArb).begin(); ggg != (*muNRPCSegArb).end(); ggg++) {        
+	    if(ggg->first != iMu) continue;
+	    RPC1A = ggg->second.at(0);
+	    RPC2A = ggg->second.at(1);
+	    RPC3A = ggg->second.at(2);
+	    RPC4A = ggg->second.at(3);
+	    glb_NRPCArb_1[ii]->Fill(ggg->second.at(0),weight);
+	    glb_NRPCArb_2[ii]->Fill(ggg->second.at(1),weight);
+	    glb_NRPCArb_3[ii]->Fill(ggg->second.at(2),weight);
+	    glb_NRPCArb_4[ii]->Fill(ggg->second.at(3),weight);	    
+	  }
+	  glb_NRPCArb_total[ii]->Fill(RPC1A+RPC2A+RPC3A+RPC4A,weight);
 	  glb_NSeg_total[ii]->Fill(CSC1+CSC2+CSC3+CSC4+DT1+DT2+DT3+DT4,weight);
+	  glb_NSegArb_total[ii]->Fill(CSC1A+CSC2A+CSC3A+CSC4A+DT1A+DT2A+DT3A+DT4A,weight);
 
 	  //int nMuHits = 0;
+	  glb_NHits[ii]->Fill((*l3NHits).at(iMu),weight);
+	  glb_NMuHits[ii]->Fill((*l3NMuHits).at(iMu),weight);
+	  glb_NDTHits[ii]->Fill((*l3NDTHits).at(iMu),weight);
+	  glb_NCSCHits[ii]->Fill((*l3NCSCHits).at(iMu),weight);
+	  glb_NRPCHits[ii]->Fill((*l3NRPCHits).at(iMu),weight);
+	  /*
 	  for (map<int, int>::const_iterator hits = (*l3NMuHits).begin(); hits != (*l3NMuHits).end(); hits++) {
 	    if(hits->first==iMu && hits->second > 0) glb_NMuHits[ii]->Fill(hits->second,weight);
 	    //nMuHits = hits->second;
 	  }
-	  
-	  glb_NHits[ii]->Fill((*l3NHits).at(iMu),weight);
+	  for (map<int, int>::const_iterator hits = (*l3NDTHits).begin(); hits != (*l3NDTHits).end(); hits++) {
+	    if(hits->first==iMu && hits->second > 0) glb_NDTHits[ii]->Fill(hits->second,weight);
+	    //nMuHits = hits->second;
+	  }
+	  for (map<int, int>::const_iterator hits = (*l3NCSCHits).begin(); hits != (*l3NCSCHits).end(); hits++) {
+	    if(hits->first==iMu && hits->second > 0) glb_NCSCHits[ii]->Fill(hits->second,weight);
+	    //nMuHits = hits->second;
+	  }
+	  for (map<int, int>::const_iterator hits = (*l3NRPCHits).begin(); hits != (*l3NRPCHits).end(); hits++) {
+	    if(hits->first==iMu && hits->second > 0) glb_NRPCHits[ii]->Fill(hits->second,weight);
+	    //nMuHits = hits->second;
+	  }
+	  */
 	  
 	  float hitsIn1 = 0.;
 	  float hitsIn2 = 0.;
@@ -340,7 +489,7 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 	    }
 	  }
 	  if(DT1+DT2+DT3+DT4>0) {
-	    if(DT1==1 && DT2==0 && DT3==0 && DT4==0 && rpcIn1==1) {
+	    if(DT1==1 && DT2==0 && DT3==0 && DT4==0) {
 	      glb_minimumRequirement[ii]->Fill(1,weight);
 	    } else {
 	      glb_minimumRequirement[ii]->Fill(0,weight);
