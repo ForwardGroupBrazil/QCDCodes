@@ -79,6 +79,14 @@ MRTU_Path = cms.Path( tpProduction )
 TimerService = cms.Service("TimerService",useCPUtime = cms.untracked.bool(True))
 import HLTrigger.Timer.timer_cfi
 hltTimer = HLTrigger.Timer.timer_cfi.myTimer.clone()
+
+selectedMuons = cms.EDFilter("MuonSelector",
+                             src = cms.InputTag('muons'),
+                             cut = cms.string('(isGlobalMuon = 1 || isStandAloneMuon = 1 || isTrackerMuon = 1 )'),
+                             filter = cms.bool(True)
+                             ) 
+
+#MRTU_EndPath = cms.EndPath( hltTimer * selectedMuons * recoMuonTreeMaker )
 MRTU_EndPath = cms.EndPath( hltTimer * recoMuonTreeMaker )
 
 #MHTUSchedule = cms.Schedule( reDIGI_Path + MHTU_Path )
@@ -99,3 +107,4 @@ def insertMRTU(process):
     ##actually do the --no_output option
     if (hasattr(process,"out_step")):
         process.schedule.remove(process.out_step)
+

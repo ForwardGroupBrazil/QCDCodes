@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.15 2010/04/14 02:06:11 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.16 2010/05/07 19:04:07 aeverett Exp $
 //
 //
 
@@ -268,7 +268,9 @@ private:
   std::map<int,std::vector<int> > *muNCSCSegArb;
   std::map<int,std::vector<int> > *muNDTSegArb;
   std::map<int,std::vector<int> > *muNRPCSegArb;
- 
+  std::map<int,std::vector<int> > *muNCSCHit;
+  std::map<int,std::vector<int> > *muNDTHit;
+  std::map<int,std::vector<int> > *muNRPCHit;
 
   std::vector<double> *l3P;
   std::vector<double> *l3Px;
@@ -839,6 +841,9 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   muNCSCSegArb =  new std::map<int,std::vector<int> >;
   muNDTSegArb =  new std::map<int,std::vector<int> >;
   muNRPCSegArb =  new std::map<int,std::vector<int> >;
+  muNCSCHit =  new std::map<int,std::vector<int> >;
+  muNDTHit =  new std::map<int,std::vector<int> >;
+  muNRPCHit =  new std::map<int,std::vector<int> >;
   l3P = 0;
   l3Pt = 0;
   l3Px = 0;
@@ -1552,6 +1557,9 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       int nDTHitsForThisL3 = 0;
       int nCSCHitsForThisL3 = 0;
       int nRPCHitsForThisL3 = 0;
+      int nDTHitsForThisL3PerStation  [] = {0,0,0,0};
+      int nCSCHitsForThisL3PerStation [] = {0,0,0,0};
+      int nRPCHitsForThisL3PerStation [] = {0,0,0,0};
 
       edm::ESHandle<TransientTrackingRecHitBuilder> trackBuilder;
       edm::ESHandle<TransientTrackingRecHitBuilder> muonBuilder;
@@ -1646,21 +1654,37 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	      nDTHitsForThisL3++;
 	      const DTChamberId& id = DTChamberId((*l3Hit)->geographicalId());
 	      (*stationsForThisL3).push_back(id.station());
+	      nDTHitsForThisL3PerStation[id.station()-1]++;
 	    }
 	    if ( (*l3Hit)->geographicalId().subdetId() == 2) { // CSC hit
 	      nCSCHitsForThisL3++;
 	      const CSCDetId& id = CSCDetId((*l3Hit)->geographicalId());
 	      (*stationsForThisL3).push_back(id.station());
+	      nCSCHitsForThisL3PerStation[id.station()-1]++;
 	    }
 	    if ( (*l3Hit)->geographicalId().subdetId() == 3) { // RPC hit
 	      nRPCHitsForThisL3++;
 	      const RPCDetId& id = RPCDetId((*l3Hit)->geographicalId());
 	      (*stationsForThisL3).push_back(id.station());
+	      nRPCHitsForThisL3PerStation[id.station()-1]++;
 	    }
 	  }
 	}
       }
     
+      std::vector<int> *nCSCHitPerStation = new std::vector<int>;
+      std::vector<int> *nDTHitPerStation = new std::vector<int>;
+      std::vector<int> *nRPCHitPerStation = new std::vector<int>;
+      for(int station = 0; station < 4; ++station) {
+	nCSCHitPerStation->push_back(nCSCHitsForThisL3PerStation[station]);
+	nDTHitPerStation->push_back(nDTHitsForThisL3PerStation[station]);
+	nRPCHitPerStation->push_back(nRPCHitsForThisL3PerStation[station]);
+      }
+
+      (*muNCSCHit).insert(std::make_pair(iMu,*nCSCHitPerStation));
+      (*muNDTHit).insert(std::make_pair(iMu,*nDTHitPerStation));
+      (*muNRPCHit).insert(std::make_pair(iMu,*nRPCHitPerStation));
+      
       (*l3DetIds).insert(std::make_pair(iMu,*idsForThisL3));    
       (*l3SubdetIds).insert(std::make_pair(iMu,*subidsForThisL3));
       (*l3Component).insert(std::make_pair(iMu,*detsForThisL3));
@@ -3103,6 +3127,10 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   muNDTSegArb->clear();
   muNRPCSegArb->clear();
 
+  muNCSCHit->clear();
+  muNDTHit->clear();
+  muNRPCHit->clear();
+
   l3P->clear();
   l3Px->clear();
   l3Py->clear();
@@ -3438,6 +3466,9 @@ MuonRecoTreeUtility::beginJob()
   MuTrigData->Branch("muNCSCSegArb",&muNCSCSegArb);
   MuTrigData->Branch("muNDTSegArb",&muNDTSegArb);
   MuTrigData->Branch("muNRPCSegArb",&muNRPCSegArb);
+  MuTrigData->Branch("muNCSCHit",&muNCSCHit);
+  MuTrigData->Branch("muNDTHit",&muNDTHit);
+  MuTrigData->Branch("muNRPCHit",&muNRPCHit);
   //MuTrigData->Branch("nL3Seeds",&nL3Seeds,"nL3Seeds/I");
   // L3 muon information: the basics
   MuTrigData->Branch("l3P",&l3P);
@@ -3666,6 +3697,9 @@ MuonRecoTreeUtility::beginJob()
   MuTrigMC->Branch("muNCSCSeg",&muNCSCSeg);
   MuTrigMC->Branch("muNDTSeg",&muNDTSeg);
   MuTrigMC->Branch("muNRPCSeg",&muNRPCSeg);
+  MuTrigMC->Branch("muNCSCHit",&muNCSCHit);
+  MuTrigMC->Branch("muNDTHit",&muNDTHit);
+  MuTrigMC->Branch("muNRPCHit",&muNRPCHit);
   MuTrigMC->Branch("muNCSCSegArb",&muNCSCSegArb);
   MuTrigMC->Branch("muNDTSegArb",&muNDTSegArb);
   MuTrigMC->Branch("muNRPCSegArb",&muNRPCSegArb);
