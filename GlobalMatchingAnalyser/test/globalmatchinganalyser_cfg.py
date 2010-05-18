@@ -67,6 +67,7 @@ process.load("Configuration.StandardSequences.Reconstruction_cff")
 process.source = cms.Source(
     "PoolSource",
     # eventsToProcess = cms.untracked.VEventRange( '123977:11474609', ),
+    skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
     '/store/user/aeverett/MinimumBias//CMSSW_354_PUSkim_123978//679e85c2781449dc0ef0f390bc4dc871//muonSkim_1_1.root',
     '/store/user/aeverett/MinimumBias//CMSSW_354_PUSkim_123818//679e85c2781449dc0ef0f390bc4dc871//muonSkim_1_1.root',
@@ -74,8 +75,6 @@ process.source = cms.Source(
     '/store/user/aeverett/MinimumBias//CMSSW_354_PUSkim_124030//679e85c2781449dc0ef0f390bc4dc871//muonSkim_1_1.root',
     '/store/user/aeverett/MinimumBias//CMSSW_354_PUSkim_123591//679e85c2781449dc0ef0f390bc4dc871//muonSkim_1_1.root',
     '/store/user/aeverett/MinimumBias//CMSSW_354_PUSkim_123592//679e85c2781449dc0ef0f390bc4dc871//muonSkim_1_1.root',
-    #'/store/user/aeverett/CMSSW_3_4_1/SingleMuPt0_500/aeverett/SingleMuPt0_500_CMSSW_3_4_1_step1//SingleMuPt0_500_CMSSW_3_4_1_step2//bd7cda0b32f61291da1aab637c754773//step2_23.root'
-    
     )
     )
     
@@ -119,10 +118,15 @@ process.schedule = cms.Schedule(process.p,process.analyser_step,process.this_is_
 
 process.GlobalTag.globaltag = 'GR10_P_V4::All'
 
+process.globalMuons.GLBTrajBuilderParameters.GlbRefitterParameters.MuonHitsOption = 1
+#process.globalMuons.GLBTrajBuilderParameters.GlbRefitterParameters.SkipStation = 1
+
 #process.globalMuons.GLBTrajBuilderParameters.PtCut = 0.5
 
 #process.globalMuons.GLBTrajBuilderParameters.GlobalMuonTrackMatcher.DeltaRCut_2 = 0.3
 #process.globalMatchingAnalyser.GlobalMuonTrackMatcher.DeltaRCut_2 = 0.3
+#process.globalMuons.GLBTrajBuilderParameters.GlobalMuonTrackMatcher.Pt_threshold1 = 10.0
+#process.globalMuons.GLBTrajBuilderParameters.GlobalMuonTrackMatcher.DeltaDCut_2 = 25.0
 
 process.ttrhbwor.ComputeCoarseLocalPositionFromDisk = True
 process.ttrhbwr.ComputeCoarseLocalPositionFromDisk = True
