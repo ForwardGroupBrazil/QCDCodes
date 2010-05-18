@@ -78,7 +78,7 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load('Configuration/EventContent/EventContent_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('$Revision: 1.1 $'),
+    version = cms.untracked.string('$Revision: 1.2 $'),
     annotation = cms.untracked.string('MHTU nevts:100'),
     name = cms.untracked.string('PyReleaseValidation')
 )
@@ -148,6 +148,16 @@ process.schedule.extend([process.endjob_step,process.out_step])
 def customise(process):
      from Workspace.MuonRecoTreeUtility.muonRecoTreeUtility_cff import insertMRTU
      insertMRTU(process)
+
+     #import UserCode.L3Switches.Switches as switch
+     #switch.SwitchToBaseline(process)
+     #switch.SwitchToBaselinePP(process)
+     #switch.SwitchToOIState(process)
+     #switch.SwitchToOIHit(process)
+     #switch.SwitchToAllCombined(process)
+     #switch.SwitchToOICombined(process)
+     #switch.SwitchToIterative3(process)
+     
      return (process)
 
 
