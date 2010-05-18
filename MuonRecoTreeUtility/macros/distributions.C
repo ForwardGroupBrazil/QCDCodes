@@ -71,6 +71,21 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
   TH1F* glb_NRPCArb_total[8];
   TH1F* glb_NSeg_total[8];
   TH1F* glb_NSegArb_total[8];
+  TH1F* glb_NMuStationsValid[8];
+
+  TH1F* glb_NCSCHit_1[8];
+  TH1F* glb_NCSCHit_2[8];
+  TH1F* glb_NCSCHit_3[8];
+  TH1F* glb_NCSCHit_4[8];
+  TH1F* glb_NDTHit_1[8];
+  TH1F* glb_NDTHit_2[8];
+  TH1F* glb_NDTHit_3[8];
+  TH1F* glb_NDTHit_4[8];
+  TH1F* glb_NRPCHit_1[8];
+  TH1F* glb_NRPCHit_2[8];
+  TH1F* glb_NRPCHit_3[8];
+  TH1F* glb_NRPCHit_4[8];
+
   TH1F* glb_NHits[8];
   TH1F* glb_NMuHits[8];
   TH1F* glb_NDTHits[8];
@@ -176,11 +191,25 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
     glb_NRPCArb_total[ww] = new TH1F("glb_nRPCArb_total","Number of segments in all RPC stations",11,-0.5,10.5);
     glb_NSeg_total[ww] = new TH1F("glb_nSeg_total","Number of segments in all stations",16,-0.5,15.5);
     glb_NSegArb_total[ww] = new TH1F("glb_nSegArb_total","Number of segments in all stations",16,-0.5,15.5);
+    glb_NMuStationsValid[ww] = new TH1F("glb_nMuStationsValid","Number of stations",16,-0.5,15.5);
     glb_NMuHits[ww] = new TH1F("glb_nMuHits","Number of muon hits",76,-0.5,75.5);
     glb_NDTHits[ww] = new TH1F("glb_nDTHits","Number of DT hits",76,-0.5,75.5);
     glb_NCSCHits[ww] = new TH1F("glb_nCSCHits","Number of CSC hits",76,-0.5,75.5);
     glb_NRPCHits[ww] = new TH1F("glb_nRPCHits","Number of RPC hits",76,-0.5,75.5);
     glb_NHits[ww] = new TH1F("glb_nHits","Number of hits",76,-0.5,75.5);
+    glb_NCSCHit_1[ww] = new TH1F("glb_nCSCHit_1","Number of hits in station 1",11,-0.5,10.5);
+    glb_NCSCHit_2[ww] = new TH1F("glb_nCSCHit_2","Number of hits in station 2",11,-0.5,10.5);
+    glb_NCSCHit_3[ww] = new TH1F("glb_nCSCHit_3","Number of hits in station 3",11,-0.5,10.5);
+    glb_NCSCHit_4[ww] = new TH1F("glb_nCSCHit_4","Number of hits in station 4",11,-0.5,10.5);
+    glb_NDTHit_1[ww] = new TH1F("glb_nDTHit_1","Number of hits in station 1",11,-0.5,10.5);
+    glb_NDTHit_2[ww] = new TH1F("glb_nDTHit_2","Number of hits in station 2",11,-0.5,10.5);
+    glb_NDTHit_3[ww] = new TH1F("glb_nDTHit_3","Number of hits in station 3",11,-0.5,10.5);
+    glb_NDTHit_4[ww] = new TH1F("glb_nDTHit_4","Number of hits in station 4",11,-0.5,10.5);
+    glb_NRPCHit_1[ww] = new TH1F("glb_nRPCHit_1","Number of hits in station 1",11,-0.5,10.5);
+    glb_NRPCHit_2[ww] = new TH1F("glb_nRPCHit_2","Number of hits in station 2",11,-0.5,10.5);
+    glb_NRPCHit_3[ww] = new TH1F("glb_nRPCHit_3","Number of hits in station 3",11,-0.5,10.5);
+    glb_NRPCHit_4[ww] = new TH1F("glb_nRPCHit_4","Number of hits in station 4",11,-0.5,10.5);
+
     glb_hitsIn1Ratio[ww] = new TH1F("glb_hitsIn1Ratio","Ratio of Station1 Hits",100,0.,1.);
     glb_hitsIn1RatioNMuHits[ww] = new TH2F("glb_hitsIn1RatioNMuHits","Ratio of Station1 Hits",76,-0.5,75.5,100,0.,1.);
     glb_hitsIn1RatioDepth[ww] = new TH2F("glb_hitsIn1RatioDepth","Ratio of Station1 Hits",6,-0.5,5.5,100,0.,1.);
@@ -334,6 +363,8 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 	  glb_muDeltaStaRelChi2[ii]->Fill(fabs((*muStaRelChi2).at(iMu) - (*l2Chi2).at(iMu)/dof ),weight);
 	  if((*muAllGlobalMuons).at(iMu)==1 && (*l3Ndof).at(iMu)>0 ) glb_nChi2[ii]->Fill((*l3Chi2).at(iMu)/(*l3Ndof).at(iMu),weight);
 
+	  glb_NMuStationValid[ii]->Fill((*muStationsValid).at(iMu));
+
 	  ////for (int station = 0; station < 4; station++) {
 	  double CSC1,CSC2,CSC3,CSC4;
 	  CSC1 = CSC2 = CSC3 = CSC4 = 0;
@@ -428,6 +459,32 @@ int distributions ( TTree* tree, char *fileName="histo.root", double effCS=1.0) 
 	  glb_NDTHits[ii]->Fill((*l3NDTHits).at(iMu),weight);
 	  glb_NCSCHits[ii]->Fill((*l3NCSCHits).at(iMu),weight);
 	  glb_NRPCHits[ii]->Fill((*l3NRPCHits).at(iMu),weight);
+
+
+
+	  for (map<int,std::vector<int> >::const_iterator ggg = (*muNCSCHit).begin(); ggg != (*muNCSCHit).end(); ggg++) {
+	    if(ggg->first != iMu) continue;
+	    glb_NCSCHit_1[ii]->Fill(ggg->second.at(0),weight);
+	    glb_NCSCHit_2[ii]->Fill(ggg->second.at(1),weight);
+	    glb_NCSCHit_3[ii]->Fill(ggg->second.at(2),weight);
+	    glb_NCSCHit_4[ii]->Fill(ggg->second.at(3),weight);	    
+	  }
+	  for (map<int,std::vector<int> >::const_iterator ggg = (*muNDTHit).begin(); ggg != (*muNDTHit).end(); ggg++) {
+	    if(ggg->first != iMu) continue;
+	    glb_NDTHit_1[ii]->Fill(ggg->second.at(0),weight);
+	    glb_NDTHit_2[ii]->Fill(ggg->second.at(1),weight);
+	    glb_NDTHit_3[ii]->Fill(ggg->second.at(2),weight);
+	    glb_NDTHit_4[ii]->Fill(ggg->second.at(3),weight);	    
+	  }
+	  for (map<int,std::vector<int> >::const_iterator ggg = (*muNRPCHit).begin(); ggg != (*muNRPCHit).end(); ggg++) {
+	    if(ggg->first != iMu) continue;
+	    glb_NRPCHit_1[ii]->Fill(ggg->second.at(0),weight);
+	    glb_NRPCHit_2[ii]->Fill(ggg->second.at(1),weight);
+	    glb_NRPCHit_3[ii]->Fill(ggg->second.at(2),weight);
+	    glb_NRPCHit_4[ii]->Fill(ggg->second.at(3),weight);	    
+	  }
+
+
 	  /*
 	  for (map<int, int>::const_iterator hits = (*l3NMuHits).begin(); hits != (*l3NMuHits).end(); hits++) {
 	    if(hits->first==iMu && hits->second > 0) glb_NMuHits[ii]->Fill(hits->second,weight);
