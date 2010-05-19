@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.17 2010/05/18 10:12:44 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.18 2010/05/18 21:04:04 aeverett Exp $
 //
 //
 
@@ -1454,7 +1454,8 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       //(*muStationMask).push_back(iMuon->stationMask(Muon::SegmentArbitration));
       (*muStationMask).push_back(iMuon->stationMask());
       
-      if ( ( iMuon->outerTrack()->extra().isAvailable()   ) && 
+      if ( ( iMuon->outerTrack().isAvailable() ) &&
+	   ( iMuon->outerTrack()->extra().isAvailable()   ) && 
 	   ( iMuon->outerTrack()->recHitsSize() > 0       ) &&
 	   ( iMuon->outerTrack()->recHit(0).isAvailable() )     ) {
 	
