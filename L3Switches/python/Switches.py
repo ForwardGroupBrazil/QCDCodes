@@ -215,6 +215,15 @@ def SwitchToIterative3(process):
         )
         )
 
+    process.l3MuonsLinksCombination = cms.EDProducer(
+        "L3TrackLinksCombiner",
+        labels = cms.VInputTag(
+        cms.InputTag("hltL3MuonsOIState"),
+        cms.InputTag("hltL3MuonsOIHit"),
+        cms.InputTag("hltL3MuonsIOHit")
+        )
+        )
+
     process.hltL3TkTracksFromL2 = process.l3TkFromL2Combination
     process.hltL3TrackCandidateFromL2 = process.l3TkCandFromL2Combination
     process.hltL3Muons = process.l3MuonsCombination
@@ -250,6 +259,7 @@ def SwitchToIterative3(process):
     process.HLTL3muonrecoNocandSequence = cms.Sequence(
         process.HLTL3muonTkCandidateSequence +
         process.hltL3TkTracksFromL2 +  ######
+        process.l3MuonsLinksCombination +
         process.hltL3Muons ######
         )
     
