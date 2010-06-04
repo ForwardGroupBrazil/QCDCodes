@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.18 2010/05/18 21:04:04 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.19 2010/05/19 08:21:31 aeverett Exp $
 //
 //
 
@@ -63,6 +63,7 @@
 #include <DataFormats/MuonDetId/interface/RPCDetId.h>
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
 #include "DataFormats/MuonDetId/interface/DTChamberId.h"
+#include "DataFormats/Common/interface/ValueMap.h"
 
 #include "TrackingTools/TransientTrackingRecHit/interface/TransientTrackingRecHit.h"
 #include "TrackingTools/TransientTrackingRecHit/interface/TransientTrackingRecHitBuilder.h"
@@ -650,7 +651,7 @@ double pt90(const reco::TrackRef & tk, const edm::Event & ev){
 MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   wantMotherBin(iConfig.getParameter<edm::ParameterSet>("IDconverttoBinNum"))
 {
-
+  theCategory = "MuonRecoTreeUtility";
   edm::LogInfo("MuonRecoTreeUtility") << "into the constructor.";
 
   isRecoLevel = iConfig.getUntrackedParameter<bool>("isRecoLevel",false);
@@ -1212,6 +1213,27 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     tkAllSimRecColl = l3Associator->associateSimToReco(tkTracksForAssociation, allTPtracks, &iEvent);
   }
   
+  //Handle<View<reco::Muon> > muons; iEvent.getByLabel(src_, muons);
+  Handle<edm::ValueMap<int> > classifTM; iEvent.getByLabel("classByHitsTM", classifTM);
+  Handle<edm::ValueMap<int> > classifTMid; iEvent.getByLabel("classByHitsTM","hitsPdgId", classifTMid);
+  Handle<edm::ValueMap<int> > classifTMflav; iEvent.getByLabel("classByHitsTM","flav", classifTMflav);
+  Handle<edm::ValueMap<int> > classifTMmid; iEvent.getByLabel("classByHitsTM","momPdgId", classifTMmid);
+  Handle<edm::ValueMap<int> > classifTMmflav; iEvent.getByLabel("classByHitsTM","momFlav", classifTMmflav);
+  Handle<edm::ValueMap<int> > classifTMgmid; iEvent.getByLabel("classByHitsTM","gmomPdgId", classifTMgmid);
+  Handle<edm::ValueMap<int> > classifTMgmflav; iEvent.getByLabel("classByHitsTM","gmomFlav", classifTMgmflav);
+  Handle<edm::ValueMap<float> > classifTMrho; iEvent.getByLabel("classByHitsTM","prodRho", classifTMrho);
+  Handle<edm::ValueMap<float> > classifTMz; iEvent.getByLabel("classByHitsTM","prodZ", classifTMz);
+
+  Handle<edm::ValueMap<int> > classifGlb; iEvent.getByLabel("classByHitsGlb", classifGlb);
+  Handle<edm::ValueMap<int> > classifGlbid; iEvent.getByLabel("classByHitsGlb","hitsPdgId", classifGlbid);
+  Handle<edm::ValueMap<int> > classifGlbflav; iEvent.getByLabel("classByHitsGlb","flav", classifGlbflav);
+  Handle<edm::ValueMap<int> > classifGlbmid; iEvent.getByLabel("classByHitsGlb","momPdgId", classifGlbmid);
+  Handle<edm::ValueMap<int> > classifGlbmflav; iEvent.getByLabel("classByHitsGlb","momFlav", classifGlbmflav);
+  Handle<edm::ValueMap<int> > classifGlbgmid; iEvent.getByLabel("classByHitsGlb","gmomPdgId", classifGlbgmid);
+  Handle<edm::ValueMap<int> > classifGlbgmflav; iEvent.getByLabel("classByHitsGlb","gmomFlav", classifGlbgmflav);
+  Handle<edm::ValueMap<float> > classifGlbrho; iEvent.getByLabel("classByHitsGlb","prodRho", classifGlbrho);
+  Handle<edm::ValueMap<float> > classifGlbz; iEvent.getByLabel("classByHitsGlb","prodZ", classifGlbz);
+
   // Event-level information: run, event, and Trigger Table
   EventNumber = iEvent.id().event();
   RunNumber = iEvent.id().run();   
@@ -1519,6 +1541,59 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	(*muTrkRelChi2).push_back(-999.);
 	(*muStaRelChi2).push_back(-999.);
       }
+      
+      edm::RefToBase<reco::Muon> muRef = muonColl.refAt(iMu);
+      int originTM = (*classifTM)[muRef];
+      int originGLB = (*classifGlb)[muRef];
+      LogTrace("SpecialBit") << "Event " << EventNumber << " iMu " << iMu << " isSTA " << iMuon->isStandAloneMuon() << " isTM " << iMuon->isTrackerMuon() << " isGLB " << iMuon->isGlobalMuon() << std::endl;
+      if(muRef->isTrackerMuon()){
+	if (originTM < 0) {
+	  LogTrace("SpecialBit") << "This TM is a ghost!" << std::endl;
+	} else {
+	  LogTrace("SpecialBit") << "This TM is: ";
+	  switch (originTM) {   
+	  case 0: LogTrace("SpecialBit") << "Unmatched " << std::endl; break;
+	  case 1: LogTrace("SpecialBit") << "Fake" << std::endl; break;
+	  case 2: LogTrace("SpecialBit") << "Light flavour or decay" << std::endl; break;          
+	  case 3: LogTrace("SpecialBit") << "Heavy flavour or tau" << std::endl; break;
+	  case 4: LogTrace("SpecialBit") << "Primary muon" << std::endl; break;
+	  }
+	}
+	LogTrace("SpecialBit") << "  TM ID       " << (*classifTMid)[muRef] 
+			       << "\n  TM flav     " << (*classifTMflav)[muRef] 
+			       << "\n  TM momID    " << (*classifTMmid)[muRef] 
+			       << "\n  TM momFlav  " << (*classifTMmflav)[muRef] 
+			       << "\n  TM gmomId   " << (*classifTMgmid)[muRef] 
+			       << "\n  TM gmomFlav " << (*classifTMgmflav)[muRef]
+			       << "\n  TM rho      " << (*classifTMrho)[muRef]
+			       << "\n  TM z        " << (*classifTMz)[muRef]
+; 
+	  
+	  }
+      if(muRef->isGlobalMuon()){
+	if (originGLB < 0) {
+	  LogTrace("SpecialBit") << "This GLB is a ghost!" << std::endl;
+	} else {
+	  LogTrace("SpecialBit") << "This GLB is: ";
+	  switch (originGLB) {   
+	  case 0: LogTrace("SpecialBit") << "Unmatched " << std::endl; break;
+	  case 1: LogTrace("SpecialBit") << "Fake" << std::endl; break;
+	  case 2: LogTrace("SpecialBit") << "Light flavour or decay" << std::endl; break;          
+	  case 3: LogTrace("SpecialBit") << "Heavy flavour or tau" << std::endl; break;
+	  case 4: LogTrace("SpecialBit") << "Primary muon" << std::endl; break;
+	  }
+	}
+	LogTrace("SpecialBit") << "  Glb ID       " << (*classifGlbid)[muRef] 
+			       << "\n  Glb flav     " << (*classifGlbflav)[muRef] 
+			       << "\n  Glb momID    " << (*classifGlbmid)[muRef] 
+			       << "\n  Glb momFlav  " << (*classifGlbmflav)[muRef] 
+			       << "\n  Glb gmomId   " << (*classifGlbgmid)[muRef] 
+			       << "\n  Glb gmomFlav " << (*classifGlbgmflav)[muRef]
+			       << "\n  Glb rho      " << (*classifGlbrho)[muRef]
+			       << "\n  Glb z        " << (*classifGlbz)[muRef]
+; 
+      }
+      
     } //end the recoMuon member block
   
     const reco::TrackRef glbTrack = ( iMuon->isGlobalMuon()) ? 
@@ -1870,7 +1945,8 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  
 	  int particle_ID = trp->pdgId();
 	  (*l3AssociationPdgId).push_back(particle_ID);
-	  LogDebug("SpecialBit")<<"SpecialBit pdgId " << particle_ID;
+	  LogTrace(theCategory)<<"l3AssociationPdgId " << particle_ID;
+	  LogTrace("SpecialBit")<<"SpecialBit L3 pdgId " << particle_ID;
 	  unsigned int thisBit = getBit(trp);
 	  //
 	  int muClass = 0;
@@ -1881,7 +1957,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  else if (isMysteryMuon(thisBit)) muClass = 5;
 	  else if (isPunchThrough(thisBit)) muClass = 6;
 	  
-	  LogDebug("SpecialBit")<<"RecoTree muon " << iMu << " of " << muonColl.size() << " has theBit: " << thisBit << " and muClass " << muClass << " and pT " << refL3->pt();
+	  LogTrace("SpecialBit")<<"RecoTree L3 muon " << iMu << " of " << muonColl.size() << " l3AssocPdgId " << particle_ID << " has theBit: " << thisBit << " and muClass " << muClass << " and pT " << refL3->pt();
 	  //
 	  (*l3AssociationMyBit).push_back(thisBit);
 	  (*l3AssociationVtxX).push_back(trp->vertex().x());
@@ -1999,11 +2075,11 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 		      // valid parent (e.g. singleMu)
 		      (*l3ParentID).push_back(0);
 		      (*l3MotherBinNumber).push_back(wantMotherBin.GetBinNum(0));
-		      edm::LogError(theCategory)<<"tricky muon from TrackingParticle.";
+		      LogTrace(theCategory)<<"tricky L3 muon from TrackingParticle.";
 		    }
 		  }//sim track is a muon
 		else{
-		  edm::LogError(theCategory)<<"the sim track attached to the muon tracking particle is not a muon.";
+		  LogTrace(theCategory)<<"the sim track attached to the muon tracking particle is not a muon.";
 
 		  (*l3ParentID).push_back(isimtk->type());
 		  (*l3MotherBinNumber).push_back(777);
@@ -2017,7 +2093,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  }// particle_ID == 13
 	  else{
 	    //a reco muon is associated to something else than a muon
-	    LogDebug(theCategory)<<"a reconstructed muon is associated to pdgID: "<<particle_ID;
+	    LogTrace(theCategory)<<"a reconstructed L3 muon is associated to pdgID: "<<particle_ID;
 
 	    (*l3AssociatedSimMuonIndex).push_back(-888);
 	    (*l3AssociatedSimMuonPt).push_back(-999);
@@ -2040,10 +2116,12 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	}//track has an association
 	else{
 	  //this track was not associated.
-	  edm::LogError(theCategory)<<"a reconstructed muon is not associated to a muonTP";
+	  LogTrace(theCategory)<<"a reconstructed L3 muon is not associated to a muonTP";
 	} //end theTP.isAvailable
       } // end theTP.isAvailable
       else { //this track was not associated.
+	LogTrace("SpecialBit")<< "The L3 was not associated to a TP"<<std::endl;
+	LogTrace(theCategory)<< "The L3 was not associated to a TP"<<std::endl;
 	double crap = -999;
 	(*l3IsAssociated).push_back(0);
 	(*l3AssociationVar).push_back(-999);
@@ -2273,7 +2351,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  
 	  int particle_ID = trp->pdgId();
 	  (*tkTrackAssociationPdgId).push_back(particle_ID);
-	  LogDebug("SpecialBit")<<"SpecialBit tk pdgId " << particle_ID;
+	  LogTrace("SpecialBit")<<"SpecialBit tk pdgId " << particle_ID;
 	  unsigned int thisBit = getBit(trp);
 	  //	int myBin = wantMotherBin.GetBinNum(particle_ID);
 	  //break;//aaa
@@ -2285,7 +2363,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  else if (isMysteryMuon(thisBit)) muClass = 5;
 	  else if (isPunchThrough(thisBit)) muClass = 6;
 
-	  LogDebug("SpecialBit")<<"RecoTree tkMuon " << iMu << " of " << muonColl.size() << " has theBit: " << thisBit << " and muClass " << muClass << " and pT " << refTk->pt();
+	  LogTrace("SpecialBit")<<"RecoTree TM Muon " << iMu << " of " << muonColl.size() << " has theBit: " << thisBit << " and muClass " << muClass << " and pT " << refTk->pt();
 	  //
 	  (*tkTrackAssociationMyBit).push_back(thisBit);
 	  (*tkTrackAssociationVtxX).push_back(trp->vertex().x());
@@ -2384,28 +2462,28 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 		      // valid parent (e.g. singleMu)
 		      (*tkTrackParentID).push_back(0);
 		      (*tkTrackMotherBinNumber).push_back(wantMotherBin.GetBinNum(0));
-		      edm::LogError(theCategory)<<"tricky muon from TrackingParticle.";
+		      LogTrace(theCategory)<<"tricky TM muon from TrackingParticle.";
 		    }
 		  }//sim track is a muon
 		else{
 		  (*tkTrackParentID).push_back(isimtk->type());
 		  (*tkTrackMotherBinNumber).push_back(777);
-		  edm::LogError(theCategory)<<"the sim track attached to the tracking particle is not a muon.";
+		  LogTrace(theCategory)<<"the sim track attached to the tracking particle is not a muon (TM).";
 		}
 	      }//loop over SimTrack of tracking particle
 	  }//muon associated
 	  else{
 	    //a reco muon is associated to something else than a muon
-	    edm::LogError(theCategory)<<"a reconstructed muon is associated to: "<<particle_ID;
+	    LogTrace(theCategory)<<"a reconstructed TM muon is associated to: "<<particle_ID;
 	    (*tkTrackParentID).push_back(particle_ID);
 	    (*tkTrackMotherBinNumber).push_back(-777);
 	  }
 	}//track has an association
 	else{
 	  //this track was not associated.
-	  edm::LogError(theCategory)<<"a reconstructed muon is not associated.";
+	  LogTrace(theCategory)<<"a reconstructed TM muon is not associated.";
 	}
-      }
+      } else { LogTrace("SpecialBit")<<"This TM is not associated to a TP"<<std::endl;}
       //      } // end Adam for Data
       if (associated) {
 	//      std::cout << "Associated..." << std::endl;
@@ -2777,11 +2855,11 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 		    else{
 		      (*l2ParentID).push_back(0);
 		      (*l2MotherBinNumber).push_back(wantMotherBin.GetBinNum(0));
-		      edm::LogError(theCategory)<<"tricky muon from TrackingParticle.";
+		      LogTrace(theCategory)<<"tricky muon from TrackingParticle.";
 		    }
 		  }//sim track is a muon
 		else{
-		  edm::LogError(theCategory)<<"the sim track attached to the tracking particle is not a muon.";
+		  LogTrace(theCategory)<<"the sim track attached to the tracking particle is not a muon.";
 		  (*l2ParentID).push_back(isimtk->type());
 		  (*l2MotherBinNumber).push_back(777);
 		}
@@ -2789,14 +2867,14 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  }//muon associated
 	  else{
 	    //a reco muon is associated to something else than a muon
-	    edm::LogError(theCategory)<<"a reconstructed muon is associated to: "<<particle_ID;
+	    LogTrace(theCategory)<<"a reconstructed L2 muon is associated to: "<<particle_ID;
 	    (*l2ParentID).push_back(particle_ID);
 	    (*l2MotherBinNumber).push_back(-777);
 	  }
 	}//track has an association
 	else{
 	  //this track was not associated.
-	  edm::LogError(theCategory)<<"a reconstructed muon is not associated.";
+	  LogTrace(theCategory)<<"a reconstructed L2 muon is not associated.";
 	}
       }
       } //end Adam for Data
@@ -2891,11 +2969,11 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     
     iMu++;
   } // this brace migrates to swallow GLB STA TK
-  
+  //LogDebug("SpecialBit");
   // Loop over all tracking particles
   int sim_index = 0;
-  if(!TPtracks.failedToGet()) { //start Adam for Data
-  nSimMuon = 0;
+  if(!allTPtracks.failedToGet()) { //start Adam for Data
+    nSimMuon = 0;LogTrace("SpecialBit") << "TPCollection size " << (*allTPtracks).size();
   //  for (TrackingParticleCollection::const_iterator trp = (*TPtracks).begin();
   //       trp != (*TPtracks).end(); ++trp) {
 
@@ -2904,14 +2982,15 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   for (unsigned int iSim = 0; iSim != (*TPtracks).size(); iSim++) {
     
     TrackingParticleRef trp(TPtracks, iSim);
-    int particle_ID = trp->pdgId();
-    if(abs(particle_ID) != 13) continue;
+    int particle_ID = trp->pdgId();LogTrace("SpecialBit")<<"TP pdgID " << trp->pdgId();
+    //aaa    if(abs(particle_ID) != 13) continue;
     //    if (abs(particle_ID) != 13) edm::LogInfo("MuonRecoTreeUtility") << "we have a non-muon in the collection.";
     (*simMuonPt).push_back(trp->pt());
     (*simMuonEta).push_back(trp->eta());
     (*simMuonPhi).push_back(trp->phi());
-    LogDebug("SpecialBit");
+    LogTrace("SpecialBit")<<"SimMuonBit...";
     unsigned int thisBit = getBit(trp);
+    LogTrace("SpecialBit")<<"... is " << thisBit;
     (*simMuonMyBit).push_back(thisBit);
     (*simMuonVtxX).push_back(trp->vertex().x());
     (*simMuonVtxY).push_back(trp->vertex().y());
@@ -2951,7 +3030,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
     stationsForSim->clear();
     
     for(TrackingParticle::g4t_iterator isimtk = trp->g4Track_begin();isimtk!=trp->g4Track_end();isimtk++)  {
-      if(isimtk->type()==13||isimtk->type()==-13) {
+      if(true || isimtk->type()==13||isimtk->type()==-13) {
 	// This is the sim track for this tracking particle.  Time to put in the parameters
 	FreeTrajectoryState 
 	  ftsAtProduction(GlobalPoint(trp->vertex().x(),trp->vertex().y(),trp->vertex().z()),
@@ -4023,28 +4102,31 @@ unsigned int MuonRecoTreeUtility::getBit(const TrackingParticleRef& simRef) cons
   */
 
   unsigned int thisBit = noBit;
-
+  LogTrace("SpecialBit") << "TPInfo bx " << simRef->eventId().bunchCrossing() << " ev " << simRef->eventId().event() << " q " << simRef->charge() << " rho " << sqrt(simRef->vertex().perp2()) << " z " << simRef->vertex().z() << " pT " << sqrt(simRef->momentum().perp2()) << " eta " << simRef->momentum().eta();
+  LogTrace("SpecialBit") << tpSelector_primary(*simRef) << " " << tpSelector_silicon(*simRef) << " " << tpSelector_calConversion(*simRef);
   if (fabs(simRef->pdgId() )!=13 ) {
     thisBit = nonMuon;
+    LogTrace("SpecialBit") << "b0";
   }  
   else if ( tpSelector_primary(*simRef) ) {
     thisBit = primaryMuon;
-    LogDebug("SpecialBit") << "b1";
+    LogTrace("SpecialBit") << "b1";
   }
   else if ( tpSelector_silicon(*simRef) && !(isPrimaryMuon(thisBit)) ){
     thisBit = siliconMuon;
-    LogDebug("SpecialBit") << "b2";
+    LogTrace("SpecialBit") << "b2";
   }
-  else if ( tpSelector_calConversion(*simRef) && ! (isSiliconMuon(thisBit) ||  isPrimaryMuon(thisBit)) ) {
+  else if ( tpSelector_calConversion(*simRef) ) { // && ! (isSiliconMuon(thisBit) ||  isPrimaryMuon(thisBit)) ) {
     thisBit = calConversionMuon;
-    LogDebug("SpecialBit") << "b3";
+    LogTrace("SpecialBit") << "b3";
   }
-  else if ( fabs(simRef->pdgId())==13 && simRef->pt() >= 0.9 && ! (isPrimaryMuon(thisBit) ||  isSiliconMuon(thisBit) ||  isCalConversionMuon(thisBit)) ) {
+  else if ( fabs(simRef->pdgId())==13 && simRef->pt() >= 0.9 ) { //&& ! (isPrimaryMuon(thisBit) ||  isSiliconMuon(thisBit) ||  isCalConversionMuon(thisBit)) ) {
     thisBit = otherMuon;
-    LogDebug("SpecialBit") << "b4";
+    LogTrace("SpecialBit") << "b4";
   }
   else if ( fabs(simRef->pdgId())==13 ) {
     thisBit = mysteryMuon;
+    LogTrace("SpecialBit") << "b5";
   }
 
   return thisBit; 
