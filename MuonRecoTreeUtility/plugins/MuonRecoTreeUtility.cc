@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.19 2010/05/19 08:21:31 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.20 2010/06/04 17:48:36 aeverett Exp $
 //
 //
 
@@ -246,6 +246,27 @@ private:
   std::vector<int> *muTMOneStationTight ;
   std::vector<int> *muTMLastStationOptimizedLowPtLoose ;
   std::vector<int> *muTMLastStationOptimizedLowPtTight ;
+
+  std::vector<int> *muMCClassTM;
+  std::vector<int> *muMCClassTMid;
+  std::vector<int> *muMCClassTMflav;
+  std::vector<int> *muMCClassTMmid;
+  std::vector<int> *muMCClassTMmflav;
+  std::vector<int> *muMCClassTMgmid;
+  std::vector<int> *muMCClassTMgmflav;
+  std::vector<int> *muMCClassTMrho;
+  std::vector<int> *muMCClassTMz;
+
+  std::vector<int> *muMCClassGlb;
+  std::vector<int> *muMCClassGlbid;
+  std::vector<int> *muMCClassGlbflav;
+  std::vector<int> *muMCClassGlbmid;
+  std::vector<int> *muMCClassGlbmflav;
+  std::vector<int> *muMCClassGlbgmid;
+  std::vector<int> *muMCClassGlbgmflav;
+  std::vector<int> *muMCClassGlbrho;
+  std::vector<int> *muMCClassGlbz;
+
   std::vector<int> *muGMTkChiCompatibility ;
   std::vector<int> *muGMStaChiCompatibility ;
   std::vector<int> *muGMTkKinkTight ;
@@ -688,33 +709,6 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   edm::ParameterSet refitterParameters = iConfig.getParameter<edm::ParameterSet>("RefitterParameters");     
   theGlbRefitter = new GlobalMuonRefitter(refitterParameters, theService);
   
-
-  // Get our module timing things
-  /*
-  theTimerLabel=iConfig.getParameter<edm::InputTag>("TimerLabel"); 
-  if(isRecoLevel==false) { LogDebug("MuonRecoTreeUtility");
-    edm::ParameterSet ModulesForTiming =  iConfig.getUntrackedParameter<edm::ParameterSet>("TimingModules");
-    theMuonDigiModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonDigiModules");
-    theMuonLocalRecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonLocalRecModules");
-    theMuonL2RecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonL2RecModules");
-    theMuonL3RecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonL3RecModules");
-    theMuonL2IsoModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonL2IsoModules");
-    theMuonL3IsoModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("MuonL3IsoModules");
-    theTrackerDigiModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("TrackerDigiModules");
-    theTrackerRecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("TrackerRecModules");
-    theCaloDigiModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("CaloDigiModules");
-    theCaloRecModules=ModulesForTiming.getUntrackedParameter<std::vector<std::string> >("CaloRecModules");
-  }
-  */
-  /*
-  // Get our trigger names from the config
-  LogDebug("MuonRecoTreeUtility");
-  singleMuIsoTriggerName = iConfig.getParameter<std::string>("singleMuIsoTriggerName");
-  singleMuNonIsoTriggerName = iConfig.getParameter<std::string>("singleMuNonIsoTriggerName");
-  diMuIsoTriggerName = iConfig.getParameter<std::string>("diMuIsoTriggerName");
-  diMuNonIsoTriggerName = iConfig.getParameter<std::string>("diMuNonIsoTriggerName"); 
-  */
-
   l2AssocLabel = iConfig.getParameter<std::string>("l2AssociatorName");
   l3AssocLabel = iConfig.getParameter<std::string>("l3AssociatorName");
   tkAssocLabel = iConfig.getParameter<std::string>("tkAssociatorName");
@@ -827,6 +821,27 @@ MuonRecoTreeUtility::MuonRecoTreeUtility(const edm::ParameterSet& iConfig):
   muTMOneStationTight  = 0;
   muTMLastStationOptimizedLowPtLoose  = 0;
   muTMLastStationOptimizedLowPtTight  = 0;
+
+  muMCClassTM = 0;
+  muMCClassTMid = 0;
+  muMCClassTMflav = 0;
+  muMCClassTMmid = 0;
+  muMCClassTMmflav = 0;
+  muMCClassTMgmid = 0;
+  muMCClassTMgmflav = 0;
+  muMCClassTMrho = 0;
+  muMCClassTMz = 0;
+
+  muMCClassGlb = 0;
+  muMCClassGlbid = 0;
+  muMCClassGlbflav = 0;
+  muMCClassGlbmid = 0;
+  muMCClassGlbmflav = 0;
+  muMCClassGlbgmid = 0;
+  muMCClassGlbgmflav = 0;
+  muMCClassGlbrho = 0;
+  muMCClassGlbz = 0;
+
   muGMTkChiCompatibility  = 0;
   muGMStaChiCompatibility  = 0;
   muGMTkKinkTight  = 0;
@@ -1265,153 +1280,6 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 
   edm::LogInfo("MuonRecoTreeUtility") << "deposit objects created.";
 
-  // get hold of the TriggerResults objects
-  /*
-  edm::Handle<TriggerResults> triggerResults;
-  iEvent.getByLabel(triggerResults_,triggerResults);
-  TriggerNames namesOfTriggers(*triggerResults);
-  */
-
-  // Right, that's the setup done.  Now let's put in our execution times.
-  /*
-  edm::LogInfo("MuonRecoTreeUtility") << "doing the module timing.";
-
-  unsigned nTotalModules = evtTime->size();
-  totalMuonHLTTime = 0;
-  for(unsigned int i = 0; i != nTotalModules; ++i){
-    std::string module_name = evtTime->name(i);
-    for ( unsigned int j = 0; j != theMuonDigiModules.size(); ++j ) {
-      if ( theMuonDigiModules[j] == module_name) {
-	totalMuonHLTTime+=evtTime->time(i);
-	(*muonDigiModuleTimes).insert(std::make_pair(theMuonDigiModules[j],evtTime->time(i)));
-      }
-    }
-    for ( unsigned int j = 0; j != theMuonLocalRecModules.size(); ++j ) {
-      if ( theMuonLocalRecModules[j] == module_name) {
-        totalMuonHLTTime+=evtTime->time(i);
-        (*muonLocalRecModuleTimes).insert(std::make_pair(theMuonLocalRecModules[j],evtTime->time(i)));
-      }
-    }
-    for ( unsigned int j = 0; j != theMuonL2RecModules.size(); ++j ) {
-      if ( theMuonL2RecModules[j] == module_name) {
-        totalMuonHLTTime+=evtTime->time(i);
-	(*muonL2RecModuleTimes).insert(std::make_pair(theMuonL2RecModules[j],evtTime->time(i)));
-      }
-    }
-    for ( unsigned int j = 0; j != theMuonL3RecModules.size(); ++j ) {
-      if ( theMuonL3RecModules[j] == module_name) {
-        totalMuonHLTTime+=evtTime->time(i);
-        (*muonL3RecModuleTimes).insert(std::make_pair(theMuonL3RecModules[j],evtTime->time(i)));
-      }
-    }
-    for ( unsigned int j = 0; j != theMuonL2IsoModules.size(); ++j ) {
-      if ( theMuonL2IsoModules[j] == module_name) {
-        totalMuonHLTTime+=evtTime->time(i);
-        (*muonL2IsoModuleTimes).insert(std::make_pair(theMuonL2IsoModules[j],evtTime->time(i)));
-      }
-    }
-    for ( unsigned int j = 0; j != theMuonL3IsoModules.size(); ++j ) {
-      if ( theMuonL3IsoModules[j] == module_name) {
-        totalMuonHLTTime+=evtTime->time(i);
-        (*muonL3IsoModuleTimes).insert(std::make_pair(theMuonL3IsoModules[j],evtTime->time(i)));
-      }
-    }
-    for ( unsigned int j = 0; j != theTrackerDigiModules.size(); ++j ) {
-      if ( theTrackerDigiModules[j] == module_name) {
-        totalMuonHLTTime+=evtTime->time(i);
-        (*trackerDigiModuleTimes).insert(std::make_pair(theTrackerDigiModules[j],evtTime->time(i)));
-      }
-    }
-    for ( unsigned int j = 0; j != theTrackerRecModules.size(); ++j ) {
-      if ( theTrackerRecModules[j] == module_name) {
-        totalMuonHLTTime+=evtTime->time(i);
-        (*trackerRecModuleTimes).insert(std::make_pair(theTrackerRecModules[j],evtTime->time(i)));
-      }
-    }
-    for ( unsigned int j = 0; j != theCaloDigiModules.size(); ++j ) {
-      if ( theCaloDigiModules[j] == module_name) {
-        totalMuonHLTTime+=evtTime->time(i);
-	(*caloDigiModuleTimes).insert(std::make_pair(theCaloDigiModules[j],evtTime->time(i)));
-      }
-    }
-    for ( unsigned int j = 0; j != theCaloRecModules.size(); ++j ) {
-      if ( theCaloRecModules[j] == module_name) {
-        totalMuonHLTTime+=evtTime->time(i);
-        (*caloRecModuleTimes).insert(std::make_pair(theCaloRecModules[j],evtTime->time(i)));
-      }
-    }
-  }
-  */
-
-  /*
-  edm::LogInfo("MuonRecoTreeUtility") << "checking what filter passed.";
-
-  unsigned int indexSingleMuIso = namesOfTriggers.triggerIndex(singleMuIsoTriggerName );
-  unsigned int indexSingleMuNoIso = namesOfTriggers.triggerIndex(singleMuNonIsoTriggerName);
-  unsigned int indexDiMuIso = namesOfTriggers.triggerIndex(diMuIsoTriggerName );
-  unsigned int indexDiMuNoIso = namesOfTriggers.triggerIndex(diMuNonIsoTriggerName); 
-  //  edm::LogInfo("MuonRecoTreeUtility") << "Trying to get the trigger decisions.";
-  edm::LogInfo("MuonRecoTreeUtility") << "Indexes: " << indexSingleMuIso << " " << indexSingleMuNoIso << " " << indexDiMuIso << " " << indexDiMuNoIso;
-
-  if (indexSingleMuNoIso<namesOfTriggers.size()){
-    if (triggerResults->index(indexSingleMuNoIso) > 6) l1SingleMuNonIsoTriggered = 1;
-    else l1SingleMuNonIsoTriggered = 0;
-    if (triggerResults->index(indexSingleMuNoIso) > 20) l2SingleMuNonIsoTriggered = 1;
-    else l2SingleMuNonIsoTriggered = 0;
-    if (triggerResults->state(indexSingleMuNoIso) == 1) l3SingleMuNonIsoTriggered = 1;
-    else l3SingleMuNonIsoTriggered = 0;
-  }
-  else
-    edm::LogError("MuonRecoTreeUtility")<<singleMuNonIsoTriggerName<<" is not a valid trigger name here.";
-  
-  if (indexSingleMuIso<namesOfTriggers.size()){
-    if (triggerResults->index(indexSingleMuIso) > 6) l1SingleMuIsoTriggered = 1;
-    else l1SingleMuIsoTriggered = 0;
-    if (triggerResults->index(indexSingleMuIso) > 20) l2SingleMuIsoPreTriggered = 1;
-    else l2SingleMuIsoPreTriggered = 0;
-    if (triggerResults->index(indexSingleMuIso) > 34) l2SingleMuIsoTriggered = 1;
-    else l2SingleMuIsoTriggered = 0;
-    if (triggerResults->index(indexSingleMuIso) > 44) l3SingleMuIsoPreTriggered = 1;
-    else l3SingleMuIsoPreTriggered = 0;
-    if (triggerResults->state(indexSingleMuIso) == 1) l3SingleMuIsoTriggered = 1;
-    else l3SingleMuIsoTriggered = 0;
-  }
-  else
-    edm::LogError("MuonRecoTreeUtility")<<singleMuIsoTriggerName<<" is not a valid trigger name here.";
-  
-  if (indexDiMuIso<namesOfTriggers.size()){
-    if (triggerResults->index(indexDiMuNoIso) > 6) l1DiMuNonIsoTriggered = 1;
-    else l1DiMuNonIsoTriggered = 0;
-    if (triggerResults->index(indexDiMuNoIso) > 20) l2DiMuNonIsoTriggered = 1;
-    else l2DiMuNonIsoTriggered = 0;
-    if (triggerResults->state(indexDiMuNoIso) == 1) l3DiMuNonIsoTriggered = 1;
-    else l3DiMuNonIsoTriggered = 0;
-  }
-  else
-    edm::LogError("MuonRecoTreeUtility")<<diMuNonIsoTriggerName<<" is not a valid trigger name here.";
-  
-  if (indexDiMuIso<namesOfTriggers.size()){
-    if (triggerResults->index(indexDiMuIso) > 6) l1DiMuIsoTriggered = 1;
-    else l1DiMuIsoTriggered = 0;
-    if (triggerResults->index(indexDiMuIso) > 20) l2DiMuIsoPreTriggered = 1;
-    else l2DiMuIsoPreTriggered = 0;
-    if (triggerResults->index(indexDiMuIso) > 34) l2DiMuIsoTriggered = 1;
-    else l2DiMuIsoTriggered = 0;
-    if (triggerResults->index(indexDiMuIso) > 44) l3DiMuIsoPreTriggered = 1;
-    else l3DiMuIsoPreTriggered = 0;
-    if (triggerResults->state(indexDiMuIso) == 1) l3DiMuIsoTriggered = 1;
-    else l3DiMuIsoTriggered = 0;
-  }
-  else
-    edm::LogError("MuonRecoTreeUtility")<<diMuIsoTriggerName<<" is not a valid trigger name here.";
-  
-  edm::LogInfo("MuonRecoTreeUtility") << "done.";
-
-  for (unsigned int i = 0; i < triggerResults->size(); i++) {
-    (*triggerDecisions).push_back(triggerResults->state(i));
-    (*triggerNames).push_back(namesOfTriggers.triggerName(i));
-  }
-  */ 
 
   //edm::Handle<reco::MuonTrackLinksCollection> l3ToL2Links;
   //iEvent.getByLabel(theLinkLabel, l3ToL2Links);
@@ -1475,6 +1343,50 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*muNumberOfMatches).push_back(iMuon->numberOfMatches());
       //(*muStationMask).push_back(iMuon->stationMask(Muon::SegmentArbitration));
       (*muStationMask).push_back(iMuon->stationMask());
+
+      edm::RefToBase<reco::Muon> muRef = muonColl.refAt(iMu);
+      if(muRef->isTrackerMuon()){
+	(*muMCClassTM).push_back((*classifTM)[muRef]);
+	(*muMCClassTMid).push_back((*classifTMid)[muRef]);
+	(*muMCClassTMflav).push_back((*classifTMflav)[muRef]);
+	(*muMCClassTMmid).push_back((*classifTMmid)[muRef]);
+	(*muMCClassTMmflav).push_back((*classifTMmflav)[muRef]);
+	(*muMCClassTMgmid).push_back((*classifTMgmid)[muRef]);
+	(*muMCClassTMgmflav).push_back((*classifTMgmflav)[muRef]);
+	(*muMCClassTMrho).push_back((*classifTMrho)[muRef]);
+	(*muMCClassTMz).push_back((*classifTMz)[muRef]);
+      } else {
+	(*muMCClassTM).push_back(999);
+	(*muMCClassTMid).push_back(999);
+	(*muMCClassTMflav).push_back(999);
+	(*muMCClassTMmid).push_back(999);
+	(*muMCClassTMmflav).push_back(999);
+	(*muMCClassTMgmid).push_back(999);
+	(*muMCClassTMgmflav).push_back(999);
+	(*muMCClassTMrho).push_back(999);
+	(*muMCClassTMz).push_back(999);
+      }
+      if(muRef->isGlobalMuon()){
+	(*muMCClassGlb).push_back((*classifGlb)[muRef]);
+	(*muMCClassGlbid).push_back((*classifGlbid)[muRef]);
+	(*muMCClassGlbflav).push_back((*classifGlbflav)[muRef]);
+	(*muMCClassGlbmid).push_back((*classifGlbmid)[muRef]);
+	(*muMCClassGlbmflav).push_back((*classifGlbmflav)[muRef]);
+	(*muMCClassGlbgmid).push_back((*classifGlbgmid)[muRef]);
+	(*muMCClassGlbgmflav).push_back((*classifGlbgmflav)[muRef]);
+	(*muMCClassGlbrho).push_back((*classifGlbrho)[muRef]);
+	(*muMCClassGlbz).push_back((*classifGlbz)[muRef]);
+      } else {
+	(*muMCClassGlb).push_back(999);
+	(*muMCClassGlbid).push_back(999);
+	(*muMCClassGlbflav).push_back(999);
+	(*muMCClassGlbmid).push_back(999);
+	(*muMCClassGlbmflav).push_back(999);
+	(*muMCClassGlbgmid).push_back(999);
+	(*muMCClassGlbgmflav).push_back(999);
+	(*muMCClassGlbrho).push_back(999);
+	(*muMCClassGlbz).push_back(999);
+      }      
       
       if ( ( iMuon->outerTrack().isAvailable() ) &&
 	   ( iMuon->outerTrack()->extra().isAvailable()   ) && 
@@ -1542,7 +1454,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	(*muStaRelChi2).push_back(-999.);
       }
       
-      edm::RefToBase<reco::Muon> muRef = muonColl.refAt(iMu);
+
       int originTM = (*classifTM)[muRef];
       int originGLB = (*classifGlb)[muRef];
       LogTrace("SpecialBit") << "Event " << EventNumber << " iMu " << iMu << " isSTA " << iMuon->isStandAloneMuon() << " isTM " << iMuon->isTrackerMuon() << " isGLB " << iMuon->isGlobalMuon() << std::endl;
@@ -3212,6 +3124,24 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
   muTMOneStationTight ->clear();
   muTMLastStationOptimizedLowPtLoose ->clear();
   muTMLastStationOptimizedLowPtTight ->clear();
+  muMCClassTM->clear();
+  muMCClassTMid->clear();
+  muMCClassTMflav->clear();
+  muMCClassTMmid->clear();
+  muMCClassTMmflav->clear();
+  muMCClassTMgmid->clear();
+  muMCClassTMgmflav->clear();
+  muMCClassTMrho->clear();
+  muMCClassTMz->clear();
+  muMCClassGlb->clear();
+  muMCClassGlbid->clear();
+  muMCClassGlbflav->clear();
+  muMCClassGlbmid->clear();
+  muMCClassGlbmflav->clear();
+  muMCClassGlbgmid->clear();
+  muMCClassGlbgmflav->clear();
+  muMCClassGlbrho->clear();
+  muMCClassGlbz->clear();
   muGMTkChiCompatibility ->clear();
   muGMStaChiCompatibility ->clear();
   muGMTkKinkTight ->clear();
@@ -3487,7 +3417,7 @@ void
 MuonRecoTreeUtility::beginJob()
 {
 
-  theFile = new TFile(outputFileName.c_str(),"UPDATE");
+  theFile = new TFile(outputFileName.c_str(),"Recreate");
   theFile->cd();
   
   MuTrigData = new TTree("MuTrigData","MuTrigData");
@@ -3563,6 +3493,24 @@ MuonRecoTreeUtility::beginJob()
   MuTrigData->Branch("muTMOneStationTight",&muTMOneStationTight);
   MuTrigData->Branch("muTMLastStationOptimizedLowPtLoose",&muTMLastStationOptimizedLowPtLoose);
   MuTrigData->Branch("muTMLastStationOptimizedLowPtTight",&muTMLastStationOptimizedLowPtTight);
+  MuTrigData->Branch("muMCClassTM",&muMCClassTM);
+  MuTrigData->Branch("muMCClassTMid",&muMCClassTMid);
+  MuTrigData->Branch("muMCClassTMflav",&muMCClassTMflav);
+  MuTrigData->Branch("muMCClassTMmid",&muMCClassTMmid);
+  MuTrigData->Branch("muMCClassTMmflav",&muMCClassTMmflav);
+  MuTrigData->Branch("muMCClassTMgmid",&muMCClassTMgmid);
+  MuTrigData->Branch("muMCClassTMgmflav",&muMCClassTMgmflav);
+  MuTrigData->Branch("muMCClassTMrho",&muMCClassTMrho);
+  MuTrigData->Branch("muMCClassTMz",&muMCClassTMz);
+  MuTrigData->Branch("muMCClassGlb",&muMCClassGlb);
+  MuTrigData->Branch("muMCClassGlbid",&muMCClassGlbid);
+  MuTrigData->Branch("muMCClassGlbflav",&muMCClassGlbflav);
+  MuTrigData->Branch("muMCClassGlbmid",&muMCClassGlbmid);
+  MuTrigData->Branch("muMCClassGlbmflav",&muMCClassGlbmflav);
+  MuTrigData->Branch("muMCClassGlbgmid",&muMCClassGlbgmid);
+  MuTrigData->Branch("muMCClassGlbgmflav",&muMCClassGlbgmflav);
+  MuTrigData->Branch("muMCClassGlbrho",&muMCClassGlbrho);
+  MuTrigData->Branch("muMCClassGlbz",&muMCClassGlbz);
   MuTrigData->Branch("muGMTkChiCompatibility",&muGMTkChiCompatibility);
   MuTrigData->Branch("muGMStaChiCompatibility",&muGMStaChiCompatibility);
   MuTrigData->Branch("muGMTkKinkTight",&muGMTkKinkTight);
@@ -3805,6 +3753,24 @@ MuonRecoTreeUtility::beginJob()
   MuTrigMC->Branch("muTMOneStationTight",&muTMOneStationTight);
   MuTrigMC->Branch("muTMLastStationOptimizedLowPtLoose",&muTMLastStationOptimizedLowPtLoose);
   MuTrigMC->Branch("muTMLastStationOptimizedLowPtTight",&muTMLastStationOptimizedLowPtTight);
+  MuTrigMC->Branch("muMCClassTM",&muMCClassTM);
+  MuTrigMC->Branch("muMCClassTMid",&muMCClassTMid);
+  MuTrigMC->Branch("muMCClassTMflav",&muMCClassTMflav);
+  MuTrigMC->Branch("muMCClassTMmid",&muMCClassTMmid);
+  MuTrigMC->Branch("muMCClassTMmflav",&muMCClassTMmflav);
+  MuTrigMC->Branch("muMCClassTMgmid",&muMCClassTMgmid);
+  MuTrigMC->Branch("muMCClassTMgmflav",&muMCClassTMgmflav);
+  MuTrigMC->Branch("muMCClassTMrho",&muMCClassTMrho);
+  MuTrigMC->Branch("muMCClassTMz",&muMCClassTMz);
+  MuTrigMC->Branch("muMCClassGlb",&muMCClassGlb);
+  MuTrigMC->Branch("muMCClassGlbid",&muMCClassGlbid);
+  MuTrigMC->Branch("muMCClassGlbflav",&muMCClassGlbflav);
+  MuTrigMC->Branch("muMCClassGlbmid",&muMCClassGlbmid);
+  MuTrigMC->Branch("muMCClassGlbmflav",&muMCClassGlbmflav);
+  MuTrigMC->Branch("muMCClassGlbgmid",&muMCClassGlbgmid);
+  MuTrigMC->Branch("muMCClassGlbgmflav",&muMCClassGlbgmflav);
+  MuTrigMC->Branch("muMCClassGlbrho",&muMCClassGlbrho);
+  MuTrigMC->Branch("muMCClassGlbz",&muMCClassGlbz);
   MuTrigMC->Branch("muGMTkChiCompatibility",&muGMTkChiCompatibility);
   MuTrigMC->Branch("muGMStaChiCompatibility",&muGMStaChiCompatibility);
   MuTrigMC->Branch("muGMTkKinkTight",&muGMTkKinkTight);
