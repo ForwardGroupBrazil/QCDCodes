@@ -182,7 +182,10 @@ int ScanTreePt ( TTree* tree, char *fileName, bool isData=false,double weight = 
       //if ((*muTrackerMuonArbitrated).at(iMu)) passTK = true;
       
       if (   (*muAllGlobalMuons).at(iMu)
-      	     ) {passL3 = true; passTK = true;}
+      	     ) {
+	passL3 = true; 
+	if ((*muAllTrackerMuons).at(iMu)) passTK = true;
+      }
 
       int myIsAssociated = (*l3IsAssociated).at(iMu);
       int myL3AssociationPdgId = (*l3AssociationPdgId).at(iMu);
@@ -308,10 +311,10 @@ int ScanTreePt ( TTree* tree, char *fileName, bool isData=false,double weight = 
 	double pt_tkTrack = (*tkTrackPt).at(iMu);
 
 	int myIsAssociated = (*tkTrackIsAssociated).at(iMu);
-	int myL3AssociationPdgId =  myIsAssociated ? (*tkTrackAssociationPdgId).at(iMu) : -777;
+	//aaa int myL3AssociationPdgId =  myIsAssociated ? (*tkTrackAssociationPdgId).at(iMu) : -777;
 	int myL3ParentID = (*tkTrackParentID).at(iMu);
 	int myL3MotherBinNumber = (*tkTrackMotherBinNumber).at(iMu);
-	int myL3TPIdBin = myIsAssociated ? GetBinNum((*tkTrackAssociationPdgId).at(iMu)) : -777;
+	//aaa int myL3TPIdBin = myIsAssociated ? GetBinNum((*tkTrackAssociationPdgId).at(iMu)) : -777;
 	int myL3ParentIdBin = GetBinNum((*tkTrackParentID).at(iMu));
 
 
