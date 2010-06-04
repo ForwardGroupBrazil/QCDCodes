@@ -28,7 +28,6 @@ from Workspace.MuonRecoTreeUtility.muonRecoTreeUtility_reco_cfi import *
 #redo tracking particles
 import SimGeneral.TrackingAnalysis.trackingParticles_cfi
 mytrackingParticles = SimGeneral.TrackingAnalysis.trackingParticles_cfi.mergedtruth.clone()
-#aaa mytrackingParticles.vertexDistanceCut = 1000
 
 #muon tracking particles
 import Validation.RecoTrack.cutsTPEffic_cfi
@@ -42,7 +41,6 @@ tpMuon.lip = cms.double(10000.0)
 tpMuon.src = cms.InputTag('mytrackingParticles')
 #if TP already in event
 #tpMuon.src = cms.InputTag('mergedtruth', 'MergedTrackTruth')
-#tpMuon.ptMin = 0.9
 
 #redo the tracking particle
 from Configuration.StandardSequences.MixingNoPileUp_cff import *
@@ -82,12 +80,51 @@ hltTimer = HLTrigger.Timer.timer_cfi.myTimer.clone()
 
 selectedMuons = cms.EDFilter("MuonSelector",
                              src = cms.InputTag('muons'),
-                             cut = cms.string('(isGlobalMuon = 1 || isStandAloneMuon = 1 || isTrackerMuon = 1 )'),
+                             cut = cms.string('(isGlobalMuon = 1 || isTrackerMuon = 1 )'),
                              filter = cms.bool(True)
                              ) 
 
-#MRTU_EndPath = cms.EndPath( hltTimer * selectedMuons * recoMuonTreeMaker )
-MRTU_EndPath = cms.EndPath( hltTimer * recoMuonTreeMaker )
+## #####
+## #load("SimTracker.TrackHistory.Playback_cff")
+## from SimTracker.TrackHistory.TrackClassifier_cff import *
+ 
+## vertexHistoryAnalyzer = cms.EDAnalyzer("TrackHistoryAnalyzer",
+##     trackClassifier
+## )
+ 
+## #pHistory = cms.Path(playback * vertexHistoryAnalyzer)
+## pHistory = cms.Path(vertexHistoryAnalyzer)
+
+## #load("SimTracker.TrackHistory.Playback_cff")
+## from SimTracker.TrackHistory.TrackClassifier_cff import *
+  
+## trackCategoriesAnalyzer = cms.EDAnalyzer("TrackCategoriesAnalyzer",
+##     trackClassifier
+## )
+ 
+## # Path
+## #pHistory2 = cms.Path(playback * trackCategoriesAnalyzer)
+## pHistory2 = cms.Path(trackCategoriesAnalyzer)
+
+## #trackClassifier.trackingTruth = cms.InputTag("mytrackingParticles")
+## #trackClassifier.trackProducer = cms.InputTag("globalMuons")
+## #####
+
+from MuonAnalysis.MuonAssociators.muonClassificationByHits_cfi import *
+
+#process.mytrackingParticles.vertexDistanceCut = 1000.0
+#process.mergedtruth.vertexDistanceCut = 1000.0
+#process.mergedtruthNoSimHits.vertexDistanceCut = 100.0
+#process.classByHitsTM.trackingParticles = "tpMuon"
+#process.classByHitsGlb.trackingParticles = "tpMuon"
+#process.classByHitsTM.trackingParticles = "mytrackingParticles"
+#process.classByHitsGlb.trackingParticles = "mytrackingParticles"
+#process.trackClassifier.trackingTruth = cms.InputTag("tpMuon")
+#process.trackClassifier.trackProducer = cms.InputTag("globalMuons")
+
+
+#MRTU_EndPath = cms.EndPath( hltTimer * vertexHistoryAnalyzer * trackCategoriesAnalyzer * selectedMuons * recoMuonTreeMaker )
+MRTU_EndPath = cms.EndPath( hltTimer * selectedMuons + muonClassificationByHits * recoMuonTreeMaker )
 
 #MHTUSchedule = cms.Schedule( reDIGI_Path + MHTU_Path )
 MRTUSchedule = cms.Schedule( MRTU_Path )
@@ -105,6 +142,6 @@ def insertMRTU(process):
     process.schedule.append( process.MRTU_EndPath )
 
     ##actually do the --no_output option
-    if (hasattr(process,"out_step")):
-        process.schedule.remove(process.out_step)
+#    if (hasattr(process,"out_step")):
+#        process.schedule.remove(process.out_step)
 
