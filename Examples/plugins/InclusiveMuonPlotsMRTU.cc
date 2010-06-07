@@ -29,6 +29,7 @@
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 
 #include <TH1.h>
+#include <TH2.h>
 #include <TProfile.h>
 #include <TObjString.h>
 #include <TDirectory.h>
@@ -57,6 +58,7 @@ class InclusiveMuonPlotsMRTU: public edm::EDAnalyzer {
         void endLuminosityBlock(const edm::LuminosityBlock &, const edm::EventSetup&);
 
         void book(const TFileService &fs, const edm::ParameterSet &pset, const std::string &name, const std::string &basename) ;
+        void book2d(const TFileService &fs, const edm::ParameterSet &pset, const std::string &name, const std::string &basename) ;
         void book(const TFileService &fs, const edm::ParameterSet &pset, const std::string &name) { book(fs,pset,name,name); }
 
         void bookProf(const TFileService &fs, const edm::ParameterSet &pset, const std::string &name, const std::string &basename) ;
@@ -169,6 +171,10 @@ InclusiveMuonPlotsMRTU::InclusiveMuonPlotsMRTU(const edm::ParameterSet& pset):
     book(*fs, pset, "segmentCompatNoArb",   "segmentCompat"); 
     book(*fs, pset, "caloCompat",           "caloCompat"); 
 
+    book(*fs, pset, "zGlb", "z"); 
+    book2d(*fs,pset,"rzGlb","rz");
+    book2d(*fs,pset,"rzTM","rz");
+
     if (pset.existsAs<edm::InputTag>("normalization")) {
         normalization_ = pset.getParameter<edm::InputTag>("normalization");
         luminosity = fs->make<TH1D>("normalization", "normalization", 1, 0, 1);
@@ -194,6 +200,22 @@ void InclusiveMuonPlotsMRTU::book(const TFileService &fs, const edm::ParameterSe
         if (range.size() != 2) throw cms::Exception("Configuration") << "parameter '" << basename << "Range' is not of the form (min, max).\n";
         plots[name] = fs.make<TH1D>(name.c_str(), name.c_str(), nbins, range[0], range[1]);
     }
+}
+
+void InclusiveMuonPlotsMRTU::book2d(const TFileService &fs, const edm::ParameterSet &pset, const std::string &name, const std::string &basename) 
+{
+    typedef std::vector<double> vdouble;
+    //if (pset.existsAs<vdouble>(basename+"Bins")) {
+    //vdouble bins = pset.getParameter<vdouble>(basename+"Bins");
+    //plots[name] = fs.make<TH1D>(name.c_str(), name.c_str(), bins.size()-1, &bins[0]);
+    //} else {
+    uint32_t nbinsx = pset.getParameter<uint32_t>(basename+"XBins");
+    vdouble  rangex = pset.getParameter<vdouble>(basename+"XRange");
+    uint32_t nbinsy = pset.getParameter<uint32_t>(basename+"YBins");
+    vdouble  rangey = pset.getParameter<vdouble>(basename+"YRange");
+    if (rangex.size() != 2 || rangey.size() != 2) throw cms::Exception("Configuration") << "parameter '" << basename <<"Range' is not of the form (min, max).\n";
+    plots[name] = fs.make<TH2D>(name.c_str(), name.c_str(), nbinsx, rangex[0], rangex[1],nbinsy,rangey[0],rangey[1]);
+    //}
 }
 
 void InclusiveMuonPlotsMRTU::bookProf(const TFileService &fs, const edm::ParameterSet &pset, const std::string &name, const std::string &basename) 
@@ -370,6 +392,11 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
 	//std::string intLabel = lexical_cast<std::string>(j+1);
 	//  
 	//}
+
+	if(mu.hasUserFloat("classByHitsGlb:prodZ"))	plots["zGlb"]->Fill(mu.userFloat("classByHitsGlb:prodZ"));
+
+	if(mu.hasUserFloat("classByHitsGlb:prodZ"))	plots["rzGlb"]->Fill(mu.userFloat("classByHitsGlb:prodZ"),mu.userFloat("classByHitsGlb:prodRho"));
+	if(mu.hasUserFloat("classByHitsTM:prodZ"))	plots["rzTM"]->Fill(mu.userFloat("classByHitsTM:prodZ"),mu.userFloat("classByHitsTM:prodRho"));
 
     }
 }
