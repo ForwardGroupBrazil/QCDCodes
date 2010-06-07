@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.20 2010/06/04 17:48:36 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.21 2010/06/04 20:51:20 aeverett Exp $
 //
 //
 
@@ -1875,6 +1875,12 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  (*l3AssociationVtxX).push_back(trp->vertex().x());
 	  (*l3AssociationVtxY).push_back(trp->vertex().y());
 	  (*l3AssociationVtxZ).push_back(trp->vertex().z());
+
+	  // put in the associated pt,eta,phi
+	  (*l3AssociatedSimMuonPt).push_back(trp->pt());
+	  (*l3AssociatedSimMuonEta).push_back(trp->eta());
+	  (*l3AssociatedSimMuonPhi).push_back(trp->phi());
+	  
 	
 	  if(abs(particle_ID) == 13){
 	    //Adam 1 start
@@ -1890,9 +1896,9 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	    }
 	    //Adam 1 end
 	    // put in the associated pt,eta,phi
-	    (*l3AssociatedSimMuonPt).push_back(trp->pt());
-	    (*l3AssociatedSimMuonEta).push_back(trp->eta());
-	    (*l3AssociatedSimMuonPhi).push_back(trp->phi());
+	    //(*l3AssociatedSimMuonPt).push_back(trp->pt());
+	    //(*l3AssociatedSimMuonEta).push_back(trp->eta());
+	    //(*l3AssociatedSimMuonPhi).push_back(trp->phi());
 	    if (fabs(trp->phi() - refL3->phi()) > 1) {
 	      //Note: keeping this in.  This happens sometimes when the associator used is the 
 	      //steppingHelixPropagatorAny
@@ -2008,9 +2014,9 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	    LogTrace(theCategory)<<"a reconstructed L3 muon is associated to pdgID: "<<particle_ID;
 
 	    (*l3AssociatedSimMuonIndex).push_back(-888);
-	    (*l3AssociatedSimMuonPt).push_back(-999);
-	    (*l3AssociatedSimMuonEta).push_back(-999);
-	    (*l3AssociatedSimMuonPhi).push_back(-999);
+	    //(*l3AssociatedSimMuonPt).push_back(-999);
+	    //(*l3AssociatedSimMuonEta).push_back(-999);
+	    //(*l3AssociatedSimMuonPhi).push_back(-999);
 
 	    (*l3AssociatedSimMuonNHits).push_back(0);
 	    (*l3AssociatedSimMuonDetIds).insert(std::make_pair(iMu,0));
@@ -2281,6 +2287,11 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  (*tkTrackAssociationVtxX).push_back(trp->vertex().x());
 	  (*tkTrackAssociationVtxY).push_back(trp->vertex().y());
 	  (*tkTrackAssociationVtxZ).push_back(trp->vertex().z());
+	  // put in the associated pt,eta,phi
+	  (*tkTrackAssociatedSimMuonPt).push_back(trp->pt());
+	  (*tkTrackAssociatedSimMuonEta).push_back(trp->eta());
+	  (*tkTrackAssociatedSimMuonPhi).push_back(trp->phi());
+
 	  //break;//aaa
 	  if(abs(particle_ID) == 13){
 // 	    //Adam 1 start
@@ -2297,9 +2308,9 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 // 	    break;//aaa
 // 	    //Adam 1 end
 	    // put in the associated pt,eta,phi
-	    (*tkTrackAssociatedSimMuonPt).push_back(trp->pt());
-	    (*tkTrackAssociatedSimMuonEta).push_back(trp->eta());
-	    (*tkTrackAssociatedSimMuonPhi).push_back(trp->phi());
+	    //(*tkTrackAssociatedSimMuonPt).push_back(trp->pt());
+	    //(*tkTrackAssociatedSimMuonEta).push_back(trp->eta());
+	    //(*tkTrackAssociatedSimMuonPhi).push_back(trp->phi());
 	    //break;//aaa
 	    if (fabs(trp->phi() - refTk->phi()) > 1) {
 	      //Note: keeping this in.  This happens sometimes when the associator used is the
