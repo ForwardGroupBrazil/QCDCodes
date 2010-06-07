@@ -36,8 +36,12 @@
 #include <map>
 #include <string>
 
+#include "boost/lexical_cast.hpp"
+
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
+
+using boost::lexical_cast;
 
 class InclusiveMuonPlotsMRTU: public edm::EDAnalyzer {
     public:
@@ -119,13 +123,17 @@ InclusiveMuonPlotsMRTU::InclusiveMuonPlotsMRTU(const edm::ParameterSet& pset):
 
     book(*fs, pset, "muonHitCounts", "muonHits");
     book(*fs, pset, "muonHitCountsany", "muonHits");
-    book(*fs, pset, "muonHitCounts1any", "muonHits");
-    book(*fs, pset, "muonHitCounts2any", "muonHits");
-    book(*fs, pset, "muonHitCounts3any", "muonHits");
-    book(*fs, pset, "muonHitCounts4any", "muonHits");
-    book(*fs, pset, "muonHitCountsdt1any", "muonHits");
-    book(*fs, pset, "muonHitCountscsc1any", "muonHits");
-    book(*fs, pset, "muonHitCountsrpc1any", "muonHits");
+    for(size_t j =0; j<4; ++j) {
+       std::string intLabel = lexical_cast<std::string>(j+1);
+       book(*fs, pset, "muonHitCounts"+intLabel+"any", "muonStationHits");
+       book(*fs, pset, "muonHitCountsv"+intLabel, "muonStationHits");
+       book(*fs, pset, "muonHitCountsdt"+intLabel+"any", "muonStationHits");
+       book(*fs, pset, "muonHitCountscsc"+intLabel+"any", "muonStationHits");
+       book(*fs, pset, "muonHitCountsrpc"+intLabel+"any", "muonStationHits");
+       book(*fs, pset, "muonHitCountsdt"+intLabel, "muonStationHits");
+       book(*fs, pset, "muonHitCountscsc"+intLabel, "muonStationHits");
+       book(*fs, pset, "muonHitCountsrpc"+intLabel, "muonStationHits");
+    }
 
     book(*fs, pset, "trackIso05", "isolation");
     book(*fs, pset, "ecalIso05",  "isolation");
@@ -144,12 +152,22 @@ InclusiveMuonPlotsMRTU::InclusiveMuonPlotsMRTU(const edm::ParameterSet& pset):
     book(*fs, pset, "muonStationsCSCAny",   "muonStations");
     book(*fs, pset, "muonStationsRPCValid", "muonStations");
     book(*fs, pset, "muonStationsRPCAny",   "muonStations");
-    book(*fs, pset, "segmentMatchesArb",     "segmentMatches"); 
-    book(*fs, pset, "segmentMatchesNoArb",   "segmentMatches"); 
-    book(*fs, pset, "segmentMatchesFailArb", "segmentMatches"); 
-    book(*fs, pset, "segmentCompatArb",      "segmentCompat"); 
-    book(*fs, pset, "segmentCompatNoArb",    "segmentCompat"); 
-    book(*fs, pset, "caloCompat",            "caloCompat"); 
+    book(*fs, pset, "numberOfChambers",     "segmentMatches");
+    book(*fs, pset, "segmentMatchesArb_MaxDepth","segmentMatches"); 
+    book(*fs, pset, "segmentMatchesArb",    "segmentMatches"); 
+    book(*fs, pset, "segmentMatchesArb_1",  "bool"); 
+    book(*fs, pset, "segmentMatchesArb_2",  "bool"); 
+    book(*fs, pset, "segmentMatchesArb_3",  "bool"); 
+    book(*fs, pset, "segmentMatchesArb_4",  "bool"); 
+    book(*fs, pset, "segmentMatchesNoArb",  "segmentMatches"); 
+    book(*fs, pset, "segmentMatchesNoArb_1","bool"); 
+    book(*fs, pset, "segmentMatchesNoArb_2","bool"); 
+    book(*fs, pset, "segmentMatchesNoArb_3","bool"); 
+    book(*fs, pset, "segmentMatchesNoArb_4","bool"); 
+    book(*fs, pset, "segmentMatchesFailArb","segmentMatches"); 
+    book(*fs, pset, "segmentCompatArb",     "segmentCompat"); 
+    book(*fs, pset, "segmentCompatNoArb",   "segmentCompat"); 
+    book(*fs, pset, "caloCompat",           "caloCompat"); 
 
     if (pset.existsAs<edm::InputTag>("normalization")) {
         normalization_ = pset.getParameter<edm::InputTag>("normalization");
@@ -292,24 +310,66 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
         }
         
         if (mu.isMatchesValid()) {
-	  plots["segmentMatchesArb"    ]->Fill(mu.numberOfMatches(reco::Muon::SegmentAndTrackArbitration));
-            plots["segmentMatchesNoArb"  ]->Fill(mu.numberOfMatches(reco::Muon::SegmentArbitration));
-            plots["segmentMatchesFailArb"]->Fill(mu.numberOfMatches(reco::Muon::SegmentArbitration) - mu.numberOfMatches(reco::Muon::SegmentAndTrackArbitration));
-            plots["segmentCompatArb"     ]->Fill(muon::segmentCompatibility(mu, reco::Muon::SegmentAndTrackArbitration));
-            plots["segmentCompatNoArb"   ]->Fill(muon::segmentCompatibility(mu, reco::Muon::SegmentArbitration));
-        }
+	  plots["numberOfChambers"]->Fill(mu.numberOfChambers());
 
+	  plots["segmentMatchesArb"    ]->Fill(mu.numberOfMatches(reco::Muon::SegmentAndTrackArbitration));
+	  plots["segmentMatchesNoArb"  ]->Fill(mu.numberOfMatches(reco::Muon::SegmentArbitration));
+	  plots["segmentMatchesFailArb"]->Fill(mu.numberOfMatches(reco::Muon::SegmentArbitration) - mu.numberOfMatches(reco::Muon::SegmentAndTrackArbitration));
+
+	  //adam stations with matched segments
+	  unsigned int maskST_Arb = mu.stationMask(reco::Muon::SegmentAndTrackArbitration);
+	  unsigned int maskS_Arb = mu.stationMask(reco::Muon::SegmentArbitration);
+
+	  int maxDepth = 0;
+	  if((maskST_Arb & 1<<0)||(maskST_Arb & 1<<4)) maxDepth = 1;
+	  if((maskST_Arb & 1<<1)||(maskST_Arb & 1<<5)) maxDepth = 2;
+	  if((maskST_Arb & 1<<2)||(maskST_Arb & 1<<6)) maxDepth = 3;
+	  if((maskST_Arb & 1<<3)||(maskST_Arb & 1<<7)) maxDepth = 4;
+
+	  plots["segmentMatchesArb_MaxDepth"]->Fill(maxDepth);
+
+	  plots["segmentMatchesArb_1"]->Fill(((maskST_Arb & 1<<0)||(maskST_Arb & 1<<4)));
+	  plots["segmentMatchesArb_2"]->Fill(((maskST_Arb & 1<<1)||(maskST_Arb & 1<<5)));
+	  plots["segmentMatchesArb_3"]->Fill(((maskST_Arb & 1<<2)||(maskST_Arb & 1<<6)));
+	  plots["segmentMatchesArb_4"]->Fill(((maskST_Arb & 1<<3)||(maskST_Arb & 1<<7)));
+
+	  plots["segmentMatchesNoArb_1"]->Fill(((maskS_Arb & 1<<0)||(maskS_Arb & 1<<4)));
+	  plots["segmentMatchesNoArb_2"]->Fill(((maskS_Arb & 1<<1)||(maskS_Arb & 1<<5)));
+	  plots["segmentMatchesNoArb_3"]->Fill(((maskS_Arb & 1<<2)||(maskS_Arb & 1<<6)));
+	  plots["segmentMatchesNoArb_4"]->Fill(((maskS_Arb & 1<<3)||(maskS_Arb & 1<<7)));
+
+	  //adam end stations with matched segments
+
+	  plots["segmentCompatArb"     ]->Fill(muon::segmentCompatibility(mu, reco::Muon::SegmentAndTrackArbitration));
+	  plots["segmentCompatNoArb"   ]->Fill(muon::segmentCompatibility(mu, reco::Muon::SegmentArbitration));
+        }
+	
         if (mu.isCaloCompatibilityValid()) {
             plots["caloCompat"]->Fill(mu.caloCompatibility());
         }
 
 	plots["muonHitCounts"]->Fill(mu.userInt("muonHitCounts"));
 	plots["muonHitCountsany"]->Fill(mu.userInt("muonHitCounts:any"));
-	plots["muonHitCounts1any"]->Fill(mu.userInt("muonHitCounts:1any"));
-	plots["muonHitCountsdt1any"]->Fill(mu.userInt("muonHitCounts:dt1any"));
-	plots["muonHitCountscsc1any"]->Fill(mu.userInt("muonHitCounts:csc1any"));
-	plots["muonHitCountsrpc1any"]->Fill(mu.userInt("muonHitCounts:rpc1any"));
 
+	std::string any = "any";
+	std::string valid = "v";
+	
+	for(size_t j =0; j<4; ++j) {
+	  std::string intLabel = lexical_cast<std::string>(j+1);
+	  plots["muonHitCounts"+intLabel+any]->Fill(mu.userInt("muonHitCounts:"+intLabel+any));
+	  plots["muonHitCounts"+valid+intLabel]->Fill(mu.userInt("muonHitCounts:"+valid+intLabel));
+	  plots["muonHitCountsdt"+intLabel+any]->Fill(mu.userInt("muonHitCounts:dt"+intLabel+any));
+	  plots["muonHitCountsdt"+intLabel]->Fill(mu.userInt("muonHitCounts:dt"+intLabel));
+	  plots["muonHitCountscsc"+intLabel+any]->Fill(mu.userInt("muonHitCounts:csc"+intLabel+any));
+	  plots["muonHitCountscsc"+intLabel]->Fill(mu.userInt("muonHitCounts:csc"+intLabel));
+	  plots["muonHitCountsrpc"+intLabel+any]->Fill(mu.userInt("muonHitCounts:rpc"+intLabel+any));
+	  plots["muonHitCountsrpc"+intLabel]->Fill(mu.userInt("muonHitCounts:rpc"+intLabel));
+	}
+
+	//for(size_t j =0; j<4; ++j) {
+	//std::string intLabel = lexical_cast<std::string>(j+1);
+	//  
+	//}
 
     }
 }

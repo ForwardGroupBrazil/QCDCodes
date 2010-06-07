@@ -69,7 +69,7 @@ process.TFileService = cms.Service('TFileService',
 ##     selection = "isGlobalMuon"
 ## )
 
-from MuonAnalysis.Examples.inclusiveMuonPlots_cfi import makeInclusiveMuonPlots;
+from UserCode.Examples.inclusiveMuonPlotsMRTU_cfi import makeInclusiveMuonPlots;
 commonInputs = cms.PSet(
     muons     = cms.InputTag('patMuons'),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
