@@ -6,27 +6,28 @@
 #include "DataFormats/MuonDetId/interface/DTLayerId.h"
 #include "DataFormats/MuonDetId/interface/MuonSubdetId.h"
 
-int muon::muonHitCount(const reco::TrackRef track, int subdet, bool validOnly) {
-    int stations[4] = { 0,0,0,0 };
+int muon::muonHitCount(const reco::TrackRef track, int subdet, int station, bool validOnly) {
 
-    if (track.isNull()) return 0;
-    for (trackingRecHit_iterator it = track->recHitsBegin(), ed = track->recHitsEnd(); it != ed; ++it) {
-        DetId id = (*it)->geographicalId();
-        if (id.det() != DetId::Muon) continue;
-        if (subdet != 0 && id.subdetId() != subdet) continue;
-        if (validOnly && !(*it)->isValid()) continue;
-        switch (id.subdetId()) {
-            case MuonSubdetId::DT: 
-                stations[DTLayerId(id).station()-1] = 1; 
-                break;
-            case MuonSubdetId::CSC:
-                stations[CSCDetId(id).station()-1] = 1; 
-                break;
-            case MuonSubdetId::RPC: 
-                stations[RPCDetId(id).station()-1] = 1; 
-                break;
-        }
+  int hits = 0;
+  //std::cout <<"Sono in MuonHitCountUtility " << subdet << " " << station << " " << validOnly << std::endl;
+  if (track.isNull()) return 0;
+  for (trackingRecHit_iterator it = track->recHitsBegin(), ed = track->recHitsEnd(); it != ed; ++it) {
+    DetId id = (*it)->geographicalId();
+    if (id.det() != DetId::Muon) continue;
+    if (subdet != 0 && id.subdetId() != subdet) continue;
+    if (validOnly && !(*it)->isValid()) continue;
+    switch (id.subdetId()) {
+    case MuonSubdetId::DT: 
+      if(station == 0 || DTLayerId(id).station() == station) hits++; 
+      break;
+    case MuonSubdetId::CSC:
+      if(station == 0 || CSCDetId(id).station()  == station) hits++; 
+      break;
+    case MuonSubdetId::RPC: 
+      if(station == 0 || RPCDetId(id).station()  == station) hits++; 
+      break;
     }
-    return stations[0]+stations[1]+stations[2]+stations[3];
+  }
+  return hits;
 }
 

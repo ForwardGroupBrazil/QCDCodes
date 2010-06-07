@@ -1,6 +1,8 @@
 <use name=DataFormats/MuonReco>
 <use name=DataFormats/TrackReco>
 <use name=DataFormats/MuonDetId>
+<use name=boost>
 <export>
   <lib name=UserCodeExamples>
+  <use name=boost>	
 </export>
