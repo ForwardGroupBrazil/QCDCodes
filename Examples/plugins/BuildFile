@@ -15,6 +15,7 @@
   <use name=CommonTools/Utils>
   <use name=CommonTools/UtilAlgos>
   <use name=UserCode/Examples>
+  <use name=MuonAnalysis/Examples>
   <use name=root>
 </library>
 

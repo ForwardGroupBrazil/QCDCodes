@@ -74,7 +74,7 @@ commonInputs = cms.PSet(
     muons     = cms.InputTag('patMuons'),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
 )
-process.trackerMuons = cms.EDAnalyzer("InclusiveMuonPlots",
+process.trackerMuons = cms.EDAnalyzer("InclusiveMuonPlotsMRTU",
     makeInclusiveMuonPlots(),
     commonInputs,
     selection = cms.string("isTrackerMuon && muonID('TMLastStationAngTight')"),

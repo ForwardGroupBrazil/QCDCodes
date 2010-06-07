@@ -242,26 +242,36 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
             plots["muonBadHits"]->Fill(mu.outerTrack()->recHitsSize() - mu.outerTrack()->numberOfValidHits());
             plots["muonChi2n"]->Fill(mu.outerTrack()->normalizedChi2());
 
-            if ( ( mu.outerTrack()->extra().isAvailable()   ) && 
-                 ( mu.outerTrack()->recHitsSize() > 0       ) &&
-                 ( mu.outerTrack()->recHit(0).isAvailable() )     ) {
-
-                plots["muonStationsValid"]->Fill(muon::muonStations(mu.outerTrack(), 0, true));
-                //adam plots["muonStationsAny"  ]->Fill(muon::muonStations(mu.outerTrack(), 0, false));
-                plots["muonStationsAny"  ]->Fill(mu.userInt("muonStations:Any"));
-                float abseta = std::abs(mu.outerTrack()->eta());
-                if (abseta <= 1.2) {
-                    plots["muonStationsDTValid"]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::DT, true));
-                    plots["muonStationsDTAny"  ]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::DT, false));
-                } 
-                if (abseta <= 1.6) {
-                    plots["muonStationsRPCValid"]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::RPC, true));
-                    plots["muonStationsRPCAny"  ]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::RPC, false));
-                } 
-                if (abseta >= 0.8) {
-                    plots["muonStationsCSCValid"]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::CSC, true));
-                    plots["muonStationsCSCAny"  ]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::CSC, false));
-                }
+	    if(mu.hasUserInt("muonStations")) {
+	      plots["muonStationsAny"  ]->Fill(mu.userInt("muonStations:any"));
+	      plots["muonStationsValid"  ]->Fill(mu.userInt("muonStations"));
+	      plots["muonStationsDTAny"  ]->Fill(mu.userInt("muonStations:dtAny"));
+	      plots["muonStationsDTValid"  ]->Fill(mu.userInt("muonStations:dt"));
+	      plots["muonStationsCSCAny"  ]->Fill(mu.userInt("muonStations:cscAny"));
+	      plots["muonStationsCSCValid"  ]->Fill(mu.userInt("muonStations:csc"));
+	      plots["muonStationsRPCAny"  ]->Fill(mu.userInt("muonStations:rpcAny"));
+	      plots["muonStationsRPCValid"  ]->Fill(mu.userInt("muonStations:rpc"));
+	    } else if ( ( mu.outerTrack()->extra().isAvailable()   ) && 
+			( mu.outerTrack()->recHitsSize() > 0       ) &&
+			( mu.outerTrack()->recHit(0).isAvailable() )     ) {
+	      
+	      plots["muonStationsValid"]->Fill(muon::muonStations(mu.outerTrack(), 0, true));
+	      plots["muonStationsAny"  ]->Fill(muon::muonStations(mu.outerTrack(), 0, false));
+	      //if(mu.hasUserInt("muonStations:Any"));
+	      //plots["muonStationsAny"  ]->Fill(mu.userInt("muonStations:Any"));
+	      float abseta = std::abs(mu.outerTrack()->eta());
+	      if (abseta <= 1.2) {
+		plots["muonStationsDTValid"]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::DT, true));
+		plots["muonStationsDTAny"  ]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::DT, false));
+	      } 
+	      if (abseta <= 1.6) {
+		plots["muonStationsRPCValid"]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::RPC, true));
+		plots["muonStationsRPCAny"  ]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::RPC, false));
+	      } 
+	      if (abseta >= 0.8) {
+		plots["muonStationsCSCValid"]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::CSC, true));
+		plots["muonStationsCSCAny"  ]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::CSC, false));
+	      }
             }
         }
         if (mu.globalTrack().isNonnull()) {
