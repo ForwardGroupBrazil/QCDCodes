@@ -24,8 +24,8 @@ from Configuration.EventContent.EventContent_cff import *
 process.source = cms.Source(
     "PoolSource",
     fileNames = cms.untracked.vstring(
-    '/store/user/aeverett/CMSSW_3_4_1/SingleMuPt0_500/aeverett/SingleMuPt0_500_CMSSW_3_4_1_step1/SingleMuPt0_500_CMSSW_3_4_1_step2/bd7cda0b32f61291da1aab637c754773//step2_99.root'
-    #'/store/user/aeverett/CMSSW_3_4_1/SinglePiPt2_200/aeverett/SinglePiPt2_200_CMSSW_3_4_1_step1/SinglePiPt2_200_CMSSW_3_4_1_step2/e90b8558827cdd944d7d7455b9e9feec//step2_99_1.root'
+    #'/store/user/aeverett/CMSSW_3_4_1/SingleMuPt0_500/aeverett/SingleMuPt0_500_CMSSW_3_4_1_step1/SingleMuPt0_500_CMSSW_3_4_1_step2/bd7cda0b32f61291da1aab637c754773//step2_99.root'
+    '/store/user/aeverett/CMSSW_3_4_1/SinglePiPt2_200/aeverett/SinglePiPt2_200_CMSSW_3_4_1_step1/SinglePiPt2_200_CMSSW_3_4_1_step2/e90b8558827cdd944d7d7455b9e9feec//step2_99_1.root'
     ),
     # secondaryFileNames = cms.untracked.vstring(
     # '/store/user/aeverett/CMSSW_3_4_1/SinglePiPt2_200/aeverett/SinglePiPt2_200_CMSSW_3_4_1_step1/SinglePiPt2_200_CMSSW_3_4_1_step1/85a90b0814831c7eda376193ed517e95/SinglePiPt2_200_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_RAW2DIGI_L1Reco_3_1.root'
@@ -60,7 +60,15 @@ process.mergedTruth = cms.EDProducer(
     src           = cms.InputTag("g4SimHits"), # use "famosSimHits" for FAMOS
     setStatus     = cms.int32(5),             # set status = 8 for GEANT GPs
     # particleTypes = cms.vstring("mu+"),
-    filter        = cms.vstring("pt > 0.0"),  # just for testing (optional)
+    filter        = cms.vstring("pt > 0.1"),  # just for testing (optional)
+    genParticles   = cms.InputTag("genParticles") # original genParticle list
+    )
+process.mergedTruthMu = cms.EDProducer(
+    "GenPlusSimParticleProducer",
+    src           = cms.InputTag("g4SimHits"), # use "famosSimHits" for FAMOS
+    setStatus     = cms.int32(5),             # set status = 8 for GEANT GPs
+    particleTypes = cms.vstring("mu+"),
+    filter        = cms.vstring("pt > 0.1"),  # just for testing (optional)
     genParticles   = cms.InputTag("genParticles") # original genParticle list
     )
 process.genMuons = cms.EDProducer(
@@ -99,8 +107,8 @@ process.patMuons = PhysicsTools.PatAlgos.producersLayer1.muonProducer_cfi.patMuo
 )
 
 ### Adding MCtruth Info to the PATMuon
-## from MuonAnalysis.MuonAssociators.patMuonsWithTrigger_8E29_cff import addMCinfo
-addMCinfo(process)
+##from MuonAnalysis.MuonAssociators.patMuonsWithTrigger_8E29_cff import addMCinfo
+##addMCinfo(process)
 
 ### Adding Info about the MC truth matching
 # Requires MuonAnalysis/MuonAssociators
@@ -127,6 +135,7 @@ addHitCount(process.patMuons)
 process.go = cms.Path(
 #    process.preFilter +
     ( process.mergedTruth *
+      process.mergedTruthMu *
       process.genMuons    *
       process.muonMatch   +
       process.muonClassificationByHits +
@@ -134,15 +143,16 @@ process.go = cms.Path(
       process.muonHitCounts
       ) *
     process.patMuons
-    * process.filter
+#    * process.filter
 )
 
 
 process.out = cms.OutputModule("PoolOutputModule",
-    fileName = cms.untracked.string("pat_MuPat.root"),
+    fileName = cms.untracked.string("pat_PiPat.root"),
     outputCommands = cms.untracked.vstring(
         "drop *",
         "keep *_mergedTruth_*_*",
+        "keep *_mergedTruthMu_*_*",
         "keep *_patMuons_*_*",
         "keep *_genMuons_*_*",
         "keep *_genParticles_*_*",
@@ -154,7 +164,7 @@ process.out = cms.OutputModule("PoolOutputModule",
         "keep *_offlinePrimaryVertices__*",                  ## 
         "keep *_offlineBeamSpot__*",                         ##
     ),
-    SelectEvents = cms.untracked.PSet( SelectEvents = cms.vstring("go")),
+#    SelectEvents = cms.untracked.PSet( SelectEvents = cms.vstring("go")),
 )
 process.end = cms.EndPath(process.out)
 
