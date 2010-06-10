@@ -145,6 +145,7 @@ process.out = cms.OutputModule("PoolOutputModule",
         "keep *_mergedTruth_*_*",
         "keep *_patMuons_*_*",
         "keep *_genMuons_*_*",
+        "keep *_genParticles_*_*",
         "keep *_countCollisionEvents_*_*",
         "keep recoTrackExtras_standAloneMuons_*_*",          ## track states at the muon system, used both by patMuons and standAloneMuons
         "keep recoTracks_standAloneMuons__*",                ## bare standalone muon tracks, using standalone muon momentum (without BS constraint)
