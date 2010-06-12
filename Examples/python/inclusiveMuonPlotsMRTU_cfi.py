@@ -13,8 +13,8 @@ def _evenBins(min,max,delta):
 def makeInclusiveMuonPlots(rebinFactor=1):
     return cms.PSet(
         # ---- Kinematics ----
-        ptBins = _evenBins( 0, 30, 0.25 * rebinFactor),
-        pBins  = _evenBins( 0, 50, 0.5  * rebinFactor),
+        ptBins = _evenBins( 0, 100, 2 * rebinFactor),
+        pBins  = _evenBins( 0, 500, 2  * rebinFactor),
         etaBins = _evenBins( -2.6, 2.6, 0.2 * rebinFactor),
         phiBins = _evenBins(-3.2,  3.2, 0.2 * rebinFactor),
         chargeBins = cms.vdouble(-2,0,2),
@@ -44,11 +44,12 @@ def makeInclusiveMuonPlots(rebinFactor=1):
         segmentCompatBins  = _evenBins(0, 1 + 0.1*rebinFactor, 0.1 * rebinFactor), # need one bin for ">= 1.0"
         caloCompatBins     = _evenBins(0, 1 + 0.1*rebinFactor, 0.1 * rebinFactor), # need one bin for ">= 1.0"
         boolBins = _nBins(2,-0.5,1.5),
-        zBins = _nBins(100,-1000.,1000.),
+        zBins = _nBins(100,-500.,500.),
+        rBins = _nBins(100,0.,500.),
         rzXBins = cms.uint32(1000),
-        rzXRange = cms.vdouble(-1000.,1000.),
-        rzYBins = cms.uint32(1000),
-        rzYRange = cms.vdouble(0.,1000.),
+        rzXRange = cms.vdouble(-500.,500.),
+        rzYBins = cms.uint32(500),
+        rzYRange = cms.vdouble(0.,500.),
     )
 
 inclusiveMuonPlots = cms.EDAnalyzer("InclusiveMuonPlots",

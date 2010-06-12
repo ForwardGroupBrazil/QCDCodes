@@ -171,9 +171,10 @@ InclusiveMuonPlotsMRTU::InclusiveMuonPlotsMRTU(const edm::ParameterSet& pset):
     book(*fs, pset, "segmentCompatNoArb",   "segmentCompat"); 
     book(*fs, pset, "caloCompat",           "caloCompat"); 
 
-    book(*fs, pset, "zGlb", "z"); 
-    book2d(*fs,pset,"rzGlb","rz");
-    book2d(*fs,pset,"rzTM","rz");
+    book(*fs, pset, "prodz", "z"); 
+    book(*fs, pset, "prodr", "r");
+    book(*fs, pset, "prodd", "r");
+    book2d(*fs,pset,"prodrz","rz");
 
     if (pset.existsAs<edm::InputTag>("normalization")) {
         normalization_ = pset.getParameter<edm::InputTag>("normalization");
@@ -393,11 +394,19 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
 	//  
 	//}
 
-	if(mu.hasUserFloat("classByHitsGlb:prodZ"))	plots["zGlb"]->Fill(mu.userFloat("classByHitsGlb:prodZ"));
+	float z = 0.;
+	float rho = 0.;
+	float d = 0.;
 
-	if(mu.hasUserFloat("classByHitsGlb:prodZ"))	plots["rzGlb"]->Fill(mu.userFloat("classByHitsGlb:prodZ"),mu.userFloat("classByHitsGlb:prodRho"));
-	if(mu.hasUserFloat("classByHitsTM:prodZ"))	plots["rzTM"]->Fill(mu.userFloat("classByHitsTM:prodZ"),mu.userFloat("classByHitsTM:prodRho"));
+	if(mu.hasUserFloat("classByHitsGlb:prodZ")) z = mu.userFloat("classByHitsGlb:prodZ");
+	if(mu.hasUserFloat("classByHitsGlb:prodRho")) rho = mu.userFloat("classByHitsGlb:prodRho");
+	d = sqrt(z*z + rho*rho);
 
+	plots["prodz"]->Fill(z);
+	plots["prodr"]->Fill(rho);
+	plots["prodd"]->Fill(d);
+	plots["prodrz"]->Fill(z,rho);
+      
     }
 }
 
