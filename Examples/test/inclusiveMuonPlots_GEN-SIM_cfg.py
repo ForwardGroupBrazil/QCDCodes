@@ -53,10 +53,16 @@ process.allGenSim = cms.EDAnalyzer(
     commonInputs,
     selection = cms.string(""),
 )
+process.allGenSim1 = process.allGenSim.clone(
+    selection = "status == 1"
+    )
 process.genMuons = process.allGenSim.clone(
     selection = "status == 1 && abs(pdgId)==13"
     )
 process.genPions = process.allGenSim.clone(
+    selection = "status == 1 && abs(pdgId)==211"
+    )
+process.genPionsStrip = process.allGenSim.clone(
     selection = "status == 1 && abs(pdgId)==211"
     )
 process.mergedMuons = process.allGenSim.clone(
@@ -68,6 +74,12 @@ process.mergedMuonsSi = process.allGenSim.clone(
 process.mergedMuonsCal = process.allGenSim.clone(
     selection = "abs(pdgId) == 13 && (vertex.Rho > 120 || abs(vertex.Z) > 300)"
     )
+process.mergedMuonsSi2 = process.allGenSim.clone(
+    selection = "abs(pdgId) == 13 && collisionId == 2 && (vertex.Rho < 120 && abs(vertex.Z) < 300)"
+    )
+process.mergedMuonsCal2 = process.allGenSim.clone(
+    selection = "abs(pdgId) == 13 && collisionId == 2 && (vertex.Rho > 120 || abs(vertex.Z) > 300)"
+    )
 
 process.motherFilter = cms.EDFilter(
     "CandViewRefSelector",
@@ -77,13 +89,17 @@ process.motherFilter = cms.EDFilter(
     )
 
 process.p = cms.Path(process.allGenSim *
+                     process.allGenSim1 *
                      process.genMuons *
                      process.genPions )
 
 process.p2 = cms.Path(process.motherFilter +
+                      (process.genPionsStrip *
                       process.mergedMuons *
                       process.mergedMuonsSi *
-                      process.mergedMuonsCal 
+                      process.mergedMuonsCal *
+                      process.mergedMuonsSi2 *
+                      process.mergedMuonsCal2)
                       )
 
 if False: ## use when starting from pat::Muons
