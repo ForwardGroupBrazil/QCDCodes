@@ -59,3 +59,75 @@ segmentMatchesFailArb: matched segments (fail arb.): Matched segments failing ar
 segmentCompatArb: segment compatibility (arb.): Segment compatibility (arbitrated)
 segmentCompatNoArb: segment compatibility (no arb.): Segment compatibility (no arbitration)
 caloCompat: calo compatibility: Calorimetric compatibility
+
+[trkPhi: Phi at ME/MB 1 surface]
+trkPhi_at_pME1_1: #phi (radians): TRK Phi (ME +1/1) at Det. Surface
+trkPhi_at_mME1_1: #phi (radians): TRK Phi (ME -1/1) at Det. Surface
+trkPhi_at_pME1_23: #phi (radians): TRK Phi (ME +1/2, +1/3) at Det. Surface
+trkPhi_at_mME1_23: #phi (radians): TRK Phi (ME -1/2, -1/3) at Det. Surface
+trkPhi_at_MB1: #phi (radians): TRK Phi (MB 1) at Det. Surface
+
+[skip: Skip These For Now]
+muonHitCounts::
+muonHitCountsany::
+muonHitCounts1any::
+muonHitCountsv1::
+muonHitCountsdt1any::
+muonHitCountscsc1any::
+muonHitCountsrpc1any::
+muonHitCountsdt1::
+muonHitCountscsc1::
+muonHitCountsrpc1::
+muonHitCounts2any::
+muonHitCountsv2::
+muonHitCountsdt2any::
+muonHitCountscsc2any::
+muonHitCountsrpc2any::
+muonHitCountsdt2::
+muonHitCountscsc2::
+muonHitCountsrpc2::
+muonHitCounts3any::
+muonHitCountsv3::
+muonHitCountsdt3any::
+muonHitCountscsc3any::
+muonHitCountsrpc3any::
+muonHitCountsdt3::
+muonHitCountscsc3::
+muonHitCountsrpc3::
+muonHitCounts4any::
+muonHitCountsv4::
+muonHitCountsdt4any::
+muonHitCountscsc4any::
+muonHitCountsrpc4any::
+muonHitCountsdt4::
+muonHitCountscsc4::
+muonHitCountsrpc4::
+muonStationsValid::
+muonStationsAny::
+muonStationsDTValid::
+muonStationsDTAny::
+muonStationsCSCValid::
+muonStationsCSCAny::
+muonStationsRPCValid::
+muonStationsRPCAny::
+numberOfChambers::
+segmentMatchesArb_MaxDepth::
+segmentMatchesArb::
+segmentMatchesArb_1::
+segmentMatchesArb_2::
+segmentMatchesArb_3::
+segmentMatchesArb_4::
+segmentMatchesNoArb::
+segmentMatchesNoArb_1::
+segmentMatchesNoArb_2::
+segmentMatchesNoArb_3::
+segmentMatchesNoArb_4::
+segmentMatchesFailArb::
+segmentCompatArb::
+segmentCompatNoArb::
+caloCompat::
+
+[prodvtx: Production Vertex]
+prodr: vtx_{rho} (cm): Transverse Decay Length
+prodd: vtx_{d (cm)}: Decay Length
+prodz: vtx_{z} (cm): Z Position of the Production Vertex
