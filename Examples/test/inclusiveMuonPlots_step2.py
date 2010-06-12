@@ -38,6 +38,7 @@ parser.add_option("--xg", "--exclude-group", dest="excludeGroup", type="string",
                         metavar="GROUP[,GROUP2,..]", help="exclude all plots in group GROUP (you can specify this option multiple times)")
 parser.add_option("-S", "--stat", dest="showStat",   action="store_true", help="add statistics box to the plots")
 parser.add_option("-R", "--ratio", dest="plotRatio", action="store_true", help="add a plot of the ratio this/reference")
+parser.add_option("-C", "--cut", dest="plotCut", action="store_true", help="add a plot of the cut efficiency vs cut value")
 parser.add_option("-O", "--overflow", dest="showOverflow", action="store_true", help="add overflows and underflows to the two outermost bins")
 parser.add_option("-c", "--composite", dest="composite", type="string", help="compose reference histogram by stacking up different subhistograms")
 
@@ -62,6 +63,10 @@ if options.norm.startswith("manual,"):
 ## For options that take multiple values, split using comma and join again
 if options.selectGroup:  options.selectGroup  = sum([i.split(",") for i in options.selectGroup],  [])
 if options.excludeGroup: options.excludeGroup = sum([i.split(",") for i in options.excludeGroup], [])
+print ""
+if options.selectGroup:
+    for M in options.selectGroup: print "SelectGroup %s " %  M
+
 
 ##    ___       _ _   _       _ _           ____   ___   ___ _____                   _    __ _ _           
 ##   |_ _|_ __ (_) |_(_) __ _| (_)_______  |  _ \ / _ \ / _ \_   _|   __ _ _ __   __| |  / _(_) | ___  ___ 
@@ -72,6 +77,7 @@ if options.excludeGroup: options.excludeGroup = sum([i.split(",") for i in optio
 ## === GLOBAL VARIABLES ===
 fileIn = ROOT.TFile(args[0])
 dirIn  = fileIn.Get(args[1])
+print "The directory: %s" % (args[1])
 ## Reference
 fileRef = None; dirRef = None;
 composite = []
@@ -240,6 +246,23 @@ def plot(name, histo):
     histo.Draw("E")
     if refs != None: stack(histo, refs)
     printHisto(name,histo.GetTitle(),"log")
+    if options.plotCut:
+        c1.SetLogy(0)
+        hgtcutS = gtCut(histo,"signal")
+        hgtcutS.Draw("E")
+        if refs != None:
+            hgtcutB = gtCut(refs[0],"bkgd")
+            hgtcutB.SetLineColor(2)
+            hgtcutB.Draw("E SAME")
+        printHisto(name,hgtcutS.GetTitle(),"gtCut_lin")
+        c1.SetLogy(0)
+        hltcutS = ltCut(histo,"signal")
+        hltcutS.Draw("E")
+        if refs != None:
+            hltcutB = ltCut(refs[0],"bkgd")
+            hltcutB.SetLineColor(2)
+            hltcutB.Draw("E SAME")
+        printHisto(name,hgtcutS.GetTitle(),"ltCut_lin")
     c1.SetLogy(0)
     if refs != None and options.plotRatio:
         ratio(histo,refs)
@@ -329,7 +352,7 @@ def ratio(histo, refs):
     histo.GetYaxis().SetTitle("data/mc ratio")
     histo.Divide(ref);
     histo.GetYaxis().UnZoom();
-    min = 0; max = 2; 
+    min = 0; max = 2.0; 
     for b in range(1, histo.GetNbinsX()+1):
         valup = histo.GetBinContent(b) + histo.GetBinError(b)
         #valdn = histo.GetBinContent(b) + histo.GetBinError(b)
@@ -338,6 +361,26 @@ def ratio(histo, refs):
     histo.Draw("E");
     line.DrawLine(histo.GetXaxis().GetXmin(),1,histo.GetXaxis().GetXmax(),1);
     histo.Draw("E SAME");
+
+def gtCut(histo,name):
+    hgt = histo.Clone(histo.GetName()+"_gtCut_"+name)
+    hgt.Sumw2()
+    hgt.GetYaxis().SetTitle("Efficiency (> cut)")
+    for b in range(0,histo.GetNbinsX()+1):
+        hgt.SetBinContent(b,histo.Integral(b,histo.GetNbinsX()+1))
+    integ = histo.Integral(0,histo.GetNbinsX()+1)
+    if integ > 1e-6: hgt.Scale(1.0/integ)
+    return (hgt)
+
+def ltCut(histo,name):
+    hlt = histo.Clone(histo.GetName()+"_ltCut_"+name)
+    hlt.Sumw2()
+    hlt.GetYaxis().SetTitle("Efficiency (< cut)")
+    for b in range(0,histo.GetNbinsX()+1):
+        hlt.SetBinContent(b,histo.Integral(0,b))
+    integ = histo.Integral(0,histo.GetNbinsX()+1)
+    if integ > 1e-6: hlt.Scale(1.0/integ)
+    return (hlt)
 
 def getrefs(hdata, name):
     if dirRef != None:
@@ -383,6 +426,7 @@ def printStats(name, histo):
     ndata = histo.GetEntries();
     info += [ "Muons: %.0f +/- %.0f" % (histo.GetEntries(), sqrt(histo.GetEntries())) ]
     refs = getrefs(histo,name)
+    #if refs != None : info += [ "refs %s" % (refs[0].GetName()) ]
     if refs != None and options.norm != "integral":
         scale = 1
         if options.norm == "external":
@@ -395,13 +439,14 @@ def printStats(name, histo):
         elif options.norm.startswith("manual,"):
             scale = options.norm_value
             info += [ "Scale: %.4f (by hand)" % scale ]
-        nmc = refs[1].GetEntries();
+        nmc = refs[0].GetEntries();
         try:
             ratio  = ndata/(scale*nmc);
             dratio = ratio * sqrt(1.0/ndata + 1.0/nmc);
-            info += [  "Normalization: data %.0f +/- %.0f, mc %.0f +/- %.0f, ratio %.4f +/- %.4f" % ( ndata, sqrt(ndata), scale*nmc, scale*sqrt(nmc), ratio, dratio ) ]
+            #info += [  "nmc * scale = %.0f * %.0f = %.0f" % (scale, nmc, scale*nmc) ]
+            info += [  "Normalization:  %s %.0f +/- %.0f,  %s %.0f +/- %.0f, ratio %.4f +/- %.4f" % ( args[1], ndata, sqrt(ndata), options.refdir, scale*nmc, scale*sqrt(nmc), ratio, dratio ) ]
         except ValueError:
-            info += [  "Normalization: data %.0f +/- %.0f, mc %.0f +/- %.0f" % ( ndata, sqrt(ndata), scale*nmc, scale*sqrt(nmc) ) ]
+            info += [  "Normalization:_ data %.0f +/- %.0f, mc %.0f +/- %.0f" % ( ndata, sqrt(ndata), scale*nmc, scale*sqrt(nmc) ) ]
     if refs != None and options.composite:
         fracts = []
         compHistos = refs[4]
