@@ -3,39 +3,36 @@ import FWCore.ParameterSet.Config as cms
 process = cms.Process("PATMuon")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 1500
 
 process.load("Configuration.StandardSequences.Geometry_cff")
 process.load("Configuration.StandardSequences.MagneticField_38T_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
-
-process.GlobalTag.globaltag = 'START3X_V26A::All'
-             
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 
-#process.load("SimGeneral.MixingModule.mixNoPU_cfi")
-#process.load("SimGeneral.TrackingAnalysis.trackingParticlesNoSimHits_cfi")    # On RECO
-#process.load("SimMuon.MCTruth.MuonAssociatorByHitsESProducer_NoSimHits_cfi")  # On RECO
-##process.load("SimGeneral.TrackingAnalysis.trackingParticles_cfi")            # On RAW+RECO
-##process.load("SimMuon.MCTruth.MuonAssociatorByHitsESProducer_cfi")           # On RAW+RECO
+process.load("SimGeneral.MixingModule.mixNoPU_cfi")
+process.load("SimGeneral.TrackingAnalysis.trackingParticlesNoSimHits_cfi")    # On RECO
+process.load("SimMuon.MCTruth.MuonAssociatorByHitsESProducer_NoSimHits_cfi")  # On RECO
+#process.load("SimGeneral.TrackingAnalysis.trackingParticles_cfi")            # On RAW+RECO
+#process.load("SimMuon.MCTruth.MuonAssociatorByHitsESProducer_cfi")           # On RAW+RECO
 
+process.GlobalTag.globaltag = 'START3X_V26A::All'
 
 from Configuration.EventContent.EventContent_cff import *
 process.source = cms.Source(
     "PoolSource",
+    noEventSort = cms.untracked.bool(True),
+    duplicateCheckMode = cms.untracked.string('noDuplicateCheck'),    
     fileNames = cms.untracked.vstring(
-    #'/store/user/aeverett/CMSSW_3_4_1/SingleMuPt0_500/aeverett/SingleMuPt0_500_CMSSW_3_4_1_step1/SingleMuPt0_500_CMSSW_3_4_1_step2/bd7cda0b32f61291da1aab637c754773//step2_99.root'
-    '/store/user/aeverett/CMSSW_3_4_1/SinglePiPt2_200/aeverett/SinglePiPt2_200_CMSSW_3_4_1_step1/SinglePiPt2_200_CMSSW_3_4_1_step2/e90b8558827cdd944d7d7455b9e9feec//step2_99_1.root'
+    $inputFileNames
     ),
-    # secondaryFileNames = cms.untracked.vstring(
-    # '/store/user/aeverett/CMSSW_3_4_1/SinglePiPt2_200/aeverett/SinglePiPt2_200_CMSSW_3_4_1_step1/SinglePiPt2_200_CMSSW_3_4_1_step1/85a90b0814831c7eda376193ed517e95/SinglePiPt2_200_cfi_py_GEN_SIM_DIGI_L1_DIGI2RAW_HLT_RAW2DIGI_L1Reco_3_1.root'
-    # ),
+    # secondaryFileNames = cms.untracked.vstring( ),
     inputCommands = RECOSIMEventContent.outputCommands,            # keep only RECO out of RAW+RECO, for tests
     dropDescendantsOfDroppedBranches = cms.untracked.bool(False),  # keep only RECO out of RAW+RECO, for tests
     )
 
-process.maxEvents =cms.untracked.PSet( input = cms.untracked.int32(-1) )
-process.options   =cms.untracked.PSet( wantSummary = cms.untracked.bool(True))
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
 
 process.load('L1TriggerConfig.L1GtConfigProducers.L1GtTriggerMaskTechTrigConfig_cff')
 from HLTrigger.HLTfilters.hltLevel1GTSeed_cfi import hltLevel1GTSeed
@@ -59,8 +56,8 @@ process.mergedTruth = cms.EDProducer(
     "GenPlusSimParticleProducer",
     src           = cms.InputTag("g4SimHits"), # use "famosSimHits" for FAMOS
     setStatus     = cms.int32(5),             # set status = 8 for GEANT GPs
-    # particleTypes = cms.vstring("mu+"),
-    filter        = cms.vstring("pt > 0.1"),  # just for testing (optional)
+    #        particleTypes = cms.vstring("mu+"),
+    filter        = cms.vstring("pt > 0.0"),  # just for testing (optional)
     genParticles   = cms.InputTag("genParticles") # original genParticle list
     )
 process.mergedTruthMu = cms.EDProducer(
@@ -68,7 +65,7 @@ process.mergedTruthMu = cms.EDProducer(
     src           = cms.InputTag("g4SimHits"), # use "famosSimHits" for FAMOS
     setStatus     = cms.int32(5),             # set status = 8 for GEANT GPs
     particleTypes = cms.vstring("mu+"),
-    filter        = cms.vstring("pt > 0.1"),  # just for testing (optional)
+    filter        = cms.vstring("pt > 0.0"),  # just for testing (optional)
     genParticles   = cms.InputTag("genParticles") # original genParticle list
     )
 process.genMuons = cms.EDProducer(
@@ -80,7 +77,6 @@ process.genMuons = cms.EDProducer(
     "drop pdgId == 21 && status = 2" # remove intermediate qcd spam carrying no flavour info
     )
     )
-
 process.load("PhysicsTools.PatAlgos.mcMatchLayer0.muonMatch_cfi")
 
 process.filter = cms.EDFilter(
@@ -113,6 +109,8 @@ process.patMuons = PhysicsTools.PatAlgos.producersLayer1.muonProducer_cfi.patMuo
 ### Adding Info about the MC truth matching
 # Requires MuonAnalysis/MuonAssociators
 # can run on SIM-RECO as well as HLTDEBUG
+# Requires UserCode/Examples and MuonAnalysis/Examples
+
 process.load("MuonAnalysis.MuonAssociators.muonClassificationByHits_cfi")
 from MuonAnalysis.MuonAssociators.muonClassificationByHits_cfi import addUserData as addClassByHits
 addClassByHits(process.patMuons, extraInfo=True)
@@ -124,16 +122,14 @@ from MuonAnalysis.Examples.muonStations_cfi import addUserData as addStations
 addStations(process.patMuons)
 
 ### Adding Info about the Muon Hits involved to the PATMuon
-# Requires UserCode/Examples and MuonAnalysis/Examples
+# Requires MuonAnalysis/Examples V00-03-00+
 process.load("UserCode.Examples.muonHitCount_cfi")
 from UserCode.Examples.muonHitCount_cfi import addUserData as addHitCount
 addHitCount(process.patMuons)
 
-
-
-
 process.go = cms.Path(
 #    process.preFilter +
+#    process.filter    +
     ( process.mergedTruth *
       process.mergedTruthMu *
       process.genMuons    *
@@ -148,14 +144,14 @@ process.go = cms.Path(
 
 
 process.out = cms.OutputModule("PoolOutputModule",
-    fileName = cms.untracked.string("pat_PiPat.root"),
+    fileName = cms.untracked.string("pat_$outputFileName"),
     outputCommands = cms.untracked.vstring(
         "drop *",
         "keep *_mergedTruth_*_*",
         "keep *_mergedTruthMu_*_*",
         "keep *_patMuons_*_*",
-        "keep *_genMuons_*_*",
         "keep *_genParticles_*_*",
+        "keep *_genMuons_*_*",
         "keep *_countCollisionEvents_*_*",
         "keep recoTrackExtras_standAloneMuons_*_*",          ## track states at the muon system, used both by patMuons and standAloneMuons
         "keep recoTracks_standAloneMuons__*",                ## bare standalone muon tracks, using standalone muon momentum (without BS constraint)
