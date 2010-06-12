@@ -4,7 +4,7 @@ process = cms.Process("MuonPlots")
 
 # Messages
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.load("Configuration.StandardSequences.Geometry_cff")
 process.load("Configuration.StandardSequences.MagneticField_38T_cff")
@@ -19,6 +19,8 @@ process.source = cms.Source(
     )
     )
 
+process.load("MergedPiFiles")
+
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
 
@@ -32,6 +34,13 @@ commonInputs = cms.PSet(
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
 )
 
+process.preFilter = cms.EDFilter(
+    "CandViewRefSelector",
+    filter = cms.bool(True),
+    src = cms.InputTag("mergedTruth"),
+    cut = cms.string('status == 1 && pt > 10 && pt < 20')
+    )
+
 ###
 # make the basic TM, GLB, and STA inclusive plot analyzers
 process.trackerMuons = cms.EDAnalyzer("InclusiveMuonPlotsMRTU",
@@ -42,15 +51,19 @@ process.trackerMuons = cms.EDAnalyzer("InclusiveMuonPlotsMRTU",
 process.globalMuons = process.trackerMuons.clone(
     selection = "isGlobalMuon"
 )
+process.globalselectMuons = process.trackerMuons.clone(
+    selection = "isGlobalMuon"
+)
 process.standAloneMuons = process.trackerMuons.clone(
     selection = "isStandAloneMuon"
 )
 
 process.p = cms.Path(process.trackerMuons * process.globalMuons * process.standAloneMuons)
+process.pSelect = cms.Path(process.preFilter + process.globalselectMuons)
 
 ###
 # method that clones the 4 MCClass classifications of an analyzer
-def addClassAliases(process, label, classifier):
+def addClassAliases(process, label, classifier,opt=0):
     module = getattr(process,label)
     sel = module.selection.value()
     modules = []
@@ -58,19 +71,22 @@ def addClassAliases(process, label, classifier):
     for X,C in classes:
         setattr(process, label+X, module.clone(selection = sel + ' && ' + (C % classifier)))
         modules.append( getattr(process, label+X) )
-    setattr(process, label+"_Classes", cms.Path(sum(modules,process.preFilter)))
-
+    if opt==0:
+        setattr(process, label+"_Classes", cms.Path(sum(modules,process.preFilter)))
+    else:
+        setattr(process, label+"_Classes", cms.Path(sum(modules,process.globalMuons)))
 ###
 # 3 basics x4 MCClass
 if True:
     addClassAliases(process, "trackerMuons",    "classByHitsTM")
-    addClassAliases(process, "globalMuons",     "classByHitsGlb")
+    addClassAliases(process, "globalMuons",     "classByHitsGlb",1)
+    addClassAliases(process, "globalselectMuons",     "classByHitsGlb")
     addClassAliases(process, "standAloneMuons", "classByHitsSta")
 
 ###
 # (basic STA + special STA selection) x2 eta regions x4 MCClass
 # make clones for barrel and endcap
-if True:
+if False:
     process.standAloneMuonsValidHits = process.standAloneMuons.clone(selection = "isStandAloneMuon && outerTrack.numberOfValidHits > 0")
     process.standAloneMuonsValidHits_Path = cms.Path(process.preFilter + process.standAloneMuonsValidHits)
     addClassAliases(process, "standAloneMuonsValidHits", "classByHitsSta")
@@ -84,7 +100,7 @@ if True:
 
 ###
 # TM x4 eta regions x4 MCClass
-if True:
+if False:
     for X,C in (("Barrel", "abs(eta) <= 0.8"), ("Transition", "0.8 < abs(eta) <= 1.1"), ("Forward", "1.1 < abs(eta) <= 1.6"), ("VeryForward", "1.6 < abs(eta)")):
         setattr(process, "trackerMuons"+X, process.trackerMuons.clone(
             selection = "isTrackerMuon && muonID('TMLastStationAngTight') && "+C
@@ -95,7 +111,7 @@ if True:
 ###
 # GLB x4 selections x3 eta regions x4 MCClass
 # 
-if True:
+if False:
     type1 = " isGlobalMuon &&  muonID('GlobalMuonPromptTight')"
     type2 = type1 + "&& isTrackerMuon && track.numberOfValidHits > 10 & track.hitPattern.pixelLayersWithMeasurement >= 1"
     type3 = type2 + "&&  (userInt('muonStations:csc') >= 2 || userInt('muonStations:dt') >= 2)"
@@ -127,8 +143,8 @@ if True:
 ####
 # globalMuons x2 eta regions x4 MCClass
 if True:
-    process.globalMuonsB = process.globalMuons.clone(selection = "isGlobalMuon && abs(eta) < 1.0") 
-    process.globalMuonsE = process.globalMuons.clone(selection = "isGlobalMuon && abs(eta) > 1.0") 
+    process.globalMuonsB = process.globalselectMuons.clone(selection = "isGlobalMuon && abs(eta) < 1.0") 
+    process.globalMuonsE = process.globalselectMuons.clone(selection = "isGlobalMuon && abs(eta) > 1.0") 
     process.pBE = cms.Path(process.preFilter + process.globalMuonsB + process.globalMuonsE)
     if True:
         addClassAliases(process, "globalMuonsB", "classByHitsGlb")
@@ -136,7 +152,7 @@ if True:
 
 ###
 # globalMuon with pT cut x3 eta regions x4 MCClass
-if True:
+if False:
     process.globalMuonsPt5 = cms.EDAnalyzer("InclusiveMuonPlots",
         makeInclusiveMuonPlots(2),
         commonInputs,
@@ -166,13 +182,13 @@ if False:
     )
 
 if True:
-    process.TFileService.fileName = 'inclusiveMuonPlots_MC.Mu3.root'
-    process.hltMu3 = hltHighLevelDev.clone(HLTPaths = ['HLT_Mu3'], HLTPathsPrescales = [1])
-    process.preFilter.replace(process.bscMinBias, process.hltMu3)
-    for N in process.analyzerNames().split():
-        A = getattr(process,N)
-        if A.type_() == 'InclusiveMuonPlots':
-            A.selection = A.selection.value()+' && !triggerObjectMatchesByFilter("hltSingleMu3L3Filtered3").empty()';
+    process.TFileService.fileName = 'inclusiveMuonPlots_Pi_reco_01.root'
+##     process.hltMu3 = hltHighLevelDev.clone(HLTPaths = ['HLT_Mu3'], HLTPathsPrescales = [1])
+##     process.preFilter.replace(process.bscMinBias, process.hltMu3)
+##     for N in process.analyzerNames().split():
+##         A = getattr(process,N)
+##         if A.type_() == 'InclusiveMuonPlots':
+##             A.selection = A.selection.value()+' && !triggerObjectMatchesByFilter("hltSingleMu3L3Filtered3").empty()';
 
 
 
