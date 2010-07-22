@@ -14,7 +14,7 @@
 //
 // Original Author:  "Thomas Danielson"
 //         Created:  Thu May  8 12:05:03 CDT 2008
-// $Id: MuonRecoTreeUtility.cc,v 1.21 2010/06/04 20:51:20 aeverett Exp $
+// $Id: MuonRecoTreeUtility.cc,v 1.22 2010/06/07 00:20:31 aeverett Exp $
 //
 //
 
@@ -45,7 +45,7 @@
 #include "DataFormats/GeometryVector/interface/GlobalVector.h"
 
 #include "DataFormats/Common/interface/TriggerResults.h"
-#include "FWCore/Framework/interface/TriggerNames.h"
+#include "FWCore/Common/interface/TriggerNames.h"
 
 #include <DataFormats/TrackReco/interface/Track.h>
 #include <DataFormats/TrackCandidate/interface/TrackCandidate.h>
@@ -1345,7 +1345,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       (*muStationMask).push_back(iMuon->stationMask());
 
       edm::RefToBase<reco::Muon> muRef = muonColl.refAt(iMu);
-      if(muRef->isTrackerMuon()){
+      if(muRef->isTrackerMuon() && !classifTM.failedToGet()){
 	(*muMCClassTM).push_back((*classifTM)[muRef]);
 	(*muMCClassTMid).push_back((*classifTMid)[muRef]);
 	(*muMCClassTMflav).push_back((*classifTMflav)[muRef]);
@@ -1366,7 +1366,7 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	(*muMCClassTMrho).push_back(999);
 	(*muMCClassTMz).push_back(999);
       }
-      if(muRef->isGlobalMuon()){
+      if(muRef->isGlobalMuon() && !classifGlb.failedToGet()){
 	(*muMCClassGlb).push_back((*classifGlb)[muRef]);
 	(*muMCClassGlbid).push_back((*classifGlbid)[muRef]);
 	(*muMCClassGlbflav).push_back((*classifGlbflav)[muRef]);
@@ -1455,8 +1455,8 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
       }
       
 
-      int originTM = (*classifTM)[muRef];
-      int originGLB = (*classifGlb)[muRef];
+      int originTM = (!classifTM.failedToGet()) ? (*classifTM)[muRef] : 0 ;
+      int originGLB = (!classifGlb.failedToGet()) ? (*classifGlb)[muRef] : 0 ;
       LogTrace("SpecialBit") << "Event " << EventNumber << " iMu " << iMu << " isSTA " << iMuon->isStandAloneMuon() << " isTM " << iMuon->isTrackerMuon() << " isGLB " << iMuon->isGlobalMuon() << std::endl;
       if(muRef->isTrackerMuon()){
 	if (originTM < 0) {
@@ -1471,17 +1471,18 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  case 4: LogTrace("SpecialBit") << "Primary muon" << std::endl; break;
 	  }
 	}
-	LogTrace("SpecialBit") << "  TM ID       " << (*classifTMid)[muRef] 
-			       << "\n  TM flav     " << (*classifTMflav)[muRef] 
-			       << "\n  TM momID    " << (*classifTMmid)[muRef] 
-			       << "\n  TM momFlav  " << (*classifTMmflav)[muRef] 
-			       << "\n  TM gmomId   " << (*classifTMgmid)[muRef] 
-			       << "\n  TM gmomFlav " << (*classifTMgmflav)[muRef]
-			       << "\n  TM rho      " << (*classifTMrho)[muRef]
-			       << "\n  TM z        " << (*classifTMz)[muRef]
-; 
-	  
-	  }
+	if(!classifTM.failedToGet())
+	  LogTrace("SpecialBit") << "  TM ID       " << (*classifTMid)[muRef] 
+				 << "\n  TM flav     " << (*classifTMflav)[muRef] 
+				 << "\n  TM momID    " << (*classifTMmid)[muRef] 
+				 << "\n  TM momFlav  " << (*classifTMmflav)[muRef] 
+				 << "\n  TM gmomId   " << (*classifTMgmid)[muRef] 
+				 << "\n  TM gmomFlav " << (*classifTMgmflav)[muRef]
+				 << "\n  TM rho      " << (*classifTMrho)[muRef]
+				 << "\n  TM z        " << (*classifTMz)[muRef]
+	    ; 
+	
+      }
       if(muRef->isGlobalMuon()){
 	if (originGLB < 0) {
 	  LogTrace("SpecialBit") << "This GLB is a ghost!" << std::endl;
@@ -1495,15 +1496,16 @@ void MuonRecoTreeUtility::analyze(const edm::Event& iEvent, const edm::EventSetu
 	  case 4: LogTrace("SpecialBit") << "Primary muon" << std::endl; break;
 	  }
 	}
-	LogTrace("SpecialBit") << "  Glb ID       " << (*classifGlbid)[muRef] 
-			       << "\n  Glb flav     " << (*classifGlbflav)[muRef] 
-			       << "\n  Glb momID    " << (*classifGlbmid)[muRef] 
-			       << "\n  Glb momFlav  " << (*classifGlbmflav)[muRef] 
-			       << "\n  Glb gmomId   " << (*classifGlbgmid)[muRef] 
-			       << "\n  Glb gmomFlav " << (*classifGlbgmflav)[muRef]
-			       << "\n  Glb rho      " << (*classifGlbrho)[muRef]
-			       << "\n  Glb z        " << (*classifGlbz)[muRef]
-; 
+	if(!classifGlb.failedToGet())
+	  LogTrace("SpecialBit") << "  Glb ID       " << (*classifGlbid)[muRef] 
+				 << "\n  Glb flav     " << (*classifGlbflav)[muRef] 
+				 << "\n  Glb momID    " << (*classifGlbmid)[muRef] 
+				 << "\n  Glb momFlav  " << (*classifGlbmflav)[muRef] 
+				 << "\n  Glb gmomId   " << (*classifGlbgmid)[muRef] 
+				 << "\n  Glb gmomFlav " << (*classifGlbgmflav)[muRef]
+				 << "\n  Glb rho      " << (*classifGlbrho)[muRef]
+				 << "\n  Glb z        " << (*classifGlbz)[muRef]
+	  ; 
       }
       
     } //end the recoMuon member block
