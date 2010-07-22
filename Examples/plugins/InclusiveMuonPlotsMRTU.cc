@@ -85,7 +85,6 @@ InclusiveMuonPlotsMRTU::InclusiveMuonPlotsMRTU(const edm::ParameterSet& pset):
     primaryVertices_(pset.getParameter<edm::InputTag>("primaryVertices")),
     luminosity(0) // by default, we don't have luminosity info
 {
-
     edm::Service<TFileService> fs;
 
     TFileDirectory md = fs->mkdir("metadata");
@@ -121,7 +120,12 @@ InclusiveMuonPlotsMRTU::InclusiveMuonPlotsMRTU(const edm::ParameterSet& pset):
     book(*fs, pset, "globalMuonHits","muonHits");
     book(*fs, pset, "trackerChi2n");
     book(*fs, pset, "muonChi2n");
+    book(*fs, pset, "trackerChi2Rel");
+    book(*fs, pset, "muonChi2Rel");
     book(*fs, pset, "globalChi2n");
+
+    book(*fs, pset, "deltaPt");
+    book(*fs, pset, "deltaPtn");
 
     book(*fs, pset, "muonHitCounts", "muonHits");
     book(*fs, pset, "muonHitCountsany", "muonHits");
@@ -136,6 +140,8 @@ InclusiveMuonPlotsMRTU::InclusiveMuonPlotsMRTU(const edm::ParameterSet& pset):
        book(*fs, pset, "muonHitCountscsc"+intLabel, "muonStationHits");
        book(*fs, pset, "muonHitCountsrpc"+intLabel, "muonStationHits");
     }
+    book(*fs, pset, "muonHitCountsratio","ratio");
+    book(*fs, pset, "muonHitCountsrpcratio","ratio");
 
     book(*fs, pset, "trackIso05", "isolation");
     book(*fs, pset, "ecalIso05",  "isolation");
@@ -171,6 +177,8 @@ InclusiveMuonPlotsMRTU::InclusiveMuonPlotsMRTU(const edm::ParameterSet& pset):
     book(*fs, pset, "segmentCompatNoArb",   "segmentCompat"); 
     book(*fs, pset, "caloCompat",           "caloCompat"); 
 
+    book(*fs, pset, "TMLastStationLoose", "bool");
+
     book(*fs, pset, "prodz", "z"); 
     book(*fs, pset, "prodr", "r");
     book(*fs, pset, "prodd", "r");
@@ -181,6 +189,7 @@ InclusiveMuonPlotsMRTU::InclusiveMuonPlotsMRTU(const edm::ParameterSet& pset):
         luminosity = fs->make<TH1D>("normalization", "normalization", 1, 0, 1);
         luminosity->Sumw2();
     }
+
 }
 
 /// Destructor
@@ -249,12 +258,14 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
         const pat::Muon &mu = (typeid(recomu) == typeid(pat::Muon) ? static_cast<const pat::Muon &>(recomu) : pat::Muon(recomu));
 
         if (!selector_(mu)) continue;
-    
+
         plots["p"  ]->Fill(mu.p());
         plots["pt" ]->Fill(mu.pt());
         plots["eta"]->Fill(mu.eta());
         plots["phi"]->Fill(mu.phi());
         plots["charge"]->Fill(mu.charge());
+
+	plots["TMLastStationLoose"]->Fill(muon::isGoodMuon(mu,muon::TMLastStationLoose));
 
         if (mu.innerTrack().isNonnull()) {
             plots["pixelHits"  ]->Fill(mu.innerTrack()->hitPattern().numberOfValidPixelHits());
@@ -273,6 +284,7 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
                 plots["dzFine"]->Fill(mu.innerTrack()->dz(vtx.position()));
             }
         }
+
         if (mu.outerTrack().isNonnull()) {
             plots["pSta"  ]->Fill(mu.outerTrack()->p());
             plots["ptSta" ]->Fill(mu.outerTrack()->pt());
@@ -315,11 +327,19 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
 	      }
             }
         }
+
         if (mu.globalTrack().isNonnull()) {
             plots["globalHits"]->Fill(mu.globalTrack()->numberOfValidHits());
             plots["globalMuonHits"]->Fill(mu.globalTrack()->hitPattern().numberOfValidMuonHits());
             plots["globalChi2n"]->Fill(mu.globalTrack()->normalizedChi2());
+	    plots["deltaPt"]->Fill((mu.outerTrack()->pt() - mu.innerTrack()->pt()));
+	    plots["deltaPtn"]->Fill((mu.outerTrack()->pt() - mu.innerTrack()->pt())/(mu.innerTrack()->pt()));
         }
+
+	if(mu.isQualityValid()) {
+	  plots["muonChi2Rel"]->Fill(mu.combinedQuality().staRelChi2);
+	  plots["trackerChi2Rel"]->Fill(mu.combinedQuality().trkRelChi2);
+	}
 
         if (mu.isIsolationValid()) {
             plots["trackIso05"]->Fill(mu.isolationR05().sumPt);
@@ -331,8 +351,9 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
             plots[ "combRelIso03"]->Fill( (mu.isolationR03().sumPt + mu.isolationR03().emEt + mu.isolationR03().hadEt) / mu.pt() );
             plots[ "combRelIso05"]->Fill( (mu.isolationR05().sumPt + mu.isolationR05().emEt + mu.isolationR05().hadEt) / mu.pt() );
         }
-        
+
         if (mu.isMatchesValid()) {
+
 	  plots["numberOfChambers"]->Fill(mu.numberOfChambers());
 
 	  plots["segmentMatchesArb"    ]->Fill(mu.numberOfMatches(reco::Muon::SegmentAndTrackArbitration));
@@ -366,17 +387,19 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
 	  plots["segmentCompatArb"     ]->Fill(muon::segmentCompatibility(mu, reco::Muon::SegmentAndTrackArbitration));
 	  plots["segmentCompatNoArb"   ]->Fill(muon::segmentCompatibility(mu, reco::Muon::SegmentArbitration));
         }
-	
+
         if (mu.isCaloCompatibilityValid()) {
             plots["caloCompat"]->Fill(mu.caloCompatibility());
         }
+
+	if(mu.hasUserInt("muonHitCounts")) {
 
 	plots["muonHitCounts"]->Fill(mu.userInt("muonHitCounts"));
 	plots["muonHitCountsany"]->Fill(mu.userInt("muonHitCounts:any"));
 
 	std::string any = "any";
 	std::string valid = "v";
-	
+	int rpcTotalHits = 0;
 	for(size_t j =0; j<4; ++j) {
 	  std::string intLabel = lexical_cast<std::string>(j+1);
 	  plots["muonHitCounts"+intLabel+any]->Fill(mu.userInt("muonHitCounts:"+intLabel+any));
@@ -387,6 +410,12 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
 	  plots["muonHitCountscsc"+intLabel]->Fill(mu.userInt("muonHitCounts:csc"+intLabel));
 	  plots["muonHitCountsrpc"+intLabel+any]->Fill(mu.userInt("muonHitCounts:rpc"+intLabel+any));
 	  plots["muonHitCountsrpc"+intLabel]->Fill(mu.userInt("muonHitCounts:rpc"+intLabel));
+	  rpcTotalHits += mu.userInt("muonHitCounts:rpc"+intLabel);
+	}
+
+	if(mu.userInt("muonHitCounts") > 0) plots["muonHitCountsratio"]->Fill(float(mu.userInt("muonHitCounts:v1"))/float(mu.userInt("muonHitCounts")));
+	if(rpcTotalHits > 0) plots["muonHitCountsrpcratio"]->Fill(float(mu.userInt("muonHitCounts:rpc1"))/float(rpcTotalHits));
+
 	}
 
 	//for(size_t j =0; j<4; ++j) {

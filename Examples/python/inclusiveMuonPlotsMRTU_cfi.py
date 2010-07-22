@@ -32,9 +32,11 @@ def makeInclusiveMuonPlots(rebinFactor=1):
         muonStationHitsBins = _nBins(20,0,20),
         muonBadHitsBins     = _nBins(20,0,20),
         globalHitsBins      = _nBins(80,0,80),
-        trackerChi2nBins = _evenBins(0, 10, 0.2 * rebinFactor),
-        muonChi2nBins    = _evenBins(0, 10, 0.2 * rebinFactor),
-        globalChi2nBins  = _evenBins(0, 10, 0.2 * rebinFactor),
+        trackerChi2nBins = _evenBins(0, 20, 0.2 * rebinFactor),
+        muonChi2nBins    = _evenBins(0, 20, 0.2 * rebinFactor),
+        globalChi2nBins  = _evenBins(0, 20, 0.2 * rebinFactor),
+        trackerChi2RelBins  = _evenBins(0, 4, 0.2 * rebinFactor),
+        muonChi2RelBins  = _evenBins(0, 20, 0.2 * rebinFactor),
         # ---- Isolation ----
         isolationBins = _evenBins(0,  5, .25  * rebinFactor),
         relIsoBins    = _evenBins(0, .5, .025 * rebinFactor),
@@ -43,13 +45,20 @@ def makeInclusiveMuonPlots(rebinFactor=1):
         segmentMatchesBins = _nBins(12,0,12),
         segmentCompatBins  = _evenBins(0, 1 + 0.1*rebinFactor, 0.1 * rebinFactor), # need one bin for ">= 1.0"
         caloCompatBins     = _evenBins(0, 1 + 0.1*rebinFactor, 0.1 * rebinFactor), # need one bin for ">= 1.0"
-        boolBins = _nBins(2,-0.5,1.5),
+        # ---- Production Vertex ----
         zBins = _nBins(100,-500.,500.),
         rBins = _nBins(100,0.,500.),
         rzXBins = cms.uint32(1000),
         rzXRange = cms.vdouble(-500.,500.),
         rzYBins = cms.uint32(500),
         rzYRange = cms.vdouble(0.,500.),
+        # ---- ----
+        boolBins = _nBins(2,-0.5,1.5),
+        deltaPtBins = _evenBins( -50., 50., 2 * rebinFactor),
+        deltaPtnBins = _evenBins(-5.,5.,0.1 * rebinFactor),
+        muonHitCountsratioBins = _evenBins(0.,1.2,0.1 * rebinFactor),
+        muonHitCountsrpcratioBins = _evenBins(0.,1.2,0.1 * rebinFactor),
+        ratioBins = _evenBins(0.,1.2,0.1 * rebinFactor),
     )
 
 inclusiveMuonPlots = cms.EDAnalyzer("InclusiveMuonPlots",
