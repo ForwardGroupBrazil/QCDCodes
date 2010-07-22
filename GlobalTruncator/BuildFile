@@ -1,5 +1,4 @@
 <use name=FWCore/Framework>
-<use name=FWCore/Utilities>
 <use name=FWCore/PluginManager>
 <use name=FWCore/ParameterSet>
 <use name=FWCore/MessageLogger>
@@ -10,13 +9,6 @@
 <use name="DataFormats/MuonDetId">
 <use name="Geometry/CommonDetUnit">
 <use name="TrackingTools/DetLayers">
-<use name=PhysicsTools/UtilAlgos>
-<use name=SimTracker/Records>
-<use name="DataFormats/Common">
-
-
-<use name=DQMServices/Core>
-<use name=Validation/Tools>
 
 <use name=CLHEP>
 <use name=root>

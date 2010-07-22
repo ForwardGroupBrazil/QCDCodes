@@ -5,9 +5,6 @@ set CONDOR_CLUSTER = $1
 set CONDOR_PROCESS = $2
 set PARAMETER_SET  = $3
 set COMMON_DIR     = $4
-set CACHE_DIR      = $5
-
-set blockName = `basename $PARAMETER_SET .cfg`
 
 echo "cluster " ${CONDOR_CLUSTER}
 echo "process " ${CONDOR_PROCESS}
@@ -39,13 +36,13 @@ echo "process " ${CONDOR_PROCESS}
 #
 #-- Is this necessary if GetEnv=true ?
 setenv PATH /usr/local/bin:/usr/bin:/bin:/opt/osg/srmclient/bin
-setenv CMS_PATH /apps/02/cmssoft/cms/
+setenv CMS_PATH /grp/cms/purdueCMS
 source ${CMS_PATH}/cmsset_default.csh
 
-setenv CMSSW_RELEASE CMSSW_2_0_11
+setenv CMSSW_RELEASE CMSSW_1_3_1_HLT4
 setenv SCRAM_ARCH slc4_ia32_gcc345 
 
-setenv SRCDIR /scratch/scratch96/a/aeverett/${CMSSW_RELEASE}
+setenv SRCDIR   /grp/cms/users/aeverett/${CMSSW_RELEASE}
 
 echo " "
 echo "Output directory is : " $COMMON_DIR
@@ -91,10 +88,9 @@ echo "Workdir " ${WORKDIR}
 #----------------------------------------------------------
 #
 #  if ( \${status} != 0 ) cp \${WORKDIR}/*.root \${COMMON_DIR}/H_1.root
-#    cp ${WORKDIR}/*.root ${COMMON_DIR}/.
-
-srmcp -2 "file:///`pwd`/${blockName}_edm.root" "srm://dcache.rcac.purdue.edu:8443/srm/managerv2?SFN=/store/user/aeverett/reReco2011/${CACHE_DIR}/${blockName}_edm.root"
-
+#    cp \${WORKDIR}/*.root \${COMMON_DIR}/${basename}.root
+    cp ${WORKDIR}/*.root ${COMMON_DIR}/.
+    cp ${WORKDIR}/*.log  ${COMMON_DIR}/.  
 #
 # show what is being left behind...
 #
