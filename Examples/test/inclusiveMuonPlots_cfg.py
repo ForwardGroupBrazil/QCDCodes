@@ -4,21 +4,34 @@ process = cms.Process("MuonPlots")
 
 # Messages
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+#process.MessageLogger.cerr.FwkReport.reportEvery = 100
+
+process.MessageLogger.destinations += ['AnalyzerMessages']
+process.MessageLogger.categories   += ['Dumper']
+process.MessageLogger.debugModules += ['patTupleDumper','globalMuons']
+process.MessageLogger.AnalyzerMessages = cms.untracked.PSet(
+    threshold  = cms.untracked.string('DEBUG'),
+    default    = cms.untracked.PSet(limit = cms.untracked.int32(0)),
+    Dumper = cms.untracked.PSet(limit = cms.untracked.int32(-1))
+    )
+
 
 process.load("Configuration.StandardSequences.Geometry_cff")
 process.load("Configuration.StandardSequences.MagneticField_38T_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
-process.GlobalTag.globaltag = 'START3X_V26A::All'
+process.GlobalTag.globaltag = 'START3X_V25B::All'
 
-process.source = cms.Source("PoolSource",
+process.source = cms.Source(
+    "PoolSource",
+    noEventSort = cms.untracked.bool(True),
+    duplicateCheckMode = cms.untracked.string('noDuplicateCheck'),
     fileNames = cms.untracked.vstring(
-    'file:pat_PiPat.root'
+    '/store/user/aeverett//Mu_Pt0_500//pat_skim_101_1.root',
     )
-)
+    )
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(True),
                                         fileMode    = cms.untracked.string("NOMERGE") )
 
@@ -64,12 +77,20 @@ process.nonGlobalMuons = process.trackerMuons.clone(
     selection = "isTrackerMuon && isStandAloneMuon && !isGlobalMuon"
     )
 
+import UserCode.Examples.patTupleDumper_cfi
+process.patTupleDumper = UserCode.Examples.patTupleDumper_cfi.patTupleDumper.clone(muons = 'patMuons')
+process.patTupleDumperPunch = UserCode.Examples.patTupleDumper_cfi.patTupleDumper.clone(muons = 'patMuons', selection = 'abs(userInt(\'classByHitsGlb\')) < 1',outputFileName='ntuplePunch.root')
+
 process.p = cms.Path(process.trackerMuons *
                      process.globalMuons *
                      process.standAloneMuons *
                      process.exclusiveGlobalMuons *
                      process.nonGlobalMuons
+                     * process.patTupleDumper
+                     * process.patTupleDumperPunch
                      )
+
+
 
 if True: ## use when starting from pat::Muons
     process.trackerMuons.muons = 'patMuons'
