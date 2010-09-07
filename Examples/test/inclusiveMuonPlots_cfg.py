@@ -27,11 +27,12 @@ process.source = cms.Source(
     noEventSort = cms.untracked.bool(True),
     duplicateCheckMode = cms.untracked.string('noDuplicateCheck'),
     fileNames = cms.untracked.vstring(
-    '/store/user/aeverett//Mu_Pt0_500//pat_skim_101_1.root',
+    #'/store/user/aeverett//Mu_Pt0_500//pat_skim_101_1.root',
+    '/store/user/aeverett//Pi_Pt2_200//pat_skim_1_1.root','/store/user/aeverett//Pi_Pt2_200//pat_skim_54_1.root','/store/user/aeverett//Pi_Pt2_200//pat_skim_84_1.root','/store/user/aeverett//Pi_Pt2_200//pat_skim_6_1.root',
     )
     )
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(2000) )
 process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(True),
                                         fileMode    = cms.untracked.string("NOMERGE") )
 
@@ -78,8 +79,8 @@ process.nonGlobalMuons = process.trackerMuons.clone(
     )
 
 import UserCode.Examples.patTupleDumper_cfi
-process.patTupleDumper = UserCode.Examples.patTupleDumper_cfi.patTupleDumper.clone(muons = 'patMuons')
-process.patTupleDumperPunch = UserCode.Examples.patTupleDumper_cfi.patTupleDumper.clone(muons = 'patMuons', selection = 'abs(userInt(\'classByHitsGlb\')) < 1',outputFileName='ntuplePunch.root')
+process.patTupleDumper = UserCode.Examples.patTupleDumper_cfi.patTupleDumper.clone(muons = 'patMuons',selection = 'isGlobalMuon || isTrackerMuon')
+process.patTupleDumperPunch = UserCode.Examples.patTupleDumper_cfi.patTupleDumper.clone(muons = 'patMuons', selection = '(isGlobalMuon && abs(userInt(\'classByHitsGlb\')) <= 1) || (isTrackerMuon && abs(userInt(\'classByHitsTM\')) <= 1)',outputFileName='ntuplePunch.root')
 
 process.p = cms.Path(process.trackerMuons *
                      process.globalMuons *

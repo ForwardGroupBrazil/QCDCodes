@@ -13,8 +13,8 @@ def _evenBins(min,max,delta):
 def makeInclusiveMuonPlots(rebinFactor=1):
     return cms.PSet(
         # ---- Kinematics ----
-        ptBins = _evenBins( 0, 100, 2 * rebinFactor),
-        pBins  = _evenBins( 0, 500, 2  * rebinFactor),
+        ptBins = _evenBins( 0, 500, 2 * rebinFactor),
+        pBins  = _evenBins( 0, 200, 2  * rebinFactor),
         etaBins = _evenBins( -2.6, 2.6, 0.2 * rebinFactor),
         phiBins = _evenBins(-3.2,  3.2, 0.2 * rebinFactor),
         chargeBins = cms.vdouble(-2,0,2),

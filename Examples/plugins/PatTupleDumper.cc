@@ -75,6 +75,7 @@ void PatTupleDumper::beginJob( ) {
   
   
   myTree->Branch( "mSize",&mSize,"mSize/I");
+  myTree->Branch( "mPass",&mPass,"mPass/I");
   myTree->Branch( "p",&p);
   myTree->Branch( "pt",&pt); 
   myTree->Branch( "eta",&eta); 
@@ -218,16 +219,16 @@ void PatTupleDumper::ntupleInit(){
   phiSta       = new vector<float> ;
   dxy       = new vector<float> ;
   dz       = new vector<float> ;
-  pixelHits       = new vector<float> ;
-  pixelLayers       = new vector<float> ;
-  trackerHits       = new vector<float> ;
-  trackerLostHitsInner     = new vector<float> ;
-  trackerLostHitsMiddle      = new vector<float> ;
-  trackerLostHitsOuter       = new vector<float> ;
-  muonHits       = new vector<float> ;
-  muonBadHits       = new vector<float> ;
-  globalHits       = new vector<float> ;
-  globalMuonHits       = new vector<float> ;
+  pixelHits       = new vector<int> ;
+  pixelLayers       = new vector<int> ;
+  trackerHits       = new vector<int> ;
+  trackerLostHitsInner     = new vector<int> ;
+  trackerLostHitsMiddle      = new vector<int> ;
+  trackerLostHitsOuter       = new vector<int> ;
+  muonHits       = new vector<int> ;
+  muonBadHits       = new vector<int> ;
+  globalHits       = new vector<int> ;
+  globalMuonHits       = new vector<int> ;
   trackerChi2n       = new vector<float> ;
   muonChi2n       = new vector<float> ;
   trackerChi2Rel       = new vector<float> ;
@@ -258,27 +259,27 @@ void PatTupleDumper::ntupleInit(){
   hcalIso03       = new vector<float> ;
   combRelIso03       = new vector<float> ;
   combRelIso05       = new vector<float> ;
-  muonStationsValid       = new vector<float> ;
-  muonStationsAny       = new vector<float> ;
-  muonStationsDTValid       = new vector<float> ;
-  muonStationsDTAny       = new vector<float> ;
-  muonStationsCSCValid       = new vector<float> ;
-  muonStationsCSCAny       = new vector<float> ;
-  muonStationsRPCValid       = new vector<float> ;
-  muonStationsRPCAny       = new vector<float> ;
-  numberOfChambers       = new vector<float> ;
-  segmentMatchesArb_MaxDepth       = new vector<float> ;
-  segmentMatchesArb       = new vector<float> ;
-  segmentMatchesArb_1       = new vector<float> ;
-  segmentMatchesArb_2       = new vector<float> ;
-  segmentMatchesArb_3       = new vector<float> ;
-  segmentMatchesArb_4       = new vector<float> ;
-  segmentMatchesNoArb       = new vector<float> ;
-  segmentMatchesNoArb_1       = new vector<float> ;
-  segmentMatchesNoArb_2       = new vector<float> ;
-  segmentMatchesNoArb_3       = new vector<float> ;
-  segmentMatchesNoArb_4       = new vector<float> ;
-  segmentMatchesFailArb       = new vector<float> ;
+  muonStationsValid       = new vector<int> ;
+  muonStationsAny       = new vector<int> ;
+  muonStationsDTValid       = new vector<int> ;
+  muonStationsDTAny       = new vector<int> ;
+  muonStationsCSCValid       = new vector<int> ;
+  muonStationsCSCAny       = new vector<int> ;
+  muonStationsRPCValid       = new vector<int> ;
+  muonStationsRPCAny       = new vector<int> ;
+  numberOfChambers       = new vector<int> ;
+  segmentMatchesArb_MaxDepth       = new vector<int> ;
+  segmentMatchesArb       = new vector<int> ;
+  segmentMatchesArb_1       = new vector<int> ;
+  segmentMatchesArb_2       = new vector<int> ;
+  segmentMatchesArb_3       = new vector<int> ;
+  segmentMatchesArb_4       = new vector<int> ;
+  segmentMatchesNoArb       = new vector<int> ;
+  segmentMatchesNoArb_1       = new vector<int> ;
+  segmentMatchesNoArb_2       = new vector<int> ;
+  segmentMatchesNoArb_3       = new vector<int> ;
+  segmentMatchesNoArb_4       = new vector<int> ;
+  segmentMatchesFailArb       = new vector<int> ;
   segmentCompatArb       = new vector<float> ;
   segmentCompatNoArb       = new vector<float> ;
   caloCompat       = new vector<float> ;
@@ -305,14 +306,15 @@ void PatTupleDumper::analyze(const edm::Event & event, const edm::EventSetup& ev
     Handle<vector<reco::Vertex> > vertices;
     event.getByLabel(primaryVertices_, vertices);
     int k =0;
-
+    mPass=0;
     foreach (const reco::Muon &recomu, *muons) {
       // we want to make a pat::Muon so that we can access directly muonID in the cuts
       
       const pat::Muon &mu = (typeid(recomu) == typeid(pat::Muon) ? static_cast<const pat::Muon &>(recomu) : pat::Muon(recomu));
-      
+
+
       if (!selector_(mu)) continue;
-      
+      mPass++;
       p->push_back(mu.p());
       pt->push_back(mu.pt());
       eta->push_back(mu.eta());
@@ -506,11 +508,12 @@ void PatTupleDumper::analyze(const edm::Event & event, const edm::EventSetup& ev
       //prodr->push_back(rho);
       //prodd->push_back(d);
       //prodrz->push_back(z,rho);
-      
+
+      myTree->Fill();      
       
     }
     
-    myTree->Fill();
+
     
 }
 
