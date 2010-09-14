@@ -38,9 +38,13 @@ parser.add_option("--xg", "--exclude-group", dest="excludeGroup", type="string",
                         metavar="GROUP[,GROUP2,..]", help="exclude all plots in group GROUP (you can specify this option multiple times)")
 parser.add_option("-S", "--stat", dest="showStat",   action="store_true", help="add statistics box to the plots")
 parser.add_option("-R", "--ratio", dest="plotRatio", action="store_true", help="add a plot of the ratio this/reference")
+parser.add_option("--RR", "--rebin-ratio", dest="rebinRatio", action="store_true", help="rebin the ratio plots to avoid points with low statistics")
 parser.add_option("-C", "--cut", dest="plotCut", action="store_true", help="add a plot of the cut efficiency vs cut value")
 parser.add_option("-O", "--overflow", dest="showOverflow", action="store_true", help="add overflows and underflows to the two outermost bins")
 parser.add_option("-c", "--composite", dest="composite", type="string", help="compose reference histogram by stacking up different subhistograms")
+parser.add_option("--prelim", dest="prelim", type="string", default="CMS Preliminary", metavar="TEXT", help="Put a preliminary banner 'TEXT' on the plots.")
+parser.add_option("--legend", dest="legend", type="string", metavar="FILE", help="Read legend from FILE")
+parser.add_option("-p", "--pdf", "--print", dest="pdf",  action="store_true", help="Print also pdf plots")
 
 ##    ____                        ___                _ _     _       _                     _   _                 
 ##   |  _ \ __ _ _ __ ___  ___   ( _ )   __   ____ _| (_) __| | __ _| |_ ___    ___  _ __ | |_(_) ___  _ __  ___ 
@@ -61,8 +65,12 @@ if options.norm.startswith("manual,"):
         print "When using --normalize=manual,<value>, value must be a valid floating point number ('%s' is not)" % options.norm
         sys.exit(2)
 ## For options that take multiple values, split using comma and join again
+if options.select:  options.select  = sum([i.split(",") for i in options.select],  [])
+if options.exclude: options.exclude = sum([i.split(",") for i in options.exclude], [])   
 if options.selectGroup:  options.selectGroup  = sum([i.split(",") for i in options.selectGroup],  [])
 if options.excludeGroup: options.excludeGroup = sum([i.split(",") for i in options.excludeGroup], [])
+options.exts = ["png"]
+if options.pdf: options.exts += ["pdf"]
 print ""
 if options.selectGroup:
     for M in options.selectGroup: print "SelectGroup %s " %  M
@@ -77,10 +85,14 @@ if options.selectGroup:
 ## === GLOBAL VARIABLES ===
 fileIn = ROOT.TFile(args[0])
 dirIn  = fileIn.Get(args[1])
+if dirIn == None:
+    print "Can't find directory %s in file %s" % (args[1], args[0])
+    sys.exit(1)
 print "The directory: %s" % (args[1])
 ## Reference
 fileRef = None; dirRef = None;
 composite = []
+noComposite = [ "nMuons", "nMuonsCorr", "nMuonsZS" ]
 ## Information to be added to HTML page (e.g. numbers)
 info   = [] 
 ## Titles, labels, plot groups
@@ -92,7 +104,10 @@ c1 = None  ## Canvas
 line = ROOT.TLine(0.,0.,10.,10.);
 line.SetLineColor(2);
 line.SetLineWidth(3);
-
+prelim = None
+gratio = None ## make it global, so it doesn't get deleted
+legend = None; # list of labels
+glegend = None; # TLegend
 
 ## === Open references ===
 if options.ref != None:
@@ -287,16 +302,32 @@ def maybeOverflow(histo, refs):
 def minmax(h,refs,logscale):
     if refs != None:
         href = refs[1]
-        max = 0; 
+        max = 0; maxright = 0; padding = 0.2;
         for b in range(1, h.GetNbinsX()+1):
             val = h.GetBinContent(b)    + h.GetBinError(b)
             ref = href.GetBinContent(b) + href.GetBinError(b)
             if max < val: max = val
             if max < ref: max = ref
+            if b >= 0.4*h.GetNbinsX():
+                if maxright < val: maxright = val
+                if maxright < ref: maxright = ref
+        if max == 0: max = 1
+        if legend and max > 0: # we need to push down plots 
+            legheight = 0.04*len(legend)
+            maxscaled = maxright/max
+            if logscale and maxright > 0: 
+                maxscaled = log(maxright/0.8)/log(max/0.8)
+            if maxscaled +legheight > 1+0.5*padding:
+                padding = 2 * (maxscaled + legheight-1)
         if logscale:
-            h.GetYaxis().SetRangeUser(0.8, max*2)
+            logmax = exp(log(max/0.8)*(1.+padding))
+            h.GetYaxis().SetRangeUser(0.8, logmax)
         else:
-            h.GetYaxis().SetRangeUser(0, max*1.2)
+            h.GetYaxis().SetRangeUser(0, max*(1.+padding))
+        if not logscale and max >= 8000 and max <= 1e5: 
+            h.GetYaxis().SetTitleOffset(1.50);
+        else:
+            h.GetYaxis().SetTitleOffset(1.25);
 ## === Stack plots and references === 
 def stack(histo, refs):
     if len(refs) == 3:
@@ -312,9 +343,29 @@ def stack(histo, refs):
         refup.Draw("H SAME")
         refdn.Draw("H SAME")
         histo.Draw("E SAME")
+    if legend: 
+        if len(refs) == 3:
+            drawLegend([histo,ref],[legend[0],legend[1]])
+        elif len(refs) == 5:
+            drawLegend([histo]+[h for h in reversed(comps)],[legend[0]]+legend[2:])
 
+def drawLegend(histos, names):
+    global glegend
+    width  = 0.03 + 0.0165 * max([len(n) for n in names])
+    height = 0.03 + 0.035  * len(names)
+    glegend = ROOT.TLegend(.93-width,.92-height,.93,.92)
+    glegend.SetTextSize(0.03); glegend.SetTextAlign(12); 
+    glegend.SetTextFont(42);
+    glegend.SetFillColor(0);   glegend.SetFillStyle(0);  glegend.SetShadowColor(0);
+    #glegend.SetLineStyle(2);   glegend.SetLineColor(0);
+    glegend.AddEntry(histos[0],names[0],"LPE")
+    for h,n in zip(histos[1:],names[1:]):
+        glegend.AddEntry(h,n,"F")
+    glegend.Draw("SAME")
+    
 def printHisto(name, title, subname):
-    for e in ["png"]: #options.exts:
+    if prelim: prelim.Draw("same")
+    for e in options.exts:
         c1.Print("%s/%s_%s.%s" % (options.out, name, subname, e)) 
     index.append([name,subname,root2html(title)])
 
@@ -347,20 +398,73 @@ def normalize(hist,hdata):
         return options.norm_value
     return 1.0
 
+## def ratio(histo, refs):
+##     ref = refs[0]
+##     histo.GetYaxis().SetTitle("data/mc ratio")
+##     histo.Divide(ref);
+##     histo.GetYaxis().UnZoom();
+##     min = 0; max = 2.0; 
+##     for b in range(1, histo.GetNbinsX()+1):
+##         valup = histo.GetBinContent(b) + histo.GetBinError(b)
+##         #valdn = histo.GetBinContent(b) + histo.GetBinError(b)
+##         if valup > max and valup < 4: max = valup
+##     histo.GetYaxis().SetRangeUser(0, max*1.2)
+##     histo.Draw("E");
+##     line.DrawLine(histo.GetXaxis().GetXmin(),1,histo.GetXaxis().GetXmax(),1);
+##     histo.Draw("E SAME");
+
 def ratio(histo, refs):
     ref = refs[0]
     histo.GetYaxis().SetTitle("data/mc ratio")
-    histo.Divide(ref);
-    histo.GetYaxis().UnZoom();
-    min = 0; max = 2.0; 
-    for b in range(1, histo.GetNbinsX()+1):
-        valup = histo.GetBinContent(b) + histo.GetBinError(b)
-        #valdn = histo.GetBinContent(b) + histo.GetBinError(b)
-        if valup > max and valup < 4: max = valup
-    histo.GetYaxis().SetRangeUser(0, max*1.2)
-    histo.Draw("E");
-    line.DrawLine(histo.GetXaxis().GetXmin(),1,histo.GetXaxis().GetXmax(),1);
-    histo.Draw("E SAME");
+    if options.rebinRatio:
+        global gratio
+        gratio = ROOT.TGraphAsymmErrors(1);
+        n = histo.GetNbinsX()+1; i = 1;
+        nev = max(5,min(200,histo.Integral()/20))
+        ymax = 0.4; 
+        while i < n:
+            sn=0.; snref = 0.; # sum of entries in the blocks, for main and reference
+            snreferr2 = 0.;
+            sx=0.; # weighted sum of X
+            j = i;
+            while j < n and sn < nev:
+                ndt = histo.GetBinContent(j); nref = ref.GetBinContent(j);
+                x   = histo.GetXaxis().GetBinCenter(j);
+                sn += ndt; snref += nref; 
+                snreferr2 += ref.GetBinError(j)**2;
+                sx += ndt * x;  
+                j += 1 
+            if sn > 0 and snref > 0:
+                x = sx/sn; y = sn/snref;
+                xmin = histo.GetXaxis().GetBinLowEdge(i); xmax = histo.GetXaxis().GetBinUpEdge(j-1);
+                dy   = y * sqrt(1./sn + snreferr2/snref**2);
+                k = gratio.GetN()
+                gratio.SetPoint(k, x, y);
+                gratio.SetPointError(k, x-xmin, xmax-x, dy, dy);
+                if abs(1-y)+dy > ymax and abs(1-y)+dy < 3: ymax = abs(1-y) + dy
+            i = j
+        ymax *= 1.2; ymin = 1-ymax if ymax < 1 else 0 # (C++: (ymax < 1 ? 1-ymax : 0)
+        gratio.SetLineWidth(2)
+        gratio.Draw("APZ");
+        gratio.GetXaxis().SetTitle(histo.GetXaxis().GetTitle());
+        gratio.GetYaxis().SetTitle(histo.GetYaxis().GetTitle());
+        #gratio.GetYaxis().SetRangeUser(ymin,ymax+1)
+        gratio.GetYaxis().SetRangeUser(0,2) ## at the moment, that's what was requested
+        gratio.GetXaxis().SetRangeUser(histo.GetXaxis().GetXmin(),histo.GetXaxis().GetXmax());
+        line.DrawLine(histo.GetXaxis().GetXmin(),1,histo.GetXaxis().GetXmax(),1);
+        gratio.Draw("PZ SAME");
+    else:
+        histo.Divide(ref);
+        histo.GetYaxis().UnZoom();
+        ymax = 2; 
+        for b in range(1, histo.GetNbinsX()+1):
+            valup = histo.GetBinContent(b) + histo.GetBinError(b)
+            #valdn = histo.GetBinContent(b) + histo.GetBinError(b)
+            if valup > ymax and valup < 4: ymax = valup
+        histo.GetYaxis().SetRangeUser(0, ymax*1.2)
+        histo.Draw("E");
+        line.DrawLine(histo.GetXaxis().GetXmin(),1,histo.GetXaxis().GetXmax(),1);
+        histo.Draw("E SAME");
 
 def gtCut(histo,name):
     hgt = histo.Clone(histo.GetName()+"_gtCut_"+name)
@@ -398,7 +502,7 @@ def getrefs(hdata, name):
                 hdn.SetBinError(b, 0)
             ## FIXME read real options
             hist.SetMarkerStyle(0)
-            if options.composite:
+            if options.composite and name not in noComposite:
                 components = []
                 stack = ROOT.THStack(name+"_stk", name+"_stk");
                 for (compName,compDir,compCol,compColName) in composite:
@@ -443,17 +547,20 @@ def printStats(name, histo):
         try:
             ratio  = ndata/(scale*nmc);
             dratio = ratio * sqrt(1.0/ndata + 1.0/nmc);
+            info += [  "Normalization: data %s %.0f +/- %.0f, mc %s %.0f +/- %.0f, ratio %.4f +/- %.4f" % ( args[1], ndata, sqrt(ndata), options.refdir, scale*nmc, scale*sqrt(nmc), ratio, dratio ) ]
             #info += [  "nmc * scale = %.0f * %.0f = %.0f" % (scale, nmc, scale*nmc) ]
-            info += [  "Normalization:  %s %.0f +/- %.0f,  %s %.0f +/- %.0f, ratio %.4f +/- %.4f" % ( args[1], ndata, sqrt(ndata), options.refdir, scale*nmc, scale*sqrt(nmc), ratio, dratio ) ]
         except ValueError:
-            info += [  "Normalization:_ data %.0f +/- %.0f, mc %.0f +/- %.0f" % ( ndata, sqrt(ndata), scale*nmc, scale*sqrt(nmc) ) ]
+            info += [  "Normalization: data %.0f +/- %.0f, mc %.0f +/- %.0f" % ( ndata, sqrt(ndata), scale*nmc, scale*sqrt(nmc) ) ]
     if refs != None and options.composite:
         fracts = []
         compHistos = refs[4]
         for i,hi in enumerate(compHistos):
             try:
                 fract = hi.Integral()*100.0/refs[0].Integral()
-                fracts.append("%s %.1f%%" % (composite[i][0], fract))
+                if fract >= 9.5: 
+                    fracts.append("%s %.1f%%" % (composite[i][0], fract))
+                else:
+                    fracts.append("%s %.2f%%" % (composite[i][0], fract))
             except ValueError:
                 fracts.append("%s N/A" % composite[i][0])
         fracts.reverse()
@@ -467,6 +574,7 @@ def printStats(name, histo):
 ##                            
 ##   
 def readTitles():
+    global groups,titles
     group = "other"
     file = open(options.titles, "r")
     for line in file:
@@ -480,8 +588,26 @@ def readTitles():
             titles[fields[0]] = (fields[1], fields[2])
             groups[group].append(fields[0]); groupToPlot[fields[0]] = group
 
+def readLegend():
+    global legend
+    file = open(options.legend, "r")
+    if not file: raise RuntimeError, "Can't read legend from '%s'" % options.legend
+    legend = []; mlegend = {}
+    for line in file:
+        fields = re.split(r"\s*:\s*", line.strip())
+        if len(fields) == 2: mlegend[fields[0]] = fields[1]
+    if not mlegend.has_key("DATA"): raise RuntimeError, "Legend must contain one entry 'DATA'"
+    if not mlegend.has_key("REF"):  raise RuntimeError, "Legend must contain one entry 'REF'"
+    legend.append(mlegend["DATA"])
+    legend.append(mlegend["REF"])
+    for (compName, compDir, compRooCol, compHtmlCol) in reversed(composite):
+        if not mlegend.has_key(compName): raise RuntimeError, "Legend must contain entry for component '%s'" % compName
+        legend.append(mlegend[compName])
+
 ## === Define Axis Labels and Titles ===
 def axesAndTitles(name, histo):
+    if histo.GetNbinsX() <= 5 or (histo.GetXaxis().GetXmin() == 0 and histo.GetXaxis().GetXmax() == 0.1):
+        histo.GetXaxis().SetNdivisions(505)
     if titles.has_key(name):
         (xtitle, ptitle) = titles[name]
         histo.GetXaxis().SetTitle(xtitle)
@@ -491,12 +617,14 @@ def axesAndTitles(name, histo):
             sys.stderr.write("Missing title for plot %s in title file %s\n" % (name, options.titles))
         histo.GetXaxis().SetTitle("muon "+name)
         histo.SetTitle(name)
+    what = "muons"
+    if name.find("nMuons") == 0: what = "events"
     if options.norm == "integral":
-        histo.GetYaxis().SetTitle("muons (entry norm.)")
+        histo.GetYaxis().SetTitle(what+" (entry norm.)")
     elif options.norm == "external":
-        histo.GetYaxis().SetTitle("muons (event norm.)")
+        histo.GetYaxis().SetTitle(what+" (event norm.)")
     else:
-        histo.GetYaxis().SetTitle("muons")
+        histo.GetYaxis().SetTitle(what)
 
 ##    __  __    _    ___ _   _    ____ ___  ____  _____ 
 ##   |  \/  |  / \  |_ _| \ | |  / ___/ _ \|  _ \| ____|
@@ -508,6 +636,7 @@ def axesAndTitles(name, histo):
 if __name__ == "__main__":
     if not os.path.isdir(options.out): os.mkdir(options.out)
     if options.titles: readTitles()
+    if options.legend: readLegend()
     ##    ____       _       _                    _            _       _        
     ##   |  _ \ _ __(_)_ __ | |_   _ __ ___   ___| |_ __ _  __| | __ _| |_ __ _ 
     ##   | |_) | '__| | '_ \| __| | '_ ` _ \ / _ \ __/ _` |/ _` |/ _` | __/ _` |
@@ -531,6 +660,14 @@ if __name__ == "__main__":
                 info.append(compInfo)
     tdrStyle()
     c1 = ROOT.TCanvas("c1","c1")
+    if options.prelim:
+        prelim = ROOT.TPaveText(0.20,0.90,0.2,0.90,"NDC")
+        if options.prelim.find("#splitline") != -1:
+            prelim = ROOT.TPaveText(0.20,0.88,0.2,0.88,"NDC")
+        prelim.SetTextSize(0.040); prelim.SetTextAlign(12); prelim.SetTextFont(42);
+        prelim.SetFillColor(0);   prelim.SetFillStyle(0);  prelim.SetShadowColor(0);
+        prelim.SetLineStyle(2);   prelim.SetLineColor(0);
+        prelim.AddText(options.prelim)
     ##    ____       _       _                     _             _       _   
     ##   |  _ \ _ __(_)_ __ | |_    ___  __ _  ___| |__    _ __ | | ___ | |_ 
     ##   | |_) | '__| | '_ \| __|  / _ \/ _` |/ __| '_ \  | '_ \| |/ _ \| __|
@@ -543,19 +680,19 @@ if __name__ == "__main__":
         if k.GetClassName() != "TH1D": continue
         if k.GetName() == "normalization": continue
         if (len(groups) != 1) and options.selectGroup:
-            if not (groupToPlot[k.GetName()] in options.selectGroup): continue
+            if (k.GetName() in groupToPlot) and not (groupToPlot[k.GetName()] in options.selectGroup): continue
         if (len(groups) != 1) and options.excludeGroup:
-            if groupToPlot[k.GetName()] in options.excludeGroup: continue
+            if (k.GetName() in groupToPlot) and (groupToPlot[k.GetName()] in options.excludeGroup): continue
         if options.select:
             if len([x for x in options.select  if re.search(x, k.GetName())]) == 0: continue
         if options.exclude:
-            if len([x for x in options.exclude if re.search(x, k.GetName())]) == 0: continue
+            if len([x for x in options.exclude if re.search(x, k.GetName())]) > 0: continue
         obj = dirIn.Get(k.GetName())
         ## Set up axes and titles
         axesAndTitles(k.GetName(), obj)
         ## Plot the histogram and possibly the background
         plot(k.GetName(), obj)
-        if first: 
+        if first and k.GetName() not in noComposite: 
             printStats(k.GetName(), obj)
             first = False
     ##   __        __    _ _         _   _ _____ __  __ _     
@@ -585,6 +722,7 @@ div.pic {
     float: left;
     margin: 3px;
     width: 330px;
+    text-align: center;
 }
 div.pic img { border: none; width: 300px; }
 h3 { text-align: center; 
@@ -628,7 +766,11 @@ ul { padding: 0 2em; margin-top: -0.8em;}
         htm.write('\t<div class="pic">')
         htm.write('<a href="%s" title="%s">' % (fname,htmlInline(title)))
         htm.write('<img src="%s" alt="%s"/>' % (fname,htmlInline(title)))
-        htm.write('</a></div>\n')
+        htm.write('</a>')
+        if options.pdf:
+            alts = ['<a href="%s_%s.%s">%s</a>' % (name, subname, e, e) for e in options.exts ]
+            htm.write('[download as '+', '.join(alts)+']')
+        htm.write('</div>\n')
     htm.write("</div>")
     htm.write("""
 <div id='menu'>
