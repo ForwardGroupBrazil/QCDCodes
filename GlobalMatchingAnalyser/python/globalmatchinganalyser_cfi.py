@@ -11,4 +11,5 @@ globalMatchingAnalyser = cms.EDAnalyzer(
     GlobalMuonTrackMatcher,
     trackLabel = cms.InputTag("generalTracks"),
     muonLabel = cms.InputTag("muons"),
+    useAll = cms.int32(1)
 )

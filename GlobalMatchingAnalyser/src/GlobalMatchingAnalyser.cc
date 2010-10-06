@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Fri Dec 18 12:47:08 CST 2009
-// $Id: GlobalMatchingAnalyser.cc,v 1.9 2010/02/03 21:24:14 aeverett Exp $
+// $Id: GlobalMatchingAnalyser.cc,v 1.10 2010/03/29 21:03:12 aeverett Exp $
 //
 //
 
@@ -53,6 +53,7 @@
 #include <TGraph.h>
 #include <TGraphErrors.h>
 #include <TH1.h>
+#include <TH2.h>
 
 //
 // class decleration
@@ -89,21 +90,41 @@ private:
 
   GlobalMuonTrackMatcher* theTrackMatcher;
 
-  TGraphErrors *tg1;
+  std::map<std::string, std::map<std::string, TH1*> > testPlots;
+
+  //TGraphErrors *tg1;
   TGraphErrors *glb_combined, *glb_inner, *glb_outer;
-  TGraphErrors *sta_muon;
+  TGraphErrors *sta_muon, *sta_muonsurf;
   TGraphErrors *tk_muon;
 
   TGraphErrors *region_dynamic, *region_fixed;
 
-  TGraphErrors *pos_tkCand, *pos_tkCandFixed, *pos_tkAll;
+  TGraphErrors *pos_tkCand, *pos_tkCandFixed, *pos_tkAll, *pos_tkAllsurf;
   TGraphErrors *pos_selectedTkCand, *pos_selectedTkCandFixed;
 
   TGraphErrors *surface_error1;
   TGraphErrors *surface_error2;
 
+  TH1F *h_distance_muHit, *h_Distance_muHit, *h_chi2_muHit, *h_loc_chi2_muHit, *h_loc_chi2_2_muHit, *h_deltaR_muHit, *h_loc_chi2_3_muHit;
+  TH1F *h_distance_tkHit, *h_Distance_tkHit, *h_chi2_tkHit, *h_loc_chi2_tkHit, *h_loc_chi2_2_tkHit, *h_deltaR_tkHit, *h_loc_chi2_3_tkHit;
+  TH1F *h_distance_tksurf, *h_Distance_tksurf, *h_chi2_tksurf, *h_loc_chi2_tksurf, *h_loc_chi2_2_tksurf, *h_deltaR_tksurf, *h_loc_chi2_3_tksurf;
+
+  TH2F *h_distance_loc_chi2_muHit;
+  TH2F *h_distance_loc_chi2_tkHit;
+  TH2F *h_distance_loc_chi2_tksurf;
+
+  TH2F *h_distance_loc_chi2_2_muHit;
+  TH2F *h_distance_loc_chi2_2_tkHit;
+  TH2F *h_distance_loc_chi2_2_tksurf;
+
+  TH2F *h_distance_loc_chi2_3_muHit;
+  TH2F *h_distance_loc_chi2_3_tkHit;
+  TH2F *h_distance_loc_chi2_3_tksurf;
+
   edm::InputTag theTrackLabel;
   edm::InputTag theMuonLabel;
+
+  int useAll;
 
 };
 
@@ -132,6 +153,8 @@ GlobalMatchingAnalyser::GlobalMatchingAnalyser(const edm::ParameterSet& iConfig)
 
   theTrackLabel = iConfig.getParameter<edm::InputTag>("trackLabel");
   theMuonLabel = iConfig.getParameter<edm::InputTag>("muonLabel");
+
+  useAll = iConfig.getParameter<int>("useAll");
 
   // the services
   ParameterSet serviceParameters = iConfig.getParameter<ParameterSet>("ServiceParameters");  
@@ -169,37 +192,37 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 {
   //using namespace edm;
   //using namespace reco;
-
-   theService->update(iSetup);
-
-   theRegionBuilder->setEvent(iEvent);
-
-
-#ifdef THIS_IS_AN_EVENT_EXAMPLE
-   Handle<ExampleData> pIn;
-   iEvent.getByLabel("example",pIn);
-#endif
-   
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-   ESHandle<SetupData> pSetup;
-   iSetup.get<SetupRecord>().get(pSetup);
-#endif
-
-   LogTrace("MatchAnalyzer") << "********************" << "Run " << iEvent.id().run() << " Event " << iEvent.id().event() ;
-
+  
+  theService->update(iSetup);
+  
+  theRegionBuilder->setEvent(iEvent);
+  
+  LogDebug("MatchAnalyzer") << "********************" << "Run " << iEvent.id().run() << " Event " << iEvent.id().event() ;
+  
+  /////////////////////////////
+  //
+  // Get the collections
+  //
+  /////////////////////////////
+  
   // Get Muons
   Handle<View<Muon> > muonHandle;
   iEvent.getByLabel(theMuonLabel, muonHandle);
   View<Muon> muonColl = *(muonHandle.product());
-
+  
   // Get Muon Tracks
   Handle<View<Track> > trkHandle;
   iEvent.getByLabel(theTrackLabel, trkHandle);
   View<Track> trkColl = *(trkHandle.product());
-
+  
   edm::Handle<reco::TrackCollection> allTrackerTracks;
   iEvent.getByLabel(theTrackLabel,allTrackerTracks);
-
+  
+  /////////////////////////////
+  //
+  // Make a collection for all tracker tracks
+  //
+  /////////////////////////////
   vector<TrackCand> tkTrackCands;
   
   for ( unsigned int position = 0; position != allTrackerTracks->size(); ++position ) {
@@ -208,6 +231,12 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
     tkTrackCands.push_back(tkCand); 
   }
 
+  /////////////////////////////
+  //
+  // Set the point for all tracker tracks
+  //
+  /////////////////////////////
+  
   int iTkAll = 0;
   for(vector<TrackCand>::const_iterator iTk = tkTrackCands.begin();
       iTk != tkTrackCands.end(); ++iTk) {
@@ -215,16 +244,23 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
     //position++;
     pos_tkAll->SetPoint(iTkAll,iTk->second->eta(),iTk->second->phi());
     pos_tkAll->SetPointError(iTkAll,iTk->second->etaError(),iTk->second->phiError());
-    iTkAll++;    
+    iTkAll++;
     //tkCandColl.push_back(TrackCand((Trajectory*)(0),tkRef));
   }
   
-  tg1->SetPoint(0,1,1);
-  tg1->SetPoint(1,2,1);
-  tg1->SetPointError(0,1,.5);
-  tg1->SetPointError(1,0.25,1.);
+  // // Test crap
+  //tg1->SetPoint(0,1,1);
+  //tg1->SetPoint(1,2,1);
+  //tg1->SetPointError(0,1,.5);
+  //tg1->SetPointError(1,0.25,1.);
 
   int nMu = muonColl.size();
+
+  /////////////////////////////
+  //
+  // Loop over all muons
+  //
+  /////////////////////////////
 
   int iMu = 0;
   int iSta = 0;
@@ -237,7 +273,10 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
   int iSelTkDynamic = 0;
   for(View<Muon>::const_iterator iMuon = muonColl.begin();
       iMuon != muonColl.end(); ++iMuon, iMu++) {
-    LogTrace("MatchAnalyzer") << "*****" << endl << "Muon " << iMu+1 << " of " << nMu << endl;
+    LogTrace("MatchAnalyzer") << "*****" 
+			      << endl << "Muon " << iMu+1 << " of " 
+			      << nMu << endl;
+
     const reco::TrackRef glbTrack = ( iMuon->isGlobalMuon()) ? 
       iMuon->combinedMuon() : reco::TrackRef();
 
@@ -247,7 +286,30 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
     const reco::TrackRef staTrack = ( iMuon->isStandAloneMuon() ) ? 
       iMuon->outerTrack() : TrackRef();
 
-    LogTrace("MatchAnalyzer") << "     isXXX? " << iMuon->isGlobalMuon() << " " << iMuon->isStandAloneMuon() << " " << iMuon->isTrackerMuon() << endl;
+    /////////////////////////////
+    //
+    // Make a new collection for all good / bad / all tracks
+    //
+    /////////////////////////////
+    vector<TrackCand> tkTrackCandsNew;
+    for(vector<TrackCand>::const_iterator iTk = tkTrackCands.begin();
+	iTk != tkTrackCands.end(); ++iTk) {
+      if(useAll==1) { 
+	tkTrackCandsNew.push_back(*iTk); 
+      }
+      else if(useAll==2 && tkTrack.isAvailable() && iTk->second == tkTrack) {
+	tkTrackCandsNew.push_back(*iTk); 
+      }
+      else if(useAll==3 && tkTrack.isAvailable() && iTk->second != tkTrack) {
+	tkTrackCandsNew.push_back(*iTk); 
+      }
+    }
+    
+
+    LogTrace("MatchAnalyzer") << "     isXXX? " 
+			      << iMuon->isGlobalMuon() << " " 
+			      << iMuon->isStandAloneMuon() << " " 
+			      << iMuon->isTrackerMuon() << endl;
 
     if(iMuon->isGlobalMuon()) {
       if(glbTrack.isAvailable()) {
@@ -268,118 +330,242 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
     vector<TrackCand> tkPreCandColl;
     vector<TrackCand> tkPreCandCollFixed;
 
+    ////////////////////////////////////
+    //
+    // For every muon that is a STA, check the matching observables
+    //
+    ////////////////////////////////////
+
     if(iMuon->isStandAloneMuon()) {
       TrackCand staCand((Trajectory*)(0),staTrack);     
       if(staTrack.isAvailable()) {
 	sta_muon->SetPoint(iSta,staTrack->eta(),staTrack->phi());
 	sta_muon->SetPointError(iSta,staTrack->etaError(),staTrack->phiError());
       }
-
-      LogTrace("MatchAnalyzer") << endl << "**********" << endl << "StaMuon " << iSta+1 << " of " << "999" << endl;
       
-      tkPreCandColl = chooseRegionalTrackerTracks(staTrack,tkTrackCands,iSta);
-      tkPreCandCollFixed = chooseRegionalTrackerTracksFixed(staTrack,tkTrackCands,iSta);
+      ///////////////////////////////////
+      ///////////////////////////////////
+      /*
+      {
+	int iTkAll = 0;
+	for(vector<TrackCand>::const_iterator iTk = tkTrackCandsNew.begin();
+	    iTk != tkTrackCandsNew.end(); ++iTk) {
+	  std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPair = theTrackMatcher->convertToTSOSTk(staCand,*iTk);
+	  pos_tkAllsurf->SetPoint(iTkAll,tsosPair.second.globalPosition().eta(),tsosPair.second.globalPosition().phi());
+	  sta_muonsurf->SetPoint(iTkAll,tsosPair.first.globalPosition().eta(),tsosPair.first.globalPosition().phi());
+	  //adam pos_tkAllsurf->SetPointError(iTkAll,tsosPair.second.globalPosition().etaError(),tsosPair.second.globalPosition().phiError());
+	  iTkAll++;
+	}
+      }
+      */
+      ///////////////////////////////////
+      ///////////////////////////////////
+
+      ////////////////////////////////////
+      //
+      // Make collections of fixed and dynamic tracker tracks
+      //
+      ////////////////////////////////////
+      LogTrace("MatchAnalyzer") << endl 
+				<< "**********" << endl << "StaMuon " 
+				<< iSta+1 << " of " << "999" << endl;
+      //ADAM adding the "New" for good / bad / all
+      tkPreCandColl = 
+	chooseRegionalTrackerTracks(staTrack,tkTrackCandsNew,iSta);
+      tkPreCandCollFixed = 
+	chooseRegionalTrackerTracksFixed(staTrack,tkTrackCandsNew,iSta);
 
       //h_nTKFixed->Fill(tkPreCandCollFixed.size());
       //h_nTKDynamic->Fill(tkPreCandColl.size());
 
-      LogTrace("MatchAnalyzer") << "     " << endl << "Tk in Region " << tkPreCandCollFixed.size() << endl;
-
-
-
-      //vector<TrackCand> tkCandColl;
-      //vector<TrackCand> tkCandCollFixed;
-      //int position = 0;
+      LogTrace("MatchAnalyzer") << "     " 
+				<< endl << "Tk in Region " 
+				<< tkPreCandCollFixed.size() << endl;
+      
+      /////////////////////////////
+      //
+      // Loop over all dynamic regional tracker tracks
+      //
+      /////////////////////////////
       for(vector<TrackCand>::const_iterator iTk = tkPreCandColl.begin();
 	  iTk != tkPreCandColl.end(); ++iTk) {
-	//TrackRef tkRef(tkPreCandColl,position);
-	//position++;
+	/////////////////////////////
+	//
+	// Set the point for all (dynamic) regional tracker tracks
+	//
+	/////////////////////////////	
 	pos_tkCand->SetPoint(iTkDynamic,iTk->second->eta(),iTk->second->phi());
 	pos_tkCand->SetPointError(iTkDynamic,iTk->second->etaError(),iTk->second->phiError());
 	iTkDynamic++;
-
-	//tkCandColl.push_back(TrackCand((Trajectory*)(0),tkRef));
       }
-
-      //position = 0;
+      
       int iTkSurf = 0;
       int iiTk = 1;
+      
+      /////////////////////////////
+      //
+      // Loop over all fixed regional tracker tracks
+      //
+      /////////////////////////////
       for(vector<TrackCand>::const_iterator iTk = tkPreCandCollFixed.begin();
 	  iTk != tkPreCandCollFixed.end(); ++iTk) {
-	LogTrace("MatchAnalyzer") << "*****" << endl << "Tk " << iiTk << " of " << tkPreCandCollFixed.size() << " and iTkFixed " << iTkFixed << endl;
+	LogTrace("MatchAnalyzer") << "*****" << endl 
+				  << "Tk " << iiTk << " of " 
+				  << tkPreCandCollFixed.size() 
+				  << " and iTkFixed " << iTkFixed << endl;
 	iiTk++;
-	//TrackRef tkRef(tkPreCandCollFixed,position);
-	//position++;
+	/////////////////////////////
+	//
+	// Set the point for all (fixed) regional tracker tracks
+	//
+	/////////////////////////////
 	pos_tkCandFixed->SetPoint(iTkFixed,iTk->second->eta(),iTk->second->phi());
-	pos_tkCandFixed->SetPointError(iTkFixed,iTk->second->etaError(),iTk->second->phiError());
-
+	pos_tkCandFixed->SetPointError(iTkFixed,iTk->second->etaError(),iTk->second->phiError());	
 	iTkFixed++;
+		
+	////////////////////////////////////
+	//
+	// For each surface, compute observables
+	//
+	////////////////////////////////////
+	std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface> tsosPair;
+	std::string dirName;
+	for(int i = 0; i<3; i++ ) {
+	  
+	  switch(i) {
+	  case 0 :
+	    tsosPair = theTrackMatcher->convertToTSOSMuHit(staCand,*iTk);
+	    dirName = std::string("matchAnalyzerMuHit");
+	    LogTrace("MatchAnalyzer") << "ConvertToMuHitSurface muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
+	    break;
+	  case 1 :
+	    tsosPair = theTrackMatcher->convertToTSOSTkHit(staCand,*iTk);
+	    dirName = std::string("matchAnalyzerTkHit");
+	    LogTrace("MatchAnalyzer") << "ConvertToTkHitSurface muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
+	    break;
+	  case 2 :
+	    tsosPair = theTrackMatcher->convertToTSOSTk(staCand,*iTk);
+	    dirName = std::string("matchAnalyzerTkSurf");
+	    LogTrace("MatchAnalyzer") << "ConvertToTkSurface muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
+	    break;
+	  default:
+	    tsosPair = theTrackMatcher->convertToTSOSMuHit(staCand,*iTk);
+	    LogTrace("MatchAnalyzer") << "ConvertToMuHitSurface (default) muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
+	  }
 
-	std::pair<TrajectoryStateOnSurface, TrajectoryStateOnSurface>
-	  tsosPair = theTrackMatcher->convertToTSOSMuHit(staCand,*iTk);
-
-	LogTrace("MatchAnalyzer") << "ConvertToMuHitSurface muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
-
-	if(!tsosPair.first.isValid() || !tsosPair.second.isValid()) {continue;}
-
-	// calculate matching variables
-	double distance = theTrackMatcher->match_d(tsosPair.first,tsosPair.second);
-	double chi2 = theTrackMatcher->match_Chi2(tsosPair.first,tsosPair.second);
-	double loc_chi2 = theTrackMatcher->match_dist(tsosPair.first,tsosPair.second);
-	double deltaR = theTrackMatcher->match_Rpos(tsosPair.first,tsosPair.second);
-	LogTrace("MatchAnalyzer") << "iTk pT " << iTk->second->pt() << " eta " << iTk->second->eta() << " phi " << iTk->second->phi() << endl; 
-	LogTrace("MatchAnalyzer") << "  distance " << distance << "    distance cut " << " " << endl;
-	LogTrace("MatchAnalyzer") << "  chi2 " << chi2 << "     chi2 cut " << " " << endl;
-	LogTrace("MatchAnalyzer") << "  loc_chi2 " << loc_chi2 << "     locChi2 cut " << " " << endl;
-	LogTrace("MatchAnalyzer") << "  deltaR " << deltaR << "     deltaR cut " << " " << endl;
-
-	LogTrace("MatchAnalyzer") << "  dR1 " << fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta()<1.5*0.2) << endl;
-	LogTrace("MatchAnalyzer") << "  dR2 " << (fabs(deltaPhi(tsosPair.second.globalPosition().phi(),tsosPair.first.globalPosition().phi())) < 0.2) << endl;
-
-	LogTrace("MatchAnalyzer") << "  dR1redo " 
-				  << fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta())
-				  << (fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta() < 1.5 * 0.2) ) << " " 
-				  << (fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta() ) < 1.5 * 0.2) << " " 
-				  << endl;
-
-	LogTrace("MatchAnalyzer") << "  dR2redo " << fabs(deltaPhi(tsosPair.second.globalPosition().phi(),tsosPair.first.globalPosition().phi()) ) << endl;
-	
-	double x1 = tsosPair.first.localPosition().x();
-	double y1 = tsosPair.first.localPosition().y();
-	double xx1 = tsosPair.first.localError().positionError().xx();
-	double yy1 = tsosPair.first.localError().positionError().yy();
-
-	double x2 = tsosPair.second.localPosition().x();
-	double y2 = tsosPair.second.localPosition().y();
-	double xx2 = tsosPair.second.localError().positionError().xx();
-	double yy2 = tsosPair.second.localError().positionError().yy();
-
-	surface_error1->SetPoint(iSta,x1,y1);
-	surface_error2->SetPoint(surfaceOffset+iTkSurf,x2,y2);
-	surface_error1->SetPointError(iSta,xx1,yy1);
-	surface_error2->SetPoint(surfaceOffset+iTkSurf,xx2,yy2);
-	
-	iTkSurf++;
-
-
-	//tkCandCollFixed.push_back(TrackCand((Trajectory*)(0),tkRef));
-      }
+	  if(!tsosPair.first.isValid() || !tsosPair.second.isValid()) {continue;}
+	  
+	  // calculate matching variables
+	  double distance = 
+	    theTrackMatcher->match_d(tsosPair.first,tsosPair.second);
+	  double Distance = 
+	    theTrackMatcher->match_D(tsosPair.first,tsosPair.second);
+	  double chi2 = 
+	    theTrackMatcher->match_Chi2(tsosPair.first,tsosPair.second);
+	  double loc_chi2 = 
+	    theTrackMatcher->match_dist(tsosPair.first,tsosPair.second);
+	  double loc_chi2_2 = 
+	    theTrackMatcher->match_dist2(tsosPair.first,tsosPair.second);
+	  double loc_chi2_3 = 
+	    theTrackMatcher->match_dist3(tsosPair.first,tsosPair.second);
+	  double deltaR = 
+	    theTrackMatcher->match_Rpos(tsosPair.first,tsosPair.second);
+	  
+	  LogDebug("MatchAnalyzer");
+	  
+	  std::map<std::string, TH1*> localDir = 
+	    testPlots[dirName];LogDebug("MatchAnalyzer");
+	  
+	  localDir["h_distance"]->Fill(distance);
+	  localDir["h_Distance"]->Fill(Distance);
+	  localDir["h_chi2"]->Fill(chi2);
+	  localDir["h_loc_chi2"]->Fill(loc_chi2);
+	  localDir["h_loc_chi2_2"]->Fill(loc_chi2_2);
+	  localDir["h_loc_chi2_3"]->Fill(loc_chi2_3);
+	  localDir["h_deltaR"]->Fill(deltaR);
+	  localDir["h_distance_loc_chi2"]->Fill(distance,loc_chi2);
+	  localDir["h_distance_loc_chi2_2"]->Fill(distance,loc_chi2_2);
+	  localDir["h_distance_loc_chi2_3"]->Fill(distance,loc_chi2_3);	  
+	  
+	  if(i==0) {
+	    LogDebug("MatchAnalyzer") << "iTk pT " << iTk->second->pt() 
+				      << " eta " << iTk->second->eta() 
+				      << " phi " << iTk->second->phi() << endl; 
+	    LogTrace("MatchAnalyzer") << "  distance " << distance 
+				      << "    distance cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  Distance " << Distance 
+				      << "    distance cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  chi2 " << chi2 
+				      << "     chi2 cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  loc_chi2 " << loc_chi2 
+				      << "     locChi2 cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  loc_chi2_2 " << loc_chi2_2 
+				      << "     locChi2 cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  loc_chi2_3 " << loc_chi2_3 
+				      << "     locChi2 cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  deltaR " << deltaR 
+				      << "     deltaR cut " << " " << endl;
+	    
+	    LogTrace("MatchAnalyzer") << "  dR1 " << fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta()<1.5*0.2) << endl;
+	    LogTrace("MatchAnalyzer") << "  dR2 " << (fabs(deltaPhi(tsosPair.second.globalPosition().phi(),tsosPair.first.globalPosition().phi())) < 0.2) << endl;
+	    
+	    LogTrace("MatchAnalyzer") << "  dR1redo " 
+				      << fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta())
+				      << (fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta() < 1.5 * 0.2) ) << " " 
+				      << (fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta() ) < 1.5 * 0.2) << " " 
+				      << endl;
+	    
+	    LogTrace("MatchAnalyzer") << "  dR2redo " << fabs(deltaPhi(tsosPair.second.globalPosition().phi(),tsosPair.first.globalPosition().phi()) ) << endl;
+	 
+	    double x1 = tsosPair.first.localPosition().x();
+	    double y1 = tsosPair.first.localPosition().y();
+	    double xx1 = tsosPair.first.localError().positionError().xx();
+	    double yy1 = tsosPair.first.localError().positionError().yy();
+	    
+	    double x2 = tsosPair.second.localPosition().x();
+	    double y2 = tsosPair.second.localPosition().y();
+	    double xx2 = tsosPair.second.localError().positionError().xx();
+	    double yy2 = tsosPair.second.localError().positionError().yy();
+	    
+	    surface_error1->SetPoint(iSta,x1,y1);
+	    surface_error2->SetPoint(surfaceOffset+iTkSurf,x2,y2);
+	    surface_error1->SetPointError(iSta,xx1,yy1);
+	    surface_error2->SetPoint(surfaceOffset+iTkSurf,xx2,yy2);
+	    
+	    
+	    iTkSurf++;
+	    //tkCandCollFixed.push_back(TrackCand((Trajectory*)(0),tkRef));
+	  } // end if i == 0 special prints	  
+	} // end loop over each surface	
+      } // end loop over all fixed regional tracker tracks
 
       surfaceOffset = surfaceOffset + iTkSurf + 1;
 
-      vector<TrackCand> selectedTrackerTracks = theTrackMatcher->match(TrackCand((Trajectory*)(0),staTrack), tkPreCandColl);
-      for(vector<TrackCand>::const_iterator iTk=selectedTrackerTracks.begin();
-	  iTk != selectedTrackerTracks.end(); ++iTk) {
-	pos_selectedTkCand->SetPoint(iSelTkDynamic,iTk->second->eta(),iTk->second->phi());
-	pos_selectedTkCand->SetPointError(iSelTkDynamic,iTk->second->etaError(),iTk->second->phiError());
-	iSelTkDynamic++;
-      }
-
-
+      ////////////////////////////////////////
+      //
+      // Run the general matcher sta to track collection
+      //
+      ////////////////////////////////////////
+      
+      /* ADAM: let's call the general matcher only once per analyzer
+	 vector<TrackCand> selectedTrackerTracks = theTrackMatcher->match(TrackCand((Trajectory*)(0),staTrack), tkPreCandColl);
+	 for(vector<TrackCand>::const_iterator iTk=selectedTrackerTracks.begin();
+	 iTk != selectedTrackerTracks.end(); ++iTk) {
+	 pos_selectedTkCand->SetPoint(iSelTkDynamic,iTk->second->eta(),iTk->second->phi());
+	 pos_selectedTkCand->SetPointError(iSelTkDynamic,iTk->second->etaError(),iTk->second->phiError());
+	 iSelTkDynamic++;
+	 }
+      */
+      
       vector<TrackCand> selectedTrackerTracksFixed = theTrackMatcher->match(TrackCand((Trajectory*)(0),staTrack), tkPreCandCollFixed);
+      //adam: try the local distance crap here
+      //end adam
       for(vector<TrackCand>::const_iterator iTk=selectedTrackerTracksFixed.begin();
 	  iTk != selectedTrackerTracksFixed.end(); ++iTk) {
-	LogTrace("MatchAnalyzer") << "-----" << endl << "selected pt " << iTk->second->pt() << " eta " << iTk->second->eta() << " phi " << iTk->second->phi() << endl; 
+	LogTrace("MatchAnalyzer") << "-----" << endl 
+				  << "selected pt " << iTk->second->pt() 
+				  << " eta " << iTk->second->eta() 
+				  << " phi " << iTk->second->phi() << endl; 
 	pos_selectedTkCandFixed->SetPoint(iSelTkFixed,iTk->second->eta(),iTk->second->phi());
 	pos_selectedTkCandFixed->SetPointError(iSelTkFixed,iTk->second->etaError(),iTk->second->phiError());
 	iSelTkFixed++;
@@ -387,6 +573,12 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       
       iSta++;
     } //end loop over STA
+
+    ////////////////////
+    //
+    // Set the Points for all tracker muons
+    //
+    ////////////////////
 
     if(iMuon->isTrackerMuon()) {
       if(tkTrack.isAvailable()) {
@@ -396,9 +588,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       iTkMu++;
     }
 
-
-    //iMu++;
-  }
+  } // end loop over all muons
 }
 
 
@@ -407,14 +597,16 @@ void
 GlobalMatchingAnalyser::beginJob()
 {
   edm::Service<TFileService> fs;
+
+
   TFileDirectory subDir = fs->mkdir( "matchAnalyzer" );
 
-  //tg1 = new TGraphErrors();
-  tg1 = subDir.make<TGraphErrors>(10); // TGraphErrors();
-  tg1->SetName("tg1_name");
-  tg1->SetTitle("tg1_title");
-  tg1->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
-  tg1->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+  ////tg1 = new TGraphErrors();
+  //tg1 = subDir.make<TGraphErrors>(10); // TGraphErrors();
+  //tg1->SetName("tg1_name");
+  //tg1->SetTitle("tg1_title");
+  //tg1->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
+  //tg1->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
 
   glb_combined = subDir.make<TGraphErrors>();
   glb_combined->SetName("glb_combined");
@@ -446,6 +638,15 @@ GlobalMatchingAnalyser::beginJob()
   sta_muon->SetMarkerStyle(3);
   sta_muon->SetMarkerColor(2);
 
+  sta_muonsurf = subDir.make<TGraphErrors>();
+  sta_muonsurf->SetName("sta_muonsurf");
+  sta_muonsurf->SetTitle("Stand-alone Muon");
+  sta_muonsurf->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
+  sta_muonsurf->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+  sta_muonsurf->SetLineColor(kOrange);
+  sta_muonsurf->SetMarkerStyle(3);
+  sta_muonsurf->SetMarkerColor(2);
+
   tk_muon = subDir.make<TGraphErrors>();
   tk_muon->SetName("tk_muon");
   tk_muon->SetTitle("Tracker Muon");
@@ -474,6 +675,15 @@ GlobalMatchingAnalyser::beginJob()
   pos_tkAll->GetHistogram()->GetXaxis()->SetTitle("#eta");
   pos_tkAll->GetHistogram()->GetYaxis()->SetTitle("#phi");
   pos_tkAll->SetLineColor(kBlue);
+
+  pos_tkAllsurf = subDir.make<TGraphErrors>();
+  pos_tkAllsurf->SetName("pos_tkAllsurf");
+  pos_tkAllsurf->SetTitle("All TK Tracks on Tracker Surface");
+  pos_tkAllsurf->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
+  pos_tkAllsurf->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+  pos_tkAllsurf->GetHistogram()->GetXaxis()->SetTitle("#eta");
+  pos_tkAllsurf->GetHistogram()->GetYaxis()->SetTitle("#phi");
+  pos_tkAllsurf->SetLineColor(kOrange);
 
   pos_tkCand = subDir.make<TGraphErrors>();
   pos_tkCand->SetName("pos_tkCand");
@@ -513,7 +723,33 @@ GlobalMatchingAnalyser::beginJob()
   surface_error2->SetTitle("Common Surface2");
   //surface_error2->GetHistogram()->GetXaxis()->SetRangeUser(-5.,5.);
   //surface_error2->GetHistogram()->GetYaxis()->SetRangeUser(-5.,5.);
+
+  //TFileDirectory testSubDir = fs->mkdir( "testMatchAnalyzer" );
+  //(testPlots["testMatchAnalyzer"])["h_distance_test"] = testSubDir.make<TH1F>("h_distance_test","distance",100,0,50);
+
+  std::vector<std::string> dirName;
+  dirName.push_back("matchAnalyzerMuHit");
+  dirName.push_back("matchAnalyzerTkHit");
+  dirName.push_back("matchAnalyzerTkSurf");
   
+  for(std::vector<std::string>::const_iterator iDir=dirName.begin(); iDir != dirName.end(); ++iDir) {
+    
+    TFileDirectory subDir2 = fs->mkdir( *iDir );
+    
+    //(testPlots[dirName.front()])["h_distance_muHitNew"] = subDir2.make<TH1F>("h_distancetest","distancetest",100,0,50);
+    
+    (testPlots[*iDir])["h_distance"] = subDir2.make<TH1F>("h_distance","distance",100,0,50);
+    (testPlots[*iDir])["h_Distance"] = subDir2.make<TH1F>("h_Distance","Distance",100,0,50);
+    (testPlots[*iDir])["h_chi2"] = subDir2.make<TH1F>("h_chi2","chi2",100,0,500);
+    (testPlots[*iDir])["h_loc_chi2"] = subDir2.make<TH1F>("h_loc_chi2","loc_chi2",100,0,0.001);
+    (testPlots[*iDir])["h_loc_chi2_2"] = subDir2.make<TH1F>("h_loc_chi2_2","loc_chi2_2",500,0,500.);
+    (testPlots[*iDir])["h_loc_chi2_3"] = subDir2.make<TH1F>("h_loc_chi2_3","loc_chi2_3",500,0,500.);
+    (testPlots[*iDir])["h_deltaR"] = subDir2.make<TH1F>("h_deltaR","deltaR",100,0,10);
+    (testPlots[*iDir])["h_distance_loc_chi2"] = subDir2.make<TH2F>("h_distance_loc_chi2"," loc_chi2 vs distance",100,0,50,100,0,500.);
+    (testPlots[*iDir])["h_distance_loc_chi2_2"] = subDir2.make<TH2F>("h_distance_loc_chi2_2"," loc_chi2_2 vs distance",100,0,50,100,0,500.);
+    (testPlots[*iDir])["h_distance_loc_chi2_3"] = subDir2.make<TH2F>("h_distance_loc_chi2_3"," loc_chi2_3 vs distance",100,0,50,100,0,500.);
+  }
+
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
