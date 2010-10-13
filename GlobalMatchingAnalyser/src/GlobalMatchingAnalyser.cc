@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Fri Dec 18 12:47:08 CST 2009
-// $Id: GlobalMatchingAnalyser.cc,v 1.10 2010/03/29 21:03:12 aeverett Exp $
+// $Id: GlobalMatchingAnalyser.cc,v 1.11 2010/10/06 20:07:05 aeverett Exp $
 //
 //
 
@@ -48,6 +48,8 @@
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
+
+#include "DataFormats/Common/interface/ValueMap.h"
 
 #include "TFile.h"
 #include <TGraph.h>
@@ -123,6 +125,7 @@ private:
 
   edm::InputTag theTrackLabel;
   edm::InputTag theMuonLabel;
+  edm::InputTag classif_;
 
   int useAll;
 
@@ -155,6 +158,8 @@ GlobalMatchingAnalyser::GlobalMatchingAnalyser(const edm::ParameterSet& iConfig)
   theMuonLabel = iConfig.getParameter<edm::InputTag>("muonLabel");
 
   useAll = iConfig.getParameter<int>("useAll");
+
+  classif_ = iConfig.getParameter<edm::InputTag>("classification");
 
   // the services
   ParameterSet serviceParameters = iConfig.getParameter<ParameterSet>("ServiceParameters");  
@@ -198,7 +203,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
   theRegionBuilder->setEvent(iEvent);
   
   LogDebug("MatchAnalyzer") << "********************" << "Run " << iEvent.id().run() << " Event " << iEvent.id().event() ;
-  
+
   /////////////////////////////
   //
   // Get the collections
@@ -217,7 +222,28 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
   
   edm::Handle<reco::TrackCollection> allTrackerTracks;
   iEvent.getByLabel(theTrackLabel,allTrackerTracks);
-  
+
+  /*  
+  Handle<ValueMap<int> > classif; iEvent.getByLabel(classif_, classif);
+
+  for (size_t i = 0, n = muonColl.size(); i < n; ++i) {
+    edm::RefToBase<reco::Muon> muRef = muonColl.refAt(i);
+    int origin = (*classif)[muRef];
+    LogDebug("MatchAnalyzer");
+    if (origin < 0) {
+      LogTrace("MatchAnalyzer") << "This is a ghost!" << std::endl;
+    } else {
+      switch (origin) {   
+      case 0: LogTrace("MatchAnalyzer") << "Unmatched ()" << std::endl; break;
+      case 1: LogTrace("MatchAnalyzer") << "Fake" << std::endl; break;
+      case 2: LogTrace("MatchAnalyzer") << "Light flavour or decay" << std::endl; break;          
+      case 3: LogTrace("MatchAnalyzer") << "Heavy flavour or tau" << std::endl; break;
+      case 4: LogTrace("MatchAnalyzer") << "Primary muon" << std::endl; break;
+      }
+    }
+  }
+  */
+
   /////////////////////////////
   //
   // Make a collection for all tracker tracks
@@ -273,9 +299,15 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
   int iSelTkDynamic = 0;
   for(View<Muon>::const_iterator iMuon = muonColl.begin();
       iMuon != muonColl.end(); ++iMuon, iMu++) {
+
     LogTrace("MatchAnalyzer") << "*****" 
 			      << endl << "Muon " << iMu+1 << " of " 
 			      << nMu << endl;
+
+    LogTrace("MatchAnalyzer") << "     isXXX? " 
+			      << iMuon->isGlobalMuon() << " " 
+			      << iMuon->isStandAloneMuon() << " " 
+			      << iMuon->isTrackerMuon() << endl;
 
     const reco::TrackRef glbTrack = ( iMuon->isGlobalMuon()) ? 
       iMuon->combinedMuon() : reco::TrackRef();
@@ -285,6 +317,25 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
     
     const reco::TrackRef staTrack = ( iMuon->isStandAloneMuon() ) ? 
       iMuon->outerTrack() : TrackRef();
+
+    //////////////////////////////
+    //
+    // Special (temporary) selection
+    //
+    //////////////////////////////
+    bool good = (!iMuon->isGlobalMuon() && iMuon->isTrackerMuon() && iMuon->isStandAloneMuon());
+    if( !good ) continue;
+    LogTrace("MatchAnalyzer") <<"     Passes selection";
+
+    if(glbTrack.isAvailable())  LogTrace("MatchAnalyzer") <<"                    Glb pT " << glbTrack->pt();
+    if(tkTrack.isAvailable())   LogTrace("MatchAnalyzer") <<"                    Tk  pT " << tkTrack->pt();
+    if(staTrack.isAvailable())  LogTrace("MatchAnalyzer") <<"                    Sta pT " << staTrack->pt();
+
+    //////////////////////////////
+    //
+    // end special (temporary) selection
+    //
+    //////////////////////////////
 
     /////////////////////////////
     //
@@ -305,12 +356,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       }
     }
     
-
-    LogTrace("MatchAnalyzer") << "     isXXX? " 
-			      << iMuon->isGlobalMuon() << " " 
-			      << iMuon->isStandAloneMuon() << " " 
-			      << iMuon->isTrackerMuon() << endl;
-
+    //LogDebug("MatchAnalyzer");  
     if(iMuon->isGlobalMuon()) {
       if(glbTrack.isAvailable()) {
 	glb_combined->SetPoint(iGlbMu,glbTrack->eta(),glbTrack->phi());
@@ -326,7 +372,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       }
       iGlbMu++;
     }
-
+    //LogDebug("MatchAnalyzer");  
     vector<TrackCand> tkPreCandColl;
     vector<TrackCand> tkPreCandCollFixed;
 
@@ -342,7 +388,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	sta_muon->SetPoint(iSta,staTrack->eta(),staTrack->phi());
 	sta_muon->SetPointError(iSta,staTrack->etaError(),staTrack->phiError());
       }
-      
+      //LogDebug("MatchAnalyzer");  
       ///////////////////////////////////
       ///////////////////////////////////
       /*
@@ -368,7 +414,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       ////////////////////////////////////
       LogTrace("MatchAnalyzer") << endl 
 				<< "**********" << endl << "StaMuon " 
-				<< iSta+1 << " of " << "999" << endl;
+				<< iSta+1 << " of " << "999" << " pT " << staTrack->pt() << " eta " << staTrack->eta() << " phi " << staTrack->phi() <<endl;
       //ADAM adding the "New" for good / bad / all
       tkPreCandColl = 
 	chooseRegionalTrackerTracks(staTrack,tkTrackCandsNew,iSta);
@@ -412,7 +458,8 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	LogTrace("MatchAnalyzer") << "*****" << endl 
 				  << "Tk " << iiTk << " of " 
 				  << tkPreCandCollFixed.size() 
-				  << " and iTkFixed " << iTkFixed << endl;
+				  << " and iTkFixed " << iTkFixed 
+				  << " pT " << iTk->second->pt() << endl;
 	iiTk++;
 	/////////////////////////////
 	//
@@ -434,26 +481,62 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	  
 	  switch(i) {
 	  case 0 :
+	    LogTrace("MatchAnalyzer") << "     **MuHitSurface" << endl;
 	    tsosPair = theTrackMatcher->convertToTSOSMuHit(staCand,*iTk);
 	    dirName = std::string("matchAnalyzerMuHit");
-	    LogTrace("MatchAnalyzer") << "ConvertToMuHitSurface muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
+	    LogTrace("MatchAnalyzer") << "        ConvertToMuHitSurface muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
 	    break;
 	  case 1 :
+	    LogTrace("MatchAnalyzer") << "     **TkHitSurface" << endl;
 	    tsosPair = theTrackMatcher->convertToTSOSTkHit(staCand,*iTk);
 	    dirName = std::string("matchAnalyzerTkHit");
-	    LogTrace("MatchAnalyzer") << "ConvertToTkHitSurface muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
+	    LogTrace("MatchAnalyzer") << "        ConvertToTkHitSurface muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
 	    break;
 	  case 2 :
+	    LogTrace("MatchAnalyzer") << "     **TkSurface" << endl;
 	    tsosPair = theTrackMatcher->convertToTSOSTk(staCand,*iTk);
 	    dirName = std::string("matchAnalyzerTkSurf");
-	    LogTrace("MatchAnalyzer") << "ConvertToTkSurface muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
+	    LogTrace("MatchAnalyzer") << "        ConvertToTkSurface muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
 	    break;
 	  default:
 	    tsosPair = theTrackMatcher->convertToTSOSMuHit(staCand,*iTk);
-	    LogTrace("MatchAnalyzer") << "ConvertToMuHitSurface (default) muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
+	    LogTrace("MatchAnalyzer") << "      ConvertToMuHitSurface (default) muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
 	  }
 
-	  if(!tsosPair.first.isValid() || !tsosPair.second.isValid()) {continue;}
+	  LogTrace("MatchAnalyzer") << "            STA before eta " 
+				    << staCand.second->eta() 
+				    << " phi " << staCand.second->phi() 
+				    << "\n" 
+				    << "                inner "<<staCand.second->innerPosition()
+				    << "\n" 
+				    << "                outer "<<staCand.second->outerPosition()
+				    << endl;
+
+	  LogTrace("MatchAnalyzer") << "            TK  before eta " 
+				    << iTk->second->eta() << " phi " 
+				    << iTk->second->phi()
+				    << "\n"
+				    << "                inner "<<iTk->second->innerPosition()
+				    << "\n"
+				    << "                outer "<<iTk->second->outerPosition()
+				    << endl;
+	  if(!tsosPair.first.isValid() || !tsosPair.second.isValid()) continue;
+	  LogTrace("MatchAnalyzer") << "            STA after  eta " 
+				    << tsosPair.first.globalPosition().eta() 
+				    << " phi " << tsosPair.first.globalPosition().phi() 
+				    << "\n"
+				    << "                inner " << tsosPair.first.globalPosition()
+				    << "\n"
+				    << "                outer " << tsosPair.first.globalPosition()
+				    << endl;
+	  LogTrace("MatchAnalyzer") << "            TK  after  eta " 
+				    << tsosPair.second.globalPosition().eta() 
+				    << " phi " << tsosPair.second.globalPosition().phi() 
+				    << "\n"
+				    << "                inner " << tsosPair.second.globalPosition()
+				    << "\n"
+				    << "                outer " << tsosPair.second.globalPosition()
+				    << endl;
 	  
 	  // calculate matching variables
 	  double distance = 
@@ -471,10 +554,10 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	  double deltaR = 
 	    theTrackMatcher->match_Rpos(tsosPair.first,tsosPair.second);
 	  
-	  LogDebug("MatchAnalyzer");
+	  //LogDebug("MatchAnalyzer");
 	  
 	  std::map<std::string, TH1*> localDir = 
-	    testPlots[dirName];LogDebug("MatchAnalyzer");
+	    testPlots[dirName];//LogDebug("MatchAnalyzer");
 	  
 	  localDir["h_distance"]->Fill(distance);
 	  localDir["h_Distance"]->Fill(Distance);
@@ -535,7 +618,68 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	    
 	    iTkSurf++;
 	    //tkCandCollFixed.push_back(TrackCand((Trajectory*)(0),tkRef));
-	  } // end if i == 0 special prints	  
+	  } // end if i == 0 special prints
+	  if(i==1) {
+	    LogDebug("MatchAnalyzer") << "iTk pT " << iTk->second->pt() 
+				      << " eta " << iTk->second->eta() 
+				      << " phi " << iTk->second->phi() << endl; 
+	    LogTrace("MatchAnalyzer") << "  distance " << distance 
+				      << "    distance cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  Distance " << Distance 
+				      << "    distance cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  chi2 " << chi2 
+				      << "     chi2 cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  loc_chi2 " << loc_chi2 
+				      << "     locChi2 cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  loc_chi2_2 " << loc_chi2_2 
+				      << "     locChi2 cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  loc_chi2_3 " << loc_chi2_3 
+				      << "     locChi2 cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  deltaR " << deltaR 
+				      << "     deltaR cut " << " " << endl;
+	    
+	    LogTrace("MatchAnalyzer") << "  dR1 " << fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta()<1.5*0.2) << endl;
+	    LogTrace("MatchAnalyzer") << "  dR2 " << (fabs(deltaPhi(tsosPair.second.globalPosition().phi(),tsosPair.first.globalPosition().phi())) < 0.2) << endl;
+	    
+	    LogTrace("MatchAnalyzer") << "  dR1redo " 
+				      << fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta())
+				      << (fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta() < 1.5 * 0.2) ) << " " 
+				      << (fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta() ) < 1.5 * 0.2) << " " 
+				      << endl;
+	    
+	    LogTrace("MatchAnalyzer") << "  dR2redo " << fabs(deltaPhi(tsosPair.second.globalPosition().phi(),tsosPair.first.globalPosition().phi()) ) << endl;
+	  } // end if i == 1 special prints
+	  if(i==2) {
+	    LogDebug("MatchAnalyzer") << "iTk pT " << iTk->second->pt() 
+				      << " eta " << iTk->second->eta() 
+				      << " phi " << iTk->second->phi() << endl; 
+	    LogTrace("MatchAnalyzer") << "  distance " << distance 
+				      << "    distance cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  Distance " << Distance 
+				      << "    distance cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  chi2 " << chi2 
+				      << "     chi2 cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  loc_chi2 " << loc_chi2 
+				      << "     locChi2 cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  loc_chi2_2 " << loc_chi2_2 
+				      << "     locChi2 cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  loc_chi2_3 " << loc_chi2_3 
+				      << "     locChi2 cut " << " " << endl;
+	    LogTrace("MatchAnalyzer") << "  deltaR " << deltaR 
+				      << "     deltaR cut " << " " << endl;
+	    
+	    LogTrace("MatchAnalyzer") << "  dR1 " << fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta()<1.5*0.2) << endl;
+	    LogTrace("MatchAnalyzer") << "  dR2 " << (fabs(deltaPhi(tsosPair.second.globalPosition().phi(),tsosPair.first.globalPosition().phi())) < 0.2) << endl;
+	    
+	    LogTrace("MatchAnalyzer") << "  dR1redo " 
+				      << fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta())
+				      << (fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta() < 1.5 * 0.2) ) << " " 
+				      << (fabs(tsosPair.second.globalPosition().eta()-tsosPair.first.globalPosition().eta() ) < 1.5 * 0.2) << " " 
+				      << endl;
+	    
+	    LogTrace("MatchAnalyzer") << "  dR2redo " << fabs(deltaPhi(tsosPair.second.globalPosition().phi(),tsosPair.first.globalPosition().phi()) ) << endl;
+	 
+	  } // end if i == 2 special prints	  
 	} // end loop over each surface	
       } // end loop over all fixed regional tracker tracks
 
@@ -803,7 +947,7 @@ GlobalMatchingAnalyser::chooseRegionalTrackerTracksFixed(const reco::TrackRef& s
 
   vector<TrackCand> result;
 
-  double deltaR_max = 1.0;
+  double deltaR_max = 2.0;
 
   for ( vector<TrackCand>::const_iterator is = tkTs.begin(); 
 	is != tkTs.end(); ++is ) {
