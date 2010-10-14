@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Fri Dec 18 12:47:08 CST 2009
-// $Id: GlobalMatchingAnalyser.cc,v 1.11 2010/10/06 20:07:05 aeverett Exp $
+// $Id: GlobalMatchingAnalyser.cc,v 1.12 2010/10/13 15:39:42 aeverett Exp $
 //
 //
 
@@ -49,7 +49,21 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
+
 #include "DataFormats/Common/interface/ValueMap.h"
+#include "DataFormats/TrackReco/interface/TrackToTrackMap.h"
+
+
+#include "RecoMuon/TransientTrackingRecHit/interface/MuonTransientTrackingRecHit.h"
+#include "RecoMuon/TransientTrackingRecHit/interface/MuonTransientTrackingRecHitBuilder.h"
+#include "TrackingTools/Records/interface/TransientRecHitRecord.h"
+#include "TrackingTools/TrajectoryState/interface/TrajectoryStateTransform.h"
+#include "TrackingTools/TrackFitters/interface/RecHitLessByDet.h"
+#include "TrackingTools/TransientTrack/interface/TransientTrack.h"
+#include "RecoMuon/GlobalTrackingTools/interface/GlobalMuonRefitter.h"
+#include "RecoMuon/TrackingTools/interface/MuonCandidate.h"
+#include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
+
 
 #include "TFile.h"
 #include <TGraph.h>
@@ -67,7 +81,39 @@ public:
   ~GlobalMatchingAnalyser();
 
   typedef std::pair<const Trajectory*, reco::TrackRef> TrackCand;
-  
+  typedef TransientTrackingRecHit::ConstRecHitContainer ConstRecHitContainer;
+
+  typedef std::vector<Trajectory> TC;
+  typedef TC::const_iterator TI;
+  typedef MuonCandidate::CandidateContainer CandidateContainer;
+
+protected:
+  struct ComparatorInOut {
+    
+    bool operator()(const TransientTrackingRecHit::ConstRecHitPointer& a,
+		    const TransientTrackingRecHit::ConstRecHitPointer& b) const{ 
+      bool barrel_a = ( a->det()->subDetector() == GeomDetEnumerators::DT ||
+			a->det()->subDetector() == GeomDetEnumerators::RPCBarrel );
+      
+      bool barrel_b = ( b->det()->subDetector() == GeomDetEnumerators::DT ||
+			b->det()->subDetector() == GeomDetEnumerators::RPCBarrel );
+      
+      if ( barrel_a && barrel_b ) return  a->det()->surface().position().perp() < b->det()->surface().position().perp();
+      
+      else if ( !barrel_a && !barrel_b ) return  fabs(a->globalPosition().z()) < fabs(b->globalPosition().z());
+      else if ( barrel_a && !barrel_b  ) return true;
+      else if ( !barrel_a && barrel_b  ) return false;
+      //shouldn;t really get here in any case (there's some sense to throw here )
+      return false;
+    }
+  };
+  enum RefitDirection{inToOut,outToIn,undetermined};
+
+  /// check order of RechIts on a trajectory
+  RefitDirection checkRecHitsOrdering(const ConstRecHitContainer&) const;
+
+    
+
 private:
   virtual void beginJob() ;
   virtual void analyze(const edm::Event&, const edm::EventSetup&);
@@ -84,6 +130,17 @@ private:
   chooseRegionalTrackerTracks(const reco::TrackRef& staCand,
 			      const std::vector<TrackCand>& tkTs,
 			      int iSta);
+
+  ////////
+
+  CandidateContainer
+  build(const reco::TrackRef staCand, const reco::TrackRef tkCand) const;
+  
+  TransientTrackingRecHit::ConstRecHitContainer
+  getTransientRecHits(const reco::Track& track) const;
+
+  double 
+  trackProbability(const Trajectory& track) const;
   
   // ----------member data ---------------------------
   MuonTrackingRegionBuilder* theRegionBuilder;
@@ -111,6 +168,8 @@ private:
   TH1F *h_distance_tkHit, *h_Distance_tkHit, *h_chi2_tkHit, *h_loc_chi2_tkHit, *h_loc_chi2_2_tkHit, *h_deltaR_tkHit, *h_loc_chi2_3_tkHit;
   TH1F *h_distance_tksurf, *h_Distance_tksurf, *h_chi2_tksurf, *h_loc_chi2_tksurf, *h_loc_chi2_2_tksurf, *h_deltaR_tksurf, *h_loc_chi2_3_tksurf;
 
+  TH1F *h_sta_pt, *h_sta_p, *h_sta_rho, *h_sta_R, *h_sta_cut, *h_sta_etaFlip, *h_sta_etaFlip1, *h_muon_steps, *h_muon_refit, *h_muon_refit_chi2;
+
   TH2F *h_distance_loc_chi2_muHit;
   TH2F *h_distance_loc_chi2_tkHit;
   TH2F *h_distance_loc_chi2_tksurf;
@@ -126,8 +185,23 @@ private:
   edm::InputTag theTrackLabel;
   edm::InputTag theMuonLabel;
   edm::InputTag classif_;
+  edm::InputTag theSTACollectionLabel;
 
   int useAll;
+
+  std::string theTrackerRecHitBuilderName;
+  edm::ESHandle<TransientTrackingRecHitBuilder> theTrackerRecHitBuilder;
+  
+  std::string theMuonRecHitBuilderName;
+  edm::ESHandle<TransientTrackingRecHitBuilder> theMuonRecHitBuilder;
+  
+  unsigned long long theCacheId_TRH;
+  std::string theTrackerPropagatorName;
+  bool theRPCInTheFit;
+
+  GlobalMuonRefitter* theGlbRefitter;
+  int   theMuonHitsOption;
+  TrackTransformer* theTrackTransformer;
 
 };
 
@@ -156,6 +230,7 @@ GlobalMatchingAnalyser::GlobalMatchingAnalyser(const edm::ParameterSet& iConfig)
 
   theTrackLabel = iConfig.getParameter<edm::InputTag>("trackLabel");
   theMuonLabel = iConfig.getParameter<edm::InputTag>("muonLabel");
+  theSTACollectionLabel = iConfig.getParameter<edm::InputTag>("staLabel");
 
   useAll = iConfig.getParameter<int>("useAll");
 
@@ -164,13 +239,30 @@ GlobalMatchingAnalyser::GlobalMatchingAnalyser(const edm::ParameterSet& iConfig)
   // the services
   ParameterSet serviceParameters = iConfig.getParameter<ParameterSet>("ServiceParameters");  
   theService = new MuonServiceProxy(serviceParameters);
-  
+
   // the region builder
   ParameterSet regionBuilderPSet = iConfig.getParameter<ParameterSet>("MuonTrackingRegionBuilder");  
   theRegionBuilder = new MuonTrackingRegionBuilder(regionBuilderPSet,theService);
 
   ParameterSet trackMatcherPSet = iConfig.getParameter<ParameterSet>("GlobalMuonTrackMatcher");
   theTrackMatcher = new GlobalMuonTrackMatcher(trackMatcherPSet,theService);
+
+  theTrackerRecHitBuilderName = iConfig.getParameter<string>("TrackerRecHitBuilder");
+  theMuonRecHitBuilderName = iConfig.getParameter<string>("MuonRecHitBuilder");  
+  theCacheId_TRH = 0;
+
+  theTrackerPropagatorName = iConfig.getParameter<string>("TrackerPropagator");
+  theRPCInTheFit = iConfig.getParameter<bool>("RefitRPCHits");
+
+  // TrackRefitter parameters
+  ParameterSet refitterParameters = iConfig.getParameter<ParameterSet>("GlbRefitterParameters");
+  theGlbRefitter = new GlobalMuonRefitter(refitterParameters, theService);
+
+  theMuonHitsOption = refitterParameters.getParameter<int>("MuonHitsOption");
+
+  ParameterSet trackTransformerPSet = iConfig.getParameter<ParameterSet>("TrackTransformer");
+
+  theTrackTransformer = new TrackTransformer(trackTransformerPSet);
 
 }
 
@@ -183,6 +275,9 @@ GlobalMatchingAnalyser::~GlobalMatchingAnalyser()
   if(theRegionBuilder) delete theRegionBuilder;
   if(theService) delete theService;
   if(theTrackMatcher) delete theTrackMatcher;
+  if (theTrackTransformer) delete theTrackTransformer;
+  if (theGlbRefitter) delete theGlbRefitter;
+
 
 }
 
@@ -201,6 +296,20 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
   theService->update(iSetup);
   
   theRegionBuilder->setEvent(iEvent);
+
+  theTrackTransformer->setServices(theService->eventSetup());
+
+  theGlbRefitter->setEvent(iEvent);
+  theGlbRefitter->setServices(theService->eventSetup());
+
+  unsigned long long newCacheId_TRH = theService->eventSetup().get<TransientRecHitRecord>().cacheIdentifier();
+  if ( newCacheId_TRH != theCacheId_TRH ) {
+    LogDebug("MatchAnalyzer") << "TransientRecHitRecord changed!";
+    theCacheId_TRH = newCacheId_TRH;
+    theService->eventSetup().get<TransientRecHitRecord>().get(theTrackerRecHitBuilderName,theTrackerRecHitBuilder);
+    theService->eventSetup().get<TransientRecHitRecord>().get(theMuonRecHitBuilderName,theMuonRecHitBuilder);
+  }
+  
   
   LogDebug("MatchAnalyzer") << "********************" << "Run " << iEvent.id().run() << " Event " << iEvent.id().event() ;
 
@@ -297,9 +406,13 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
   int iTkDynamic = 0;
   int iSelTkFixed = 0;
   int iSelTkDynamic = 0;
+  bool etaFlipBool = true;
+  bool propBool = true;
   for(View<Muon>::const_iterator iMuon = muonColl.begin();
       iMuon != muonColl.end(); ++iMuon, iMu++) {
-
+    etaFlipBool = true;
+    propBool = true;
+    h_muon_steps->Fill(0);
     LogTrace("MatchAnalyzer") << "*****" 
 			      << endl << "Muon " << iMu+1 << " of " 
 			      << nMu << endl;
@@ -326,11 +439,56 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
     bool good = (!iMuon->isGlobalMuon() && iMuon->isTrackerMuon() && iMuon->isStandAloneMuon());
     if( !good ) continue;
     LogTrace("MatchAnalyzer") <<"     Passes selection";
-
+    h_muon_steps->Fill(1);
     if(glbTrack.isAvailable())  LogTrace("MatchAnalyzer") <<"                    Glb pT " << glbTrack->pt();
     if(tkTrack.isAvailable())   LogTrace("MatchAnalyzer") <<"                    Tk  pT " << tkTrack->pt();
     if(staTrack.isAvailable())  LogTrace("MatchAnalyzer") <<"                    Sta pT " << staTrack->pt();
 
+    bool etaFliped = false;
+
+    if(staTrack.isAvailable()) {
+      h_muon_steps->Fill(2);
+      h_sta_pt->Fill(staTrack->pt());
+      h_sta_p->Fill(staTrack->p());
+      h_sta_rho->Fill(staTrack->innerMomentum().rho());
+      h_sta_R->Fill(staTrack->innerMomentum().R());
+      int cut = (staTrack->pt() < 1. || staTrack->innerMomentum().rho() < 1. || staTrack->innerMomentum().R() < 2.5) ? -1 : 1;
+      h_sta_cut->Fill(cut);
+
+      edm::Handle<reco::TrackToTrackMap> updatedStaAssoMap;
+      if( iEvent.getByLabel(theSTACollectionLabel.label(),updatedStaAssoMap) ) {
+	reco::TrackRef staUpdated;
+	reco::TrackRef staNotUpdated;
+	reco::TrackToTrackMap::const_iterator iEnd;
+	reco::TrackToTrackMap::const_iterator iBegin;
+	reco::TrackToTrackMap::const_iterator iii;
+
+	for(iii=updatedStaAssoMap->begin(); 
+	    iii!=updatedStaAssoMap->end(); ++iii) {
+	  staNotUpdated = (*iii).key;
+	  staUpdated = (*iii).val;
+
+	  if(staUpdated==staTrack) {
+	    int etaFlip1 = 
+	      ( (staUpdated->eta() * staNotUpdated->eta() ) < 0) ? -1 : 1;
+	    h_sta_etaFlip1->Fill(etaFlip1);
+	    if(etaFlip1 < 0) etaFliped = true;
+	  }
+	}	
+      }
+
+    }
+
+    if(staTrack.isAvailable() && tkTrack.isAvailable()) {
+      h_muon_refit->Fill(0);
+      CandidateContainer result = build(staTrack,tkTrack);
+      LogTrace("MatchAnalyzer") << "                        Found "<< result.size() << " GLBMuons from one STACand with chi2/DoF " << result.front()->trajectory()->chiSquared()/result.front()->trajectory()->ndof() << " from a sta with an etaFlip? " << etaFliped;
+      if(result.size()) {
+	h_muon_refit->Fill(1);
+	h_muon_refit_chi2->Fill(result.front()->trajectory()->chiSquared()/result.front()->trajectory()->ndof());
+      }
+    }
+    
     //////////////////////////////
     //
     // end special (temporary) selection
@@ -388,6 +546,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	sta_muon->SetPoint(iSta,staTrack->eta(),staTrack->phi());
 	sta_muon->SetPointError(iSta,staTrack->etaError(),staTrack->phiError());
       }
+      h_muon_steps->Fill(3);
       //LogDebug("MatchAnalyzer");  
       ///////////////////////////////////
       ///////////////////////////////////
@@ -427,7 +586,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       LogTrace("MatchAnalyzer") << "     " 
 				<< endl << "Tk in Region " 
 				<< tkPreCandCollFixed.size() << endl;
-      
+      h_muon_steps->Fill(4);
       /////////////////////////////
       //
       // Loop over all dynamic regional tracker tracks
@@ -447,7 +606,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       
       int iTkSurf = 0;
       int iiTk = 1;
-      
+      h_muon_steps->Fill(5);
       /////////////////////////////
       //
       // Loop over all fixed regional tracker tracks
@@ -470,6 +629,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	pos_tkCandFixed->SetPointError(iTkFixed,iTk->second->etaError(),iTk->second->phiError());	
 	iTkFixed++;
 		
+	if(etaFlipBool && iiTk==2) h_muon_steps->Fill(6);
 	////////////////////////////////////
 	//
 	// For each surface, compute observables
@@ -502,7 +662,15 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	    tsosPair = theTrackMatcher->convertToTSOSMuHit(staCand,*iTk);
 	    LogTrace("MatchAnalyzer") << "      ConvertToMuHitSurface (default) muon isValid " << tsosPair.first.isValid() << " tk isValid " << tsosPair.second.isValid() << endl;
 	  }
+	  if(etaFlipBool && i==0) h_muon_steps->Fill(7);
+	  std::map<std::string, TH1*> localDir = 
+	    testPlots[dirName];//LogDebug("MatchAnalyzer");
 
+	  //if(propBool) {
+	  //localDir["h_propagation"]->Fill(0);
+	  //if(tsosPair.first.isValid()) localDir["h_propagation"]->Fill(1);
+	  //propBool = false;
+	  //}
 	  LogTrace("MatchAnalyzer") << "            STA before eta " 
 				    << staCand.second->eta() 
 				    << " phi " << staCand.second->phi() 
@@ -538,6 +706,8 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 				    << "                outer " << tsosPair.second.globalPosition()
 				    << endl;
 	  
+	  if(etaFlipBool && i==0) h_muon_steps->Fill(8);
+
 	  // calculate matching variables
 	  double distance = 
 	    theTrackMatcher->match_d(tsosPair.first,tsosPair.second);
@@ -556,8 +726,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	  
 	  //LogDebug("MatchAnalyzer");
 	  
-	  std::map<std::string, TH1*> localDir = 
-	    testPlots[dirName];//LogDebug("MatchAnalyzer");
+	  //std::map<std::string, TH1*> localDir = testPlots[dirName];//LogDebug("MatchAnalyzer");
 	  
 	  localDir["h_distance"]->Fill(distance);
 	  localDir["h_Distance"]->Fill(Distance);
@@ -569,6 +738,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	  localDir["h_distance_loc_chi2"]->Fill(distance,loc_chi2);
 	  localDir["h_distance_loc_chi2_2"]->Fill(distance,loc_chi2_2);
 	  localDir["h_distance_loc_chi2_3"]->Fill(distance,loc_chi2_3);	  
+	  
 	  
 	  if(i==0) {
 	    LogDebug("MatchAnalyzer") << "iTk pT " << iTk->second->pt() 
@@ -614,7 +784,15 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	    surface_error2->SetPoint(surfaceOffset+iTkSurf,x2,y2);
 	    surface_error1->SetPointError(iSta,xx1,yy1);
 	    surface_error2->SetPoint(surfaceOffset+iTkSurf,xx2,yy2);
+
 	    
+	    int etaFlip = ( (staCand.second->eta() * tsosPair.first.globalPosition().eta()) < 0) ? -1 : 1;
+	    if(etaFlipBool) {
+	      h_sta_etaFlip->Fill(etaFlip);
+	      h_muon_steps->Fill(9);
+	      etaFlipBool = false;
+	    }
+
 	    
 	    iTkSurf++;
 	    //tkCandCollFixed.push_back(TrackCand((Trajectory*)(0),tkRef));
@@ -871,6 +1049,17 @@ GlobalMatchingAnalyser::beginJob()
   //TFileDirectory testSubDir = fs->mkdir( "testMatchAnalyzer" );
   //(testPlots["testMatchAnalyzer"])["h_distance_test"] = testSubDir.make<TH1F>("h_distance_test","distance",100,0,50);
 
+  h_sta_pt = subDir.make<TH1F>("h_sta_pt","STA p_{T}",100,0.,50.);
+  h_sta_p = subDir.make<TH1F>("h_sta_p","STA p",100,0.,50.);
+  h_sta_rho = subDir.make<TH1F>("h_sta_rho","STA #rho",100,0.,50.);
+  h_sta_R = subDir.make<TH1F>("h_sta_R","STA R",100,0.,50.);
+  h_sta_cut = subDir.make<TH1F>("h_sta_cut","STA Pass Cut",3,-1.5,1.5);
+  h_sta_etaFlip = subDir.make<TH1F>("h_sta_etaFlip","#eta_{STAbefore} * #eta_{STAafter}",3,-1.5,1.5);
+  h_sta_etaFlip1 = subDir.make<TH1F>("h_sta_etaFlip1","#eta_{STAupdated} * #eta_{STAnotUpdated}",3,-1.5,1.5);
+  h_muon_steps = subDir.make<TH1F>("h_muon_steps","Muon Steps",11,-0.5,10.5);
+  h_muon_refit = subDir.make<TH1F>("h_muon_refit","Refit Muon",3,-1.5,1.5);
+  h_muon_refit_chi2 = subDir.make<TH1F>("h_muon_refit_chi2","Refit Muon #chi^2",100,0.,100.);
+
   std::vector<std::string> dirName;
   dirName.push_back("matchAnalyzerMuHit");
   dirName.push_back("matchAnalyzerTkHit");
@@ -892,6 +1081,8 @@ GlobalMatchingAnalyser::beginJob()
     (testPlots[*iDir])["h_distance_loc_chi2"] = subDir2.make<TH2F>("h_distance_loc_chi2"," loc_chi2 vs distance",100,0,50,100,0,500.);
     (testPlots[*iDir])["h_distance_loc_chi2_2"] = subDir2.make<TH2F>("h_distance_loc_chi2_2"," loc_chi2_2 vs distance",100,0,50,100,0,500.);
     (testPlots[*iDir])["h_distance_loc_chi2_3"] = subDir2.make<TH2F>("h_distance_loc_chi2_3"," loc_chi2_3 vs distance",100,0,50,100,0,500.);
+
+    (testPlots[*iDir])["h_propagation"] = subDir2.make<TH1F>("h_propagation","Propagation to same surface",3,-1.5,1.5);
   }
 
 }
@@ -947,7 +1138,7 @@ GlobalMatchingAnalyser::chooseRegionalTrackerTracksFixed(const reco::TrackRef& s
 
   vector<TrackCand> result;
 
-  double deltaR_max = 2.0;
+  double deltaR_max = 1.0;
 
   for ( vector<TrackCand>::const_iterator is = tkTs.begin(); 
 	is != tkTs.end(); ++is ) {
@@ -1008,6 +1199,212 @@ GlobalMatchingAnalyser::chooseRegionalTrackerTracks( const TrackRef& staCand,
   }
 
   return result;
+
+}
+
+
+GlobalMatchingAnalyser::CandidateContainer GlobalMatchingAnalyser::build(const TrackRef staCand, const TrackRef tkCand) const {
+
+  LogTrace("MatchAnalyzer")<<
+    "                     ***Begin Build";
+
+  CandidateContainer refittedResult;
+  ConstRecHitContainer muonRecHits = getTransientRecHits(*(staCand));
+
+  // check order of muon measurements
+  if ( (muonRecHits.size() > 1) &&
+       ( muonRecHits.front()->globalPosition().mag() >
+	 muonRecHits.back()->globalPosition().mag() ) ) {
+    LogTrace("MuonAnalyzer")<< "   reverse order: ";
+    stable_sort(muonRecHits.begin(),muonRecHits.end(),RecHitLessByDet(alongMomentum));
+  }
+  
+  stable_sort(muonRecHits.begin(),muonRecHits.end(),ComparatorInOut());
+  
+  // cut on tracks with low momenta
+  LogTrace("MuonAnalyzer")<< "   Track p and pT " << tkCand->p() << " " << tkCand->pt();
+  //if(  tkCand->p() < thePCut || tkCand->pt() < thePtCut  ) continue;
+  
+  ConstRecHitContainer trackerRecHits;
+  if (tkCand.isNonnull()) {
+    trackerRecHits = getTransientRecHits(*tkCand);
+  } else {
+    LogDebug("MuonAnalyzer")<<"     NEED HITS FROM TRAJ";
+    //trackerRecHits = (*it)->trackerTrajectory()->recHits();
+  }
+  
+  // check for single TEC RecHits in trajectories in the overalp region
+  /*
+    if ( fabs(tkCand->eta()) > 0.95 && fabs(tkCand->eta()) < 1.15 && tkCand->pt() < 60 ) {
+    if ( theTECxScale < 0 || theTECyScale < 0 )
+    trackerRecHits = selectTrackerHits(trackerRecHits);
+    else
+    fixTEC(trackerRecHits,theTECxScale,theTECyScale);
+    }
+  */
+  
+  RefitDirection recHitDir = checkRecHitsOrdering(trackerRecHits);
+  if ( recHitDir == outToIn ) reverse(trackerRecHits.begin(),trackerRecHits.end());
+  
+  reco::TransientTrack tTT(tkCand,&*theService->magneticField(),theService->trackingGeometry());
+  TrajectoryStateOnSurface innerTsos = tTT.innermostMeasurementState();
+  
+  edm::RefToBase<TrajectorySeed> tmpSeed;
+  if(tkCand->seedRef().isAvailable()) tmpSeed = tkCand->seedRef();
+  
+  if ( !innerTsos.isValid() ) {
+    LogTrace("MuonAnalyzer") << "     inner Trajectory State is invalid. ";
+    return refittedResult;
+  }
+  
+  innerTsos.rescaleError(100.);
+  
+  TC refitted0,refitted1;
+  MuonCandidate* finalTrajectory = 0;
+  Trajectory *tkTrajectory = 0;
+  
+  // tracker only track
+  if ( true ) /*|| ! ((*it)->trackerTrajectory() 
+		&& (*it)->trackerTrajectory()->isValid()) ) */ { 
+    refitted0 = theTrackTransformer->transform(tkCand) ;
+    if (!refitted0.empty()) tkTrajectory 
+      = new Trajectory(*(refitted0.begin())); 
+    else LogWarning("MatchAnalyser")
+      << "     Failed to load tracker track trajectory";
+  } else tkTrajectory = 0;
+  if (tkTrajectory) tkTrajectory->setSeedRef(tmpSeed);
+  
+  // full track with all muon hits using theGlbRefitter    
+  ConstRecHitContainer allRecHits = trackerRecHits;
+  allRecHits.insert(allRecHits.end(), muonRecHits.begin(),muonRecHits.end());
+  refitted1 = theGlbRefitter->refit( *tkCand, tTT, allRecHits,theMuonHitsOption);
+  LogTrace("MatchAnalyser")<<"     This track-sta refitted to " << refitted1.size() << " trajectories";
+  
+  Trajectory *glbTrajectory1 = 0;
+  if (!refitted1.empty()) glbTrajectory1 = new Trajectory(*(refitted1.begin()));
+  else LogDebug("MatchAnalyser")<< "     Failed to load global track trajectory 1"; 
+  if (glbTrajectory1) glbTrajectory1->setSeedRef(tmpSeed);
+  
+  finalTrajectory = 0;
+  if(glbTrajectory1 && tkTrajectory) finalTrajectory 
+    = new MuonCandidate(glbTrajectory1, staCand, tkCand, 
+			tkTrajectory? new Trajectory(*tkTrajectory) : 0);
+  
+  if ( finalTrajectory ) 
+    refittedResult.push_back(finalTrajectory);
+  
+  if(tkTrajectory) delete tkTrajectory;
+  
+  // choose the best global fit for this Standalone Muon based on the track probability
+  CandidateContainer selectedResult;
+  MuonCandidate* tmpCand = 0;
+  if ( refittedResult.size() > 0 ) tmpCand = *(refittedResult.begin());
+  double minProb = 9999;
+
+  for (CandidateContainer::const_iterator iter=refittedResult.begin(); iter != refittedResult.end(); iter++) {
+    double prob = trackProbability(*(*iter)->trajectory());
+    LogTrace("MatchAnalyser")<<"   refitted-track-sta with pT " << (*iter)->trackerTrack()->pt() << " has probability " << prob;
+
+    if (prob < minProb) {
+      minProb = prob;
+      tmpCand = (*iter);
+    }
+  }
+
+  if ( tmpCand )  selectedResult.push_back(new MuonCandidate(new Trajectory(*(tmpCand->trajectory())), tmpCand->muonTrack(), tmpCand->trackerTrack(), 
+							     (tmpCand->trackerTrajectory())? new Trajectory( *(tmpCand->trackerTrajectory()) ):0 ) );
+
+  for (CandidateContainer::const_iterator it = refittedResult.begin(); it != refittedResult.end(); ++it) {
+    if ( (*it)->trajectory() ) delete (*it)->trajectory();
+    if ( (*it)->trackerTrajectory() ) delete (*it)->trackerTrajectory();
+    if ( *it ) delete (*it);
+  }
+  refittedResult.clear();
+
+  return selectedResult;
+
+
+}
+
+//
+// get transient RecHits
+//
+TransientTrackingRecHit::ConstRecHitContainer
+GlobalMatchingAnalyser::getTransientRecHits(const reco::Track& track) const {
+
+  TransientTrackingRecHit::ConstRecHitContainer result;
+  
+  TrajectoryStateTransform tsTrans;
+
+  TrajectoryStateOnSurface currTsos = tsTrans.innerStateOnSurface(track, *theService->trackingGeometry(), &*theService->magneticField());
+
+  for (trackingRecHit_iterator hit = track.recHitsBegin(); hit != track.recHitsEnd(); ++hit) {
+    if((*hit)->isValid()) {
+      DetId recoid = (*hit)->geographicalId();
+      if ( recoid.det() == DetId::Tracker ) {
+	TransientTrackingRecHit::RecHitPointer ttrhit = theTrackerRecHitBuilder->build(&**hit);
+	TrajectoryStateOnSurface predTsos =  theService->propagator(theTrackerPropagatorName)->propagate(currTsos, theService->trackingGeometry()->idToDet(recoid)->surface());
+
+	if ( !predTsos.isValid() ) {
+	  edm::LogError("MissingTransientHit")
+	    <<"Could not get a tsos on the hit surface. We will miss a tracking hit.";
+	  continue; 
+	}
+	currTsos = predTsos;
+	TransientTrackingRecHit::RecHitPointer preciseHit = ttrhit->clone(predTsos);
+	result.push_back(preciseHit);
+      } else if ( recoid.det() == DetId::Muon ) {
+	if ( (*hit)->geographicalId().subdetId() == 3 && !theRPCInTheFit) {
+	  LogDebug("MatchAnalyzer") << "RPC Rec Hit discarded"; 
+	  continue;
+	}
+	result.push_back(theMuonRecHitBuilder->build(&**hit));
+      }
+    }
+  }
+  
+  return result;
+}
+
+//
+// check order of RechIts on a trajectory
+//
+GlobalMatchingAnalyser::RefitDirection
+GlobalMatchingAnalyser::checkRecHitsOrdering(const TransientTrackingRecHit::ConstRecHitContainer& recHits) const {
+
+  if ( !recHits.empty() ) {
+    ConstRecHitContainer::const_iterator frontHit = recHits.begin();
+    ConstRecHitContainer::const_iterator backHit  = recHits.end() - 1;
+    while ( !(*frontHit)->isValid() && frontHit != backHit ) {frontHit++;}
+    while ( !(*backHit)->isValid() && backHit != frontHit )  {backHit--;}
+
+    double rFirst = (*frontHit)->globalPosition().mag();
+    double rLast  = (*backHit) ->globalPosition().mag();
+
+    if ( rFirst < rLast ) return inToOut;
+    else if (rFirst > rLast) return outToIn;
+    else {
+      LogError("MatchAnalyzer") << "Impossible to determine the rechits order" << endl;
+      return undetermined;
+    }
+  }
+  else {
+    LogError("MatchAnalyzer") << "Impossible to determine the rechits order" << endl;
+    return undetermined;
+  }
+}
+
+//
+// calculate the tail probability (-ln(P)) of a fit
+//
+double 
+GlobalMatchingAnalyser::trackProbability(const Trajectory& track) const {
+
+  if ( track.ndof() > 0 && track.chiSquared() > 0 ) { 
+    return -LnChiSquaredProbability(track.chiSquared(), track.ndof());
+  } else {
+    return 0.0;
+  }
 
 }
 
