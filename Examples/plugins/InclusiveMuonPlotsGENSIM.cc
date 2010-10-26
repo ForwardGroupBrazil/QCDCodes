@@ -28,6 +28,8 @@
 // for selection cut
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 
+#include "PhysicsTools/HepMCCandAlgos/interface/GenParticlesHelper.h"
+
 #include <TH1.h>
 #include <TH2.h>
 #include <TProfile.h>
@@ -67,7 +69,9 @@ class InclusiveMuonPlotsGENSIM: public edm::EDAnalyzer {
     private:
         edm::InputTag muons_;
         edm::InputTag particleSrc_;
+  //edm::InputTag dilepton_src_;
         StringCutObjectSelector<reco::GenParticle> selector_;
+        StringCutObjectSelector<pat::Muon> selectorReco_;
 
         edm::InputTag primaryVertices_;
         edm::InputTag normalization_;
@@ -84,7 +88,9 @@ InclusiveMuonPlotsGENSIM::InclusiveMuonPlotsGENSIM(const edm::ParameterSet& pset
 
     muons_(pset.getParameter<edm::InputTag>("muons")),
     particleSrc_(pset.getParameter<edm::InputTag>("particleSrc")),
+    //dilepton_src_(pset.getParameter<edm::InputTag>("dilepton_src")),
     selector_(pset.getParameter<std::string>("selection")),
+    selectorReco_(pset.getParameter<std::string>("selectionReco")),
     primaryVertices_(pset.getParameter<edm::InputTag>("primaryVertices")),
     luminosity(0) // by default, we don't have luminosity info
 {
@@ -95,6 +101,7 @@ InclusiveMuonPlotsGENSIM::InclusiveMuonPlotsGENSIM(const edm::ParameterSet& pset
     TDirectory *md_dir = md.cd();
     md_dir->WriteTObject(new TObjString(muons_.encode().c_str()), "muons");
     md_dir->WriteTObject(new TObjString(pset.getParameter<std::string>("selection").c_str()), "selection");
+    md_dir->WriteTObject(new TObjString(pset.getParameter<std::string>("selectionReco").c_str()), "selectionReco");
 
     book(*fs, pset, "p"); 
     book(*fs, pset, "pt"); 
@@ -102,83 +109,28 @@ InclusiveMuonPlotsGENSIM::InclusiveMuonPlotsGENSIM(const edm::ParameterSet& pset
     book(*fs, pset, "phi"); 
     book(*fs, pset, "charge"); 
     book(*fs, pset, "pdg"); 
-    /*
-    book(*fs, pset, "pSta",   "p"); 
-    book(*fs, pset, "ptSta",  "pt"); 
-    book(*fs, pset, "etaSta", "eta"); 
-    book(*fs, pset, "phiSta", "phi"); 
+    book(*fs, pset, "mass");
 
-    book(*fs, pset, "dxyCoarse");
-    book(*fs, pset, "dxyFine");
-    book(*fs, pset, "dzCoarse");
-    book(*fs, pset, "dzFine");
-
-    book(*fs, pset, "pixelHits");
-    book(*fs, pset, "pixelLayers");
-    book(*fs, pset, "trackerHits");
-    book(*fs, pset, "trackerLostHitsInner",  "trackerLostHits");
-    book(*fs, pset, "trackerLostHitsMiddle", "trackerLostHits");
-    book(*fs, pset, "trackerLostHitsOuter",  "trackerLostHits");
-    book(*fs, pset, "muonHits");
-    book(*fs, pset, "muonBadHits");
-    book(*fs, pset, "globalHits");
-    book(*fs, pset, "globalMuonHits","muonHits");
-    book(*fs, pset, "trackerChi2n");
-    book(*fs, pset, "muonChi2n");
-    book(*fs, pset, "globalChi2n");
-
-    book(*fs, pset, "muonHitCounts", "muonHits");
-    book(*fs, pset, "muonHitCountsany", "muonHits");
-    for(size_t j =0; j<4; ++j) {
-       std::string intLabel = lexical_cast<std::string>(j+1);
-       book(*fs, pset, "muonHitCounts"+intLabel+"any", "muonStationHits");
-       book(*fs, pset, "muonHitCountsv"+intLabel, "muonStationHits");
-       book(*fs, pset, "muonHitCountsdt"+intLabel+"any", "muonStationHits");
-       book(*fs, pset, "muonHitCountscsc"+intLabel+"any", "muonStationHits");
-       book(*fs, pset, "muonHitCountsrpc"+intLabel+"any", "muonStationHits");
-       book(*fs, pset, "muonHitCountsdt"+intLabel, "muonStationHits");
-       book(*fs, pset, "muonHitCountscsc"+intLabel, "muonStationHits");
-       book(*fs, pset, "muonHitCountsrpc"+intLabel, "muonStationHits");
-    }
-
-    book(*fs, pset, "trackIso05", "isolation");
-    book(*fs, pset, "ecalIso05",  "isolation");
-    book(*fs, pset, "hcalIso05",  "isolation");
-    book(*fs, pset, "trackIso03", "isolation");
-    book(*fs, pset, "ecalIso03",  "isolation");
-    book(*fs, pset, "hcalIso03",  "isolation");
-    book(*fs, pset, "combRelIso03", "relIso");
-    book(*fs, pset, "combRelIso05", "relIso");
-
-    book(*fs, pset, "muonStationsValid",    "muonStations");
-    book(*fs, pset, "muonStationsAny",      "muonStations");
-    book(*fs, pset, "muonStationsDTValid",  "muonStations");
-    book(*fs, pset, "muonStationsDTAny",    "muonStations");
-    book(*fs, pset, "muonStationsCSCValid", "muonStations");
-    book(*fs, pset, "muonStationsCSCAny",   "muonStations");
-    book(*fs, pset, "muonStationsRPCValid", "muonStations");
-    book(*fs, pset, "muonStationsRPCAny",   "muonStations");
-    book(*fs, pset, "numberOfChambers",     "segmentMatches");
-    book(*fs, pset, "segmentMatchesArb_MaxDepth","segmentMatches"); 
-    book(*fs, pset, "segmentMatchesArb",    "segmentMatches"); 
-    book(*fs, pset, "segmentMatchesArb_1",  "bool"); 
-    book(*fs, pset, "segmentMatchesArb_2",  "bool"); 
-    book(*fs, pset, "segmentMatchesArb_3",  "bool"); 
-    book(*fs, pset, "segmentMatchesArb_4",  "bool"); 
-    book(*fs, pset, "segmentMatchesNoArb",  "segmentMatches"); 
-    book(*fs, pset, "segmentMatchesNoArb_1","bool"); 
-    book(*fs, pset, "segmentMatchesNoArb_2","bool"); 
-    book(*fs, pset, "segmentMatchesNoArb_3","bool"); 
-    book(*fs, pset, "segmentMatchesNoArb_4","bool"); 
-    book(*fs, pset, "segmentMatchesFailArb","segmentMatches"); 
-    book(*fs, pset, "segmentCompatArb",     "segmentCompat"); 
-    book(*fs, pset, "segmentCompatNoArb",   "segmentCompat"); 
-    book(*fs, pset, "caloCompat",           "caloCompat"); 
-    */
     book(*fs, pset, "prodz", "z"); 
     book(*fs, pset, "prodr", "r"); 
     book(*fs, pset, "prodd", "r"); 
     book2d(*fs, pset, "prodrz", "rz"); 
+    book2d(*fs, pset, "pteta", "pteta");
+    book2d(*fs, pset, "peta", "peta");
+
+    book(*fs, pset, "p_reco","p"); 
+    book(*fs, pset, "pt_reco","pt"); 
+    book(*fs, pset, "eta_reco","eta"); 
+    book(*fs, pset, "phi_reco","phi"); 
+    book2d(*fs, pset, "pteta_reco", "pteta");
+    book2d(*fs, pset, "peta_reco", "peta");
+
+    book(*fs, pset, "p_","p"); 
+    book(*fs, pset, "pt_","pt"); 
+    book(*fs, pset, "eta_","eta"); 
+    book(*fs, pset, "phi_","phi"); 
+    book2d(*fs, pset, "pteta_", "pteta");
+    book2d(*fs, pset, "peta_", "peta");
 
     if (pset.existsAs<edm::InputTag>("normalization")) {
         normalization_ = pset.getParameter<edm::InputTag>("normalization");
@@ -242,206 +194,110 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
     using namespace edm;
     using namespace std;
 
+    //std::cout << "Event " << event.id() << std::endl;
+
     // get generator particle collection
     Handle<reco::GenParticleCollection> particles;
     event.getByLabel(particleSrc_, particles);
 
-		   //Handle<View<reco::Muon> > muons;
-		   //event.getByLabel(muons_, muons);
+    Handle<View<reco::Muon> > muons;
+    event.getByLabel(muons_, muons);
+    
+    //Handle<reco::CompositeCandidateView> dileptons;
+    //event.getByLabel(dilepton_src_, dileptons);
 
     Handle<vector<reco::Vertex> > vertices;
     event.getByLabel(primaryVertices_, vertices);
     int k =0;
 
-		   /*
     for(reco::GenParticleCollection::const_iterator part=particles->begin(); 
 	part!=particles->end(); ++part){
-      // only loop stable electrons
-      if( part->status()==1  && abs(part->pdgId())==11 ){
-	if( part->pt()>minPt_ && fabs(part->eta())<maxEta_ ){
-	  genPt_ ->Fill( part->pt()  );
-	  genEta_->Fill( part->eta() );
-	  genPhi_->Fill( part->phi() );      
+      
+      if (!selector_(*part)) continue;
+
+      //if(part->mother().isValid()) plots["mass"]->Fill(part->mother()->mass());      
+      plots["p"  ]->Fill(part->p());
+      plots["pt" ]->Fill(part->pt());
+      plots["eta"]->Fill(part->eta());
+      plots["phi"]->Fill(part->phi());
+      plots["charge"]->Fill(part->charge());
+      plots["pdg"]->Fill(part->pdgId());
+      
+      plots["prodz"]->Fill(part->vz());
+      float r = sqrt(part->vx()*part->vx() + part->vy()*part->vy());
+      float d = sqrt(part->vx()*part->vx() + part->vy()*part->vy() + part->vz()*part->vz());
+      plots["prodr"]->Fill(r);
+      plots["prodd"]->Fill(d);
+      plots["prodrz"]->Fill(part->vz(),r);
+      plots["pteta"]->Fill(part->eta(),part->pt());
+      plots["peta"]->Fill(part->eta(),part->p());
+    }
+    
+    ////////////start
+    reco::GenParticleRefVector allStatus3Zs; 
+    using namespace GenParticlesHelper;
+    findParticles( *particles,allStatus3Zs, 23, 3);
+    //std::cout << " nZs " << allStatus3Zs.size() << std::endl;
+    for( IGR iZ=allStatus3Zs.begin(); iZ!=allStatus3Zs.end(); ++iZ) {
+      // look for all status 1 (stable) descendents 
+      reco::GenParticleRefVector descendents;
+      findDescendents( *iZ, descendents, 3,13);
+      //std::cout << "  daughters " << descendents.size() << std::endl;
+      
+      //////
+      for(IGR igr = descendents.begin(); 
+	  igr!= descendents.end(); ++igr ) {
+	plots["p_reco"  ]->Fill((*igr)->p());
+	plots["pt_reco" ]->Fill((*igr)->pt());
+	plots["eta_reco"]->Fill((*igr)->eta());
+	plots["phi_reco"]->Fill((*igr)->phi());
+	plots["pteta_reco"]->Fill((*igr)->eta(),(*igr)->pt());
+	plots["peta_reco"]->Fill((*igr)->eta(),(*igr)->p());
+      }
+      //////
+      if(descendents.size() >= 2) {
+	if( ! ( (abs(descendents[0]->eta()) < 2.1 && abs(descendents[1]->eta()) < 2.1)
+		&&  ( (descendents[0]->pt()>10. && descendents[1]->pt()>6.) || (descendents[0]->pt()>6. && descendents[1]->pt()>10.) ) ) ) continue;
+	//std::cout << "     " <<  descendents[0]->pt() << " " << descendents[1]->pt() << std::endl;
+	for(IGR igr = descendents.begin(); 
+	    igr!= descendents.end(); ++igr ) {
+	  plots["p_"  ]->Fill((*igr)->p());
+	  plots["pt_" ]->Fill((*igr)->pt());
+	  plots["eta_"]->Fill((*igr)->eta());
+	  plots["phi_"]->Fill((*igr)->phi());
+	  plots["pteta_"]->Fill((*igr)->eta(),(*igr)->pt());
+	  plots["peta_"]->Fill((*igr)->eta(),(*igr)->p());
 	}
       }
     }
-		   */
-  for(reco::GenParticleCollection::const_iterator part=particles->begin(); 
-	part!=particles->end(); ++part){
-    //foreach (const reco::GenParticleCollection &mu, *particles) {
-        // we want to make a pat::Muon so that we can access directly muonID in the cuts
-        //const pat::Muon &mu = (typeid(recomu) == typeid(pat::Muon) ? static_cast<const pat::Muon &>(recomu) : pat::Muon(recomu));
-    //const pat::GenParticle &mu = (typeid(recomu) == typeid(pat::Muon) ? static_cast<const pat::Muon &>(recomu) : pat::Muon(recomu));
-
-    if (!selector_(*part)) continue;
+    //////////////////end
     
-        plots["p"  ]->Fill(part->p());
-        plots["pt" ]->Fill(part->pt());
-        plots["eta"]->Fill(part->eta());
-        plots["phi"]->Fill(part->phi());
-        plots["charge"]->Fill(part->charge());
-        plots["pdg"]->Fill(part->pdgId());
+    foreach (const reco::Muon &recomu, *muons) {
+      // we want to make a pat::Muon so that we can access directly muonID in the cuts
+      const pat::Muon &mu = (typeid(recomu) == typeid(pat::Muon) ? static_cast<const pat::Muon &>(recomu) : pat::Muon(recomu));
+      
+      if (! selectorReco_(mu)) continue;
+      if (! mu.genParticleRef().isAvailable()) continue;
+      //if (! selector_(*mu.genParticleRef())) continue;
+      /*
+      plots["p_"  ]->Fill(mu.genParticleRef()->p());
+      plots["pt_" ]->Fill(mu.genParticleRef()->pt());
+      plots["eta_"]->Fill(mu.genParticleRef()->eta());
+      plots["phi_"]->Fill(mu.genParticleRef()->phi());
+      plots["pteta_"]->Fill(mu.genParticleRef()->eta(),mu.genParticleRef()->pt());
+      plots["peta_"]->Fill(mu.genParticleRef()->eta(),mu.genParticleRef()->p());	
+      */
+      /*
+      plots["p_reco"  ]->Fill(mu.p());
+      plots["pt_reco" ]->Fill(mu.pt());
+      plots["eta_reco"]->Fill(mu.eta());
+      plots["phi_reco"]->Fill(mu.phi());
+      plots["pteta_reco"]->Fill(mu.eta(),mu.pt());
+      plots["peta_reco"]->Fill(mu.eta(),mu.p());	
+      */
+      }
+    
 
-	plots["prodz"]->Fill(part->vz());
-	float r = sqrt(part->vx()*part->vx() + part->vy()*part->vy());
-	float d = sqrt(part->vx()*part->vx() + part->vy()*part->vy() + part->vz()*part->vz());
-	plots["prodr"]->Fill(r);
-	plots["prodd"]->Fill(d);
-	plots["prodrz"]->Fill(part->vz(),r);
-
-	/*
-        if (mu.innerTrack().isNonnull()) {
-            plots["pixelHits"  ]->Fill(mu.innerTrack()->hitPattern().numberOfValidPixelHits());
-            plots["pixelLayers"]->Fill(mu.innerTrack()->hitPattern().pixelLayersWithMeasurement());
-            plots["trackerHits"]->Fill(mu.innerTrack()->hitPattern().numberOfValidHits());
-            plots["trackerLostHitsMiddle"]->Fill(mu.innerTrack()->hitPattern().numberOfLostHits());
-            plots["trackerLostHitsInner"]->Fill(mu.innerTrack()->trackerExpectedHitsInner().numberOfLostHits());
-            plots["trackerLostHitsOuter"]->Fill(mu.innerTrack()->trackerExpectedHitsOuter().numberOfLostHits());
-            plots["trackerChi2n"]->Fill(mu.innerTrack()->normalizedChi2());
-
-            if (!vertices->empty() && !vertices->front().isFake()) {
-                const reco::Vertex &vtx = vertices->front();
-                plots["dxyCoarse"]->Fill(mu.innerTrack()->dxy(vtx.position()));
-                plots["dzCoarse"]->Fill(mu.innerTrack()->dz(vtx.position()));
-                plots["dxyFine"]->Fill(mu.innerTrack()->dxy(vtx.position()));
-                plots["dzFine"]->Fill(mu.innerTrack()->dz(vtx.position()));
-            }
-        }
-	*/
-	/*
-        if (mu.outerTrack().isNonnull()) {
-            plots["pSta"  ]->Fill(mu.outerTrack()->p());
-            plots["ptSta" ]->Fill(mu.outerTrack()->pt());
-            plots["etaSta"]->Fill(mu.outerTrack()->eta());
-            plots["phiSta"]->Fill(mu.outerTrack()->phi());
-
-            plots["muonHits"]->Fill(mu.outerTrack()->numberOfValidHits());
-            plots["muonBadHits"]->Fill(mu.outerTrack()->recHitsSize() - mu.outerTrack()->numberOfValidHits());
-            plots["muonChi2n"]->Fill(mu.outerTrack()->normalizedChi2());
-
-	    if(mu.hasUserInt("muonStations")) {
-	      plots["muonStationsAny"  ]->Fill(mu.userInt("muonStations:any"));
-	      plots["muonStationsValid"  ]->Fill(mu.userInt("muonStations"));
-	      plots["muonStationsDTAny"  ]->Fill(mu.userInt("muonStations:dtAny"));
-	      plots["muonStationsDTValid"  ]->Fill(mu.userInt("muonStations:dt"));
-	      plots["muonStationsCSCAny"  ]->Fill(mu.userInt("muonStations:cscAny"));
-	      plots["muonStationsCSCValid"  ]->Fill(mu.userInt("muonStations:csc"));
-	      plots["muonStationsRPCAny"  ]->Fill(mu.userInt("muonStations:rpcAny"));
-	      plots["muonStationsRPCValid"  ]->Fill(mu.userInt("muonStations:rpc"));
-	    } else if ( ( mu.outerTrack()->extra().isAvailable()   ) && 
-			( mu.outerTrack()->recHitsSize() > 0       ) &&
-			( mu.outerTrack()->recHit(0).isAvailable() )     ) {
-	      
-	      plots["muonStationsValid"]->Fill(muon::muonStations(mu.outerTrack(), 0, true));
-	      plots["muonStationsAny"  ]->Fill(muon::muonStations(mu.outerTrack(), 0, false));
-	      //if(mu.hasUserInt("muonStations:Any"));
-	      //plots["muonStationsAny"  ]->Fill(mu.userInt("muonStations:Any"));
-	      float abseta = std::abs(mu.outerTrack()->eta());
-	      if (abseta <= 1.2) {
-		plots["muonStationsDTValid"]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::DT, true));
-		plots["muonStationsDTAny"  ]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::DT, false));
-	      } 
-	      if (abseta <= 1.6) {
-		plots["muonStationsRPCValid"]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::RPC, true));
-		plots["muonStationsRPCAny"  ]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::RPC, false));
-	      } 
-	      if (abseta >= 0.8) {
-		plots["muonStationsCSCValid"]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::CSC, true));
-		plots["muonStationsCSCAny"  ]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::CSC, false));
-	      }
-            }
-        }
-*/
-	/*
-        if (mu.globalTrack().isNonnull()) {
-            plots["globalHits"]->Fill(mu.globalTrack()->numberOfValidHits());
-            plots["globalMuonHits"]->Fill(mu.globalTrack()->hitPattern().numberOfValidMuonHits());
-            plots["globalChi2n"]->Fill(mu.globalTrack()->normalizedChi2());
-        }
-	*/
-	/*
-        if (mu.isIsolationValid()) {
-            plots["trackIso05"]->Fill(mu.isolationR05().sumPt);
-            plots[ "ecalIso05"]->Fill(mu.isolationR05().emEt);
-            plots[ "hcalIso05"]->Fill(mu.isolationR05().hadEt);
-            plots["trackIso03"]->Fill(mu.isolationR03().sumPt);
-            plots[ "ecalIso03"]->Fill(mu.isolationR03().emEt);
-            plots[ "hcalIso03"]->Fill(mu.isolationR03().hadEt);
-            plots[ "combRelIso03"]->Fill( (mu.isolationR03().sumPt + mu.isolationR03().emEt + mu.isolationR03().hadEt) / mu.pt() );
-            plots[ "combRelIso05"]->Fill( (mu.isolationR05().sumPt + mu.isolationR05().emEt + mu.isolationR05().hadEt) / mu.pt() );
-        }
-        */
-	/*
-        if (mu.isMatchesValid()) {
-	  plots["numberOfChambers"]->Fill(mu.numberOfChambers());
-
-	  plots["segmentMatchesArb"    ]->Fill(mu.numberOfMatches(reco::Muon::SegmentAndTrackArbitration));
-	  plots["segmentMatchesNoArb"  ]->Fill(mu.numberOfMatches(reco::Muon::SegmentArbitration));
-	  plots["segmentMatchesFailArb"]->Fill(mu.numberOfMatches(reco::Muon::SegmentArbitration) - mu.numberOfMatches(reco::Muon::SegmentAndTrackArbitration));
-
-	  //adam stations with matched segments
-	  unsigned int maskST_Arb = mu.stationMask(reco::Muon::SegmentAndTrackArbitration);
-	  unsigned int maskS_Arb = mu.stationMask(reco::Muon::SegmentArbitration);
-
-	  int maxDepth = 0;
-	  if((maskST_Arb & 1<<0)||(maskST_Arb & 1<<4)) maxDepth = 1;
-	  if((maskST_Arb & 1<<1)||(maskST_Arb & 1<<5)) maxDepth = 2;
-	  if((maskST_Arb & 1<<2)||(maskST_Arb & 1<<6)) maxDepth = 3;
-	  if((maskST_Arb & 1<<3)||(maskST_Arb & 1<<7)) maxDepth = 4;
-
-	  plots["segmentMatchesArb_MaxDepth"]->Fill(maxDepth);
-
-	  plots["segmentMatchesArb_1"]->Fill(((maskST_Arb & 1<<0)||(maskST_Arb & 1<<4)));
-	  plots["segmentMatchesArb_2"]->Fill(((maskST_Arb & 1<<1)||(maskST_Arb & 1<<5)));
-	  plots["segmentMatchesArb_3"]->Fill(((maskST_Arb & 1<<2)||(maskST_Arb & 1<<6)));
-	  plots["segmentMatchesArb_4"]->Fill(((maskST_Arb & 1<<3)||(maskST_Arb & 1<<7)));
-
-	  plots["segmentMatchesNoArb_1"]->Fill(((maskS_Arb & 1<<0)||(maskS_Arb & 1<<4)));
-	  plots["segmentMatchesNoArb_2"]->Fill(((maskS_Arb & 1<<1)||(maskS_Arb & 1<<5)));
-	  plots["segmentMatchesNoArb_3"]->Fill(((maskS_Arb & 1<<2)||(maskS_Arb & 1<<6)));
-	  plots["segmentMatchesNoArb_4"]->Fill(((maskS_Arb & 1<<3)||(maskS_Arb & 1<<7)));
-
-	  //adam end stations with matched segments
-
-	  plots["segmentCompatArb"     ]->Fill(muon::segmentCompatibility(mu, reco::Muon::SegmentAndTrackArbitration));
-	  plots["segmentCompatNoArb"   ]->Fill(muon::segmentCompatibility(mu, reco::Muon::SegmentArbitration));
-        }
-	*/
-	/*
-        if (mu.isCaloCompatibilityValid()) {
-            plots["caloCompat"]->Fill(mu.caloCompatibility());
-        }
-	*/
-	/*
-	plots["muonHitCounts"]->Fill(mu.userInt("muonHitCounts"));
-	plots["muonHitCountsany"]->Fill(mu.userInt("muonHitCounts:any"));
-
-	std::string any = "any";
-	std::string valid = "v";
-	
-	for(size_t j =0; j<4; ++j) {
-	  std::string intLabel = lexical_cast<std::string>(j+1);
-	  plots["muonHitCounts"+intLabel+any]->Fill(mu.userInt("muonHitCounts:"+intLabel+any));
-	  plots["muonHitCounts"+valid+intLabel]->Fill(mu.userInt("muonHitCounts:"+valid+intLabel));
-	  plots["muonHitCountsdt"+intLabel+any]->Fill(mu.userInt("muonHitCounts:dt"+intLabel+any));
-	  plots["muonHitCountsdt"+intLabel]->Fill(mu.userInt("muonHitCounts:dt"+intLabel));
-	  plots["muonHitCountscsc"+intLabel+any]->Fill(mu.userInt("muonHitCounts:csc"+intLabel+any));
-	  plots["muonHitCountscsc"+intLabel]->Fill(mu.userInt("muonHitCounts:csc"+intLabel));
-	  plots["muonHitCountsrpc"+intLabel+any]->Fill(mu.userInt("muonHitCounts:rpc"+intLabel+any));
-	  plots["muonHitCountsrpc"+intLabel]->Fill(mu.userInt("muonHitCounts:rpc"+intLabel));
-	}
-	*/
-	//for(size_t j =0; j<4; ++j) {
-	//std::string intLabel = lexical_cast<std::string>(j+1);
-	//  
-	//}
-	/*
-	if(part->hasUserFloat("classByHitsGlb:prodZ"))	plots["zGlb"]->Fill(part->userFloat("classByHitsGlb:prodZ"));
-
-	if(part->hasUserFloat("classByHitsGlb:prodZ"))	plots["rzGlb"]->Fill(part->userFloat("classByHitsGlb:prodZ"),part->userFloat("classByHitsGlb:prodRho"));
-	if(part->hasUserFloat("classByHitsTM:prodZ"))	plots["rzTM"]->Fill(part->userFloat("classByHitsTM:prodZ"),part->userFloat("classByHitsTM:prodRho"));
-	*/
-    }
 }
 
 void InclusiveMuonPlotsGENSIM::endLuminosityBlock(const edm::LuminosityBlock & iLumi, const edm::EventSetup & iSetup) 

@@ -9,6 +9,7 @@
   <use name=DataFormats/Common>
   <use name=DataFormats/PatCandidates>
   <use name=HLTrigger/HLTcore>
+  <use name=PhysicsTools/HepMCCandAlgos>
   <use name=PhysicsTools/PatAlgos>
   <use name=PhysicsTools/PatUtils>
   <use name=PhysicsTools/UtilAlgos>
