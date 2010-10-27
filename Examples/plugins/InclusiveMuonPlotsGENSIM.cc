@@ -81,6 +81,9 @@ class InclusiveMuonPlotsGENSIM: public edm::EDAnalyzer {
         std::map<std::string, TProfile*> profiles;
 
         TH1D *luminosity;
+        int mother_;
+        int daughter_;
+        double weight_;
 };
 
 /// Constructor
@@ -92,7 +95,10 @@ InclusiveMuonPlotsGENSIM::InclusiveMuonPlotsGENSIM(const edm::ParameterSet& pset
     selector_(pset.getParameter<std::string>("selection")),
     selectorReco_(pset.getParameter<std::string>("selectionReco")),
     primaryVertices_(pset.getParameter<edm::InputTag>("primaryVertices")),
-    luminosity(0) // by default, we don't have luminosity info
+    luminosity(0), // by default, we don't have luminosity info
+    mother_(pset.getUntrackedParameter<int>("mother",23)),
+    daughter_(pset.getUntrackedParameter<int>("daughter",13)),
+    weight_(pset.getUntrackedParameter<double>("weight",1.0))
 {
 
     edm::Service<TFileService> fs;
@@ -125,12 +131,12 @@ InclusiveMuonPlotsGENSIM::InclusiveMuonPlotsGENSIM(const edm::ParameterSet& pset
     book2d(*fs, pset, "pteta_reco", "pteta");
     book2d(*fs, pset, "peta_reco", "peta");
 
-    book(*fs, pset, "p_","p"); 
-    book(*fs, pset, "pt_","pt"); 
-    book(*fs, pset, "eta_","eta"); 
-    book(*fs, pset, "phi_","phi"); 
-    book2d(*fs, pset, "pteta_", "pteta");
-    book2d(*fs, pset, "peta_", "peta");
+    book(*fs, pset, "p_acc","p"); 
+    book(*fs, pset, "pt_acc","pt"); 
+    book(*fs, pset, "eta_acc","eta"); 
+    book(*fs, pset, "phi_acc","phi"); 
+    book2d(*fs, pset, "pteta_acc", "pteta");
+    book2d(*fs, pset, "peta_acc", "peta");
 
     if (pset.existsAs<edm::InputTag>("normalization")) {
         normalization_ = pset.getParameter<edm::InputTag>("normalization");
@@ -210,67 +216,80 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
     event.getByLabel(primaryVertices_, vertices);
     int k =0;
 
-    for(reco::GenParticleCollection::const_iterator part=particles->begin(); 
-	part!=particles->end(); ++part){
-      
-      if (!selector_(*part)) continue;
-
-      //if(part->mother().isValid()) plots["mass"]->Fill(part->mother()->mass());      
-      plots["p"  ]->Fill(part->p());
-      plots["pt" ]->Fill(part->pt());
-      plots["eta"]->Fill(part->eta());
-      plots["phi"]->Fill(part->phi());
-      plots["charge"]->Fill(part->charge());
-      plots["pdg"]->Fill(part->pdgId());
-      
-      plots["prodz"]->Fill(part->vz());
-      float r = sqrt(part->vx()*part->vx() + part->vy()*part->vy());
-      float d = sqrt(part->vx()*part->vx() + part->vy()*part->vy() + part->vz()*part->vz());
-      plots["prodr"]->Fill(r);
-      plots["prodd"]->Fill(d);
-      plots["prodrz"]->Fill(part->vz(),r);
-      plots["pteta"]->Fill(part->eta(),part->pt());
-      plots["peta"]->Fill(part->eta(),part->p());
-    }
+    /* //instead of looping over genParticles and looking for the mother, let's look for the mother and get the daughters
+       for(reco::GenParticleCollection::const_iterator part=particles->begin(); 
+       part!=particles->end(); ++part){
+       
+       if (!selector_(*part)) continue;
+       
+       plots["p"  ]->Fill(part->p());
+       plots["pt" ]->Fill(part->pt());
+       plots["eta"]->Fill(part->eta());
+       plots["phi"]->Fill(part->phi());
+       plots["charge"]->Fill(part->charge());
+       plots["pdg"]->Fill(part->pdgId());
+       
+       plots["prodz"]->Fill(part->vz());
+       float r = sqrt(part->vx()*part->vx() + part->vy()*part->vy());
+       float d = sqrt(part->vx()*part->vx() + part->vy()*part->vy() + part->vz()*part->vz());
+       plots["prodr"]->Fill(r);
+       plots["prodd"]->Fill(d);
+       plots["prodrz"]->Fill(part->vz(),r);
+       plots["pteta"]->Fill(part->eta(),part->pt());
+       plots["peta"]->Fill(part->eta(),part->p());
+       }
+    */    
     
-    ////////////start
     reco::GenParticleRefVector allStatus3Zs; 
     using namespace GenParticlesHelper;
-    findParticles( *particles,allStatus3Zs, 23, 3);
+    findParticles( *particles,allStatus3Zs, mother_, 3);
     //std::cout << " nZs " << allStatus3Zs.size() << std::endl;
     for( IGR iZ=allStatus3Zs.begin(); iZ!=allStatus3Zs.end(); ++iZ) {
+
+      if (!selector_(**iZ)) continue;
+
       // look for all status 1 (stable) descendents 
       reco::GenParticleRefVector descendents;
-      findDescendents( *iZ, descendents, 3,13);
+      findDescendents( *iZ, descendents, 1,daughter_);
       //std::cout << "  daughters " << descendents.size() << std::endl;
-      
-      //////
+
       for(IGR igr = descendents.begin(); 
 	  igr!= descendents.end(); ++igr ) {
-	plots["p_reco"  ]->Fill((*igr)->p());
-	plots["pt_reco" ]->Fill((*igr)->pt());
-	plots["eta_reco"]->Fill((*igr)->eta());
-	plots["phi_reco"]->Fill((*igr)->phi());
-	plots["pteta_reco"]->Fill((*igr)->eta(),(*igr)->pt());
-	plots["peta_reco"]->Fill((*igr)->eta(),(*igr)->p());
+	plots["p"  ]->Fill((*igr)->p(),weight_);
+	plots["pt" ]->Fill((*igr)->pt(),weight_);
+	plots["eta"]->Fill((*igr)->eta(),weight_);
+	plots["phi"]->Fill((*igr)->phi(),weight_);
+	plots["charge"]->Fill((*igr)->charge(),weight_);
+	plots["pdg"]->Fill((*igr)->pdgId(),weight_);
+	
+	plots["prodz"]->Fill((*igr)->vz(),weight_);
+	float r = sqrt((*igr)->vx()*(*igr)->vx() + (*igr)->vy()*(*igr)->vy());
+	float d = sqrt((*igr)->vx()*(*igr)->vx() + (*igr)->vy()*(*igr)->vy() + (*igr)->vz()*(*igr)->vz());
+	plots["prodr"]->Fill(r,weight_);
+	plots["prodd"]->Fill(d,weight_);
+	((TH2D*)(plots["prodrz"]))->Fill((*igr)->vz(),r,weight_);
+	((TH2D*)(plots["pteta"]))->Fill((*igr)->eta(),(*igr)->pt(),weight_);
+	((TH2D*)(plots["peta"]))->Fill((*igr)->eta(),(*igr)->p(),weight_);
       }
-      //////
+
       if(descendents.size() >= 2) {
 	if( ! ( (abs(descendents[0]->eta()) < 2.1 && abs(descendents[1]->eta()) < 2.1)
 		&&  ( (descendents[0]->pt()>10. && descendents[1]->pt()>6.) || (descendents[0]->pt()>6. && descendents[1]->pt()>10.) ) ) ) continue;
+	//	if( ! ( (abs(descendents[0]->eta()) < 2.4 && abs(descendents[1]->eta()) < 2.4)
+	//		&&  ( (descendents[0]->pt()>10. && descendents[1]->pt()>6.) || (descendents[0]->pt()>6. && descendents[1]->pt()>10.) ) ) ) continue;
 	//std::cout << "     " <<  descendents[0]->pt() << " " << descendents[1]->pt() << std::endl;
 	for(IGR igr = descendents.begin(); 
 	    igr!= descendents.end(); ++igr ) {
-	  plots["p_"  ]->Fill((*igr)->p());
-	  plots["pt_" ]->Fill((*igr)->pt());
-	  plots["eta_"]->Fill((*igr)->eta());
-	  plots["phi_"]->Fill((*igr)->phi());
-	  plots["pteta_"]->Fill((*igr)->eta(),(*igr)->pt());
-	  plots["peta_"]->Fill((*igr)->eta(),(*igr)->p());
+	  plots["p_acc"  ]->Fill((*igr)->p(),weight_);
+	  plots["pt_acc" ]->Fill((*igr)->pt(),weight_);
+	  plots["eta_acc"]->Fill((*igr)->eta(),weight_);
+	  plots["phi_acc"]->Fill((*igr)->phi(),weight_);
+	  ((TH2D*)(plots["pteta_acc"]))->Fill((*igr)->eta(),(*igr)->pt(),weight_);
+	  ((TH2D*)(plots["peta_acc"]))->Fill((*igr)->eta(),(*igr)->p(),weight_);
 	}
       }
     }
-    //////////////////end
+
     
     foreach (const reco::Muon &recomu, *muons) {
       // we want to make a pat::Muon so that we can access directly muonID in the cuts
@@ -279,22 +298,14 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
       if (! selectorReco_(mu)) continue;
       if (! mu.genParticleRef().isAvailable()) continue;
       //if (! selector_(*mu.genParticleRef())) continue;
-      /*
-      plots["p_"  ]->Fill(mu.genParticleRef()->p());
-      plots["pt_" ]->Fill(mu.genParticleRef()->pt());
-      plots["eta_"]->Fill(mu.genParticleRef()->eta());
-      plots["phi_"]->Fill(mu.genParticleRef()->phi());
-      plots["pteta_"]->Fill(mu.genParticleRef()->eta(),mu.genParticleRef()->pt());
-      plots["peta_"]->Fill(mu.genParticleRef()->eta(),mu.genParticleRef()->p());	
-      */
-      /*
-      plots["p_reco"  ]->Fill(mu.p());
-      plots["pt_reco" ]->Fill(mu.pt());
-      plots["eta_reco"]->Fill(mu.eta());
-      plots["phi_reco"]->Fill(mu.phi());
-      plots["pteta_reco"]->Fill(mu.eta(),mu.pt());
-      plots["peta_reco"]->Fill(mu.eta(),mu.p());	
-      */
+      
+      plots["p_reco"  ]->Fill(mu.p(),weight_);
+      plots["pt_reco" ]->Fill(mu.pt(),weight_);
+      plots["eta_reco"]->Fill(mu.eta(),weight_);
+      plots["phi_reco"]->Fill(mu.phi(),weight_);
+      ((TH2D*)(plots["pteta_reco"]))->Fill(mu.eta(),mu.pt(),weight_);
+      ((TH2D*)(plots["peta_reco"]))->Fill(mu.eta(),mu.p(),weight_);	
+      
       }
     
 

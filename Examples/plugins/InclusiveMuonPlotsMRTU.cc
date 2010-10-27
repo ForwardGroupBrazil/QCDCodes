@@ -258,7 +258,7 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
         const pat::Muon &mu = (typeid(recomu) == typeid(pat::Muon) ? static_cast<const pat::Muon &>(recomu) : pat::Muon(recomu));
 
         if (!selector_(mu)) continue;
-
+	
         plots["p"  ]->Fill(mu.p());
         plots["pt" ]->Fill(mu.pt());
         plots["eta"]->Fill(mu.eta());
@@ -284,18 +284,22 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
                 plots["dzFine"]->Fill(mu.innerTrack()->dz(vtx.position()));
             }
         }
-
-        if (mu.outerTrack().isNonnull()) {
+	
+        if (mu.outerTrack().isNonnull()) {	
             plots["pSta"  ]->Fill(mu.outerTrack()->p());
             plots["ptSta" ]->Fill(mu.outerTrack()->pt());
             plots["etaSta"]->Fill(mu.outerTrack()->eta());
-            plots["phiSta"]->Fill(mu.outerTrack()->phi());
-
+            plots["phiSta"]->Fill(mu.outerTrack()->phi());	
             plots["muonHits"]->Fill(mu.outerTrack()->numberOfValidHits());
-            plots["muonBadHits"]->Fill(mu.outerTrack()->recHitsSize() - mu.outerTrack()->numberOfValidHits());
             plots["muonChi2n"]->Fill(mu.outerTrack()->normalizedChi2());
+	    if ( ( mu.outerTrack()->extra().isAvailable()   ) && 
+                 ( mu.outerTrack()->recHitsSize() > 0       ) &&
+                 ( mu.outerTrack()->recHit(0).isAvailable() )     ) {
+	      plots["muonBadHits"]->Fill(mu.outerTrack()->recHitsSize() - mu.outerTrack()->numberOfValidHits());	
+	      
+	    }
 
-	    if(mu.hasUserInt("muonStations")) {
+	    if(mu.hasUserInt("muonStations")) {	
 	      plots["muonStationsAny"  ]->Fill(mu.userInt("muonStations:any"));
 	      plots["muonStationsValid"  ]->Fill(mu.userInt("muonStations"));
 	      plots["muonStationsDTAny"  ]->Fill(mu.userInt("muonStations:dtAny"));
@@ -303,20 +307,20 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
 	      plots["muonStationsCSCAny"  ]->Fill(mu.userInt("muonStations:cscAny"));
 	      plots["muonStationsCSCValid"  ]->Fill(mu.userInt("muonStations:csc"));
 	      plots["muonStationsRPCAny"  ]->Fill(mu.userInt("muonStations:rpcAny"));
-	      plots["muonStationsRPCValid"  ]->Fill(mu.userInt("muonStations:rpc"));
+	      plots["muonStationsRPCValid"  ]->Fill(mu.userInt("muonStations:rpc"));	
 	    } else if ( ( mu.outerTrack()->extra().isAvailable()   ) && 
 			( mu.outerTrack()->recHitsSize() > 0       ) &&
 			( mu.outerTrack()->recHit(0).isAvailable() )     ) {
-	      
+	      	
 	      plots["muonStationsValid"]->Fill(muon::muonStations(mu.outerTrack(), 0, true));
 	      plots["muonStationsAny"  ]->Fill(muon::muonStations(mu.outerTrack(), 0, false));
 	      //if(mu.hasUserInt("muonStations:Any"));
 	      //plots["muonStationsAny"  ]->Fill(mu.userInt("muonStations:Any"));
-	      float abseta = std::abs(mu.outerTrack()->eta());
+	      float abseta = std::abs(mu.outerTrack()->eta());	
 	      if (abseta <= 1.2) {
 		plots["muonStationsDTValid"]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::DT, true));
 		plots["muonStationsDTAny"  ]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::DT, false));
-	      } 
+	      } 	
 	      if (abseta <= 1.6) {
 		plots["muonStationsRPCValid"]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::RPC, true));
 		plots["muonStationsRPCAny"  ]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::RPC, false));
@@ -324,10 +328,10 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
 	      if (abseta >= 0.8) {
 		plots["muonStationsCSCValid"]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::CSC, true));
 		plots["muonStationsCSCAny"  ]->Fill(muon::muonStations(mu.outerTrack(),MuonSubdetId::CSC, false));
-	      }
-            }
-        }
-
+	      }	
+            }	
+        }	
+	
         if (mu.globalTrack().isNonnull()) {
             plots["globalHits"]->Fill(mu.globalTrack()->numberOfValidHits());
             plots["globalMuonHits"]->Fill(mu.globalTrack()->hitPattern().numberOfValidMuonHits());
@@ -335,7 +339,7 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
 	    plots["deltaPt"]->Fill((mu.outerTrack()->pt() - mu.innerTrack()->pt()));
 	    plots["deltaPtn"]->Fill((mu.outerTrack()->pt() - mu.innerTrack()->pt())/(mu.innerTrack()->pt()));
         }
-
+	
 	if(mu.isQualityValid()) {
 	  plots["muonChi2Rel"]->Fill(mu.combinedQuality().staRelChi2);
 	  plots["trackerChi2Rel"]->Fill(mu.combinedQuality().trkRelChi2);
@@ -351,7 +355,7 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
             plots[ "combRelIso03"]->Fill( (mu.isolationR03().sumPt + mu.isolationR03().emEt + mu.isolationR03().hadEt) / mu.pt() );
             plots[ "combRelIso05"]->Fill( (mu.isolationR05().sumPt + mu.isolationR05().emEt + mu.isolationR05().hadEt) / mu.pt() );
         }
-
+	
         if (mu.isMatchesValid()) {
 
 	  plots["numberOfChambers"]->Fill(mu.numberOfChambers());
@@ -391,7 +395,7 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
         if (mu.isCaloCompatibilityValid()) {
             plots["caloCompat"]->Fill(mu.caloCompatibility());
         }
-
+	
 	if(mu.hasUserInt("muonHitCounts")) {
 
 	plots["muonHitCounts"]->Fill(mu.userInt("muonHitCounts"));
@@ -417,7 +421,7 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
 	if(rpcTotalHits > 0) plots["muonHitCountsrpcratio"]->Fill(float(mu.userInt("muonHitCounts:rpc1"))/float(rpcTotalHits));
 
 	}
-
+	
 	//for(size_t j =0; j<4; ++j) {
 	//std::string intLabel = lexical_cast<std::string>(j+1);
 	//  
@@ -436,7 +440,7 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
 	plots["prodd"]->Fill(d);
 	plots["prodrz"]->Fill(z,rho);
       
-    }
+    } 
 }
 
 void InclusiveMuonPlotsMRTU::endLuminosityBlock(const edm::LuminosityBlock & iLumi, const edm::EventSetup & iSetup) 

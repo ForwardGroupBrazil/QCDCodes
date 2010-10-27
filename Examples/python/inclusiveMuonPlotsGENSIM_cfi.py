@@ -59,7 +59,12 @@ inclusiveMuonPlots = cms.EDAnalyzer("InclusiveMuonPlotsGENSIM",
     particleSrc  = cms.InputTag("genParticles"),
 
     selection = cms.string("isTrackerMuon && muonID('TMLastStationAngTight')"),
+    selectionReco = cms.string(""),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
-    #normalization   = cms.InputTag("countCollisionEvents"), ## read normalization from output of cms.EDProducer("EventCountProducer") 
+    weight = cms.untracked.double(1.0),
+    #mother = cms.untracked.int32(32),
+    #daughter = cms.untracked.int32(13)                            
+
+    #normalization   = cms.InputTag("countCollisionEvents"), ## read normalization from output of cms.EDProducer("EventCountProducer")
 )
 
