@@ -84,6 +84,8 @@ class InclusiveMuonPlotsGENSIM: public edm::EDAnalyzer {
         int mother_;
         int daughter_;
         double weight_;
+        double eta_acc;
+        double pt_acc1, pt_acc2;
 };
 
 /// Constructor
@@ -98,7 +100,10 @@ InclusiveMuonPlotsGENSIM::InclusiveMuonPlotsGENSIM(const edm::ParameterSet& pset
     luminosity(0), // by default, we don't have luminosity info
     mother_(pset.getUntrackedParameter<int>("mother",23)),
     daughter_(pset.getUntrackedParameter<int>("daughter",13)),
-    weight_(pset.getUntrackedParameter<double>("weight",1.0))
+    weight_(pset.getUntrackedParameter<double>("weight",1.0)),
+    eta_acc(pset.getUntrackedParameter<double>("eta_acc",2.1)),
+    pt_acc1(pset.getUntrackedParameter<double>("pt_acc1",10.)),
+    pt_acc2(pset.getUntrackedParameter<double>("pt_acc2",6.))
 {
 
     edm::Service<TFileService> fs;
@@ -273,11 +278,9 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
       }
 
       if(descendents.size() >= 2) {
-	if( ! ( (abs(descendents[0]->eta()) < 2.1 && abs(descendents[1]->eta()) < 2.1)
-		&&  ( (descendents[0]->pt()>10. && descendents[1]->pt()>6.) || (descendents[0]->pt()>6. && descendents[1]->pt()>10.) ) ) ) continue;
-	//	if( ! ( (abs(descendents[0]->eta()) < 2.4 && abs(descendents[1]->eta()) < 2.4)
-	//		&&  ( (descendents[0]->pt()>10. && descendents[1]->pt()>6.) || (descendents[0]->pt()>6. && descendents[1]->pt()>10.) ) ) ) continue;
-	//std::cout << "     " <<  descendents[0]->pt() << " " << descendents[1]->pt() << std::endl;
+	if( ! ( (abs(descendents[0]->eta()) < eta_acc && abs(descendents[1]->eta()) < eta_acc)
+		&&  ( (descendents[0]->pt()>pt_acc1 && descendents[1]->pt()>pt_acc2) || (descendents[0]->pt()>pt_acc2 && descendents[1]->pt()>pt_acc1) ) ) ) continue;
+	
 	for(IGR igr = descendents.begin(); 
 	    igr!= descendents.end(); ++igr ) {
 	  plots["p_acc"  ]->Fill((*igr)->p(),weight_);
@@ -299,12 +302,21 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
       if (! mu.genParticleRef().isAvailable()) continue;
       //if (! selector_(*mu.genParticleRef())) continue;
       
-      plots["p_reco"  ]->Fill(mu.p(),weight_);
-      plots["pt_reco" ]->Fill(mu.pt(),weight_);
-      plots["eta_reco"]->Fill(mu.eta(),weight_);
-      plots["phi_reco"]->Fill(mu.phi(),weight_);
-      ((TH2D*)(plots["pteta_reco"]))->Fill(mu.eta(),mu.pt(),weight_);
-      ((TH2D*)(plots["peta_reco"]))->Fill(mu.eta(),mu.p(),weight_);	
+      /*
+	plots["p_reco"  ]->Fill(mu.p(),weight_);
+	plots["pt_reco" ]->Fill(mu.pt(),weight_);
+	plots["eta_reco"]->Fill(mu.eta(),weight_);
+	plots["phi_reco"]->Fill(mu.phi(),weight_);
+	((TH2D*)(plots["pteta_reco"]))->Fill(mu.eta(),mu.pt(),weight_);
+	((TH2D*)(plots["peta_reco"]))->Fill(mu.eta(),mu.p(),weight_);	
+      */
+
+      plots["p_reco"  ]->Fill(mu.genParticleRef()->p(),weight_);
+      plots["pt_reco" ]->Fill(mu.genParticleRef()->pt(),weight_);
+      plots["eta_reco"]->Fill(mu.genParticleRef()->eta(),weight_);
+      plots["phi_reco"]->Fill(mu.genParticleRef()->phi(),weight_);
+      ((TH2D*)(plots["pteta_reco"]))->Fill(mu.genParticleRef()->eta(),mu.genParticleRef()->pt(),weight_);
+      ((TH2D*)(plots["peta_reco"]))->Fill(mu.genParticleRef()->eta(),mu.genParticleRef()->p(),weight_);	
       
       }
     
