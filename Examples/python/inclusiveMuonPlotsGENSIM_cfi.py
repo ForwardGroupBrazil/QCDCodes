@@ -13,10 +13,10 @@ def _evenBins(min,max,delta):
 def makeInclusiveMuonPlots(rebinFactor=1):
     return cms.PSet(
         # ---- Kinematics ----
-        ptBins = _evenBins( 0, 100, 2 * rebinFactor),
-        pBins  = _evenBins( 0, 500, 2  * rebinFactor),
-        etaBins = _evenBins( -2.6, 2.6, 0.2 * rebinFactor),
-        phiBins = _evenBins(-3.2,  3.2, 0.2 * rebinFactor),
+        ptBins = _evenBins( 0, 2000, 1 * rebinFactor),
+        pBins  = _evenBins( 0, 2000, 1  * rebinFactor),
+        etaBins = _evenBins( -5., 5., 0.1 * rebinFactor),
+        phiBins = _evenBins(-3.2,  3.2, 0.1 * rebinFactor),
         chargeBins = cms.vdouble(-2,0,2),
         # ---- Vertex ----
         dxyFineBins = _evenBins(-0.2, 0.2, 0.005), #  50um
@@ -58,10 +58,13 @@ inclusiveMuonPlots = cms.EDAnalyzer("InclusiveMuonPlotsGENSIM",
     muons     = cms.InputTag('muons'),
     particleSrc  = cms.InputTag("genParticles"),
 
-    selection = cms.string("isTrackerMuon && muonID('TMLastStationAngTight')"),
-    selectionReco = cms.string(""),
+    selection = cms.string(""),
+    selectionReco = cms.string("isGlobalMuon && isTrackerMuon"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
-    weight = cms.untracked.double(1.0),
+    #weight = cms.untracked.double(1.0),
+    #eta_acc = cms.untracked.double(2.1),
+    #pt_acc1 = cms.untracked.double(10.0),
+    #pt_acc2 = cms.untracked.double(6.0),                                    
     #mother = cms.untracked.int32(32),
     #daughter = cms.untracked.int32(13)                            
 

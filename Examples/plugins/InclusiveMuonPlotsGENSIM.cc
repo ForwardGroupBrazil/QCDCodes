@@ -245,17 +245,20 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
        }
     */    
     
+    LogTrace("ZPMRTU") << "";
+    LogTrace("ZPMRTU") << " pdgId " << 23;
     reco::GenParticleRefVector allStatus3Zs; 
     using namespace GenParticlesHelper;
     findParticles( *particles,allStatus3Zs, mother_, 3);
+    LogTrace("ZPMRTU") << " nZs " << allStatus3Zs.size();
     //std::cout << " nZs " << allStatus3Zs.size() << std::endl;
     for( IGR iZ=allStatus3Zs.begin(); iZ!=allStatus3Zs.end(); ++iZ) {
 
       if (!selector_(**iZ)) continue;
 
-      // look for all status 1 (stable) descendents 
+      // look for all status 3 (stable) descendents of mother status 3 
       reco::GenParticleRefVector descendents;
-      findDescendents( *iZ, descendents, 1,daughter_);
+      findDescendents( *iZ, descendents, 3,daughter_);
       //std::cout << "  daughters " << descendents.size() << std::endl;
 
       for(IGR igr = descendents.begin(); 
@@ -278,9 +281,11 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
       }
 
       if(descendents.size() >= 2) {
+	LogTrace("ZPMRTU")<<"   Daughter 0 " << descendents[0]->eta() << " " << descendents[0]->pt();
+	LogTrace("ZPMRTU")<<"   Daughter 1 " << descendents[1]->eta() << " " << descendents[1]->pt();
 	if( ! ( (abs(descendents[0]->eta()) < eta_acc && abs(descendents[1]->eta()) < eta_acc)
 		&&  ( (descendents[0]->pt()>pt_acc1 && descendents[1]->pt()>pt_acc2) || (descendents[0]->pt()>pt_acc2 && descendents[1]->pt()>pt_acc1) ) ) ) continue;
-	
+	LogTrace("ZPMRTU")<<"      *** Passes Acceoptance";
 	for(IGR igr = descendents.begin(); 
 	    igr!= descendents.end(); ++igr ) {
 	  plots["p_acc"  ]->Fill((*igr)->p(),weight_);
