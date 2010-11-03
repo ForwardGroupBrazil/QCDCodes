@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Fri Dec 18 12:47:08 CST 2009
-// $Id: GlobalMatchingAnalyser.cc,v 1.12 2010/10/13 15:39:42 aeverett Exp $
+// $Id: GlobalMatchingAnalyser.cc,v 1.13 2010/10/14 18:19:15 aeverett Exp $
 //
 //
 
@@ -482,11 +482,23 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
     if(staTrack.isAvailable() && tkTrack.isAvailable()) {
       h_muon_refit->Fill(0);
       CandidateContainer result = build(staTrack,tkTrack);
-      LogTrace("MatchAnalyzer") << "                        Found "<< result.size() << " GLBMuons from one STACand with chi2/DoF " << result.front()->trajectory()->chiSquared()/result.front()->trajectory()->ndof() << " from a sta with an etaFlip? " << etaFliped;
+      LogTrace("MatchAnalyzer") << 
+	"                        Found "<< result.size() << " GLBMuons from one STACand \n" << 
+	"                           with chi2/DoF " << result.front()->trajectory()->chiSquared()/result.front()->trajectory()->ndof() << 
+	"                           from a sta with an etaFlip? " << etaFliped;
       if(result.size()) {
 	h_muon_refit->Fill(1);
 	h_muon_refit_chi2->Fill(result.front()->trajectory()->chiSquared()/result.front()->trajectory()->ndof());
       }
+
+      for( CandidateContainer::const_iterator it = result.begin(); it != result.end(); ++it) {
+	if ( (*it)->trajectory() ) delete (*it)->trajectory();
+	if ( (*it)->trackerTrajectory() ) delete (*it)->trackerTrajectory();
+	if ( *it ) delete (*it);
+      }
+      result.clear();  
+      
+
     }
     
     //////////////////////////////
