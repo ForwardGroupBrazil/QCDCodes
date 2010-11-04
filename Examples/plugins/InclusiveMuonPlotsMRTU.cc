@@ -80,116 +80,124 @@ class InclusiveMuonPlotsMRTU: public edm::EDAnalyzer {
 
 /// Constructor
 InclusiveMuonPlotsMRTU::InclusiveMuonPlotsMRTU(const edm::ParameterSet& pset):
-    muons_(pset.getParameter<edm::InputTag>("muons")),
-    selector_(pset.getParameter<std::string>("selection")),
-    primaryVertices_(pset.getParameter<edm::InputTag>("primaryVertices")),
-    luminosity(0) // by default, we don't have luminosity info
+  muons_(pset.getParameter<edm::InputTag>("muons")),
+  selector_(pset.getParameter<std::string>("selection")),
+  primaryVertices_(pset.getParameter<edm::InputTag>("primaryVertices")),
+  luminosity(0) // by default, we don't have luminosity info
 {
-    edm::Service<TFileService> fs;
-
-    TFileDirectory md = fs->mkdir("metadata");
-    TDirectory *md_dir = md.cd();
-    md_dir->WriteTObject(new TObjString(muons_.encode().c_str()), "muons");
-    md_dir->WriteTObject(new TObjString(pset.getParameter<std::string>("selection").c_str()), "selection");
-
-    book(*fs, pset, "p"); 
-    book(*fs, pset, "pt"); 
-    book(*fs, pset, "eta"); 
-    book(*fs, pset, "phi"); 
-    book(*fs, pset, "charge"); 
-
-    book(*fs, pset, "pSta",   "p"); 
-    book(*fs, pset, "ptSta",  "pt"); 
-    book(*fs, pset, "etaSta", "eta"); 
-    book(*fs, pset, "phiSta", "phi"); 
-
-    book(*fs, pset, "dxyCoarse");
-    book(*fs, pset, "dxyFine");
-    book(*fs, pset, "dzCoarse");
-    book(*fs, pset, "dzFine");
-
-    book(*fs, pset, "pixelHits");
-    book(*fs, pset, "pixelLayers");
-    book(*fs, pset, "trackerHits");
-    book(*fs, pset, "trackerLostHitsInner",  "trackerLostHits");
-    book(*fs, pset, "trackerLostHitsMiddle", "trackerLostHits");
-    book(*fs, pset, "trackerLostHitsOuter",  "trackerLostHits");
-    book(*fs, pset, "muonHits");
-    book(*fs, pset, "muonBadHits");
-    book(*fs, pset, "globalHits");
-    book(*fs, pset, "globalMuonHits","muonHits");
-    book(*fs, pset, "trackerChi2n");
-    book(*fs, pset, "muonChi2n");
-    book(*fs, pset, "trackerChi2Rel");
-    book(*fs, pset, "muonChi2Rel");
-    book(*fs, pset, "globalChi2n");
-
-    book(*fs, pset, "deltaPt");
-    book(*fs, pset, "deltaPtn");
-
-    book(*fs, pset, "muonHitCounts", "muonHits");
-    book(*fs, pset, "muonHitCountsany", "muonHits");
-    for(size_t j =0; j<4; ++j) {
-       std::string intLabel = lexical_cast<std::string>(j+1);
-       book(*fs, pset, "muonHitCounts"+intLabel+"any", "muonStationHits");
-       book(*fs, pset, "muonHitCountsv"+intLabel, "muonStationHits");
-       book(*fs, pset, "muonHitCountsdt"+intLabel+"any", "muonStationHits");
-       book(*fs, pset, "muonHitCountscsc"+intLabel+"any", "muonStationHits");
-       book(*fs, pset, "muonHitCountsrpc"+intLabel+"any", "muonStationHits");
-       book(*fs, pset, "muonHitCountsdt"+intLabel, "muonStationHits");
-       book(*fs, pset, "muonHitCountscsc"+intLabel, "muonStationHits");
-       book(*fs, pset, "muonHitCountsrpc"+intLabel, "muonStationHits");
-    }
-    book(*fs, pset, "muonHitCountsratio","ratio");
-    book(*fs, pset, "muonHitCountsrpcratio","ratio");
-
-    book(*fs, pset, "trackIso05", "isolation");
-    book(*fs, pset, "ecalIso05",  "isolation");
-    book(*fs, pset, "hcalIso05",  "isolation");
-    book(*fs, pset, "trackIso03", "isolation");
-    book(*fs, pset, "ecalIso03",  "isolation");
-    book(*fs, pset, "hcalIso03",  "isolation");
-    book(*fs, pset, "combRelIso03", "relIso");
-    book(*fs, pset, "combRelIso05", "relIso");
-
-    book(*fs, pset, "muonStationsValid",    "muonStations");
-    book(*fs, pset, "muonStationsAny",      "muonStations");
-    book(*fs, pset, "muonStationsDTValid",  "muonStations");
-    book(*fs, pset, "muonStationsDTAny",    "muonStations");
-    book(*fs, pset, "muonStationsCSCValid", "muonStations");
-    book(*fs, pset, "muonStationsCSCAny",   "muonStations");
-    book(*fs, pset, "muonStationsRPCValid", "muonStations");
-    book(*fs, pset, "muonStationsRPCAny",   "muonStations");
-    book(*fs, pset, "numberOfChambers",     "segmentMatches");
-    book(*fs, pset, "segmentMatchesArb_MaxDepth","segmentMatches"); 
-    book(*fs, pset, "segmentMatchesArb",    "segmentMatches"); 
-    book(*fs, pset, "segmentMatchesArb_1",  "bool"); 
-    book(*fs, pset, "segmentMatchesArb_2",  "bool"); 
-    book(*fs, pset, "segmentMatchesArb_3",  "bool"); 
-    book(*fs, pset, "segmentMatchesArb_4",  "bool"); 
-    book(*fs, pset, "segmentMatchesNoArb",  "segmentMatches"); 
-    book(*fs, pset, "segmentMatchesNoArb_1","bool"); 
-    book(*fs, pset, "segmentMatchesNoArb_2","bool"); 
-    book(*fs, pset, "segmentMatchesNoArb_3","bool"); 
-    book(*fs, pset, "segmentMatchesNoArb_4","bool"); 
-    book(*fs, pset, "segmentMatchesFailArb","segmentMatches"); 
-    book(*fs, pset, "segmentCompatArb",     "segmentCompat"); 
-    book(*fs, pset, "segmentCompatNoArb",   "segmentCompat"); 
-    book(*fs, pset, "caloCompat",           "caloCompat"); 
-
-    book(*fs, pset, "TMLastStationLoose", "bool");
-
-    book(*fs, pset, "prodz", "z"); 
-    book(*fs, pset, "prodr", "r");
-    book(*fs, pset, "prodd", "r");
-    book2d(*fs,pset,"prodrz","rz");
-
-    if (pset.existsAs<edm::InputTag>("normalization")) {
-        normalization_ = pset.getParameter<edm::InputTag>("normalization");
-        luminosity = fs->make<TH1D>("normalization", "normalization", 1, 0, 1);
-        luminosity->Sumw2();
-    }
-
+  edm::Service<TFileService> fs;
+  
+  TFileDirectory md = fs->mkdir("metadata");
+  TDirectory *md_dir = md.cd();
+  md_dir->WriteTObject(new TObjString(muons_.encode().c_str()), "muons");
+  md_dir->WriteTObject(new TObjString(pset.getParameter<std::string>("selection").c_str()), "selection");
+  
+  book(*fs, pset, "p"); 
+  book(*fs, pset, "pt"); 
+  book(*fs, pset, "eta"); 
+  book(*fs, pset, "phi"); 
+  book(*fs, pset, "charge"); 
+  
+  book(*fs, pset, "pSta",   "p"); 
+  book(*fs, pset, "ptSta",  "pt"); 
+  book(*fs, pset, "etaSta", "eta"); 
+  book(*fs, pset, "phiSta", "phi"); 
+  
+  book(*fs, pset, "dxyCoarse");
+  book(*fs, pset, "dxyFine");
+  book(*fs, pset, "dzCoarse");
+  book(*fs, pset, "dzFine");
+  
+  book(*fs, pset, "pixelHits");
+  book(*fs, pset, "pixelLayers");
+  book(*fs, pset, "trackerHits");
+  book(*fs, pset, "trackerLostHitsInner",  "trackerLostHits");
+  book(*fs, pset, "trackerLostHitsMiddle", "trackerLostHits");
+  book(*fs, pset, "trackerLostHitsOuter",  "trackerLostHits");
+  book(*fs, pset, "muonHits");
+  book(*fs, pset, "muonBadHits");
+  book(*fs, pset, "globalHits");
+  book(*fs, pset, "globalMuonHits","muonHits");
+  book(*fs, pset, "trackerChi2n");
+  book(*fs, pset, "muonChi2n");
+  book(*fs, pset, "trackerChi2Rel");
+  book(*fs, pset, "muonChi2Rel");
+  book(*fs, pset, "globalChi2n");
+  book(*fs, pset, "chi2LocalPosition");
+  book(*fs, pset, "chi2LocalMomentum");
+  book(*fs, pset, "localDistance");
+  book(*fs, pset, "globalDeltaEtaPhi");
+  book(*fs, pset, "tightMatch","bool");
+  book(*fs, pset, "glbTrackProbability");
+  book2d(*fs, pset, "chi2LocalPositionlocalDistance","chi2ld");
+  book2d(*fs, pset, "chi2LocalMomentumlocalDistance","chi2mld");
+  
+  book(*fs, pset, "deltaPt");
+  book(*fs, pset, "deltaPtn");
+  
+  book(*fs, pset, "muonHitCounts", "muonHits");
+  book(*fs, pset, "muonHitCountsany", "muonHits");
+  for(size_t j =0; j<4; ++j) {
+    std::string intLabel = lexical_cast<std::string>(j+1);
+    book(*fs, pset, "muonHitCounts"+intLabel+"any", "muonStationHits");
+    book(*fs, pset, "muonHitCountsv"+intLabel, "muonStationHits");
+    book(*fs, pset, "muonHitCountsdt"+intLabel+"any", "muonStationHits");
+    book(*fs, pset, "muonHitCountscsc"+intLabel+"any", "muonStationHits");
+    book(*fs, pset, "muonHitCountsrpc"+intLabel+"any", "muonStationHits");
+    book(*fs, pset, "muonHitCountsdt"+intLabel, "muonStationHits");
+    book(*fs, pset, "muonHitCountscsc"+intLabel, "muonStationHits");
+    book(*fs, pset, "muonHitCountsrpc"+intLabel, "muonStationHits");
+  }
+  book(*fs, pset, "muonHitCountsratio","ratio");
+  book(*fs, pset, "muonHitCountsrpcratio","ratio");
+  
+  book(*fs, pset, "trackIso05", "isolation");
+  book(*fs, pset, "ecalIso05",  "isolation");
+  book(*fs, pset, "hcalIso05",  "isolation");
+  book(*fs, pset, "trackIso03", "isolation");
+  book(*fs, pset, "ecalIso03",  "isolation");
+  book(*fs, pset, "hcalIso03",  "isolation");
+  book(*fs, pset, "combRelIso03", "relIso");
+  book(*fs, pset, "combRelIso05", "relIso");
+  
+  book(*fs, pset, "muonStationsValid",    "muonStations");
+  book(*fs, pset, "muonStationsAny",      "muonStations");
+  book(*fs, pset, "muonStationsDTValid",  "muonStations");
+  book(*fs, pset, "muonStationsDTAny",    "muonStations");
+  book(*fs, pset, "muonStationsCSCValid", "muonStations");
+  book(*fs, pset, "muonStationsCSCAny",   "muonStations");
+  book(*fs, pset, "muonStationsRPCValid", "muonStations");
+  book(*fs, pset, "muonStationsRPCAny",   "muonStations");
+  book(*fs, pset, "numberOfChambers",     "segmentMatches");
+  book(*fs, pset, "segmentMatchesArb_MaxDepth","segmentMatches"); 
+  book(*fs, pset, "segmentMatchesArb",    "segmentMatches"); 
+  book(*fs, pset, "segmentMatchesArb_1",  "bool"); 
+  book(*fs, pset, "segmentMatchesArb_2",  "bool"); 
+  book(*fs, pset, "segmentMatchesArb_3",  "bool"); 
+  book(*fs, pset, "segmentMatchesArb_4",  "bool"); 
+  book(*fs, pset, "segmentMatchesNoArb",  "segmentMatches"); 
+  book(*fs, pset, "segmentMatchesNoArb_1","bool"); 
+  book(*fs, pset, "segmentMatchesNoArb_2","bool"); 
+  book(*fs, pset, "segmentMatchesNoArb_3","bool"); 
+  book(*fs, pset, "segmentMatchesNoArb_4","bool"); 
+  book(*fs, pset, "segmentMatchesFailArb","segmentMatches"); 
+  book(*fs, pset, "segmentCompatArb",     "segmentCompat"); 
+  book(*fs, pset, "segmentCompatNoArb",   "segmentCompat"); 
+  book(*fs, pset, "caloCompat",           "caloCompat"); 
+  
+  book(*fs, pset, "TMLastStationLoose", "bool");
+  
+  book(*fs, pset, "prodz", "z"); 
+  book(*fs, pset, "prodr", "r");
+  book(*fs, pset, "prodd", "r");
+  book2d(*fs,pset,"prodrz","rz");
+  
+  if (pset.existsAs<edm::InputTag>("normalization")) {
+    normalization_ = pset.getParameter<edm::InputTag>("normalization");
+    luminosity = fs->make<TH1D>("normalization", "normalization", 1, 0, 1);
+    luminosity->Sumw2();
+  }
+  
 }
 
 /// Destructor
@@ -289,17 +297,15 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
             plots["pSta"  ]->Fill(mu.outerTrack()->p());
             plots["ptSta" ]->Fill(mu.outerTrack()->pt());
             plots["etaSta"]->Fill(mu.outerTrack()->eta());
-            plots["phiSta"]->Fill(mu.outerTrack()->phi());	
-            plots["muonHits"]->Fill(mu.outerTrack()->numberOfValidHits());
-            plots["muonChi2n"]->Fill(mu.outerTrack()->normalizedChi2());
+            plots["phiSta"]->Fill(mu.outerTrack()->phi());
 	    if ( ( mu.outerTrack()->extra().isAvailable()   ) && 
-                 ( mu.outerTrack()->recHitsSize() > 0       ) &&
-                 ( mu.outerTrack()->recHit(0).isAvailable() )     ) {
-	      plots["muonBadHits"]->Fill(mu.outerTrack()->recHitsSize() - mu.outerTrack()->numberOfValidHits());	
-	      
+		 ( mu.outerTrack()->recHitsSize() > 0       ) &&
+		 ( mu.outerTrack()->recHit(0).isAvailable() )     ){
+	      plots["muonHits"]->Fill(mu.outerTrack()->numberOfValidHits());
+	      plots["muonBadHits"]->Fill(mu.outerTrack()->recHitsSize() - mu.outerTrack()->numberOfValidHits());
+	      plots["muonChi2n"]->Fill(mu.outerTrack()->normalizedChi2());
 	    }
-
-	    if(mu.hasUserInt("muonStations")) {	
+	    if(mu.hasUserInt("muonStations")) {	      
 	      plots["muonStationsAny"  ]->Fill(mu.userInt("muonStations:any"));
 	      plots["muonStationsValid"  ]->Fill(mu.userInt("muonStations"));
 	      plots["muonStationsDTAny"  ]->Fill(mu.userInt("muonStations:dtAny"));
@@ -343,6 +349,14 @@ void InclusiveMuonPlotsMRTU::analyze(const edm::Event & event, const edm::EventS
 	if(mu.isQualityValid()) {
 	  plots["muonChi2Rel"]->Fill(mu.combinedQuality().staRelChi2);
 	  plots["trackerChi2Rel"]->Fill(mu.combinedQuality().trkRelChi2);
+	  plots["chi2LocalPosition"]->Fill(mu.combinedQuality().chi2LocalPosition);
+	  plots["chi2LocalMomentum"]->Fill(mu.combinedQuality().chi2LocalMomentum);
+	  plots["localDistance"]->Fill(mu.combinedQuality().localDistance);
+	  plots["globalDeltaEtaPhi"]->Fill(mu.combinedQuality().globalDeltaEtaPhi);
+	  plots["tightMatch"]->Fill(mu.combinedQuality().tightMatch);
+	  plots["glbTrackProbability"]->Fill(mu.combinedQuality().glbTrackProbability);
+	  plots["chi2LocalPositionlocalDistance"]->Fill(mu.combinedQuality().chi2LocalPosition,mu.combinedQuality().localDistance);
+	  plots["chi2LocalMomentumlocalDistance"]->Fill(mu.combinedQuality().chi2LocalMomentum,mu.combinedQuality().localDistance);
 	}
 
         if (mu.isIsolationValid()) {

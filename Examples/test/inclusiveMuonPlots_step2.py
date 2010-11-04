@@ -42,7 +42,7 @@ parser.add_option("--RR", "--rebin-ratio", dest="rebinRatio", action="store_true
 parser.add_option("-C", "--cut", dest="plotCut", action="store_true", help="add a plot of the cut efficiency vs cut value")
 parser.add_option("-O", "--overflow", dest="showOverflow", action="store_true", help="add overflows and underflows to the two outermost bins")
 parser.add_option("-c", "--composite", dest="composite", type="string", help="compose reference histogram by stacking up different subhistograms")
-parser.add_option("--prelim", dest="prelim", type="string", default="CMS Preliminary", metavar="TEXT", help="Put a preliminary banner 'TEXT' on the plots.")
+parser.add_option("--prelim", dest="prelim", type="string", default="", metavar="TEXT", help="Put a preliminary banner 'TEXT' on the plots.")
 parser.add_option("--legend", dest="legend", type="string", metavar="FILE", help="Read legend from FILE")
 parser.add_option("-p", "--pdf", "--print", dest="pdf",  action="store_true", help="Print also pdf plots")
 

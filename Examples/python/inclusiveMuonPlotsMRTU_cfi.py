@@ -37,6 +37,12 @@ def makeInclusiveMuonPlots(rebinFactor=1):
         globalChi2nBins  = _evenBins(0, 20, 0.2 * rebinFactor),
         trackerChi2RelBins  = _evenBins(0, 4, 0.2 * rebinFactor),
         muonChi2RelBins  = _evenBins(0, 20, 0.2 * rebinFactor),
+        chi2LocalPositionBins = _nBins(100,0.,0.01),
+        chi2LocalMomentumBins = _nBins(100,0,100),
+        localDistanceBins = _nBins(100,0,100),
+        globalDeltaEtaPhiBins = _nBins(100,0,1.),
+        glbTrackProbabilityBins = _nBins(100,0,100),
+        
         # ---- Isolation ----
         isolationBins = _evenBins(0,  5, .25  * rebinFactor),
         relIsoBins    = _evenBins(0, .5, .025 * rebinFactor),
@@ -52,6 +58,14 @@ def makeInclusiveMuonPlots(rebinFactor=1):
         rzXRange = cms.vdouble(-500.,500.),
         rzYBins = cms.uint32(500),
         rzYRange = cms.vdouble(0.,500.),
+        chi2ldXBins = cms.uint32(100),
+        chi2ldXRange = cms.vdouble(0.,0.01),
+        chi2ldYBins = cms.uint32(100),
+        chi2ldYRange = cms.vdouble(0.,100.),
+        chi2mldXBins = cms.uint32(100),
+        chi2mldXRange = cms.vdouble(0.,500.),
+        chi2mldYBins = cms.uint32(100),
+        chi2mldYRange = cms.vdouble(0.,100.),
         # ---- ----
         boolBins = _nBins(2,-0.5,1.5),
         deltaPtBins = _evenBins( -50., 50., 2 * rebinFactor),
