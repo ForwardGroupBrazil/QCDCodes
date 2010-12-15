@@ -29,6 +29,8 @@
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 
 #include "PhysicsTools/HepMCCandAlgos/interface/GenParticlesHelper.h"
+#include "CommonTools/CandUtils/interface/AddFourMomenta.h"
+#include "DataFormats/Candidate/interface/CompositeCandidate.h"
 
 #include <TH1.h>
 #include <TH2.h>
@@ -69,7 +71,7 @@ class InclusiveMuonPlotsGENSIM: public edm::EDAnalyzer {
     private:
         edm::InputTag muons_;
         edm::InputTag particleSrc_;
-  //edm::InputTag dilepton_src_;
+        edm::InputTag dilepton_src_;
         StringCutObjectSelector<reco::GenParticle> selector_;
         StringCutObjectSelector<pat::Muon> selectorReco_;
 
@@ -83,8 +85,9 @@ class InclusiveMuonPlotsGENSIM: public edm::EDAnalyzer {
         TH1D *luminosity;
         int mother_;
         int daughter_;
+        int daughterStatus_;
         double weight_;
-        double eta_acc;
+        double eta_acc1, eta_acc2;
         double pt_acc1, pt_acc2;
 };
 
@@ -93,15 +96,17 @@ InclusiveMuonPlotsGENSIM::InclusiveMuonPlotsGENSIM(const edm::ParameterSet& pset
 
     muons_(pset.getParameter<edm::InputTag>("muons")),
     particleSrc_(pset.getParameter<edm::InputTag>("particleSrc")),
-    //dilepton_src_(pset.getParameter<edm::InputTag>("dilepton_src")),
+    dilepton_src_(pset.getParameter<edm::InputTag>("dilepton_src")),
     selector_(pset.getParameter<std::string>("selection")),
     selectorReco_(pset.getParameter<std::string>("selectionReco")),
     primaryVertices_(pset.getParameter<edm::InputTag>("primaryVertices")),
     luminosity(0), // by default, we don't have luminosity info
     mother_(pset.getUntrackedParameter<int>("mother",23)),
     daughter_(pset.getUntrackedParameter<int>("daughter",13)),
+    daughterStatus_(pset.getUntrackedParameter<int>("daughterStatus",1)),
     weight_(pset.getUntrackedParameter<double>("weight",1.0)),
-    eta_acc(pset.getUntrackedParameter<double>("eta_acc",2.1)),
+    eta_acc1(pset.getUntrackedParameter<double>("eta_acc1",2.1)),
+    eta_acc2(pset.getUntrackedParameter<double>("eta_acc2",2.1)),
     pt_acc1(pset.getUntrackedParameter<double>("pt_acc1",10.)),
     pt_acc2(pset.getUntrackedParameter<double>("pt_acc2",6.))
 {
@@ -121,6 +126,13 @@ InclusiveMuonPlotsGENSIM::InclusiveMuonPlotsGENSIM(const edm::ParameterSet& pset
     book(*fs, pset, "charge"); 
     book(*fs, pset, "pdg"); 
     book(*fs, pset, "mass");
+
+    book(*fs, pset, "massGenZ_init","mass");
+    book(*fs, pset, "massGenDiMu_init","mass");
+    book(*fs, pset, "massGenZ_reco","mass");
+    book(*fs, pset, "massGenDiMu_reco","mass");
+    book(*fs, pset, "massGenZ_acc","mass");
+    book(*fs, pset, "massGenDiMu_acc","mass");
 
     book(*fs, pset, "prodz", "z"); 
     book(*fs, pset, "prodr", "r"); 
@@ -214,9 +226,15 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
     Handle<View<reco::Muon> > muons;
     event.getByLabel(muons_, muons);
     
-    //Handle<reco::CompositeCandidateView> dileptons;
-    //event.getByLabel(dilepton_src_, dileptons);
-
+    edm::Handle<reco::CompositeCandidateView> dileptons;
+    event.getByLabel(dilepton_src_, dileptons);
+    
+    if (!dileptons.isValid())
+      edm::LogWarning("DileptonHandleInvalid") << "tried to get " << dilepton_src_ << " and failed!";
+    else {
+      //edm::LogWarning("DileptonHandleInvalid") << "tried to get " << dilepton_src_ << " and succeeded! " << dileptons->size();
+    }
+    
     Handle<vector<reco::Vertex> > vertices;
     event.getByLabel(primaryVertices_, vertices);
     int k =0;
@@ -254,52 +272,83 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
     //std::cout << " nZs " << allStatus3Zs.size() << std::endl;
     for( IGR iZ=allStatus3Zs.begin(); iZ!=allStatus3Zs.end(); ++iZ) {
 
-      if (!selector_(**iZ)) continue;
-
       // look for all status 3 (stable) descendents of mother status 3 
       reco::GenParticleRefVector descendents;
-      findDescendents( *iZ, descendents, 3,daughter_);
+      findDescendents( *iZ, descendents, daughterStatus_,daughter_);
       //std::cout << "  daughters " << descendents.size() << std::endl;
 
-      for(IGR igr = descendents.begin(); 
-	  igr!= descendents.end(); ++igr ) {
-	plots["p"  ]->Fill((*igr)->p(),weight_);
-	plots["pt" ]->Fill((*igr)->pt(),weight_);
-	plots["eta"]->Fill((*igr)->eta(),weight_);
-	plots["phi"]->Fill((*igr)->phi(),weight_);
-	plots["charge"]->Fill((*igr)->charge(),weight_);
-	plots["pdg"]->Fill((*igr)->pdgId(),weight_);
-	
-	plots["prodz"]->Fill((*igr)->vz(),weight_);
-	float r = sqrt((*igr)->vx()*(*igr)->vx() + (*igr)->vy()*(*igr)->vy());
-	float d = sqrt((*igr)->vx()*(*igr)->vx() + (*igr)->vy()*(*igr)->vy() + (*igr)->vz()*(*igr)->vz());
-	plots["prodr"]->Fill(r,weight_);
-	plots["prodd"]->Fill(d,weight_);
-	((TH2D*)(plots["prodrz"]))->Fill((*igr)->vz(),r,weight_);
-	((TH2D*)(plots["pteta"]))->Fill((*igr)->eta(),(*igr)->pt(),weight_);
-	((TH2D*)(plots["peta"]))->Fill((*igr)->eta(),(*igr)->p(),weight_);
+      plots["massGenZ_init"]->Fill((*iZ)->mass(),weight_);
+
+      reco::CompositeCandidate comp;
+      if(descendents.size() >= 2) {
+	comp.addDaughter( *descendents[0] );
+	comp.addDaughter( *descendents[1] );
+      }
+      AddFourMomenta addP4;
+      addP4.set( comp );
+
+      plots["massGenDiMu_init"]->Fill(comp.mass(),weight_);
+
+      if(dileptons->size()>0) {
+	plots["massGenZ_reco"]->Fill(comp.mass(),weight_);
+	plots["massGenDiMu_reco"]->Fill((*iZ)->mass(),weight_);
       }
 
+      //if (!selector_(**iZ)) continue;
+      //if (!selector_(comp)) continue;
+      if (!selector_(comp)) {
+	for(IGR igr = descendents.begin(); 
+	    igr!= descendents.end(); ++igr ) {
+	  plots["p"  ]->Fill((*igr)->p(),weight_);
+	  plots["pt" ]->Fill((*igr)->pt(),weight_);
+	  plots["eta"]->Fill((*igr)->eta(),weight_);
+	  plots["phi"]->Fill((*igr)->phi(),weight_);
+	  plots["charge"]->Fill((*igr)->charge(),weight_);
+	  plots["pdg"]->Fill((*igr)->pdgId(),weight_);
+	  
+	  plots["prodz"]->Fill((*igr)->vz(),weight_);
+	  float r = sqrt((*igr)->vx()*(*igr)->vx() + (*igr)->vy()*(*igr)->vy());
+	  float d = sqrt((*igr)->vx()*(*igr)->vx() + (*igr)->vy()*(*igr)->vy() + (*igr)->vz()*(*igr)->vz());
+	  plots["prodr"]->Fill(r,weight_);
+	  plots["prodd"]->Fill(d,weight_);
+	  ((TH2D*)(plots["prodrz"]))->Fill((*igr)->vz(),r,weight_);
+	  ((TH2D*)(plots["pteta"]))->Fill((*igr)->eta(),(*igr)->pt(),weight_);
+	  ((TH2D*)(plots["peta"]))->Fill((*igr)->eta(),(*igr)->p(),weight_);
+	} //for all daughters
+      } //if combined candidate passes selection
+      
       if(descendents.size() >= 2) {
 	LogTrace("ZPMRTU")<<"   Daughter 0 " << descendents[0]->eta() << " " << descendents[0]->pt();
 	LogTrace("ZPMRTU")<<"   Daughter 1 " << descendents[1]->eta() << " " << descendents[1]->pt();
-	if( ! ( (abs(descendents[0]->eta()) < eta_acc && abs(descendents[1]->eta()) < eta_acc)
-		&&  ( (descendents[0]->pt()>pt_acc1 && descendents[1]->pt()>pt_acc2) || (descendents[0]->pt()>pt_acc2 && descendents[1]->pt()>pt_acc1) ) ) ) continue;
-	LogTrace("ZPMRTU")<<"      *** Passes Acceoptance";
-	for(IGR igr = descendents.begin(); 
-	    igr!= descendents.end(); ++igr ) {
-	  plots["p_acc"  ]->Fill((*igr)->p(),weight_);
-	  plots["pt_acc" ]->Fill((*igr)->pt(),weight_);
-	  plots["eta_acc"]->Fill((*igr)->eta(),weight_);
-	  plots["phi_acc"]->Fill((*igr)->phi(),weight_);
-	  ((TH2D*)(plots["pteta_acc"]))->Fill((*igr)->eta(),(*igr)->pt(),weight_);
-	  ((TH2D*)(plots["peta_acc"]))->Fill((*igr)->eta(),(*igr)->p(),weight_);
-	}
-      }
-    }
-
+	if( ! ( ( (abs(descendents[0]->eta()) < eta_acc1 && 
+		   (descendents[0]->pt()>pt_acc1 ) && 
+		   abs(descendents[1]->eta()) < eta_acc2) &&
+		  (descendents[1]->pt() > pt_acc2 )) ||
+		( (abs(descendents[1]->eta()) < eta_acc1 && 
+		   (descendents[1]->pt()>pt_acc1 ) && 
+		   abs(descendents[0]->eta()) < eta_acc2) &&
+		  (descendents[0]->pt() > pt_acc2 )) ) ) { 
+	  
+	  LogTrace("ZPMRTU")<<"      *** Passes Acceptance";
+	  plots["massGenZ_acc"]->Fill(comp.mass(),weight_);
+	  plots["massGenDiMu_acc"]->Fill((*iZ)->mass(),weight_);
+	  if (!selector_(comp)) {
+	    for(IGR igr = descendents.begin(); 
+		igr!= descendents.end(); ++igr ) {
+	      plots["p_acc"  ]->Fill((*igr)->p(),weight_);
+	      plots["pt_acc" ]->Fill((*igr)->pt(),weight_);
+	      plots["eta_acc"]->Fill((*igr)->eta(),weight_);
+	      plots["phi_acc"]->Fill((*igr)->phi(),weight_);
+	      ((TH2D*)(plots["pteta_acc"]))->Fill((*igr)->eta(),(*igr)->pt(),weight_);
+	      ((TH2D*)(plots["peta_acc"]))->Fill((*igr)->eta(),(*igr)->p(),weight_);
+	    } //for all accepted daughters
+	  } //if combined candidate passes selection
+	} //if daughters pass acceptance
+      } //if there are at least 2 daughters
+    } //for all Z
     
-    foreach (const reco::Muon &recomu, *muons) {
+    /*
+      foreach (const reco::Muon &recomu, *muons) {
       // we want to make a pat::Muon so that we can access directly muonID in the cuts
       const pat::Muon &mu = (typeid(recomu) == typeid(pat::Muon) ? static_cast<const pat::Muon &>(recomu) : pat::Muon(recomu));
       
@@ -307,15 +356,15 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
       if (! mu.genParticleRef().isAvailable()) continue;
       //if (! selector_(*mu.genParticleRef())) continue;
       
-      /*
-	plots["p_reco"  ]->Fill(mu.p(),weight_);
-	plots["pt_reco" ]->Fill(mu.pt(),weight_);
-	plots["eta_reco"]->Fill(mu.eta(),weight_);
-	plots["phi_reco"]->Fill(mu.phi(),weight_);
-	((TH2D*)(plots["pteta_reco"]))->Fill(mu.eta(),mu.pt(),weight_);
-	((TH2D*)(plots["peta_reco"]))->Fill(mu.eta(),mu.p(),weight_);	
-      */
-
+      
+      //plots["p_reco"  ]->Fill(mu.p(),weight_);
+      //plots["pt_reco" ]->Fill(mu.pt(),weight_);
+      //plots["eta_reco"]->Fill(mu.eta(),weight_);
+      //plots["phi_reco"]->Fill(mu.phi(),weight_);
+      //((TH2D*)(plots["pteta_reco"]))->Fill(mu.eta(),mu.pt(),weight_);
+      //((TH2D*)(plots["peta_reco"]))->Fill(mu.eta(),mu.p(),weight_);	
+      
+      
       plots["p_reco"  ]->Fill(mu.genParticleRef()->p(),weight_);
       plots["pt_reco" ]->Fill(mu.genParticleRef()->pt(),weight_);
       plots["eta_reco"]->Fill(mu.genParticleRef()->eta(),weight_);
@@ -324,8 +373,8 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
       ((TH2D*)(plots["peta_reco"]))->Fill(mu.genParticleRef()->eta(),mu.genParticleRef()->p(),weight_);	
       
       }
+    */
     
-
 }
 
 void InclusiveMuonPlotsGENSIM::endLuminosityBlock(const edm::LuminosityBlock & iLumi, const edm::EventSetup & iSetup) 
