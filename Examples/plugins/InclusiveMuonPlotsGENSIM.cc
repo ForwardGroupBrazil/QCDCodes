@@ -276,27 +276,25 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
       reco::GenParticleRefVector descendents;
       findDescendents( *iZ, descendents, daughterStatus_,daughter_);
       //std::cout << "  daughters " << descendents.size() << std::endl;
-
+      LogTrace("ZPMRTU") << " Z mass " << (*iZ)->mass();
       plots["massGenZ_init"]->Fill((*iZ)->mass(),weight_);
 
       reco::CompositeCandidate comp;
       if(descendents.size() >= 2) {
 	comp.addDaughter( *descendents[0] );
 	comp.addDaughter( *descendents[1] );
+
       }
+
       AddFourMomenta addP4;
       addP4.set( comp );
-
+      LogTrace("ZPMRTU") << " DiMu mass " << comp.mass();
       plots["massGenDiMu_init"]->Fill(comp.mass(),weight_);
 
-      if(dileptons->size()>0) {
-	plots["massGenZ_reco"]->Fill(comp.mass(),weight_);
-	plots["massGenDiMu_reco"]->Fill((*iZ)->mass(),weight_);
-      }
-
+      LogTrace("ZPMRTU") << " RecoMuons";
       //if (!selector_(**iZ)) continue;
       //if (!selector_(comp)) continue;
-      if (!selector_(comp)) {
+      if (selector_(comp)) {
 	for(IGR igr = descendents.begin(); 
 	    igr!= descendents.end(); ++igr ) {
 	  plots["p"  ]->Fill((*igr)->p(),weight_);
@@ -317,22 +315,32 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
 	} //for all daughters
       } //if combined candidate passes selection
       
+
       if(descendents.size() >= 2) {
 	LogTrace("ZPMRTU")<<"   Daughter 0 " << descendents[0]->eta() << " " << descendents[0]->pt();
 	LogTrace("ZPMRTU")<<"   Daughter 1 " << descendents[1]->eta() << " " << descendents[1]->pt();
-	if( ! ( ( (abs(descendents[0]->eta()) < eta_acc1 && 
-		   (descendents[0]->pt()>pt_acc1 ) && 
-		   abs(descendents[1]->eta()) < eta_acc2) &&
-		  (descendents[1]->pt() > pt_acc2 )) ||
-		( (abs(descendents[1]->eta()) < eta_acc1 && 
-		   (descendents[1]->pt()>pt_acc1 ) && 
-		   abs(descendents[0]->eta()) < eta_acc2) &&
-		  (descendents[0]->pt() > pt_acc2 )) ) ) { 
+
+	if(  ( 
+	       ( (abs(descendents[0]->eta()) < eta_acc1 && 
+		  descendents[0]->pt()>pt_acc1 ) && 
+		 (abs(descendents[1]->eta()) < eta_acc2 &&
+		  descendents[1]->pt() > pt_acc2 ) ) 
+	       ||
+	       ( (abs(descendents[1]->eta()) < eta_acc1 && 
+		  descendents[1]->pt()>pt_acc1 ) && 
+		 (abs(descendents[0]->eta()) < eta_acc2 &&
+		  descendents[0]->pt() > pt_acc2 ) ) 
+	       ) ) { 
 	  
 	  LogTrace("ZPMRTU")<<"      *** Passes Acceptance";
-	  plots["massGenZ_acc"]->Fill(comp.mass(),weight_);
-	  plots["massGenDiMu_acc"]->Fill((*iZ)->mass(),weight_);
-	  if (!selector_(comp)) {
+	  plots["massGenDiMu_acc"]->Fill(comp.mass(),weight_);
+	  plots["massGenZ_acc"]->Fill((*iZ)->mass(),weight_);
+	  if(dileptons->size()>0) {
+	    plots["massGenDiMu_reco"]->Fill(comp.mass(),weight_);
+	    plots["massGenZ_reco"]->Fill((*iZ)->mass(),weight_);
+	  }
+	  if (selector_(comp)) {
+	    LogTrace("ZPMRTU")<<"        *** Passes Composite Selection";
 	    for(IGR igr = descendents.begin(); 
 		igr!= descendents.end(); ++igr ) {
 	      plots["p_acc"  ]->Fill((*igr)->p(),weight_);
@@ -342,38 +350,15 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
 	      ((TH2D*)(plots["pteta_acc"]))->Fill((*igr)->eta(),(*igr)->pt(),weight_);
 	      ((TH2D*)(plots["peta_acc"]))->Fill((*igr)->eta(),(*igr)->p(),weight_);
 	    } //for all accepted daughters
+	    //LogTrace("ZPMRTU")<<"  done with for all accepted daughters";
 	  } //if combined candidate passes selection
+	  //LogTrace("ZPMRTU")<<"    done with if combined passes selection";
 	} //if daughters pass acceptance
+	//LogTrace("ZPMRTU")<<"    done with daughters pass acceptance";
       } //if there are at least 2 daughters
+      //LogTrace("ZPMRTU")<<"    done with at least 2 daughters";
     } //for all Z
-    
-    /*
-      foreach (const reco::Muon &recomu, *muons) {
-      // we want to make a pat::Muon so that we can access directly muonID in the cuts
-      const pat::Muon &mu = (typeid(recomu) == typeid(pat::Muon) ? static_cast<const pat::Muon &>(recomu) : pat::Muon(recomu));
-      
-      if (! selectorReco_(mu)) continue;
-      if (! mu.genParticleRef().isAvailable()) continue;
-      //if (! selector_(*mu.genParticleRef())) continue;
-      
-      
-      //plots["p_reco"  ]->Fill(mu.p(),weight_);
-      //plots["pt_reco" ]->Fill(mu.pt(),weight_);
-      //plots["eta_reco"]->Fill(mu.eta(),weight_);
-      //plots["phi_reco"]->Fill(mu.phi(),weight_);
-      //((TH2D*)(plots["pteta_reco"]))->Fill(mu.eta(),mu.pt(),weight_);
-      //((TH2D*)(plots["peta_reco"]))->Fill(mu.eta(),mu.p(),weight_);	
-      
-      
-      plots["p_reco"  ]->Fill(mu.genParticleRef()->p(),weight_);
-      plots["pt_reco" ]->Fill(mu.genParticleRef()->pt(),weight_);
-      plots["eta_reco"]->Fill(mu.genParticleRef()->eta(),weight_);
-      plots["phi_reco"]->Fill(mu.genParticleRef()->phi(),weight_);
-      ((TH2D*)(plots["pteta_reco"]))->Fill(mu.genParticleRef()->eta(),mu.genParticleRef()->pt(),weight_);
-      ((TH2D*)(plots["peta_reco"]))->Fill(mu.genParticleRef()->eta(),mu.genParticleRef()->p(),weight_);	
-      
-      }
-    */
+    //LogTrace("ZPMRTU")<<"    done with for all Z";    
     
 }
 
