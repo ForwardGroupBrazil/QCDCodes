@@ -13,7 +13,7 @@
 //
 // Original Author:  Adam Everett
 //         Created:  Fri Dec 18 12:47:08 CST 2009
-// $Id: GlobalMatchingAnalyser.cc,v 1.13 2010/10/14 18:19:15 aeverett Exp $
+// $Id: GlobalMatchingAnalyser.cc,v 1.14 2010/11/03 20:59:11 aeverett Exp $
 //
 //
 
@@ -170,6 +170,10 @@ private:
 
   TH1F *h_sta_pt, *h_sta_p, *h_sta_rho, *h_sta_R, *h_sta_cut, *h_sta_etaFlip, *h_sta_etaFlip1, *h_muon_steps, *h_muon_refit, *h_muon_refit_chi2;
 
+  TH1F *h_sta_updated, *h_muon_type;
+
+  TH1F *h_sta_rho_outer, *h_sta_R_outer;
+
   TH2F *h_distance_loc_chi2_muHit;
   TH2F *h_distance_loc_chi2_tkHit;
   TH2F *h_distance_loc_chi2_tksurf;
@@ -203,6 +207,8 @@ private:
   int   theMuonHitsOption;
   TrackTransformer* theTrackTransformer;
 
+  bool fixForFlip;
+
 };
 
 //
@@ -233,6 +239,8 @@ GlobalMatchingAnalyser::GlobalMatchingAnalyser(const edm::ParameterSet& iConfig)
   theSTACollectionLabel = iConfig.getParameter<edm::InputTag>("staLabel");
 
   useAll = iConfig.getParameter<int>("useAll");
+
+  fixForFlip = iConfig.getUntrackedParameter<bool>("fixForFlip",false);
 
   classif_ = iConfig.getParameter<edm::InputTag>("classification");
 
@@ -431,14 +439,19 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
     const reco::TrackRef staTrack = ( iMuon->isStandAloneMuon() ) ? 
       iMuon->outerTrack() : TrackRef();
 
+    h_muon_type->Fill(0);
+    if(iMuon->isGlobalMuon()) h_muon_type->Fill(1);
+    if(iMuon->isTrackerMuon()) h_muon_type->Fill(2);
+    if(iMuon->isStandAloneMuon()) h_muon_type->Fill(3);
+    reco::TrackRef staTrackForRegion = staTrack;
     //////////////////////////////
     //
     // Special (temporary) selection
     //
     //////////////////////////////
-    bool good = (!iMuon->isGlobalMuon() && iMuon->isTrackerMuon() && iMuon->isStandAloneMuon());
-    if( !good ) continue;
-    LogTrace("MatchAnalyzer") <<"     Passes selection";
+    //bool good = true; //(!iMuon->isGlobalMuon() && iMuon->isTrackerMuon() && iMuon->isStandAloneMuon());
+    //if( !good ) continue;
+    //LogTrace("MatchAnalyzer") <<"     Passes selection";
     h_muon_steps->Fill(1);
     if(glbTrack.isAvailable())  LogTrace("MatchAnalyzer") <<"                    Glb pT " << glbTrack->pt();
     if(tkTrack.isAvailable())   LogTrace("MatchAnalyzer") <<"                    Tk  pT " << tkTrack->pt();
@@ -452,11 +465,26 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       h_sta_p->Fill(staTrack->p());
       h_sta_rho->Fill(staTrack->innerMomentum().rho());
       h_sta_R->Fill(staTrack->innerMomentum().R());
+      h_sta_rho_outer->Fill(staTrack->outerMomentum().rho());
+      h_sta_R_outer->Fill(staTrack->outerMomentum().R());
+      h_sta_cut->Fill(0);
       int cut = (staTrack->pt() < 1. || staTrack->innerMomentum().rho() < 1. || staTrack->innerMomentum().R() < 2.5) ? -1 : 1;
       h_sta_cut->Fill(cut);
-
+      int cut2 = (staTrack->pt() < 1. && staTrack->innerMomentum().rho() < 1. && staTrack->innerMomentum().R() < 2.5) ? -2 : 2 ;
+      h_sta_cut->Fill(cut2);
+      
+      if(!staTrack.isNull()) {
+	bool updatedSta = iEvent.getProvenance(staTrack.id()).productInstanceName() == std::string("UpdatedAtVtx");
+	//h_sta_updated->Fill(0);
+	if(updatedSta) h_sta_updated->Fill(1);
+	else h_sta_updated->Fill(-1);
+      }
+      
+      //reco::TrackRef staTemp;
       edm::Handle<reco::TrackToTrackMap> updatedStaAssoMap;
+
       if( iEvent.getByLabel(theSTACollectionLabel.label(),updatedStaAssoMap) ) {
+
 	reco::TrackRef staUpdated;
 	reco::TrackRef staNotUpdated;
 	reco::TrackToTrackMap::const_iterator iEnd;
@@ -469,15 +497,20 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	  staUpdated = (*iii).val;
 
 	  if(staUpdated==staTrack) {
+	    LogTrace("MatchAnalyzer")<<"Checking eta flip1";
 	    int etaFlip1 = 
 	      ( (staUpdated->eta() * staNotUpdated->eta() ) < 0) ? -1 : 1;
 	    h_sta_etaFlip1->Fill(etaFlip1);
+	    LogTrace("MatchAnalyzer")<<"Checking eta flip1 " << etaFlip1;
 	    if(etaFlip1 < 0) etaFliped = true;
+	    //adam eta-flip-fix
+	    staTrackForRegion = (fixForFlip && etaFliped) ? staNotUpdated : staUpdated;
 	  }
-	}	
+	}
       }
-
     }
+
+    //////////////////aaaaaaaaaaaaa
 
     if(staTrack.isAvailable() && tkTrack.isAvailable()) {
       h_muon_refit->Fill(0);
@@ -485,7 +518,7 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       LogTrace("MatchAnalyzer") << 
 	"                        Found "<< result.size() << " GLBMuons from one STACand \n" << 
 	"                           with chi2/DoF " << result.front()->trajectory()->chiSquared()/result.front()->trajectory()->ndof() << 
-	"                           from a sta with an etaFlip? " << etaFliped;
+	"\n                           from a sta with an etaFlip? " << etaFliped;
       if(result.size()) {
 	h_muon_refit->Fill(1);
 	h_muon_refit_chi2->Fill(result.front()->trajectory()->chiSquared()/result.front()->trajectory()->ndof());
@@ -588,9 +621,9 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 				<< iSta+1 << " of " << "999" << " pT " << staTrack->pt() << " eta " << staTrack->eta() << " phi " << staTrack->phi() <<endl;
       //ADAM adding the "New" for good / bad / all
       tkPreCandColl = 
-	chooseRegionalTrackerTracks(staTrack,tkTrackCandsNew,iSta);
+	chooseRegionalTrackerTracks(staTrackForRegion,tkTrackCandsNew,iSta);
       tkPreCandCollFixed = 
-	chooseRegionalTrackerTracksFixed(staTrack,tkTrackCandsNew,iSta);
+	chooseRegionalTrackerTracksFixed(staTrackForRegion,tkTrackCandsNew,iSta);
 
       //h_nTKFixed->Fill(tkPreCandCollFixed.size());
       //h_nTKDynamic->Fill(tkPreCandColl.size());
@@ -741,7 +774,12 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
 	  //std::map<std::string, TH1*> localDir = testPlots[dirName];//LogDebug("MatchAnalyzer");
 	  
 	  localDir["h_distance"]->Fill(distance);
+	  localDir["h_distanceOverStaPt"]->Fill(distance/staTrack->pt());
+	  localDir["h_distanceOverStaP"]->Fill(distance/staTrack->p());
+	  localDir["h_distanceOverTkPt"]->Fill(distance/iTk->second->pt());
+	  localDir["h_distanceOverTkP"]->Fill(distance/iTk->second->p());
 	  localDir["h_Distance"]->Fill(Distance);
+	  //localDir["h_DistanceOverPt"]->Fill(Distance/staTrack->pt());
 	  localDir["h_chi2"]->Fill(chi2);
 	  localDir["h_loc_chi2"]->Fill(loc_chi2);
 	  localDir["h_loc_chi2_2"]->Fill(loc_chi2_2);
@@ -894,6 +932,10 @@ GlobalMatchingAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup&
       vector<TrackCand> selectedTrackerTracksFixed = theTrackMatcher->match(TrackCand((Trajectory*)(0),staTrack), tkPreCandCollFixed);
       //adam: try the local distance crap here
       //end adam
+      //successfull match here
+      
+      if(selectedTrackerTracksFixed.size()) h_muon_steps->Fill(10);
+
       for(vector<TrackCand>::const_iterator iTk=selectedTrackerTracksFixed.begin();
 	  iTk != selectedTrackerTracksFixed.end(); ++iTk) {
 	LogTrace("MatchAnalyzer") << "-----" << endl 
@@ -1065,12 +1107,16 @@ GlobalMatchingAnalyser::beginJob()
   h_sta_p = subDir.make<TH1F>("h_sta_p","STA p",100,0.,50.);
   h_sta_rho = subDir.make<TH1F>("h_sta_rho","STA #rho",100,0.,50.);
   h_sta_R = subDir.make<TH1F>("h_sta_R","STA R",100,0.,50.);
-  h_sta_cut = subDir.make<TH1F>("h_sta_cut","STA Pass Cut",3,-1.5,1.5);
-  h_sta_etaFlip = subDir.make<TH1F>("h_sta_etaFlip","#eta_{STAbefore} * #eta_{STAafter}",3,-1.5,1.5);
+  h_sta_rho_outer = subDir.make<TH1F>("h_sta_rho_outer","STA #rho_{outer}",100,0.,50.);
+  h_sta_R_outer = subDir.make<TH1F>("h_sta_R_outer","STA R_{outer}",100,0.,50.);
+  h_sta_cut = subDir.make<TH1F>("h_sta_cut","STA Pass Cut",5,-2.5,2.5);
+  h_sta_etaFlip = subDir.make<TH1F>("h_sta_etaFlip","#eta_{STAbefore} * #eta_{STAfter}",3,-1.5,1.5);
   h_sta_etaFlip1 = subDir.make<TH1F>("h_sta_etaFlip1","#eta_{STAupdated} * #eta_{STAnotUpdated}",3,-1.5,1.5);
+  h_sta_updated = subDir.make<TH1F>("h_sta_updated","STA was UpdatedAtVtx",3,-1.5,1.5);
   h_muon_steps = subDir.make<TH1F>("h_muon_steps","Muon Steps",11,-0.5,10.5);
   h_muon_refit = subDir.make<TH1F>("h_muon_refit","Refit Muon",3,-1.5,1.5);
   h_muon_refit_chi2 = subDir.make<TH1F>("h_muon_refit_chi2","Refit Muon #chi^2",100,0.,100.);
+  h_muon_type = subDir.make<TH1F>("h_muon_type","Muon isGLB, isTK, isSTA",4,-0.5,3.5);
 
   std::vector<std::string> dirName;
   dirName.push_back("matchAnalyzerMuHit");
@@ -1084,12 +1130,17 @@ GlobalMatchingAnalyser::beginJob()
     //(testPlots[dirName.front()])["h_distance_muHitNew"] = subDir2.make<TH1F>("h_distancetest","distancetest",100,0,50);
     
     (testPlots[*iDir])["h_distance"] = subDir2.make<TH1F>("h_distance","distance",100,0,50);
+    (testPlots[*iDir])["h_distanceOverStaPt"] = subDir2.make<TH1F>("h_distanceOverStaPt","distance/p_{T}^{STA}",100,0,5);
+    (testPlots[*iDir])["h_distanceOverStaP"] = subDir2.make<TH1F>("h_distanceOverStaP","distance/p^{STA}",100,0,5);
+    (testPlots[*iDir])["h_distanceOverTkPt"] = subDir2.make<TH1F>("h_distanceOverTkPt","distance/p_{T}^{TK}",100,0,5);
+    (testPlots[*iDir])["h_distanceOverTkP"] = subDir2.make<TH1F>("h_distanceOverTkP","distance/p^{TK}",100,0,5);
     (testPlots[*iDir])["h_Distance"] = subDir2.make<TH1F>("h_Distance","Distance",100,0,50);
+    //(testPlots[*iDir])["h_DistanceOverPt"] = subDir2.make<TH1F>("h_DistanceOverPt","Distance/p_{T}",100,0,5);
     (testPlots[*iDir])["h_chi2"] = subDir2.make<TH1F>("h_chi2","chi2",100,0,500);
     (testPlots[*iDir])["h_loc_chi2"] = subDir2.make<TH1F>("h_loc_chi2","loc_chi2",100,0,0.001);
     (testPlots[*iDir])["h_loc_chi2_2"] = subDir2.make<TH1F>("h_loc_chi2_2","loc_chi2_2",500,0,500.);
     (testPlots[*iDir])["h_loc_chi2_3"] = subDir2.make<TH1F>("h_loc_chi2_3","loc_chi2_3",500,0,500.);
-    (testPlots[*iDir])["h_deltaR"] = subDir2.make<TH1F>("h_deltaR","deltaR",100,0,10);
+    (testPlots[*iDir])["h_deltaR"] = subDir2.make<TH1F>("h_deltaR","deltaR",100,0,2.);
     (testPlots[*iDir])["h_distance_loc_chi2"] = subDir2.make<TH2F>("h_distance_loc_chi2"," loc_chi2 vs distance",100,0,50,100,0,500.);
     (testPlots[*iDir])["h_distance_loc_chi2_2"] = subDir2.make<TH2F>("h_distance_loc_chi2_2"," loc_chi2_2 vs distance",100,0,50,100,0,500.);
     (testPlots[*iDir])["h_distance_loc_chi2_3"] = subDir2.make<TH2F>("h_distance_loc_chi2_3"," loc_chi2_3 vs distance",100,0,50,100,0,500.);
