@@ -1,27 +1,9 @@
-// -*- C++ -*-
-//
-// Package:
-// Class:  
-// 
-/**\class
-
- Description: <one line class summary>
-
- Implementation:
-     <Notes on implementation>
-*/
-//
-// Original Author:  Nov 16 16:12 (lxplus231.cern.ch)
-//         Created:  Sun Nov 16 16:14:09 CET 2008
-// $Id: MuonHitCounter.cc,v 1.2 2010/06/07 00:13:54 aeverett Exp $
-//
-//
-
-
 // system include files
 #include <memory>
-#include <set>
-#include <ext/hash_map>
+#include <iostream>
+#include <string>
+#include <vector>
+
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -31,124 +13,91 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-
 #include "DataFormats/Common/interface/ValueMap.h"
-#include "DataFormats/Common/interface/View.h"
 
-#include "DataFormats/MuonReco/interface/Muon.h"
-#include "DataFormats/PatCandidates/interface/Muon.h"
-#include "DataFormats/MuonReco/interface/MuonCosmicCompatibility.h"
 #include "DataFormats/MuonReco/interface/MuonFwd.h"
+#include "DataFormats/MuonReco/interface/Muon.h"
+#include "DataFormats/MuonReco/interface/MuonCosmicCompatibility.h"
 
 
-#include "boost/lexical_cast.hpp"
-
-#include <boost/foreach.hpp>
-#define foreach BOOST_FOREACH
-
-using boost::lexical_cast;
-
-//
-// class decleration
 class MuonCosmicMaps : public edm::EDProducer {
-    public:
-        explicit MuonCosmicMaps(const edm::ParameterSet&);
-        ~MuonCosmicMaps();
+   public:
+      explicit MuonCosmicMaps(const edm::ParameterSet&);
+      ~MuonCosmicMaps();
 
-    private:
-        virtual void produce(edm::Event&, const edm::EventSetup&);
-
-        /// Write a ValueMap<int> in the event
-        template<typename T>
-        void writeValueMap(edm::Event &iEvent,
-                const edm::Handle<edm::View<reco::Muon> > & handle,
-                const std::vector<T> & values,
-                const std::string    & label) const ;
-
-        /// The muons
-        edm::InputTag src_;
-
-        /// Use global track instead of standalone
-        bool globalTrack_;
-        edm::InputTag inputMuonCosmicCompatibilityValueMap_;
+   private:
+      virtual void beginJob() ;
+      virtual void produce(edm::Event&, const edm::EventSetup&);
+      virtual void endJob() ;
+      
+      // ----------member data ---------------------------
+edm::InputTag src_;
+std::string result_;
 };
 
-MuonCosmicMaps::MuonCosmicMaps(const edm::ParameterSet &iConfig) :
-    src_(iConfig.getParameter<edm::InputTag>("src")),
-    globalTrack_(iConfig.getParameter<bool>("useGlobalTrack")),
-    inputMuonCosmicCompatibilityValueMap_(iConfig.getParameter<edm::InputTag>("inputMuonCosmicCompatibilityValueMap"))
+
+MuonCosmicMaps::MuonCosmicMaps(const edm::ParameterSet& iConfig)
 {
-
-    produces<edm::ValueMap<float> >("");
-    produces<edm::ValueMap<float> >("timeCompatibility");
-    produces<edm::ValueMap<float> >("backToBackCompatibility");
-    produces<edm::ValueMap<float> >("overlapCompatibility");
-    produces<edm::ValueMap<float> >("ipCompatibility");
-    produces<edm::ValueMap<float> >("vertexCompatibility");
-
+src_= iConfig.getParameter<edm::InputTag>("src");
+result_ = iConfig.getParameter<std::string>("result");
+produces<edm::ValueMap<float> >().setBranchAlias("CosmicDiscriminators");
 
 }
 
-MuonCosmicMaps::~MuonCosmicMaps() 
+
+MuonCosmicMaps::~MuonCosmicMaps()
 {
+ 
 }
 
+
+// ------------ method called to produce the data  ------------
 void
 MuonCosmicMaps::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-    edm::LogVerbatim("MuonCosmicMaps") <<"\n sono in MuonCosmicMaps !";
-
-    edm::Handle<edm::View<reco::Muon> > src; 
-    iEvent.getByLabel(src_, src);
-
-    edm::Handle<edm::ValueMap<reco::MuonCosmicCompatibility> > muonCosmicCompatibilityValueMapH_;
-    iEvent.getByLabel(inputMuonCosmicCompatibilityValueMap_.label(), muonCosmicCompatibilityValueMapH_);
-
-    std::vector<float>  comp(src->size(), 0);
-    std::vector<float>  time(src->size(), 0);
-    std::vector<float>  btob(src->size(), 0);
-    std::vector<float>  overlap(src->size(), 0);
-    std::vector<float>  ip(src->size(), 0);
-    std::vector<float>  vtx(src->size(), 0);
-
-    for (size_t i = 0, n = src->size(); i < n; ++i) {
-      const reco::Muon &mu = (*src)[i];
-      edm::RefToBase<reco::Muon> muonRef = src->refAt(i);
-      reco::TrackRef track = (globalTrack_ ? mu.globalTrack() : mu.outerTrack());
-      reco::MuonCosmicCompatibility cblock = (*muonCosmicCompatibilityValueMapH_)[muonRef];
-
-      comp[i] = cblock.cosmicCompatibility;
-      time[i] = cblock.timeCompatibility;
-      btob[i] = cblock.backToBackCompatibility;
-      overlap[i] = cblock.overlapCompatibility;
-      ip[i] = cblock.ipCompatibility;
-      vtx[i] = cblock.vertexCompatibility;
-    }
-    
-    writeValueMap(iEvent, src, comp,    "");
-    writeValueMap(iEvent, src, time,    "timeCompatibility");
-    writeValueMap(iEvent, src, btob,    "backToBackCompatibility");
-    writeValueMap(iEvent, src, overlap, "overlapCompatibility");
-    writeValueMap(iEvent, src, ip,      "ipCompatibility");
-    writeValueMap(iEvent, src, vtx,     "vertexCompatibility");
-
+  using namespace edm;
+  using namespace reco;
+  Handle<edm::ValueMap<reco::MuonCosmicCompatibility> > CosmicMap;
+  iEvent.getByLabel( src_, CosmicMap );
+  edm::Handle<reco::MuonCollection> muons;
+  iEvent.getByLabel("muons",muons);
+  std::vector<float> values;
+  values.reserve(muons->size());
+  
+  unsigned int muonIdx = 0;
+  for(reco::MuonCollection::const_iterator muon = muons->begin();
+      muon != muons->end(); ++muon) {
+    reco::MuonRef muonRef(muons, muonIdx);
+    reco::MuonCosmicCompatibility muonCosmicCompatibility = (*CosmicMap)[muonRef];
+    if(result_ == "cosmicCompatibility") values.push_back(muonCosmicCompatibility.cosmicCompatibility);
+    if(result_ == "timeCompatibility") values.push_back(muonCosmicCompatibility.timeCompatibility);
+    if(result_ == "backToBackCompatibility") values.push_back(muonCosmicCompatibility.backToBackCompatibility);
+    if(result_ == "overlapCompatibility") values.push_back(muonCosmicCompatibility.overlapCompatibility);
+    //if(result_ == "ipCompatibility") values.push_back(muonCosmicCompatibility.ipCompatibility);
+    //if(result_ == "vertexCompatibility") values.push_back(muonCosmicCompatibility.vertexCompatibility);
+    ++muonIdx;
+  }
+  
+  std::auto_ptr<edm::ValueMap<float> > out(new edm::ValueMap<float>());
+  edm::ValueMap<float>::Filler filler(*out);
+  filler.insert(muons, values.begin(), values.end());
+  filler.fill();
+  
+  // put value map into event
+  iEvent.put(out);
+  
+  
 }
 
-template<typename T>
-void
-MuonCosmicMaps::writeValueMap(edm::Event &iEvent,
-        const edm::Handle<edm::View<reco::Muon> > & handle,
-        const std::vector<T> & values,
-        const std::string    & label) const 
+// ------------ method called once each job just before starting event loop  ------------
+void 
+MuonCosmicMaps::beginJob()
 {
-    using namespace edm; 
-    using namespace std;
+}
 
-    auto_ptr<ValueMap<T> > valMap(new ValueMap<T>());
-    typename edm::ValueMap<T>::Filler filler(*valMap);
-    filler.insert(handle, values.begin(), values.end());
-    filler.fill();
-    iEvent.put(valMap, label);
+// ------------ method called once each job just after ending the event loop  ------------
+void 
+MuonCosmicMaps::endJob() {
 }
 
 //define this as a plug-in

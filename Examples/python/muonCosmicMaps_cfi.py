@@ -1,20 +1,21 @@
 import FWCore.ParameterSet.Config as cms
 
-muonCosmicMaps = cms.EDProducer("MuonCosmicMaps",
-    src = cms.InputTag("muons"),
-    useGlobalTrack = cms.bool(False), ## Use the standAlone track
-    inputMuonCosmicCompatibilityValueMap = cms.InputTag("cosmicsVeto"),
-)
+cosmicCompatibility = cms.EDProducer(
+    "MuonCosmicMaps",
+    src=cms.InputTag("cosmicsVeto"),
+    result = cms.string("cosmicCompatibility")
+    )
+timeCompatibility = cosmicCompatibility.clone(result = 'timeCompatibility')
+backToBackCompatibility = cosmicCompatibility.clone(result = 'backToBackCompatibility')
+overlapCompatibility = cosmicCompatibility.clone(result = 'overlapCompatibility')
 
-## Helper function to add this info into a pat::Muon
-def addUserData(patMuonProducer, label="muonCosmicMaps"):
-    patMuonProducer.userData.userFloats.src += [
-        cms.InputTag(label,""),
-        cms.InputTag(label,"timeCompatibility"),
-        cms.InputTag(label,"backToBackCompatibility"),
-        cms.InputTag(label,"overlapCompatibility"),
-        cms.InputTag(label,"ipCompatibility"),
-        cms.InputTag(label,"vertexCompatibility"),
-        ]
-    
-    
+cosmicCompatibilityLoader = cms.Sequence(
+    cosmicCompatibility *
+    timeCompatibility *
+    backToBackCompatibility *
+    overlapCompatibility
+    )
+
+def addUserData(patMuonProducer, labels=['cosmicCompatibility','timeCompatibility','backToBackCompatibility','overlapCompatibility']):
+    for label in labels:
+        patMuonProducer.userData.userFloats.src.append( cms.InputTag(label) )
