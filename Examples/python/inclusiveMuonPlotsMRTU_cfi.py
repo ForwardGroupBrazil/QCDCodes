@@ -1,7 +1,11 @@
 import FWCore.ParameterSet.Config as cms
 
 ## Define some utilities to declare bins easily
+##--- n bins spaced evenly in range [min, max]
 def _nBins(n,min,max): return cms.vdouble(*[min + (max-min)/n*i for i in range(n+1)])
+##--- n bins of size 1 centered on 0, 1, ... (n-1)
+def _iBins(n): return _nBins(n,-0.5,n-0.5)
+##--- even bins of size delta from min to max
 def _evenBins(min,max,delta): 
     ret = cms.vdouble(min)
     x = min
@@ -10,31 +14,9 @@ def _evenBins(min,max,delta):
         ret.append(x)
     return ret 
 
-def makeInclusiveMuonPlots(rebinFactor=1):
+def makeInclusiveMuonPlotsMRTU(rebinFactor=1):
     return cms.PSet(
-        # ---- Kinematics ----
-        ptBins = _evenBins( 0, 500, 2 * rebinFactor),
-        pBins  = _evenBins( 0, 200, 2  * rebinFactor),
-        etaBins = _evenBins( -2.6, 2.6, 0.2 * rebinFactor),
-        phiBins = _evenBins(-3.2,  3.2, 0.2 * rebinFactor),
-        chargeBins = cms.vdouble(-2,0,2),
-        # ---- Vertex ----
-        dxyFineBins = _evenBins(-0.2, 0.2, 0.005), #  50um
-        dzFineBins  = _evenBins(-0.5, 0.5, 0.010), # 100um
-        dxyCoarseBins = _evenBins( -4,  4, 0.1), # 1mm
-        dzCoarseBins  = _evenBins(-10, 10, 0.1), # 1mm
         # ---- Tracks ----
-        pixelHitsBins       = _nBins(8,0,8),
-        pixelLayersBins     = _nBins(5,0,5),
-        trackerHitsBins     = _nBins(33,0,33),
-        trackerLostHitsBins = _nBins(10,0,10),
-        muonHitsBins        = _nBins(50,0,50),
-        muonStationHitsBins = _nBins(20,0,20),
-        muonBadHitsBins     = _nBins(20,0,20),
-        globalHitsBins      = _nBins(80,0,80),
-        trackerChi2nBins = _evenBins(0, 20, 0.2 * rebinFactor),
-        muonChi2nBins    = _evenBins(0, 20, 0.2 * rebinFactor),
-        globalChi2nBins  = _evenBins(0, 20, 0.2 * rebinFactor),
         trackerChi2RelBins  = _evenBins(0, 4, 0.2 * rebinFactor),
         muonChi2RelBins  = _evenBins(0, 20, 0.2 * rebinFactor),
         chi2LocalPositionBins = _nBins(100,0.,0.01),
@@ -43,10 +25,9 @@ def makeInclusiveMuonPlots(rebinFactor=1):
         globalDeltaEtaPhiBins = _nBins(100,0,1.),
         glbTrackProbabilityBins = _nBins(100,0,100),
         
-        # ---- Isolation ----
-        isolationBins = _evenBins(0,  5, .25  * rebinFactor),
-        relIsoBins    = _evenBins(0, .5, .025 * rebinFactor),
         # ---- Muon ID ----
+        muonHitsBins        = _nBins(50,0,50),        
+        muonStationHitsBins = _nBins(20,0,20),        
         muonStationsBins    = _nBins(5,0,5), 
         segmentMatchesBins = _nBins(12,0,12),
         segmentCompatBins  = _evenBins(0, 1 + 0.1*rebinFactor, 0.1 * rebinFactor), # need one bin for ">= 1.0"
@@ -75,8 +56,8 @@ def makeInclusiveMuonPlots(rebinFactor=1):
         ratioBins = _evenBins(0.,1.2,0.1 * rebinFactor),
     )
 
-inclusiveMuonPlots = cms.EDAnalyzer("InclusiveMuonPlots",
-    makeInclusiveMuonPlots(),
+inclusiveMuonPlotsMRTU = cms.EDAnalyzer("InclusiveMuonPlotsMRTU",
+    makeInclusiveMuonPlotsMRTU(),
     muons     = cms.InputTag('muons'),
     selection = cms.string("isTrackerMuon && muonID('TMLastStationAngTight')"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),

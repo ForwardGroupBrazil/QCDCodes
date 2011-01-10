@@ -237,7 +237,7 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
     
     Handle<vector<reco::Vertex> > vertices;
     event.getByLabel(primaryVertices_, vertices);
-    int k =0;
+    //int k =0;
 
     /* //instead of looping over genParticles and looking for the mother, let's look for the mother and get the daughters
        for(reco::GenParticleCollection::const_iterator part=particles->begin(); 
