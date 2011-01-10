@@ -66,7 +66,7 @@ if options.norm.startswith("manual,"):
         sys.exit(2)
 ## For options that take multiple values, split using comma and join again
 if options.select:  options.select  = sum([i.split(",") for i in options.select],  [])
-if options.exclude: options.exclude = sum([i.split(",") for i in options.exclude], [])   
+if options.exclude: options.exclude = sum([i.split(",") for i in options.exclude], [])
 if options.selectGroup:  options.selectGroup  = sum([i.split(",") for i in options.selectGroup],  [])
 if options.excludeGroup: options.excludeGroup = sum([i.split(",") for i in options.excludeGroup], [])
 options.exts = ["png"]
@@ -108,6 +108,8 @@ prelim = None
 gratio = None ## make it global, so it doesn't get deleted
 legend = None; # list of labels
 glegend = None; # TLegend
+## last scale factor used (for integral normalization)
+gscale = 1
 
 ## === Open references ===
 if options.ref != None:
@@ -131,6 +133,7 @@ if options.composite:
             continue
         composite.append( (Name, compDir, color, "rgb(%d,%d,%d)" % (255*roocol.GetRed(), 255*roocol.GetGreen(), 255*roocol.GetBlue())) )
 
+## === Open individual components of references ===
 ##    ____  _         _                     _       _           _    __                  _   _                 
 ##   / ___|| |_ _   _| | ___       _ __ ___| | __ _| |_ ___  __| |  / _|_   _ _ __   ___| |_(_) ___  _ __  ___ 
 ##   \___ \| __| | | | |/ _ \_____| '__/ _ \ |/ _` | __/ _ \/ _` | | |_| | | | '_ \ / __| __| |/ _ \| '_ \/ __|
@@ -290,6 +293,9 @@ def addOverflowHist(histo):
         over  = histo.GetBinContent(n+1)
         histo.SetBinContent(1, histo.GetBinContent(1) + under);
         histo.SetBinContent(n, histo.GetBinContent(n) + over );
+        # then clear the overflow bins, so that integral is preserved
+        histo.SetBinContent(0,   0);
+        histo.SetBinContent(n+1, 0);
 def maybeOverflow(histo, refs):
     if options.showOverflow:
         addOverflowHist(histo)
@@ -378,11 +384,13 @@ def printHisto(name, title, subname):
 ##                                                                    
 ##   
 def normalize(hist,hdata):
+    global gscale
     hist.Sumw2();
     if options.norm == "integral":
         if (hist.Integral() != 0):  
-            scale = hdata.Integral()/hist.Integral()
+            scale = hdata.Integral(0,hdata.GetNbinsX()+1)/hist.Integral(0,hist.GetNbinsX()+1)
             hist.Scale(scale)
+            gscale = scale
             return scale
     elif options.norm == "external":
         #if externalNorm == None:
@@ -486,13 +494,13 @@ def ltCut(histo,name):
     if integ > 1e-6: hlt.Scale(1.0/integ)
     return (hlt)
 
-def getrefs(hdata, name):
+def getrefs(hdata, name, doNormalize=True):
     if dirRef != None:
         hist = dirRef.Get(name)
         if hist == None: raise RuntimeError, "Reference plot %s not found in reference file %s, dir %s" % (name, options.ref, options.refdir)
         if hist != None:
             scale = 1
-            if options.norm != None: scale = normalize(hist,hdata)
+            if doNormalize and options.norm != None: scale = normalize(hist,hdata)
             hup = hist.Clone(name+"_up")
             hdn = hist.Clone(name+"_dn")
             for b in range(1, hist.GetNbinsX()+1):
@@ -526,12 +534,12 @@ def getrefs(hdata, name):
     return None
    
 def printStats(name, histo):
-    global info;
-    ndata = histo.GetEntries();
-    info += [ "Muons: %.0f +/- %.0f" % (histo.GetEntries(), sqrt(histo.GetEntries())) ]
-    refs = getrefs(histo,name)
+    global info, gscale;
+    ndata = histo.Integral(0,histo.GetNbinsX()+1);
+    info += [ "Muons: %.0f +/- %.0f" % (ndata, sqrt(ndata)) ]
+    refs = getrefs(histo,name,doNormalize=False)
     #if refs != None : info += [ "refs %s" % (refs[0].GetName()) ]
-    if refs != None and options.norm != "integral":
+    if refs != None:
         scale = 1
         if options.norm == "external":
             normData = dirIn.Get("normalization")
@@ -543,12 +551,16 @@ def printStats(name, histo):
         elif options.norm.startswith("manual,"):
             scale = options.norm_value
             info += [ "Scale: %.4f (by hand)" % scale ]
-        nmc = refs[0].GetEntries();
+        elif options.norm == "integral":
+            scale = gscale;
+            info += [ "Scale: %.4f (from number of entries)" % scale ]
+        ## Note: when we get here, the histogram has already been normalized (it happens when it's drawn), so we scale it back up
+        #nmc = refs[0].GetEntries();
+        nmc = refs[1].Integral(0,refs[1].GetNbinsX()+1) / scale;
         try:
             ratio  = ndata/(scale*nmc);
             dratio = ratio * sqrt(1.0/ndata + 1.0/nmc);
             info += [  "Normalization: data %s %.0f +/- %.0f, mc %s %.0f +/- %.0f, ratio %.4f +/- %.4f" % ( args[1], ndata, sqrt(ndata), options.refdir, scale*nmc, scale*sqrt(nmc), ratio, dratio ) ]
-            #info += [  "nmc * scale = %.0f * %.0f = %.0f" % (scale, nmc, scale*nmc) ]
         except ValueError:
             info += [  "Normalization: data %.0f +/- %.0f, mc %.0f +/- %.0f" % ( ndata, sqrt(ndata), scale*nmc, scale*sqrt(nmc) ) ]
     if refs != None and options.composite:
@@ -590,6 +602,11 @@ def readTitles():
 
 def readLegend():
     global legend
+    if options.legend == "-":
+        legend = [ "Data", "Sim." ]
+        for (compName, compDir, compRooCol, compHtmlCol) in reversed(composite):
+            legend.append(compName)
+        return
     file = open(options.legend, "r")
     if not file: raise RuntimeError, "Can't read legend from '%s'" % options.legend
     legend = []; mlegend = {}
