@@ -4,9 +4,9 @@ import FWCore.ParameterSet.Config as cms
 
 from SUSYBSMAnalysis.Zprime2muAnalysis.Zprime2muAnalysis_cfg import process
 
-process.GlobalTag.globaltag = 'START38_V12::All' #'GR10_P_V9::All' #'GR_R_38X_V14::All' #'START38_V12::All'
-#process.source.fileNames = ['/store/user/aeverett/ExoMu101102bis//ZP750//aeverett//ZprimeSSMToMuMu_M-750_7TeV-pythia6//ZP750_PATbis//3d1d7ee1efaf83bebd1a3c5daf37c48f//pat_3_1_WtD.root',]
-process.source.fileNames = [$inputFileNames]
+process.GlobalTag.globaltag = 'START38_V13::All' #'GR10_P_V9::All' #'GR_R_38X_V14::All' #'START38_V12::All'
+process.source.fileNames = ['/store/user/aeverett/ExoMu101102bis//ZP750//aeverett//ZprimeSSMToMuMu_M-750_7TeV-pythia6//ZP750_PATbis//3d1d7ee1efaf83bebd1a3c5daf37c48f//pat_3_1_WtD.root',]
+#process.source.fileNames = [$inputFileNames]
 #process.source.fileNames = ['file:pat_185_1_Y1M.root']
 input_is_MC = True
 
@@ -54,20 +54,35 @@ process.dileptonPlots = cms.EDAnalyzer("Zprime2muAnalysisPlots",
 
 process.MuonsFromDimuons = cms.EDProducer('MuonsFromDimuons', dimuon_src = cms.InputTag('dimuons'))
 
-from UserCode.Examples.inclusiveMuonPlotsMRTU_cfi import makeInclusiveMuonPlots;
+####
+##
+## Common plots
+process.load("Configuration.StandardSequences.Reconstruction_cff")
+from MuonAnalysis.Examples.inclusiveMuonPlots_cfi import makeInclusiveMuonPlots as makeInclusiveMuonPlotsGeneral;
+process.globalMuons = cms.EDAnalyzer("InclusiveMuonPlots",
+    makeInclusiveMuonPlotsGeneral(),
+    muons     = cms.InputTag('cleanPatMuonsTriggerMatch'),
+    selection = cms.string("isGlobalMuon"),
+    onlyLeadingMuon = cms.bool(False),
+    primaryVertices = cms.InputTag("offlinePrimaryVertices"),
+)
+##
+####
+
+from UserCode.Examples.inclusiveMuonPlotsMRTU_cfi import makeInclusiveMuonPlotsMRTU;
 commonInputsLepton = cms.PSet(
     muons     = cms.InputTag('cleanPatMuonsTriggerMatch'),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
 )
 process.usedMuonsMRTU = cms.EDAnalyzer("InclusiveMuonPlotsMRTU",
-    makeInclusiveMuonPlots(),
+    makeInclusiveMuonPlotsMRTU(),
     commonInputsLepton,
     selection = cms.string(""),
 )
 process.usedMuonsMRTU.muons = 'MuonsFromDimuons'
 
 process.gMuonsMRTU = cms.EDAnalyzer("InclusiveMuonPlotsMRTU",
-    makeInclusiveMuonPlots(),
+    makeInclusiveMuonPlotsMRTU(),
     commonInputsLepton,
     selection = cms.string("isGlobalMuon")
     )
@@ -82,13 +97,14 @@ process.p3 = cms.Path(
     #adam process.dileptonPlots *
     process.usedMuonsMRTU *
     process.gMuonsMRTU *
-    process.tMuonsMRTU 
+    process.tMuonsMRTU *
+    process.globalMuons
     )
 
 ######################
 
 if input_is_MC:
-
+    
     vbtfselection = cms.string(
         'isGlobalMuon && isTrackerMuon && '+
         'track.hitPattern.numberOfValidPixelHits > 0 && ' +
@@ -117,14 +133,14 @@ if input_is_MC:
     commonInputs = cms.PSet(
         muons     = cms.InputTag('cleanPatMuonsTriggerMatch'),
         particleSrc = cms.InputTag('prunedGenSimLeptons'), #genParticles
-        dilepton_src = cms.InputTag('dyz'), #('dimuons'), #('dyz'),
+        dilepton_src = cms.InputTag('dimuons'), #('dimuons'), #('dyz'),
         primaryVertices = cms.InputTag("offlinePrimaryVertices"),
         weight = cms.untracked.double(1.0),
         eta_acc1 = cms.untracked.double(2.1),
         eta_acc2 = cms.untracked.double(2.1),
         pt_acc1 = cms.untracked.double(7.0),
         pt_acc2 = cms.untracked.double(7.0),
-        mother = cms.untracked.int32(23),
+        mother = cms.untracked.int32(32),#Z: 23, ZPrime: 32
         daughter = cms.untracked.int32(13),
         daughterStatus = cms.untracked.int32(1),
         )
@@ -143,17 +159,17 @@ if input_is_MC:
         petaYRange = cms.vdouble(0.,200.),
         petaXBins = cms.uint32(260),
         petaXRange = cms.vdouble(-2.6,2.6),
-        massBins = nBins(100,0,200.),
-        #massBins = cms.vdouble(12, 20, 30, 40, 50, 60, 70, 80, 85, 89, 93, 100, 110, 120, 150, 200, 800),
+        #massBins = nBins(100,0,200.),
+        massBins = cms.vdouble(12, 20, 30, 40, 50, 60, 70, 80, 85, 89, 93, 100, 110, 120, 150, 200, 800, 2000),
         )
-    process.allGenSim.ptBins = evenBins(0,200.,5.)
-    process.allGenSim.pBins = evenBins(0,200.,5.)
+    process.allGenSim.ptBins = evenBins(0,800.,5.)
+    process.allGenSim.pBins = evenBins(0,800.,5.)
 
 #    process.allGenSim3 = process.allGenSim.clone(
 #        selection = "status == 3"
 #        )
     process.genMuons = process.allGenSim.clone(
-        selection = " mass > 12 && mass < 800",
+        selection = " mass > 12 && mass < 2000",
         selectionReco = "isGlobalMuon && isTrackerMuon"
         )
     process.genMuonsBin1 = process.allGenSim.clone(
@@ -223,8 +239,8 @@ if input_is_MC:
 
     process.p2 = cms.Path(
         process.Zprime2muAnalysisSequence *
-        process.dyDimuons *
-        process.dyz * 
+##        process.dyDimuons *
+##        process.dyz * 
         process.allGenSim *
         process.genMuons #*
 ##         process.genMuonsBin1 *
@@ -245,7 +261,27 @@ if input_is_MC:
 ##         process.genMuonsBin16
         )
     
-########################
-#from SUSYBSMAnalysis.Zprime2muAnalysis.VBTFSelection_cff import vbtf_loose, vbtf_tight
-#process.leptons.muon_cuts = vbtf_loose + " && " + vbtf_tight
-#$outputFileName
+#######################
+##$outputFileName
+loose_cut = 'isGlobalMuon && isTrackerMuon && ' \
+            'innerTrack.pt > 7. && ' \
+            'abs(innerTrack.eta) < 2.1 && ' \
+            'abs(dB) < 0.2 && ' \
+            '(isolationR03.sumPt + isolationR03.hadEt) / innerTrack.pt < 0.3 && ' \
+            'globalTrack.hitPattern.numberOfValidTrackerHits > 10 && ' \
+            'globalTrack.hitPattern.numberOfValidPixelHits > 0 && ' \
+            'globalTrack.hitPattern.numberOfValidMuonHits > 0 && ' \
+            'numberOfMatches > 1 && ' \
+            'globalTrack.normalizedChi2 < 10 '
+
+trigger_match = ' '
+
+tight_cut = 'abs(innerTrack.eta) < 2.1 && ' \
+            'innerTrack.pt > 7. && ' \
+            'isTrackerMuon ' + trigger_match
+
+process.allDimuons.loose_cut = loose_cut
+process.allDimuons.tight_cut = tight_cut
+
+process.leptons.muon_track_for_momentum = "global"
+process.leptons.muon_cuts = loose_cut

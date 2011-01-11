@@ -1,6 +1,6 @@
 {
-   TFile *_file0 = new TFile("DYM1020/allhistos16BinsStoyan1bbis/merge.root");
-   TFile *_file1 = new TFile("DYM20/allhistos16BinsStoyan1bbis/merge.root");
+   TFile *_file0 = new TFile("zp2mu_histos.root");
+   TFile *_file1 = new TFile("zp2mu_histos.root");
 
    TString outputDir = "16BinsStoyan1a/";
 
@@ -12,7 +12,7 @@
    gStyle->SetOptTitle(0);
    
    double w1 = 0.0243614;
-   double w2 = 0.0121922;
+   double w2 = 0.; //0.0121922;
    
    //TString dirs[] = {"genMuons","genMuonsBin1","genMuonsBin2","genMuonsBin3","genMuonsBin4","genMuonsBin5","genMuonsBin6","genMuonsBin7","genMuonsBin8","genMuonsBin9","genMuonsBin10","genMuonsBin11","genMuonsBin12","genMuonsBin13","genMuonsBin14","genMuonsBin15","genMuonsBin16"};//17
    TString dirs[] = {"genMuons"};//1
