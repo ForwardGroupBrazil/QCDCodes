@@ -117,9 +117,45 @@ addClassByHits(process.patMuonsWithoutTrigger, labels=["classByHitsTMA","classBy
 #from MuonAnalysis.MuonAssociators.triggerMatcherToHLTDebug_cfi import addUserData as addTriggerMatchToHLTDebug
 #addTriggerMatchToHLTDebug(process.patMuonsWithoutTrigger) 
 
+###
+###
+###
+from RecoMuon.TrackingTools.MuonServiceProxy_cff import *
+process.muonShower = cms.EDProducer("MuonShowerInformationProducer",
+    MuonServiceProxy,
+    muonCollection = cms.InputTag("muons"),
+    trackCollection = cms.InputTag("generalTracks"),
+    ShowerInformationFillerParameters = cms.PSet(
+      MuonServiceProxy,
+
+      InputTrackCollection = cms.InputTag("generalTracks"),
+      InputMuonCollections = cms.VInputTag(cms.InputTag("globalMuons"), cms.InputTag("muons")),
+      DTRecSegmentLabel = cms.InputTag("dt1DRecHits"),
+      CSCRecSegmentLabel = cms.InputTag("csc2DRecHits"),
+      RPCRecSegmentLabel = cms.InputTag("rpcRecHits"),
+      DT4DRecSegmentLabel = cms.InputTag("dt4DSegments"),
+      CSCSegmentLabel = cms.InputTag("cscSegments"),
+
+      TrackerRecHitBuilder = cms.string('WithTrackAngle'),
+      MuonRecHitBuilder = cms.string('MuonRecHitBuilder'),
+     )
+
+)
+process.fillShower = cms.EDAnalyzer('TestShower',
+   inputMuonShowerInformationValueMap = cms.untracked.InputTag("muonShower")
+)
+process.load("UserCode.Examples.muonShowerMaps_cfi")
+from UserCode.Examples.muonShowerMaps_cfi import addUserData as addShowerInfo
+addShowerInfo(process.patMuonsWithoutTrigger)
+process.TFileService = cms.Service("TFileService",
+    fileName = cms.string('mc_zmumu.root')
+)
 process.p = cms.Path(
     process.preFilter  +
     process.recoMuFilter  +
+    (    process.muonShower*
+         process.fillShower+
+         process.muonShowerInfoLoader ) +
     process.muonClassificationByHits +
     process.muonStations +
     process.muonHitCounts +
@@ -153,3 +189,8 @@ process.out = cms.OutputModule("PoolOutputModule",
     SelectEvents = cms.untracked.PSet( SelectEvents = cms.vstring("skim_RecoMu") ),
 )
 process.e = cms.EndPath(process.out)
+
+#####
+#####
+#####
+

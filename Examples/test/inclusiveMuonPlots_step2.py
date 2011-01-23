@@ -114,8 +114,10 @@ gscale = 1
 ## === Open references ===
 if options.ref != None:
     fileRef = ROOT.TFile(options.ref)
+    print "The oprions.ref: %s %s" % (options.ref,options.refdir)
     if options.refdir == None: options.refdir = args[1]
     dirRef  = fileRef.Get(options.refdir)
+    print "The dirRef: %s %s " % (dirRef,options.refdir)
     if dirRef == None: raise RuntimeError, "Reference directory %s not found in reference file %s" % (options.refdir, options.ref)
 
 ## === Open individual components of references ===
