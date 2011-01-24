@@ -1,7 +1,5 @@
 <use name=Workspace/MuonRecoTreeUtility>
 <use name=RecoMuon/MuonXRay>
-<use name=RecoMuon/GlobalTrackingTools>
-<use name="TrackingTools/TrackRefitter">
 
 <library file="*.cc" name=WorkspaceMuonRecoTreeUtilityPlugins>
 	  <flags EDM_PLUGIN=1>

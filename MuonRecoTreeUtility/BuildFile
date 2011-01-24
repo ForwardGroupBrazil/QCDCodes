@@ -37,7 +37,6 @@
 <use name=TrackingTools/TrajectoryState>
 <use name=TrackingTools/PatternTools>
 <use name=DataFormats/TrajectoryState>
-<use name=MuonAnalysis/Examples>
 
 <use name=hepmc>
 <use name=heppdt>

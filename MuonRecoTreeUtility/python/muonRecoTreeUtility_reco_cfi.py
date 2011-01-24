@@ -5,12 +5,8 @@ from RecoMuon.MuonIsolationProducers.caloExtractorByAssociatorBlocks_cff import 
 from RecoMuon.MuonIsolationProducers.trackExtractorBlocks_cff import *
 from RecoMuon.MuonIsolationProducers.jetExtractorBlock_cff import *
 
-from RecoMuon.GlobalTrackingTools.GlobalMuonRefitter_cff import *
-from RecoMuon.TrackingTools.MuonServiceProxy_cff import *
-
-recoMuonTreeMaker = cms.EDAnalyzer(
+hltMuonTreeMaker = cms.EDAnalyzer(
     "MuonRecoTreeUtility",
-    MuonServiceProxy,
     outputFileName = cms.untracked.string("RecoMuonTree.root"),
     isRecoLevel = cms.untracked.bool(True),
     CaloExtractorPSet = cms.PSet(
@@ -28,7 +24,7 @@ recoMuonTreeMaker = cms.EDAnalyzer(
     l2MuonLabel = cms.InputTag("standAloneMuons","UpdatedAtVtx"),
     propagatorName = cms.string('SteppingHelixPropagatorAlong'),
     trackLabel = cms.InputTag("generalTracks"),
-#    MuonServiceProxy,
+
     caloCutsPSet = cms.PSet(
         ConeSizes = cms.vdouble(0.24, 0.24, 0.24, 0.24, 0.24, 
                                 0.24, 0.24, 0.24, 0.24, 0.24, 
@@ -122,27 +118,22 @@ recoMuonTreeMaker = cms.EDAnalyzer(
             cms.PSet(
                 pdgIDs = cms.vint32(13, -13),
                 label = cms.string('#mu^{+/-}')
-            ),
-            cms.PSet(
-                pdgIDs = cms.vint32(4,5,-4,-5),
-                label = cms.string('b/c')
             )),
         title = cms.string('a set of PDGids')
     ),
     # InputTag l2MuonLabel = hltL2Muons
     # InputTag muSysTransientRecHitsLabel = MuonTransientTrackingRecHitBuilderESProducer
-##     ServiceParameters = cms.PSet(
-##         Propagators = cms.untracked.vstring('SteppingHelixPropagatorAny', 
-##             'SteppingHelixPropagatorAlong', 
-##             'SteppingHelixPropagatorOpposite', 
-##             'PropagatorWithMaterial', 
-##             'PropagatorWithMaterialOpposite'),
-##         RPCLayers = cms.bool(True),
-##         UseMuonNavigation = cms.untracked.bool(True)
-##     ),
+    ServiceParameters = cms.PSet(
+        Propagators = cms.untracked.vstring('SteppingHelixPropagatorAny', 
+            'SteppingHelixPropagatorAlong', 
+            'SteppingHelixPropagatorOpposite', 
+            'PropagatorWithMaterial', 
+            'PropagatorWithMaterialOpposite'),
+        RPCLayers = cms.bool(True),
+        UseMuonNavigation = cms.untracked.bool(True)
+    ),
     triggerResults_ = cms.InputTag("TriggerResults","","HLT"),
     linkLabel = cms.InputTag("globalMuons"),
-    muonLabel = cms.InputTag("muons"),
 
     singleMuNonIsoTriggerName = cms.string('HLT_Mu15'),
     diMuNonIsoTriggerName = cms.string('HLT_DoubleMu3'),
@@ -247,27 +238,21 @@ recoMuonTreeMaker = cms.EDAnalyzer(
                     1.0, 1.0)
             )
         )
-    ),    
+    ),
     trackingParticleLabel = cms.InputTag("tpMuon"),
-    allTrackingParticleLabel = cms.InputTag("mytrackingParticles"),
-    #if TP already in event
-    #allTrackingParticleLabel = cms.InputTag('mergedtruth','MergedTrackTruth'),
     l2AssociatorName = cms.string('AssociatorByDeltaR1.0'),
     beamSpotLabel = cms.InputTag("offlineBeamSpot"),
-    vertexSource = cms.InputTag("offlinePrimaryVertices"),
 
 
     TimerLabel = cms.InputTag("hltTimer"),
 
     tpSelector_primary = cms.PSet(
-       src = cms.InputTag("mytrackingParticles"),
-       #if TP already in event
-       #src = cms.InputTag('mergedtruth', 'MergedTrackTruth'),
+       src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
        pdgId = cms.vint32(13, -13),
        tip = cms.double(3.5),
        lip = cms.double(30.0),
        minHit = cms.int32(0),
-       ptMin = cms.double(0.25),#1.5
+       ptMin = cms.double(1.5),
        minRapidity = cms.double(-2.5),
        maxRapidity = cms.double(2.5),
        signalOnly = cms.bool(True),
@@ -275,14 +260,12 @@ recoMuonTreeMaker = cms.EDAnalyzer(
        ),
 
     tpSelector_silicon = cms.PSet(
-       src = cms.InputTag("mytrackingParticles"),
-       #if TP already in event
-       #src = cms.InputTag('mergedtruth', 'MergedTrackTruth'),
+       src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
        pdgId = cms.vint32(13, -13),
        tip = cms.double(120.0),
        lip = cms.double(300.0),
        minHit = cms.int32(0),
-       ptMin = cms.double(0.25),#1.5
+       ptMin = cms.double(1.5),
        minRapidity = cms.double(-2.5),
        maxRapidity = cms.double(2.5),
        signalOnly = cms.bool(True),
@@ -290,21 +273,16 @@ recoMuonTreeMaker = cms.EDAnalyzer(
        ),
 
     tpSelector_calConversion = cms.PSet(
-       src = cms.InputTag("mytrackingParticles"),
-       #if TP already in event
-       #src = cms.InputTag('mergedtruth', 'MergedTrackTruth'),
+       src = cms.InputTag("mergedtruth", "MergedTrackTruth"),
        pdgId = cms.vint32(13, -13),
        tip = cms.double(290.0),
        lip = cms.double(560.0),
        minHit = cms.int32(0),
-       ptMin = cms.double(0.1),#1.5
+       ptMin = cms.double(1.5),
        minRapidity = cms.double(-999.5),
        maxRapidity = cms.double(999.5),
        signalOnly = cms.bool(True),
        chargedOnly = cms.bool(True)
        ),    
-    RefitterParameters = cms.PSet(
-    GlobalMuonRefitter
-    ),
 
 )

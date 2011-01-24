@@ -28,13 +28,10 @@ makeCMS1Files( TChain* ev ) {
   codef.open("test.C");
   headerf << "#include <vector>" << endl;
   headerf << "#ifdef __MAKECINT__" << endl;
-  headerf << "//#pragma link C++ class vector<vector<float> >+;" << endl;
-  headerf << "//#pragma link C++ class vector<vector<int> >+;" << endl;
+  headerf << "#pragma link C++ class vector<vector<float> >+;" << endl;
+  headerf << "#pragma link C++ class vector<vector<int> >+;" << endl;
   headerf << "#endif" << endl << endl;
   headerf << "#include \"TTree.h\"" << endl;
-  headerf << "#include \"map.h\"" << endl;
-  headerf << "#include \"utility.h\"" << endl;
-  headerf << "#include \"string.h\"" << endl;
    
   cout << "line 36" << endl;
   
@@ -77,8 +74,7 @@ makeCMS1Files( TChain* ev ) {
     string leafname(leaf->GetName());
     
     
-    if( (leaftype=="Int_t" || leaftype=="Float_t") && leafname!="_" && !(leafname.find(".first")!=string::npos) && !(leafname.find(".second")!=string::npos) ) {
-      //if( (leaftype=="Int_t" || leaftype=="Float_t") && leafname!="_" ) {
+    if( (leaftype=="Int_t" || leaftype=="Float_t") && leafname!="_" ) {
       headerf << "\ttree->SetBranchAddress(\"" << leafname
 	      << "\", &" << leafname << ");"
 	      << endl;
@@ -106,22 +102,16 @@ makeCMS1Files( TChain* ev ) {
   //now make the source file
   codef << "#include \"TH1F.h\"" << endl;
   codef << "#include \"TH2F.h\"" << endl;
-  codef << "//#include \"Math/LorentzVector.h\"" << endl;
+  codef << "#include \"Math/LorentzVector.h\"" << endl;
   codef << "#include <vector>" << endl;
-  codef << "#include \"test.h\"" << endl << endl;
+  codef << "#include \"CMS1.h\"" << endl << endl;
   codef << "int ScanTree ( TTree* tree) {" << endl << endl;
   codef << "Init(tree);" << endl;
-  codef << "  TH1F *l3TestPt = new TH1F(\"l3TestPt\",\"histogram of L3 p_{T}\",100,0,100);" << endl;
-  codef << "  TH1F *l3deltaPt = new TH1F(\"l3deltaPt\",\"histogram of L3 #Delta p_{T}\",100,-10.,10.);" << endl;
   codef << endl << "\tint nEntries = tree->GetEntries();" << endl << endl;
   codef << "\t //Event Loop" << endl;
   codef << "\tfor( int i = 0; i < nEntries; i++) {" << endl;
   codef << "\t\ttree->GetEntry(i);" << endl << endl << endl;
-  codef << "    for (int iL3 = 0; iL3 < nL3; iL3++) {" << endl;
-  codef << "      l3TestPt->Fill((*l3Pt).at(iL3));" << endl;
-  codef << "      l3deltaPt->Fill((*l2Pt).at(iL3)-(*tkTrackPt).at(iL3));" << endl;
-  codef << "    }" << endl;
-  //codef << "\t\tcout << \"//N L3: \" << nL3 << endl;" << endl;
+  codef << "\t\tcout << \"N jets: \" << hyp_njets << endl;" << endl;
   
   codef << " \t}" << endl << "\treturn 0;" << endl << "}" << endl;
   

@@ -156,14 +156,14 @@ int ScanTree ( TTree* tree, char *fileName) {
     if (iEntry%1000 == 0) cout << "Event " << iEntry << endl;
     tree->GetEntry(iEntry);
     
-    bool passL1 = true;
-//    for (int i = 0; i < nL1; i++) {
-//       //      if ((*l1Pt).at(i) + 0.01 > 7 && (*l1Quality).at(i) >= 4) {
-//       if ((*l1Pt).at(i) + 0.01 > 0 && (*l1Quality).at(i) >= 4) {
-// 	passL1 = true;
-// 	continue;
-//       }
-//     }
+    bool passL1 = false;
+    for (int i = 0; i < nL1; i++) {
+      //      if ((*l1Pt).at(i) + 0.01 > 7 && (*l1Quality).at(i) >= 4) {
+      if ((*l1Pt).at(i) + 0.01 > 0 && (*l1Quality).at(i) >= 4) {
+	passL1 = true;
+	continue;
+      }
+    }
     bool passL2 = false;
     bool passL2Iso = false;
     if (passL1) {
@@ -171,10 +171,10 @@ int ScanTree ( TTree* tree, char *fileName) {
         //      if ((*l2Pt).at(i) > 7 && abs((*l2Eta).at(i)) < 2.5) {
         if ((*l2Pt).at(i) > 0 && abs((*l2Eta).at(i)) < 2.5) {
           passL2 = true;
-	  //          if ((*l2CalIsoDeposit).at(i) < etaCalIsoDepositCut((*l2Eta).at(i))) {
-	  //passL2Iso = true;
-	  //continue;
-          //}
+          if ((*l2CalIsoDeposit).at(i) < etaCalIsoDepositCut((*l2Eta).at(i))) {
+            passL2Iso = true;
+            continue;
+          }
         }
       }
     }
@@ -190,18 +190,18 @@ int ScanTree ( TTree* tree, char *fileName) {
         }
       }
     }
-//     if (passL2Iso) {
-//       for (int i = 0; i < nL3; i++) {
-//         //        if ((*l3Pt).at(i) > 7 && fabs((*l3Eta).at(i)) < 2.5 && abs((*l3D0).at(i)) < 0.2) {
-//         if ((*l3Pt).at(i) > 0 && fabs((*l3Eta).at(i)) < 2.5 && abs((*l3D0).at(i)) < 0.2) {
-//           passL3pre = true;
-// 	  if ((*l3TrackIsoDeposit).at(i) < etaTrackIsoDepositCut((*l2Eta).at(i))) {
-// 	    passL3iso = true;
-// 	    continue;
-// 	  }
-//         }
-//       }
-//     }
+    if (passL2Iso) {
+      for (int i = 0; i < nL3; i++) {
+        //        if ((*l3Pt).at(i) > 7 && fabs((*l3Eta).at(i)) < 2.5 && abs((*l3D0).at(i)) < 0.2) {
+        if ((*l3Pt).at(i) > 0 && fabs((*l3Eta).at(i)) < 2.5 && abs((*l3D0).at(i)) < 0.2) {
+          passL3pre = true;
+	  if ((*l3TrackIsoDeposit).at(i) < etaTrackIsoDepositCut((*l2Eta).at(i))) {
+	    passL3iso = true;
+	    continue;
+	  }
+        }
+      }
+    }
 
     if (passL2) {
       double pt_L2 = findMaxPt(l2Pt);
