@@ -51,10 +51,10 @@ process.source = cms.Source("PoolSource",
 #process.load("sample_2010A")
 # qcd 0.12 * 29504866. / 10000. * 10.
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5000) )
 process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
 
-process.TFileService = cms.Service('TFileService', fileName=cms.string('inclusiveMuonPlots_MC_simple.sample_qcd.root') )
+process.TFileService = cms.Service('TFileService', fileName=cms.string('plots_simple.root') )
 
 from HLTrigger.HLTfilters.hltHighLevel_cfi import hltHighLevel
 reskim  = hltHighLevel.clone(TriggerResultsTag = cms.InputTag('TriggerResults','',''))
@@ -84,7 +84,7 @@ tight_cut = loose_cut + trigger_match
 
 from MuonAnalysis.Examples.inclusiveMuonPlots_cfi import makeInclusiveMuonPlots;
 process.globalMuons = cms.EDAnalyzer("InclusiveMuonPlots",
-    makeInclusiveMuonPlots(),
+    makeInclusiveMuonPlots(0.4,20),
     #muons     = cms.InputTag('patMuonsWithTrigger',''),
     muons     = cms.InputTag('cleanPatMuonsTriggerMatch'),
     selection = cms.string("isGlobalMuon"),
@@ -130,3 +130,32 @@ process.p = cms.Path(
     process.globalMuonsMRTU +
     process.globalMuonsMRTUVBTF    
 )
+
+process.demo = cms.EDAnalyzer('CutAnalyzer',
+  isMC = cms.untracked.bool(True),
+  CrossSection = cms.untracked.double(1.),
+  FilterEfficiency = cms.untracked.double(1.),
+  TotalNevents = cms.untracked.double(1.),
+  IntLuminosity = cms.untracked.double(1.),
+  Muon = cms.untracked.InputTag("cleanPatMuonsTriggerMatch"),
+  inspectVar = cms.untracked.string(''),
+  maxAbsDxyInit = cms.untracked.double(0.2),
+  maxAbsEtaInit = cms.untracked.double(2.1),
+  minpTInit = cms.untracked.double(20.),
+  maxRelCombIsoInit = cms.untracked.double(0.15),#0.15
+)
+
+process.pT = process.demo.clone()
+process.pT.inspectVar = 'pT'
+process.pT.minpTInit = 15. #with step 1 GeV
+process.eta = process.demo.clone()
+process.eta.inspectVar = 'eta'
+process.eta.maxAbsEtaInit = 2.4  # with step 0.1 
+process.dxy = process.demo.clone()
+process.dxy.inspectVar = 'dxy'
+process.dxy.maxAbsDxyInit = 0.25 # with step 0.02 cm
+process.relCombIso = process.demo.clone()
+process.relCombIso.inspectVar = 'relCombIso'
+process.relCombIso.maxRelCombIsoInit = 0.2 # with step 0.01 
+
+process.pCutAnalyzer = cms.Path(process.pT+process.eta+process.dxy+process.relCombIso)
