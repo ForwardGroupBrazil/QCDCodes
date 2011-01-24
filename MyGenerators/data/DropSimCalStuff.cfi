@@ -1,9 +1,0 @@
-block DropSimCalStuff= {
-  untracked vstring outputCommands = {
-               "keep *",
-               "drop EBDataFramesSorted_*_*_SimDigi",
-               "drop EEDataFramesSorted_*_*_SimDigi",
-               "drop ESDataFramesSorted_*_*_SimDigi",
-               "drop *_hcalDigis_*_SimDigi"
-     }
-   } 
