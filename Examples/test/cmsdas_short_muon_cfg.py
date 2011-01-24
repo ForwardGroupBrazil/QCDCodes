@@ -23,7 +23,8 @@ process.source = cms.Source(
     secondaryFileNames = secFiles,
     )
 readFiles.extend( [
-    '/store/relval/CMSSW_3_8_7/RelValTTbar_Tauola/GEN-SIM-RECO/START38_V13_PU_E7TeV_AVE_2_BX156-v1/0018/F0A1D986-4CFD-DF11-89B5-001A92971B62.root',    
+    '/store/mc/Fall10/DYToMuMu_M-20_CT10_TuneZ2_7TeV-powheg-pythia/GEN-SIM-RECO/START38_V12-v1/0003/00F38C7F-49CB-DF11-9110-00237DF1FFB0.root'
+    #'/store/relval/CMSSW_3_8_7/RelValTTbar_Tauola/GEN-SIM-RECO/START38_V13_PU_E7TeV_AVE_2_BX156-v1/0018/F0A1D986-4CFD-DF11-89B5-001A92971B62.root',
     ])
 
 #--- For including HLT DEBUG, usually not available ---
@@ -113,54 +114,53 @@ process.muonClassificationByHits.replace(process.classByHitsGlb, process.classBy
 addClassByHits(process.patMuonsWithoutTrigger, labels=["classByHitsTMA","classByHitsGlbPT"], extraInfo=False)
 
 #--- For including HLT DEBUG, usually not available ---
-#process.load("MuonAnalysis.MuonAssociators.triggerMatcherToHLTDebug_cfi")
-#from MuonAnalysis.MuonAssociators.triggerMatcherToHLTDebug_cfi import addUserData as addTriggerMatchToHLTDebug
-#addTriggerMatchToHLTDebug(process.patMuonsWithoutTrigger) 
+## process.load("MuonAnalysis.MuonAssociators.triggerMatcherToHLTDebug_cfi")
+## from MuonAnalysis.MuonAssociators.triggerMatcherToHLTDebug_cfi import addUserData as addTriggerMatchToHLTDebug
+## addTriggerMatchToHLTDebug(process.patMuonsWithoutTrigger) 
 
-###
-###
-###
-from RecoMuon.TrackingTools.MuonServiceProxy_cff import *
-process.muonShower = cms.EDProducer("MuonShowerInformationProducer",
-    MuonServiceProxy,
-    muonCollection = cms.InputTag("muons"),
-    trackCollection = cms.InputTag("generalTracks"),
-    ShowerInformationFillerParameters = cms.PSet(
-      MuonServiceProxy,
+#--- For including the Muon Shower Block, requires reReco in 3_8_7---
+## from RecoMuon.TrackingTools.MuonServiceProxy_cff import *
+## process.muonShower = cms.EDProducer("MuonShowerInformationProducer",
+##     MuonServiceProxy,
+##     muonCollection = cms.InputTag("muons"),
+##     trackCollection = cms.InputTag("generalTracks"),
+##     ShowerInformationFillerParameters = cms.PSet(
+##       MuonServiceProxy,
+##
+##       InputTrackCollection = cms.InputTag("generalTracks"),
+##       InputMuonCollections = cms.VInputTag(cms.InputTag("globalMuons"), cms.InputTag("muons")),
+##       DTRecSegmentLabel = cms.InputTag("dt1DRecHits"),
+##       CSCRecSegmentLabel = cms.InputTag("csc2DRecHits"),
+##       RPCRecSegmentLabel = cms.InputTag("rpcRecHits"),
+##       DT4DRecSegmentLabel = cms.InputTag("dt4DSegments"),
+##       CSCSegmentLabel = cms.InputTag("cscSegments"),
+##
+##       TrackerRecHitBuilder = cms.string('WithTrackAngle'),
+##       MuonRecHitBuilder = cms.string('MuonRecHitBuilder'),
+##      )
+##
+## )
+## process.fillShower = cms.EDAnalyzer('TestShower',
+##    inputMuonShowerInformationValueMap = cms.untracked.InputTag("muonShower")
+## )
+## process.load("UserCode.Examples.muonShowerMaps_cfi")
+## from UserCode.Examples.muonShowerMaps_cfi import addUserData as addShowerInfo
+## addShowerInfo(process.patMuonsWithoutTrigger)
+## process.TFileService = cms.Service("TFileService",
+##     fileName = cms.string('mc_zmumu.root')
+## )
 
-      InputTrackCollection = cms.InputTag("generalTracks"),
-      InputMuonCollections = cms.VInputTag(cms.InputTag("globalMuons"), cms.InputTag("muons")),
-      DTRecSegmentLabel = cms.InputTag("dt1DRecHits"),
-      CSCRecSegmentLabel = cms.InputTag("csc2DRecHits"),
-      RPCRecSegmentLabel = cms.InputTag("rpcRecHits"),
-      DT4DRecSegmentLabel = cms.InputTag("dt4DSegments"),
-      CSCSegmentLabel = cms.InputTag("cscSegments"),
-
-      TrackerRecHitBuilder = cms.string('WithTrackAngle'),
-      MuonRecHitBuilder = cms.string('MuonRecHitBuilder'),
-     )
-
-)
-process.fillShower = cms.EDAnalyzer('TestShower',
-   inputMuonShowerInformationValueMap = cms.untracked.InputTag("muonShower")
-)
-process.load("UserCode.Examples.muonShowerMaps_cfi")
-from UserCode.Examples.muonShowerMaps_cfi import addUserData as addShowerInfo
-addShowerInfo(process.patMuonsWithoutTrigger)
-process.TFileService = cms.Service("TFileService",
-    fileName = cms.string('mc_zmumu.root')
-)
 process.p = cms.Path(
     process.preFilter  +
     process.recoMuFilter  +
-    (    process.muonShower*
-         process.fillShower+
-         process.muonShowerInfoLoader ) +
+    ##     (    process.muonShower*
+    ##          process.fillShower+
+    ##          process.muonShowerInfoLoader ) +
     process.muonClassificationByHits +
     process.muonStations +
     process.muonHitCounts +
     process.cosmicCompatibilityLoader  +
-#    process.triggerMatcherToHLTDebug + 
+    ##    process.triggerMatcherToHLTDebug + 
     process.patMuonsWithTriggerSequence 
     )
 
@@ -189,8 +189,4 @@ process.out = cms.OutputModule("PoolOutputModule",
     SelectEvents = cms.untracked.PSet( SelectEvents = cms.vstring("skim_RecoMu") ),
 )
 process.e = cms.EndPath(process.out)
-
-#####
-#####
-#####
 
