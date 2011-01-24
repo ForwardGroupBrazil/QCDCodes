@@ -32,6 +32,9 @@
 #include "CommonTools/CandUtils/interface/AddFourMomenta.h"
 #include "DataFormats/Candidate/interface/CompositeCandidate.h"
 
+#include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
+#include "SUSYBSMAnalysis/Zprime2muAnalysis/src/ToConcrete.h"
+
 #include <TH1.h>
 #include <TH2.h>
 #include <TProfile.h>
@@ -276,7 +279,7 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
       reco::GenParticleRefVector descendents;
       findDescendents( *iZ, descendents, daughterStatus_,daughter_);
       //std::cout << "  daughters " << descendents.size() << std::endl;
-      LogTrace("ZPMRTU") << " Z mass " << (*iZ)->mass();
+      LogDebug("ZPMRTU") << " Z mass " << (*iZ)->mass();
       plots["massGenZ_init"]->Fill((*iZ)->mass(),weight_);
 
       reco::CompositeCandidate comp;
@@ -286,17 +289,36 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
 
       }
 
+      int a = 0;
+      LogTrace("ZPMRTU") << "all daughters";
+      for(IGR igr = descendents.begin(); 
+	  igr!= descendents.end(); ++igr ) {
+	LogTrace("ZPMRTU") << "\tdaughter " << a << " pdgID " << (*igr)->pdgId() << " eta " << (*igr)->eta() << " phi " << (*igr)->phi() << " p " << (*igr)->p() << " pt " << (*igr)->pt() << " status " << (*igr)->status();
+	  
+	  a++;
+      }
+
       AddFourMomenta addP4;
       addP4.set( comp );
-      LogTrace("ZPMRTU") << " DiMu mass " << comp.mass();
+      LogTrace("ZPMRTU") << "daughter 0 4-mom " << (*descendents[0]).p4();
+      LogTrace("ZPMRTU") << "daughter 1 4-mom " << (*descendents[1]).p4();
+      LogTrace("ZPMRTU") << "composite  4-mom " << comp.p4() << " " << comp.p4().mass();
+      LogDebug("ZPMRTU") << " DiMu mass " << comp.mass();
+      //if(comp.mass() < 200.) LogDebug("ZPMRTU") << " ***** DiMu mass " << comp.mass();
       plots["massGenDiMu_init"]->Fill(comp.mass(),weight_);
 
       LogTrace("ZPMRTU") << " RecoMuons";
       //if (!selector_(**iZ)) continue;
       //if (!selector_(comp)) continue;
       if (selector_(comp)) {
+	int a = 0;
+	LogTrace("ZPMRTU") << "passes selector(comp)";
 	for(IGR igr = descendents.begin(); 
 	    igr!= descendents.end(); ++igr ) {
+
+	  LogTrace("ZPMRTU") << "\tdaughter " << a << " pdgID " << (*igr)->pdgId() << " eta " << (*igr)->eta() << " phi " << (*igr)->phi() << " p " << (*igr)->p() << " pt " << (*igr)->pt() << " status " << (*igr)->status();
+	  a++;
+	  
 	  plots["p"  ]->Fill((*igr)->p(),weight_);
 	  plots["pt" ]->Fill((*igr)->pt(),weight_);
 	  plots["eta"]->Fill((*igr)->eta(),weight_);
@@ -333,14 +355,89 @@ void InclusiveMuonPlotsGENSIM::analyze(const edm::Event & event, const edm::Even
 	       ) ) { 
 	  
 	  LogTrace("ZPMRTU")<<"      *** Passes Acceptance";
+	  int a = 0;
+	  LogTrace("ZPMRTU") << "passes acceptance";
+	  for(IGR igr = descendents.begin(); 
+	      igr!= descendents.end(); ++igr ) {
+	    LogTrace("ZPMRTU") << "\tdaughter " << a << " pdgID " << (*igr)->pdgId() << " eta " << (*igr)->eta() << " phi " << (*igr)->phi() << " p " << (*igr)->p() << " pt " << (*igr)->pt() << " status " << (*igr)->status();
+	    a++;
+	  }
+
+
+
 	  plots["massGenDiMu_acc"]->Fill(comp.mass(),weight_);
 	  plots["massGenZ_acc"]->Fill((*iZ)->mass(),weight_);
 	  if(dileptons->size()>0) {
 	    plots["massGenDiMu_reco"]->Fill(comp.mass(),weight_);
 	    plots["massGenZ_reco"]->Fill((*iZ)->mass(),weight_);
+
+	    LogTrace("ZPMRTU") << " selected:  " << "run/lumi/event = " << event.id().run() << "/" << event.id().luminosityBlock() << "/" << event.id().event() ;
+
+	    //std::vector<std::string> role_collection = patCompCand.roles();
+	    ////LogDebug("ZP2M")<<role_collection.size();
+	    ////foreach(const std::string & str, role_collection) LogDebug("ZP2M")<<str;
+	    ////LogDebug("ZP2M")<<"nDaughter "<<patCompCand.numberOfDaughters();
+
+	    foreach (const pat::CompositeCandidate & patCompCand, *dileptons) {
+	      
+	      double cos_angle = patCompCand.daughter(0)->momentum().Dot(patCompCand.daughter(1)->momentum()) / patCompCand.daughter(0)->p() / patCompCand.daughter(1)->p();
+	      LogTrace("ZPMRTU")<< " cos_cangle " << cos_angle;
+
+	      for (size_t i = 0; i < patCompCand.numberOfDaughters(); ++i) {
+		const reco::CandidateBaseRef dau = patCompCand.daughter(i)->masterClone();
+		const pat::Muon* mu = toConcretePtr<pat::Muon>(dau);
+		//std::string role = role_collection[i];
+		
+		// do we want the selector to choose leptons or dileptons?
+		//if (!selector_(*mu)) continue;
+		
+		// basic kinematics
+		LogTrace("ZPMRTU")<< " " <<"p "   << (mu->p());
+		LogTrace("ZPMRTU")<< " " <<"pt "  << (mu->pt());
+		LogTrace("ZPMRTU")<< " " <<"eta " << (mu->eta());
+		LogTrace("ZPMRTU")<< " " <<"phi " << (mu->phi());
+		LogTrace("ZPMRTU")<< " " <<"charge " << (mu->charge());
+		LogTrace("ZPMRTU")<< " " <<"matches " << (mu->numberOfMatches());
+		
+		if (mu->innerTrack().isNonnull()) {
+		  LogTrace("ZPMRTU")<< " " <<"pixelHits "   << (mu->innerTrack()->hitPattern().numberOfValidPixelHits());
+		  LogTrace("ZPMRTU")<< " " <<"pixelLayers " << (mu->innerTrack()->hitPattern().pixelLayersWithMeasurement());
+		  LogTrace("ZPMRTU")<< " " <<"trackerHits " << (mu->innerTrack()->hitPattern().numberOfValidHits());
+		  LogTrace("ZPMRTU")<< " " <<"trackerLostHitsMiddle " << (mu->innerTrack()->hitPattern().numberOfLostHits());
+		  LogTrace("ZPMRTU")<< " " <<"trackerLostHitsInner " << (mu->innerTrack()->trackerExpectedHitsInner().numberOfLostHits());
+		  LogTrace("ZPMRTU")<< " " <<"trackerLostHitsOuter " << (mu->innerTrack()->trackerExpectedHitsOuter().numberOfLostHits());
+		  LogTrace("ZPMRTU")<< " " <<"trackerChi2n " << (mu->innerTrack()->normalizedChi2());
+		}
+		
+		if (mu->outerTrack().isNonnull()) {
+		  LogTrace("ZPMRTU")<< " " << "muonHits "<<(mu->outerTrack()->numberOfValidHits());
+		}
+		
+		if (mu->globalTrack().isNonnull()) {
+		  LogTrace("ZPMRTU")<< " " <<"globalHits "<<mu->globalTrack()->numberOfValidHits();
+		  LogTrace("ZPMRTU")<< " " <<"globalMuonHits "<<mu->globalTrack()->hitPattern().numberOfValidMuonHits();
+		  LogTrace("ZPMRTU")<< " " <<"globalChi2n "<<mu->globalTrack()->normalizedChi2();
+		}
+		if (mu->isIsolationValid()) {
+		  LogTrace("ZPMRTU")<< " " <<"combRelIso03 "<<( (mu->isolationR03().sumPt + mu->isolationR03().hadEt) / mu->innerTrack()->pt() );
+		}
+		
+
+
+	      }
+	    }
+
 	  }
+
 	  if (selector_(comp)) {
 	    LogTrace("ZPMRTU")<<"        *** Passes Composite Selection";
+	    int a = 0;
+	    LogTrace("ZPMRTU") << "passes acceptance and selector(comp)";
+	    for(IGR igr = descendents.begin(); 
+		igr!= descendents.end(); ++igr ) {
+	      LogTrace("ZPMRTU") << "\tdaughter " << a << " pdgID " << (*igr)->pdgId() << " eta " << (*igr)->eta() << " phi " << (*igr)->phi() << " p " << (*igr)->p() << " pt " << (*igr)->pt() << " status " << (*igr)->status();
+	      a++;
+	    }
 	    for(IGR igr = descendents.begin(); 
 		igr!= descendents.end(); ++igr ) {
 	      plots["p_acc"  ]->Fill((*igr)->p(),weight_);

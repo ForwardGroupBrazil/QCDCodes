@@ -4,17 +4,21 @@ import FWCore.ParameterSet.Config as cms
 
 from SUSYBSMAnalysis.Zprime2muAnalysis.Zprime2muAnalysis_cfg import process
 
-process.GlobalTag.globaltag = 'START38_V13::All' #'GR10_P_V9::All' #'GR_R_38X_V14::All' #'START38_V12::All'
-process.source.fileNames = ['/store/user/aeverett/ExoMu101102bis//ZP750//aeverett//ZprimeSSMToMuMu_M-750_7TeV-pythia6//ZP750_PATbis//3d1d7ee1efaf83bebd1a3c5daf37c48f//pat_3_1_WtD.root',]
-#process.source.fileNames = [$inputFileNames]
-#process.source.fileNames = ['file:pat_185_1_Y1M.root']
+process.GlobalTag.globaltag = 'START38_V13::All'
+
+#process.source.fileNames = ['/store/user/aeverett/ExoMu101102bis//ZP750//aeverett//ZprimeSSMToMuMu_M-750_7TeV-pythia6//ZP750_PATbis//3d1d7ee1efaf83bebd1a3c5daf37c48f//pat_3_1_WtD.root',]
+process.source.fileNames = [$inputFileNames]
+#process.source.fileNames = ['file:/home/ba01/u112/aeverett/scratch_rcac/110111Figs/pat_skim_Zmass__lowerMasses_Zmumu.root']
+#process.source.fileNames = ['file:/home/ba01/u112/aeverett/scratch_rcac/110111Figs/pat_skim_Zmass_Zpeak_Zmumu.root']
+#process.source.fileNames = ['file:/home/ba01/u112/aeverett/scratch_rcac/110111Figs/pat_skim_diMass_200up_Zmumu.root']
+#process.source.eventsToProcess = [ '1:760580','1:760611','1:526898','1:158876', ]
 input_is_MC = True
 
 ## process.MessageLogger.cerr.FwkReport.reportEvery = 1
 ## process.MessageLogger.destinations += ['AnalyzerMessages',]
 
 ## process.MessageLogger.categories   += ['ZP2M',"ZPMRTU"]
-## process.MessageLogger.debugModules += ['*',]
+## process.MessageLogger.debugModules += ['genMuonsStoyan',]
 
 ## process.MessageLogger.AnalyzerMessages = cms.untracked.PSet(
 ##    threshold  = cms.untracked.string('DEBUG'),
@@ -137,10 +141,10 @@ if input_is_MC:
         primaryVertices = cms.InputTag("offlinePrimaryVertices"),
         weight = cms.untracked.double(1.0),
         eta_acc1 = cms.untracked.double(2.1),
-        eta_acc2 = cms.untracked.double(2.1),
-        pt_acc1 = cms.untracked.double(7.0),
+        eta_acc2 = cms.untracked.double(2.4),
+        pt_acc1 = cms.untracked.double(16.0),
         pt_acc2 = cms.untracked.double(7.0),
-        mother = cms.untracked.int32(32),#Z: 23, ZPrime: 32
+        mother = cms.untracked.int32(23),#Z: 23, ZPrime: 32
         daughter = cms.untracked.int32(13),
         daughterStatus = cms.untracked.int32(1),
         )
@@ -160,20 +164,26 @@ if input_is_MC:
         petaXBins = cms.uint32(260),
         petaXRange = cms.vdouble(-2.6,2.6),
         #massBins = nBins(100,0,200.),
-        massBins = cms.vdouble(12, 20, 30, 40, 50, 60, 70, 80, 85, 89, 93, 100, 110, 120, 150, 200, 800, 2000),
+        massBins = cms.vdouble(15, 20, 30, 40, 50, 60, 76, 86, 96, 106, 120, 150, 200, 600, 2000),
         )
-    process.allGenSim.ptBins = evenBins(0,800.,5.)
-    process.allGenSim.pBins = evenBins(0,800.,5.)
+    process.allGenSim.ptBins = evenBins(0,600.,5.)
+    process.allGenSim.pBins = evenBins(0,600.,5.)
 
 #    process.allGenSim3 = process.allGenSim.clone(
 #        selection = "status == 3"
 #        )
     process.genMuons = process.allGenSim.clone(
-        selection = " mass > 12 && mass < 2000",
+        selection = " mass > 12 && mass < 600",
         selectionReco = "isGlobalMuon && isTrackerMuon"
         )
+    process.genMuonsStoyan = process.allGenSim.clone(
+        #daughterStatus = 3,
+        selection = " mass > 12 && mass < 600",
+        selectionReco = "isGlobalMuon && isTrackerMuon",
+        massBins = cms.vdouble(15,600),
+        )
     process.genMuonsBin1 = process.allGenSim.clone(
-        selection = "mass > 12 && mass < 20",
+        selection = "mass > 15 && mass < 20",
         selectionReco = "isGlobalMuon && isTrackerMuon"
         )
     process.genMuonsBin2 = process.allGenSim.clone(
@@ -193,47 +203,39 @@ if input_is_MC:
         selectionReco = "isGlobalMuon && isTrackerMuon"
         )
     process.genMuonsBin6 = process.allGenSim.clone(
-        selection = "mass > 60 && mass < 70",
+        selection = "mass > 60 && mass < 76",
         selectionReco = "isGlobalMuon && isTrackerMuon"
         )
     process.genMuonsBin7 = process.allGenSim.clone(
-        selection = "mass > 70 && mass < 80",
+        selection = "mass > 76 && mass < 86",
         selectionReco = "isGlobalMuon && isTrackerMuon"
         )
     process.genMuonsBin8 = process.allGenSim.clone(
-        selection = "mass > 80 && mass < 85",
+        selection = "mass > 86 && mass < 96",
         selectionReco = "isGlobalMuon && isTrackerMuon"
         )
     process.genMuonsBin9 = process.allGenSim.clone(
-        selection = "mass > 85 && mass < 89",
+        selection = "mass > 96 && mass < 106",
         selectionReco = "isGlobalMuon && isTrackerMuon"
         )
     process.genMuonsBin10 = process.allGenSim.clone(
-        selection = "mass > 89 && mass < 93",
+        selection = "mass > 106 && mass < 120",
         selectionReco = "isGlobalMuon && isTrackerMuon"
         )
     process.genMuonsBin11 = process.allGenSim.clone(
-        selection = "mass > 93 && mass < 100",
-        selectionReco = "isGlobalMuon && isTrackerMuon"
-        )
-    process.genMuonsBin12 = process.allGenSim.clone(
-        selection = "mass > 100 && mass < 110",
-        selectionReco = "isGlobalMuon && isTrackerMuon"
-        )
-    process.genMuonsBin13 = process.allGenSim.clone(
-        selection = "mass > 110 && mass < 120",
-        selectionReco = "isGlobalMuon && isTrackerMuon"
-        )
-    process.genMuonsBin14 = process.allGenSim.clone(
         selection = "mass > 120 && mass < 150",
         selectionReco = "isGlobalMuon && isTrackerMuon"
         )
-    process.genMuonsBin15 = process.allGenSim.clone(
+    process.genMuonsBin12 = process.allGenSim.clone(
         selection = "mass > 150 && mass < 200",
         selectionReco = "isGlobalMuon && isTrackerMuon"
         )
-    process.genMuonsBin16 = process.allGenSim.clone(
-        selection = "mass > 200 && mass < 800",
+    process.genMuonsBin13 = process.allGenSim.clone(
+        selection = "mass > 200 && mass < 600",
+        selectionReco = "isGlobalMuon && isTrackerMuon"
+        )
+    process.genMuonsBin14 = process.allGenSim.clone(
+        selection = "mass > 600 && mass < 2000",
         selectionReco = "isGlobalMuon && isTrackerMuon"
         )
 
@@ -241,8 +243,9 @@ if input_is_MC:
         process.Zprime2muAnalysisSequence *
 ##        process.dyDimuons *
 ##        process.dyz * 
-        process.allGenSim *
-        process.genMuons #*
+#adam        process.allGenSim *
+        process.genMuons *
+        process.genMuonsStoyan *
 ##         process.genMuonsBin1 *
 ##         process.genMuonsBin2 *
 ##         process.genMuonsBin3 *
@@ -250,38 +253,52 @@ if input_is_MC:
 ##         process.genMuonsBin5 *
 ##         process.genMuonsBin6 *
 ##         process.genMuonsBin7 *
-##         process.genMuonsBin8 *
+         process.genMuonsBin8 #*
 ##         process.genMuonsBin9 *
 ##         process.genMuonsBin10 *
 ##         process.genMuonsBin11 *
 ##         process.genMuonsBin12 *
 ##         process.genMuonsBin13 *
-##         process.genMuonsBin14 *
-##         process.genMuonsBin15 *
-##         process.genMuonsBin16
+##         process.genMuonsBin14
         )
     
 #######################
 ##$outputFileName
+
+trigger_match = ' && (' \
+                '!triggerObjectMatchesByPath("HLT_Mu9").empty() || ' \
+                '!triggerObjectMatchesByPath("HLT_Mu11").empty() || ' \
+                '!triggerObjectMatchesByPath("HLT_Mu15_v1").empty()' \
+                ')'
+
+## trigger_match = ' && (' \
+##                 '!triggerObjectMatchesByPath("HLT_DoubleMu3").empty() || ' \
+##                 '!triggerObjectMatchesByPath("HLT_DoubleMu3_v2").empty()  ' \
+##                 ')'
+
+
+
 loose_cut = 'isGlobalMuon && isTrackerMuon && ' \
             'innerTrack.pt > 7. && ' \
-            'abs(innerTrack.eta) < 2.1 && ' \
+            'abs(innerTrack.eta) < 2.4 && ' \
             'abs(dB) < 0.2 && ' \
-            '(isolationR03.sumPt + isolationR03.hadEt) / innerTrack.pt < 0.3 && ' \
+            '(isolationR03.sumPt + isolationR03.hadEt) / innerTrack.pt < 0.15 && ' \
             'globalTrack.hitPattern.numberOfValidTrackerHits > 10 && ' \
             'globalTrack.hitPattern.numberOfValidPixelHits > 0 && ' \
             'globalTrack.hitPattern.numberOfValidMuonHits > 0 && ' \
             'numberOfMatches > 1 && ' \
-            'globalTrack.normalizedChi2 < 10 '
-
-trigger_match = ' '
+            'globalTrack.normalizedChi2 < 10 ' # + trigger_match
+       
 
 tight_cut = 'abs(innerTrack.eta) < 2.1 && ' \
-            'innerTrack.pt > 7. && ' \
-            'isTrackerMuon ' + trigger_match
+            'innerTrack.pt > 16. ' + trigger_match
+
 
 process.allDimuons.loose_cut = loose_cut
 process.allDimuons.tight_cut = tight_cut
 
 process.leptons.muon_track_for_momentum = "global"
 process.leptons.muon_cuts = loose_cut
+#process.TFileService.fileName = "acc_skim_Zmass__lowerMasses_Zmumu.root"
+#process.TFileService.fileName = "acc_skim_Zmass_Zpeak_Zmumu.root"
+#process.TFileService.fileName = "acc_skim_diMass_200up_Zmumu.root"
