@@ -558,7 +558,7 @@ def printStats(name, histo):
             info += [ "Scale: %.4f (from number of entries)" % scale ]
         ## Note: when we get here, the histogram has already been normalized (it happens when it's drawn), so we scale it back up
         #nmc = refs[0].GetEntries();
-        nmc = refs[1].Integral(0,refs[1].GetNbinsX()+1) / scale;
+        nmc = refs[0].Integral(0,refs[1].GetNbinsX()+1) / scale;
         try:
             ratio  = ndata/(scale*nmc);
             dratio = ratio * sqrt(1.0/ndata + 1.0/nmc);

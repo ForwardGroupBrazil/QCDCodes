@@ -1,4 +1,4 @@
-DATA: Data, 0.47 nb^{-1}
+DATA: Data, 40 pb^{-1}
 REF: Simulation
 Heavy: muons from heavy flavours
 Light: muons from light hadrons

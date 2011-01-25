@@ -25,8 +25,8 @@ process.GlobalTag.globaltag = 'START38_V13::All'
 process.source = cms.Source("PoolSource",
                             fileNames = cms.untracked.vstring(
     ## Produced with MuonAnalysis/Examples/test/patSkims/patMuons_mc_cfg.py
-    'file:tupleMC.root'
-    #'/store/user/aeverett/ExoPat110120//aeverett//DYToMuMu_M-20_CT10_TuneZ2_7TeV-powheg-pythia//datamc_110120_zmumu//20967fe08cba6e46fc9680af4f6ad3bf//pat_86_1_gcK.root',
+    #'file:tupleMC.root'
+    '/store/user/aeverett/ExoPat110120//aeverett//DYToMuMu_M-20_CT10_TuneZ2_7TeV-powheg-pythia//datamc_110120_zmumu//20967fe08cba6e46fc9680af4f6ad3bf//pat_86_1_gcK.root',
     #'/store/user/tucker/InclusiveMu15/datamc_inclmu15/acbc16136637b3a76f8dd1607df2c067/pat_99_1_CJS.root'
     )
                             )
@@ -51,7 +51,10 @@ loose_cut = 'isGlobalMuon  '
 
 trigger_match = ' '
 
-tight_cut = loose_cut + trigger_match
+my_cut = ' && isTrackerMuon ' \
+         ' &&  innerTrack.pt > 20. '
+
+tight_cut = loose_cut + my_cut + trigger_match
 
 from MuonAnalysis.Examples.inclusiveMuonPlots_cfi import makeInclusiveMuonPlots;
 process.globalMuons = cms.EDAnalyzer(
