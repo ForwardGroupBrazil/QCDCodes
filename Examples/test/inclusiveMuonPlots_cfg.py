@@ -27,10 +27,8 @@ process.source = cms.Source(
     noEventSort = cms.untracked.bool(True),
     duplicateCheckMode = cms.untracked.string('noDuplicateCheck'),
     fileNames = cms.untracked.vstring(
-    '/store/user/tucker/DYToMuMu_M-20_CT10_TuneZ2_7TeV-powheg-pythia/datamc_zmumu/b4341788d83565203f0d6250b5475e6e/pat_9_1_etd.root',
-    #'/store/user/tucker/TTJets_TuneZ2_7TeV-madgraph-tauola/ttbar_merge/46b5d51805a79be16a6eb0a24eeb03e8/merged_2_1_Ggi.root',
     #'/store/user/aeverett//Mu_Pt0_500//pat_skim_101_1.root',
-    #'/store/user/aeverett//Pi_Pt2_200//pat_skim_1_1.root','/store/user/aeverett//Pi_Pt2_200//pat_skim_54_1.root','/store/user/aeverett//Pi_Pt2_200//pat_skim_84_1.root','/store/user/aeverett//Pi_Pt2_200//pat_skim_6_1.root',
+    '/store/user/aeverett//Pi_Pt2_200//pat_skim_1_1.root','/store/user/aeverett//Pi_Pt2_200//pat_skim_54_1.root','/store/user/aeverett//Pi_Pt2_200//pat_skim_84_1.root','/store/user/aeverett//Pi_Pt2_200//pat_skim_6_1.root',
     )
     )
 
@@ -49,7 +47,7 @@ def evenBins(min,max,delta):
     return ret 
 
 process.TFileService = cms.Service('TFileService',
-    fileName=cms.string('inclusiveMuonPlots_Data.test2.root')
+    fileName=cms.string('inclusiveMuonPlots_Data.test.root')
 )
 
 ###
@@ -57,13 +55,13 @@ process.TFileService = cms.Service('TFileService',
 # MuonAnalysis has general kinematic plots
 # UserCode adds more figures about hits, segments, etc.
 #from MuonAnalysis.Examples.inclusiveMuonPlots_cfi import makeInclusiveMuonPlots;
-from UserCode.Examples.inclusiveMuonPlotsMRTU_cfi import makeInclusiveMuonPlotsMRTU;
+from UserCode.Examples.inclusiveMuonPlotsMRTU_cfi import makeInclusiveMuonPlots;
 commonInputs = cms.PSet(
     muons     = cms.InputTag('patMuons'),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
 )
 process.trackerMuons = cms.EDAnalyzer("InclusiveMuonPlotsMRTU",
-    makeInclusiveMuonPlotsMRTU(),
+    makeInclusiveMuonPlots(),
     commonInputs,
     selection = cms.string("isTrackerMuon && muonID('TMLastStationAngTight')"),
 )
