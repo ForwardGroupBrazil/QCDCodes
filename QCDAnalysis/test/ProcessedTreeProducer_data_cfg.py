@@ -12,16 +12,16 @@ process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
 #process.ak5PFL1Offset.useCondDB = False
 #############   Set the number of events #############
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(1000)
+    input = cms.untracked.int32(10000)
 )
 #############   Define the source file ###############
-#process.load('UserCode.KKousour.QCDAnalysis.SkimFileNames_cfi')
+process.load('KKousour.QCDAnalysis.SkimFileNames_cfi')
 #############   Import the HLT filters ###############
-process.load('QCDAnalysis.HighPtJetAnalysis.hltFilters_cff')
+process.load('KKousour.QCDAnalysis.hltFilters_cff')
 #############   Define the source file ###############
-process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('file:/data/kkousour/JetAOD_9_1_Bh3.root')
-)
+#process.source = cms.Source("PoolSource",
+#    fileNames = cms.untracked.vstring('file:/data/kkousour/JetAOD_9_1_Bh3.root')
+#)
 ############# processed tree producer ##################
 process.TFileService = cms.Service("TFileService",fileName = cms.string('ProcessedTree_data.root'))
 
@@ -45,7 +45,7 @@ process.ak5 = cms.EDAnalyzer('ProcessedTreeProducer',
     minNCaloJets    = cms.int32(1), 
     ## trigger ##############################
     processName     = cms.string('HLT'),
-    triggerName     = cms.string('HLT_Jet110U_v1'),
+    triggerName     = cms.string('HLT_Jet110_v1'),
     triggerResults  = cms.InputTag("TriggerResults","","HLT"),
     triggerEvent    = cms.InputTag("hltTriggerSummaryAOD","","HLT"),
     ## jec services ##############################
@@ -73,7 +73,7 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     minNCaloJets    = cms.int32(1), 
     ## trigger ##############################
     processName     = cms.string('HLT'),
-    triggerName     = cms.string('HLT_Jet110U_v1'),
+    triggerName     = cms.string('HLT_Jet110_v1'),
     triggerResults  = cms.InputTag("TriggerResults","","HLT"),
     triggerEvent    = cms.InputTag("hltTriggerSummaryAOD","","HLT"),
     ## jec services ##############################
@@ -81,8 +81,8 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     calojecService  = cms.string('ak7CaloL1L2L3Residual')
 )
 
-process.path = cms.Path(process.ak5)
+process.path = cms.Path(process.hlt110v1 * process.ak5)
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 10
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 

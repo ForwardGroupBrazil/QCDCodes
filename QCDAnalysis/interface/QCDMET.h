@@ -9,9 +9,9 @@ class QCDMET
      //------------ Destructor -------------------------------
      ~QCDMET() {}
      void setVar(float fEt, float fSumEt) {et_ = fEt;sumEt_=fSumEt;} 
-     float met()         {return et_;}
-     float sumet()       {return sumEt_;}
-     float met_o_sumet() {return et_/sumEt_;}
+     float met()         const {return et_;}
+     float sumet()       const {return sumEt_;}
+     float met_o_sumet() const {return et_/sumEt_;}
      
    private:
      float et_;

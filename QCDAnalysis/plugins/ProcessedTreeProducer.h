@@ -37,6 +37,12 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
 
   private:  
     void buildTree();
+    static bool sort_calojets(QCDCaloJet j1, QCDCaloJet j2) {
+      return j1.ptCor() > j2.ptCor();
+    }
+    static bool sort_pfjets(QCDPFJet j1, QCDPFJet j2) {
+      return j1.ptCor() > j2.ptCor();
+    }
     //---- configurable parameters --------  
     bool   mIsMCarlo;
     int    mGoodVtxNdof;

@@ -10,12 +10,12 @@ class QCDCaloJet : public QCDJet {
      ~QCDCaloJet() {};
      void setVar(float femf,float ffHPD,float ffRBX,int fn90,int fnTrkCalo,int fnTrkVtx)  {emf_ =
      femf;fHPD_=ffHPD;fRBX_=ffRBX;n90hits_=fn90;nTrkCalo_=fnTrkCalo;nTrkVtx_=fnTrkVtx;}
-     float emf()      {return emf_;} 
-     float fHPD()     {return fHPD_;}
-     float fRBX()     {return fRBX_;}
-     int n90hits()    {return n90hits_;}
-     int nTrkCalo()   {return nTrkCalo_;} 
-     int nTrkVtx()    {return nTrkVtx_;}
+     float emf()    const  {return emf_;} 
+     float fHPD()   const  {return fHPD_;}
+     float fRBX()   const  {return fRBX_;}
+     int n90hits()  const  {return n90hits_;}
+     int nTrkCalo() const  {return nTrkCalo_;} 
+     int nTrkVtx()  const  {return nTrkVtx_;}
      
    private:
      float emf_;

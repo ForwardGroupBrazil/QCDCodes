@@ -70,14 +70,14 @@ void ProcessedTreeProducer::beginJob()
 {
   mTree = fs->make<TTree>("ProcessedTree","ProcessedTree");
   mEvent = new QCDEvent();
-  mTree->Branch("event","QCDEvent",&mEvent);
+  mTree->Branch("event","QCDEvent",&mEvent,50000,99);
   mEvtHdr     = new QCDEventHdr();
   mCaloMet    = new QCDMET();
   mPFMet      = new QCDMET();
-  mL1Objects  = new std::vector<QCDTriggerObj>();
-  mHLTObjects = new std::vector<QCDTriggerObj>();
-  mCaloJets   = new std::vector<QCDCaloJet>();
-  mPFJets     = new std::vector<QCDPFJet>();
+  mL1Objects  = new std::vector<QCDTriggerObj>(0);
+  mHLTObjects = new std::vector<QCDTriggerObj>(0);
+  mCaloJets   = new std::vector<QCDCaloJet>(0);
+  mPFJets     = new std::vector<QCDPFJet>(0);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::endJob() 
@@ -124,10 +124,6 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mHLTObjects->clear();
   mCaloJets->clear();
   mPFJets->clear();
-  QCDTriggerObj qcdhltobj,qcdl1obj;
-  QCDCaloJet    qcdcalojet;
-  QCDPFJet      qcdpfjet;
-  QCDMET        qcdcalomet,qcdpfmet;
   //-------------- Basic Event Info ------------------------------
   mEvtHdr->setRun(event.id().run());
   mEvtHdr->setEvt(event.id().event());
@@ -167,24 +163,24 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       assert(nI==nK);
       const size_type n(max(nI,nK));
       const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
-      if (!foundL1) { 
-        for (size_type i=0; i!=n; ++i) {
-          const TriggerObject& TO(TOC[KEYS[i]]);
-          qcdl1obj.setPt(TO.pt());
-          qcdl1obj.setEta(TO.eta());
-          qcdl1obj.setPhi(TO.phi());
-          mL1Objects->push_back(qcdl1obj);  
-        }
-        foundL1 = true;
-      }
       if (foundL1) {
+        cout<<"HLT: "<<endl; 
         for (size_type i=0; i!=n; ++i) {
           const TriggerObject& TO(TOC[KEYS[i]]);
-          qcdhltobj.setPt(TO.pt());
-          qcdhltobj.setEta(TO.eta());
-          qcdhltobj.setPhi(TO.phi());
+          QCDTriggerObj qcdhltobj((float)TO.pt(),(float)TO.eta(),(float)TO.phi());
           mHLTObjects->push_back(qcdhltobj);
+          cout<<TO.pt()<<endl;
         }
+      }
+      if (!foundL1) { 
+        cout<<"L1: "<<endl;
+        for (size_type i=0; i!=n; ++i) {
+          const TriggerObject& TO(TOC[KEYS[i]]);
+          QCDTriggerObj qcdl1obj((float)TO.pt(),(float)TO.eta(),(float)TO.phi());
+          mL1Objects->push_back(qcdl1obj);
+          cout<<TO.pt()<<endl;  
+        }
+        foundL1 = true; 
       }
     }
   }
@@ -253,6 +249,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     mPFUnc->setJetEta(i_pfjet->eta());
     mPFUnc->setJetPt(scale * i_pfjet->pt());
     double unc = mPFUnc->getUncertainty(true);
+    QCDPFJet qcdpfjet;
     qcdpfjet.setP4(i_pfjet->p4());
     qcdpfjet.setCor(scale);
     qcdpfjet.setUnc(unc);
@@ -296,6 +293,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     mCALOUnc->setJetEta(i_calojet->eta());
     mCALOUnc->setJetPt(scale * i_calojet->pt());
     double unc = mCALOUnc->getUncertainty(true);
+    QCDCaloJet qcdcalojet;
     qcdcalojet.setP4(i_calojet->p4());
     qcdcalojet.setCor(scale);
     qcdcalojet.setUnc(unc);
@@ -336,16 +334,21 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mPFMet->setVar((*pfmet)[0].et(),(*pfmet)[0].sumEt());
   mCaloMet->setVar((*calomet)[0].et(),(*calomet)[0].sumEt());
   //-------------- fill the tree -------------------------------------  
-  mEvent->setEvtHdr(mEvtHdr);
-  mEvent->setL1Obj(mL1Objects);
-  mEvent->setHLTObj(mHLTObjects);
-  mEvent->setCaloJets(mCaloJets);
-  mEvent->setPFJets(mPFJets);
-  mEvent->setCaloMET(mCaloMet);
-  mEvent->setPFMET(mPFMet);
-  if ((mEvent->nPFJets() >= mMinNPFJets) && (mEvent->nCaloJets() >= mMinNCaloJets))
+  sort(mCaloJets->begin(),mCaloJets->end(),sort_calojets);
+  sort(mPFJets->begin(),mPFJets->end(),sort_pfjets);
+  mEvent->setEvtHdr(*mEvtHdr);
+  mEvent->setCaloJets(*mCaloJets);
+  mEvent->setPFJets(*mPFJets);
+  mEvent->setCaloMET(*mCaloMet);
+  mEvent->setPFMET(*mPFMet);
+  mEvent->setL1Obj(*mL1Objects);
+  mEvent->setHLTObj(*mHLTObjects);
+  if ((mEvent->nPFJets() >= (unsigned)mMinNPFJets) && (mEvent->nCaloJets() >= (unsigned)mMinNCaloJets)) {
     mTree->Fill();
-  
+    cout<<"Found "<<mEvent->nHLTObj()<<" HLT objects and "<<mEvent->nL1Obj()<<" L1 objects"<<endl;
+    for(unsigned ll=0;ll<mEvent->nHLTObj();ll++)
+      cout<<mEvent->hltobj(ll).pt()<<endl;
+  }
   delete mPFUnc;
   delete mCALOUnc;
 }

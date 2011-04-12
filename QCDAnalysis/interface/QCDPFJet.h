@@ -10,14 +10,14 @@ class QCDPFJet : public QCDJet {
      ~QCDPFJet() {};
      void setFrac(float fchf, float fnhf, float fphf, float felf)  {chf_ = fchf; nhf_ = fnhf; phf_ = fphf; elf_ = felf;}
      void setMulti(int fchm, int fnhm, int fphm, int felm) {chm_ = fchm; nhm_ = fnhm; phm_ = fphm; elm_ = felm;}
-     float chf() {return chf_;} 
-     float nhf() {return nhf_;}
-     float phf() {return phf_;} 
-     float elf() {return elf_;}
-     int chm()   {return chm_;}
-     int nhm()   {return nhm_;}
-     int phm()   {return phm_;}
-     int elm()   {return elm_;}
+     float chf() const {return chf_;} 
+     float nhf() const {return nhf_;}
+     float phf() const {return phf_;} 
+     float elf() const {return elf_;}
+     int chm()   const {return chm_;}
+     int nhm()   const {return nhm_;}
+     int phm()   const {return phm_;}
+     int elm()   const {return elm_;}
    private:
      float chf_;
      float nhf_;
