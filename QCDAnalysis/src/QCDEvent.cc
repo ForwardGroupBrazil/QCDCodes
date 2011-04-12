@@ -31,7 +31,7 @@ void QCDEvent::setPFJets(const std::vector<QCDPFJet>& fPFJets)
   }
 }
 //---------------------------------------------------
-void QCDEvent::setL1Obj(const std::vector<QCDTriggerObj>& fL1Obj)       
+void QCDEvent::setL1Obj(const std::vector<LorentzVector>& fL1Obj)       
 {
   L1Obj_.clear();
   for(unsigned i=0;i<fL1Obj.size();i++) {
@@ -39,7 +39,7 @@ void QCDEvent::setL1Obj(const std::vector<QCDTriggerObj>& fL1Obj)
   }
 }
 //---------------------------------------------------
-void QCDEvent::setHLTObj(const std::vector<QCDTriggerObj>& fHLTObj)  
+void QCDEvent::setHLTObj(const std::vector<LorentzVector>& fHLTObj)  
 {
   HLTObj_.clear();
   for(unsigned i=0;i<fHLTObj.size();i++) {

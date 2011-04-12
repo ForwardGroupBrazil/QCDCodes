@@ -9,6 +9,7 @@
 #include "TTree.h"
 #include <vector>
 #include <cassert>
+#include <TLorentzVector.h>
 
 #include "KKousour/QCDAnalysis/plugins/ProcessedTreeProducer.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -70,14 +71,15 @@ void ProcessedTreeProducer::beginJob()
 {
   mTree = fs->make<TTree>("ProcessedTree","ProcessedTree");
   mEvent = new QCDEvent();
-  mTree->Branch("event","QCDEvent",&mEvent,50000,99);
-  mEvtHdr     = new QCDEventHdr();
-  mCaloMet    = new QCDMET();
-  mPFMet      = new QCDMET();
-  mL1Objects  = new std::vector<QCDTriggerObj>(0);
-  mHLTObjects = new std::vector<QCDTriggerObj>(0);
-  mCaloJets   = new std::vector<QCDCaloJet>(0);
-  mPFJets     = new std::vector<QCDPFJet>(0);
+  mTree->Branch("event","QCDEvent",&mEvent);
+  //delete Event;
+  //mEvtHdr     = new QCDEventHdr();
+  //mCaloMet    = new QCDMET();
+  //mPFMet      = new QCDMET();
+  //mL1Objects  = new std::vector<QCDTriggerObj>(0);
+  //mHLTObjects = new std::vector<QCDTriggerObj>(0);
+  //mCaloJets   = new std::vector<QCDCaloJet>(0);
+  //mPFJets     = new std::vector<QCDPFJet>(0);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::endJob() 
@@ -120,15 +122,22 @@ void ProcessedTreeProducer::beginRun(edm::Run const & iRun, edm::EventSetup cons
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup const& iSetup) 
 { 
+  /*
   mL1Objects->clear();
   mHLTObjects->clear();
   mCaloJets->clear();
   mPFJets->clear();
+  */
+  vector<LorentzVector> mL1Objects,mHLTObjects;
+  vector<QCDCaloJet> mCaloJets;
+  vector<QCDPFJet> mPFJets;
+  QCDEventHdr mEvtHdr; 
+  QCDMET mCaloMet,mPFMet;
   //-------------- Basic Event Info ------------------------------
-  mEvtHdr->setRun(event.id().run());
-  mEvtHdr->setEvt(event.id().event());
-  mEvtHdr->setLumi(event.luminosityBlock());
-  mEvtHdr->setBunch(event.bunchCrossing());
+  mEvtHdr.setRun(event.id().run());
+  mEvtHdr.setEvt(event.id().event());
+  mEvtHdr.setLumi(event.luminosityBlock());
+  mEvtHdr.setBunch(event.bunchCrossing());
   //-------------- Trigger Info -----------------------------------
   event.getByLabel(triggerResultsTag_,triggerResultsHandle_);
   if (!triggerResultsHandle_.isValid()) {
@@ -145,7 +154,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   const unsigned int triggerIndex(hltConfig_.triggerIndex(triggerName_));
   assert(triggerIndex == event.triggerNames(*triggerResultsHandle_).triggerIndex(triggerName_));
   const std::pair<int,int> prescales(hltConfig_.prescaleValues(event,iSetup,triggerName_));
-  mEvtHdr->setPrescales(prescales.first,prescales.second);
+  mEvtHdr.setPrescales(prescales.first,prescales.second);
   // modules on this trigger path
   const vector<string>& moduleLabels(hltConfig_.moduleLabels(triggerIndex));
   const unsigned int moduleIndex(triggerResultsHandle_->index(triggerIndex));
@@ -164,21 +173,25 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       const size_type n(max(nI,nK));
       const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
       if (foundL1) {
-        cout<<"HLT: "<<endl; 
+        //cout<<"HLT: "<<endl; 
         for (size_type i=0; i!=n; ++i) {
           const TriggerObject& TO(TOC[KEYS[i]]);
-          QCDTriggerObj qcdhltobj((float)TO.pt(),(float)TO.eta(),(float)TO.phi());
-          mHLTObjects->push_back(qcdhltobj);
-          cout<<TO.pt()<<endl;
+          TLorentzVector P4;
+          P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
+          LorentzVector qcdhltobj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
+          mHLTObjects.push_back(qcdhltobj);
+          //cout<<TO.pt()<<endl;
         }
       }
       if (!foundL1) { 
-        cout<<"L1: "<<endl;
+        //cout<<"L1: "<<endl;
         for (size_type i=0; i!=n; ++i) {
           const TriggerObject& TO(TOC[KEYS[i]]);
-          QCDTriggerObj qcdl1obj((float)TO.pt(),(float)TO.eta(),(float)TO.phi());
-          mL1Objects->push_back(qcdl1obj);
-          cout<<TO.pt()<<endl;  
+          TLorentzVector P4;
+          P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
+          LorentzVector qcdl1obj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
+          mL1Objects.push_back(qcdl1obj);
+          //cout<<TO.pt()<<endl;  
         }
         foundL1 = true; 
       }
@@ -205,18 +218,18 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       VtxGood++;
     }
   }
-  mEvtHdr->setVertices(recVtxs->size(),VtxGood);
-  mEvtHdr->setPV(isPVgood,PVndof,PVx,PVy,PVz);
+  mEvtHdr.setVertices(recVtxs->size(),VtxGood);
+  mEvtHdr.setPV(isPVgood,PVndof,PVx,PVy,PVz);
   //-------------- Generator Info -------------------------------------
   Handle<GenEventInfoProduct> hEventInfo;
   if (mIsMCarlo) { 
     event.getByLabel("generator", hEventInfo);
-    mEvtHdr->setPthat(hEventInfo->binningValues()[0]);
-    mEvtHdr->setWeight(hEventInfo->weight());
+    mEvtHdr.setPthat(hEventInfo->binningValues()[0]);
+    mEvtHdr.setWeight(hEventInfo->weight());
   } 
   else {
-    mEvtHdr->setPthat(0);
-    mEvtHdr->setWeight(0); 
+    mEvtHdr.setPthat(0);
+    mEvtHdr.setWeight(0); 
   }
   //---------------- Jets ---------------------------------------------
   mPFJEC   = JetCorrector::getJetCorrector(mPFJECservice,iSetup);
@@ -283,7 +296,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       qcdpfjet.setGen(tmpP4,0);
     }  
     if (qcdpfjet.ptCor() >= mMinPFPt)
-      mPFJets->push_back(qcdpfjet);
+      mPFJets.push_back(qcdpfjet);
   }
   //----------- CaloJets -----------------------
   for(CaloJetCollection::const_iterator i_calojet = calojets->begin(); i_calojet != calojets->end(); i_calojet++) {
@@ -323,7 +336,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       qcdcalojet.setGen(tmpP4,0);
     }
     if (qcdcalojet.ptCor() >= mMinCaloPt)
-      mCaloJets->push_back(qcdcalojet);
+      mCaloJets.push_back(qcdcalojet);
   }
     
   //---------------- met ---------------------------------------------
@@ -331,23 +344,20 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   Handle<CaloMETCollection> calomet;
   event.getByLabel("pfMet",pfmet);
   event.getByLabel("met",calomet);
-  mPFMet->setVar((*pfmet)[0].et(),(*pfmet)[0].sumEt());
-  mCaloMet->setVar((*calomet)[0].et(),(*calomet)[0].sumEt());
+  mPFMet.setVar((*pfmet)[0].et(),(*pfmet)[0].sumEt());
+  mCaloMet.setVar((*calomet)[0].et(),(*calomet)[0].sumEt());
   //-------------- fill the tree -------------------------------------  
-  sort(mCaloJets->begin(),mCaloJets->end(),sort_calojets);
-  sort(mPFJets->begin(),mPFJets->end(),sort_pfjets);
-  mEvent->setEvtHdr(*mEvtHdr);
-  mEvent->setCaloJets(*mCaloJets);
-  mEvent->setPFJets(*mPFJets);
-  mEvent->setCaloMET(*mCaloMet);
-  mEvent->setPFMET(*mPFMet);
-  mEvent->setL1Obj(*mL1Objects);
-  mEvent->setHLTObj(*mHLTObjects);
+  sort(mCaloJets.begin(),mCaloJets.end(),sort_calojets);
+  sort(mPFJets.begin(),mPFJets.end(),sort_pfjets);
+  mEvent->setEvtHdr(mEvtHdr);
+  mEvent->setCaloJets(mCaloJets);
+  mEvent->setPFJets(mPFJets);
+  mEvent->setCaloMET(mCaloMet);
+  mEvent->setPFMET(mPFMet);
+  mEvent->setL1Obj(mL1Objects);
+  mEvent->setHLTObj(mHLTObjects);
   if ((mEvent->nPFJets() >= (unsigned)mMinNPFJets) && (mEvent->nCaloJets() >= (unsigned)mMinNCaloJets)) {
     mTree->Fill();
-    cout<<"Found "<<mEvent->nHLTObj()<<" HLT objects and "<<mEvent->nL1Obj()<<" L1 objects"<<endl;
-    for(unsigned ll=0;ll<mEvent->nHLTObj();ll++)
-      cout<<mEvent->hltobj(ll).pt()<<endl;
   }
   delete mPFUnc;
   delete mCALOUnc;

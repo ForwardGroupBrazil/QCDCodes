@@ -35,13 +35,13 @@ void ReadTree()
       cout<<j<<" pt = "<<(Event->calojet(j)).ptCor()<<", cor = "<<(Event->calojet(j)).cor()<<", unc = "<<(Event->calojet(j)).unc()<<endl;
     }
     cout<<"HLT Objects: "<<Event->nHLTObj()<<endl;
-    //for(int j=0;j<Event->nHLTObj();j++) {
-      //cout<<j<<" pt = "<<(Event->hltobj(j)).pt()<<endl;
-    //}
+    for(unsigned j=0;j<Event->nHLTObj();j++) {
+      cout<<j<<" pt = "<<(Event->hltobj(j)).pt()<<endl;
+    }
     cout<<"L1 Objects: "<<Event->nL1Obj()<<endl;
-    //for(int j=0;j<Event->nL1Obj();j++) {
-      //cout<<j<<" pt = "<<(Event->l1obj(j)).pt()<<endl;
-    //}
+    for(unsigned j=0;j<Event->nL1Obj();j++) {
+      cout<<j<<" pt = "<<(Event->l1obj(j)).pt()<<endl;
+    }
     hPFCorMjj->Fill(Event->pfmjjcor(0));
   }
   //hPFCorMjj->Draw();

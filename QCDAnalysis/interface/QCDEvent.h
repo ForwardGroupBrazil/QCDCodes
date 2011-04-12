@@ -1,6 +1,5 @@
 #ifndef QCDEvent_h
 #define QCDEvent_h
-#include "KKousour/QCDAnalysis/interface/QCDTriggerObj.h"
 #include "KKousour/QCDAnalysis/interface/QCDJet.h"
 #include "KKousour/QCDAnalysis/interface/QCDMET.h"
 #include "KKousour/QCDAnalysis/interface/QCDCaloJet.h"
@@ -22,8 +21,8 @@ class QCDEvent
       void setEvtHdr(const QCDEventHdr& fEvtHdr)                  {EvtHdr_ = fEvtHdr;}
       void setCaloJets(const std::vector<QCDCaloJet>& fCaloJets);
       void setPFJets(const std::vector<QCDPFJet>& fPFJets);
-      void setL1Obj(const std::vector<QCDTriggerObj>& fL1Obj);
-      void setHLTObj(const std::vector<QCDTriggerObj>& fHLTObj);
+      void setL1Obj(const std::vector<LorentzVector>& fL1Obj);
+      void setHLTObj(const std::vector<LorentzVector>& fHLTObj);
       unsigned int nL1Obj()                            const {return L1Obj_.size();}
       unsigned int nHLTObj()                           const {return HLTObj_.size();}
       unsigned int nPFJets()                           const {return PFJets_.size();}
@@ -36,18 +35,19 @@ class QCDEvent
       float calomjjgen();
       const QCDMET&        calomet()      const {return CaloMet_;}
       const QCDMET&        pfmet()        const {return PFMet_;} 
-      const QCDTriggerObj& hltobj(int i)  const {return HLTObj_[i];}  
-      const QCDTriggerObj& l1obj(int i)   const {return L1Obj_[i];}   
+      const LorentzVector& hltobj(int i)  const {return HLTObj_[i];}  
+      const LorentzVector& l1obj(int i)   const {return L1Obj_[i];}   
       const QCDPFJet&      pfjet(int i)   const {return PFJets_[i];}
       const QCDCaloJet&    calojet(int i) const {return CaloJets_[i];}
       const QCDEventHdr&   evtHdr()       const {return EvtHdr_;}
  
     private:
+     
       QCDEventHdr                EvtHdr_;
       QCDMET                     CaloMet_;
       QCDMET                     PFMet_; 
-      std::vector<QCDTriggerObj> HLTObj_;
-      std::vector<QCDTriggerObj> L1Obj_;
+      std::vector<LorentzVector> HLTObj_;
+      std::vector<LorentzVector> L1Obj_;
       std::vector<QCDCaloJet>    CaloJets_;
       std::vector<QCDPFJet>      PFJets_;
 };

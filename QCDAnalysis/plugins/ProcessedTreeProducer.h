@@ -10,7 +10,6 @@
 #include "JetMETCorrections/Objects/interface/JetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 #include "KKousour/QCDAnalysis/interface/QCDJet.h"
-#include "KKousour/QCDAnalysis/interface/QCDTriggerObj.h"
 #include "KKousour/QCDAnalysis/interface/QCDEvent.h"
 #include "KKousour/QCDAnalysis/interface/QCDEventHdr.h"
 #include "KKousour/QCDAnalysis/interface/QCDCaloJet.h"
@@ -76,12 +75,12 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     TTree *mTree;
     //---- TREE variables --------
     QCDEvent *mEvent;
-    QCDEventHdr *mEvtHdr;
-    QCDMET *mCaloMet,*mPFMet;
-    std::vector<QCDTriggerObj> *mL1Objects;
-    std::vector<QCDTriggerObj> *mHLTObjects;
-    std::vector<QCDCaloJet>    *mCaloJets;
-    std::vector<QCDPFJet>      *mPFJets;
+    //QCDEventHdr *mEvtHdr;
+    //QCDMET *mCaloMet,*mPFMet;
+    //std::vector<QCDTriggerObj> *mL1Objects;
+    //std::vector<QCDTriggerObj> *mHLTObjects;
+    //std::vector<QCDCaloJet>    *mCaloJets;
+    //std::vector<QCDPFJet>      *mPFJets;
 };
 
 #endif

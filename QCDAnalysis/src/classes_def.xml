@@ -1,6 +1,5 @@
 <lcgdict>
 <selection>
-  <class name="QCDTriggerObj"/>
   <class name="QCDMET"/>
   <class name="QCDJet"/>
   <class name="QCDCaloJet"/>
