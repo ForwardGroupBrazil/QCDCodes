@@ -21,10 +21,11 @@ InclusiveHistos::InclusiveHistos(edm::ParameterSet const& cfg)
 {
   mYBND      = cfg.getParameter<std::vector<double> > ("yBnd");
   mPTBND     = cfg.getParameter<std::vector<double> > ("ptBnd");
-  mMinPFPt   = cfg.getParameter<double> ("minPFPt");
-  mMinCaloPt = cfg.getParameter<double> ("minCaloPt");
+  mMinPt     = cfg.getParameter<std::vector<double> > ("minPt");
+  mMaxPt     = cfg.getParameter<std::vector<double> > ("maxPt");
   mFileName  = cfg.getParameter<std::string> ("filename");
   mTreeName  = cfg.getParameter<std::string> ("treename");
+  mUsePF     = cfg.getParameter<bool> ("usePF");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void InclusiveHistos::beginJob() 
@@ -42,19 +43,50 @@ void InclusiveHistos::beginJob()
   for(unsigned ipt=0;ipt<mPTBND.size();ipt++)
     aux[ipt] = mPTBND[ipt];
   for(unsigned iy=0;iy<mYBND.size()-1;iy++) {
-    sprintf(name,"CorPt_Ybin_%d",iy);
+    sprintf(name,"Pt_Ybin%d",iy);
     h = fs->make<TH1F>(name,name,mPTBND.size()-1,aux);
     h->Sumw2();
     mhPt.push_back(h);
-    sprintf(name,"CHF_Ybin_%d",iy);
-    h = fs->make<TH1F>(name,name,100,0,1.001);
-    mhCHF.push_back(h);
-    sprintf(name,"NHF_Ybin_%d",iy);
-    h = fs->make<TH1F>(name,name,100,0,1.001);
-    mhNHF.push_back(h);
-    sprintf(name,"PHF_Ybin_%d",iy);
-    h = fs->make<TH1F>(name,name,100,0,1.001);
-    mhPHF.push_back(h);
+    sprintf(name,"NormPt_Ybin%d",iy);
+    h = fs->make<TH1F>(name,name,mPTBND.size()-1,aux);
+    h->Sumw2();
+    mhNormPt.push_back(h);
+    sprintf(name,"TruncPt_Ybin%d",iy);
+    h = fs->make<TH1F>(name,name,mPTBND.size()-1,aux);
+    h->Sumw2();
+    mhTruncPt.push_back(h);
+    sprintf(name,"NormTruncPt_Ybin%d",iy);
+    h = fs->make<TH1F>(name,name,mPTBND.size()-1,aux);
+    h->Sumw2();
+    mhNormTruncPt.push_back(h);
+    if (mUsePF) { 
+      sprintf(name,"CHF_Ybin%d",iy);
+      h = fs->make<TH1F>(name,name,100,0,1.001);
+      mhCHF.push_back(h);
+      sprintf(name,"NHF_Ybin%d",iy);
+      h = fs->make<TH1F>(name,name,100,0,1.001);
+      mhNHF.push_back(h);
+      sprintf(name,"PHF_Ybin%d",iy);
+      h = fs->make<TH1F>(name,name,100,0,1.001);
+      mhPHF.push_back(h);
+    }
+    else {
+      sprintf(name,"EMF_Ybin%d",iy);
+      h = fs->make<TH1F>(name,name,100,0,1.001);
+      mhEMF.push_back(h);
+      sprintf(name,"N90hits_Ybin%d",iy);
+      h = fs->make<TH1F>(name,name,200,0,200);
+      mhN90hits.push_back(h);
+      sprintf(name,"fHPD_Ybin%d",iy);
+      h = fs->make<TH1F>(name,name,100,0,1.001);
+      mhfHPD.push_back(h);
+      sprintf(name,"NTrkCalo_Ybin%d",iy);
+      h = fs->make<TH1F>(name,name,200,0,200);
+      mhNTrkCalo.push_back(h);
+      sprintf(name,"fTrkVtx_Ybin%d",iy);
+      h = fs->make<TH1F>(name,name,200,0,200);
+      mhNTrkVtx.push_back(h);  
+    }
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -80,6 +112,7 @@ int InclusiveHistos::getBin(double x, const std::vector<double>& boundaries)
 void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSetup) 
 { 
   unsigned NEntries = mTree->GetEntries();
+  cout<<"File: "<<mFileName<<endl;
   cout<<"Reading TREE: "<<NEntries<<" events"<<endl;
   int decade = 0;
   for(unsigned i=0;i<NEntries;i++) {
@@ -90,16 +123,47 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
     decade = k;          
     mTree->GetEntry(i);
     if (mEvent->evtHdr().isPVgood() == 1) {
-      mhMETovSUMET->Fill(mEvent->pfmet().met_o_sumet());
-      for(unsigned j=0;j<mEvent->nPFJets();j++) {
-        int ybin = getBin(fabs(mEvent->pfjet(j).y()),mYBND);  
-        if (mEvent->pfjet(j).id() == 1 && mEvent->pfjet(j).ptCor() >= mMinPFPt && ybin > -1) {
-          mhPt[ybin] ->Fill((mEvent->pfjet(j)).ptCor());
-          mhCHF[ybin]->Fill((mEvent->pfjet(j)).chf());
-          mhNHF[ybin]->Fill((mEvent->pfjet(j)).nhf());
-          mhPHF[ybin]->Fill((mEvent->pfjet(j)).phf());
-        }  
-      }
+      int prescale = mEvent->evtHdr().preL1() * mEvent->evtHdr().preHLT();
+      if (mUsePF) {
+        mhMETovSUMET->Fill(mEvent->pfmet().met_o_sumet());
+        for(unsigned j=0;j<mEvent->nPFJets();j++) {
+          int ybin = getBin(fabs(mEvent->pfjet(j).y()),mYBND);  
+          if (mEvent->pfjet(j).id() == 1 && ybin > -1) {
+            if (mEvent->pfjet(j).ptCor() >= mMinPt[ybin]) {
+              mhPt[ybin]->Fill((mEvent->pfjet(j)).ptCor());
+              mhNormPt[ybin]->Fill((mEvent->pfjet(j)).ptCor(),prescale);
+              if (mEvent->pfjet(j).ptCor() < mMaxPt[ybin]) {
+                mhTruncPt[ybin]->Fill((mEvent->pfjet(j)).ptCor());
+                mhNormTruncPt[ybin]->Fill((mEvent->pfjet(j)).ptCor(),prescale);
+                mhCHF[ybin]->Fill((mEvent->pfjet(j)).chf());
+                mhNHF[ybin]->Fill((mEvent->pfjet(j)).nhf());
+                mhPHF[ybin]->Fill((mEvent->pfjet(j)).phf());
+              }
+            }
+          }  
+        }// jet loop
+      }// if UsePF
+      else {
+        mhMETovSUMET->Fill(mEvent->calomet().met_o_sumet());
+        for(unsigned j=0;j<mEvent->nCaloJets();j++) {
+          int ybin = getBin(fabs(mEvent->calojet(j).y()),mYBND);
+          if (mEvent->calojet(j).id() == 1 && ybin > -1) {
+            if (mEvent->calojet(j).ptCor() >= mMinPt[ybin]) {
+              mhPt[ybin]->Fill((mEvent->calojet(j)).ptCor());
+              mhNormPt[ybin]->Fill((mEvent->calojet(j)).ptCor(),prescale);
+              if (mEvent->calojet(j).ptCor() < mMaxPt[ybin]) {
+                mhTruncPt[ybin]->Fill((mEvent->calojet(j)).ptCor());
+                mhNormTruncPt[ybin]->Fill((mEvent->calojet(j)).ptCor(),prescale);
+                mhEMF[ybin] ->Fill((mEvent->calojet(j)).emf());
+                mhN90hits[ybin]->Fill((mEvent->calojet(j)).n90hits());
+                mhfHPD[ybin]->Fill((mEvent->calojet(j)).fHPD());
+                mhNTrkCalo[ybin]->Fill((mEvent->calojet(j)).nTrkCalo());
+                mhNTrkVtx[ybin]->Fill((mEvent->calojet(j)).nTrkVtx());
+              }
+            }
+          }
+        }// jet loop
+      }// if UsePF=false
     }
   }
 }
