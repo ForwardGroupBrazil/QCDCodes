@@ -25,7 +25,7 @@ class QCDJet
      float e()       const {return P4_.energy();}
      float eCor()    const {return cor_ * P4_.energy();}
      float eta()     const {return P4_.eta();}
-     float y()       const {return P4_.y();}
+     float y()       const {return P4_.Rapidity();}
      float phi()     const {return P4_.phi();}
      float mass()    const {return P4_.mass();}
      float cor()     const {return cor_;}
