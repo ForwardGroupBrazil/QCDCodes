@@ -57,6 +57,7 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     std::string mPFJECservice;
     std::string mPFPayloadName;
     std::string mCaloPayloadName;
+    edm::InputTag mSrcPU;
     //---- TRIGGER -------------------------
     std::string   processName_;
     std::string   triggerName_;

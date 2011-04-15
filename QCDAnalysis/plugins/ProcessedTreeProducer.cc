@@ -45,26 +45,27 @@
 
 ProcessedTreeProducer::ProcessedTreeProducer(edm::ParameterSet const& cfg) 
 {
-  mPFJetsName        = cfg.getParameter<std::string>          ("pfjets");
-  mCaloJetsName      = cfg.getParameter<std::string>          ("calojets");
-  mPFJECservice      = cfg.getParameter<std::string>          ("pfjecService");
-  mCaloJECservice    = cfg.getParameter<std::string>          ("calojecService");
-  mPFPayloadName     = cfg.getParameter<std::string>          ("PFPayloadName");
-  mCaloPayloadName   = cfg.getParameter<std::string>          ("CaloPayloadName");
-  mCaloJetID         = cfg.getParameter<std::string>          ("calojetID");
-  mCaloJetExtender   = cfg.getParameter<std::string>          ("calojetExtender");
-  mGoodVtxNdof       = cfg.getParameter<double>               ("goodVtxNdof");
-  mGoodVtxZ          = cfg.getParameter<double>               ("goodVtxZ");
-  mMinCaloPt         = cfg.getParameter<double>               ("minCaloPt");
-  mMinPFPt           = cfg.getParameter<double>               ("minPFPt");
-  mMinNCaloJets      = cfg.getParameter<int>                  ("minNCaloJets");
-  mMinNPFJets        = cfg.getParameter<int>                  ("minNPFJets");
-  mIsMCarlo          = cfg.getUntrackedParameter<bool>        ("isMCarlo",false);
-  mGenJetsName       = cfg.getUntrackedParameter<std::string> ("genjets","");
-  processName_       = cfg.getParameter<std::string>          ("processName");
-  triggerName_       = cfg.getParameter<std::string>          ("triggerName");
-  triggerResultsTag_ = cfg.getParameter<edm::InputTag>        ("triggerResults");
-  triggerEventTag_   = cfg.getParameter<edm::InputTag>        ("triggerEvent");
+  mPFJetsName        = cfg.getParameter<std::string>            ("pfjets");
+  mCaloJetsName      = cfg.getParameter<std::string>            ("calojets");
+  mPFJECservice      = cfg.getParameter<std::string>            ("pfjecService");
+  mCaloJECservice    = cfg.getParameter<std::string>            ("calojecService");
+  mPFPayloadName     = cfg.getParameter<std::string>            ("PFPayloadName");
+  mCaloPayloadName   = cfg.getParameter<std::string>            ("CaloPayloadName");
+  mCaloJetID         = cfg.getParameter<std::string>            ("calojetID");
+  mCaloJetExtender   = cfg.getParameter<std::string>            ("calojetExtender");
+  mGoodVtxNdof       = cfg.getParameter<double>                 ("goodVtxNdof");
+  mGoodVtxZ          = cfg.getParameter<double>                 ("goodVtxZ");
+  mMinCaloPt         = cfg.getParameter<double>                 ("minCaloPt");
+  mMinPFPt           = cfg.getParameter<double>                 ("minPFPt");
+  mMinNCaloJets      = cfg.getParameter<int>                    ("minNCaloJets");
+  mMinNPFJets        = cfg.getParameter<int>                    ("minNPFJets");
+  mIsMCarlo          = cfg.getUntrackedParameter<bool>          ("isMCarlo",false);
+  mGenJetsName       = cfg.getUntrackedParameter<std::string>   ("genjets","");
+  mSrcPU             = cfg.getUntrackedParameter<edm::InputTag> ("srcPU",edm::InputTag(""));
+  processName_       = cfg.getParameter<std::string>            ("processName");
+  triggerName_       = cfg.getParameter<std::string>            ("triggerName");
+  triggerResultsTag_ = cfg.getParameter<edm::InputTag>          ("triggerResults");
+  triggerEventTag_   = cfg.getParameter<edm::InputTag>          ("triggerEvent");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::beginJob() 
@@ -72,27 +73,10 @@ void ProcessedTreeProducer::beginJob()
   mTree = fs->make<TTree>("ProcessedTree","ProcessedTree");
   mEvent = new QCDEvent();
   mTree->Branch("event","QCDEvent",&mEvent);
-  //delete Event;
-  //mEvtHdr     = new QCDEventHdr();
-  //mCaloMet    = new QCDMET();
-  //mPFMet      = new QCDMET();
-  //mL1Objects  = new std::vector<QCDTriggerObj>(0);
-  //mHLTObjects = new std::vector<QCDTriggerObj>(0);
-  //mCaloJets   = new std::vector<QCDCaloJet>(0);
-  //mPFJets     = new std::vector<QCDPFJet>(0);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::endJob() 
-{/*
-  delete mL1Jets;
-  delete mHLTJets;
-  delete mCaloJets;
-  delete mPFJets; 
-  delete mEvtHdr;
-  delete mEvent;
-  delete mCaloMet;
-  delete mPFMet;
-*/
+{
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::beginRun(edm::Run const & iRun, edm::EventSetup const& iSetup)
@@ -122,12 +106,6 @@ void ProcessedTreeProducer::beginRun(edm::Run const & iRun, edm::EventSetup cons
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup const& iSetup) 
 { 
-  /*
-  mL1Objects->clear();
-  mHLTObjects->clear();
-  mCaloJets->clear();
-  mPFJets->clear();
-  */
   vector<LorentzVector> mL1Objects,mHLTObjects;
   vector<QCDCaloJet> mCaloJets;
   vector<QCDPFJet> mPFJets;
@@ -222,14 +200,18 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mEvtHdr.setPV(isPVgood,PVndof,PVx,PVy,PVz);
   //-------------- Generator Info -------------------------------------
   Handle<GenEventInfoProduct> hEventInfo;
+  Handle<PileupSummaryInfo> puInfo;
   if (mIsMCarlo) { 
     event.getByLabel("generator", hEventInfo);
     mEvtHdr.setPthat(hEventInfo->binningValues()[0]);
     mEvtHdr.setWeight(hEventInfo->weight());
+    event.getByLabel(mSrcPU,puInfo);
+    mEvtHdr.setPU(puInfo->getPU_NumInteractions());
   } 
   else {
     mEvtHdr.setPthat(0);
     mEvtHdr.setWeight(0); 
+    mEvtHdr.setPU(0);
   }
   //---------------- Jets ---------------------------------------------
   mPFJEC   = JetCorrector::getJetCorrector(mPFJECservice,iSetup);
