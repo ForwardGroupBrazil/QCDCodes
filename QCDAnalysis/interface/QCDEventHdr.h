@@ -15,15 +15,12 @@ class QCDEventHdr
       void setPthat(float fPthat)                            {mPthat = fPthat;}
       void setWeight(float fWeight)                          {mWeight = fWeight;} 
       void setPU(float fPU)                                  {mPU = fPU;}
-      void setPrescales(int fPreL1, int fPreHLT)             {mPreL1 = fPreL1; mPreHLT = fPreHLT;}
       void setVertices(int fNVtx, int fNVtxGood)             {mNVtx = fNVtx; mNVtxGood = fNVtxGood;}
       void setPV(bool fIsPVgood, float fndof, float fx, float fy, float fz) {mIsPVgood = fIsPVgood; mPVndof = fndof; mPVx = fx; mPVy = fy; mPVz = fz;}
       int runNo()     const {return mRun;} 
       int event()     const {return mEvent;} 
       int lumi()      const {return mLumi;}
       int bunch()     const {return mBunch;}
-      int preL1()     const {return mPreL1;}
-      int preHLT()    const {return mPreHLT;}
       int nVtx()      const {return mNVtx;}
       int nVtxGood()  const {return mNVtxGood;}
       int PU()        const {return mPU;}         
@@ -40,8 +37,6 @@ class QCDEventHdr
         int mEvent; 
         int mLumi;
         int mBunch;
-        int mPreL1;
-        int mPreHLT;
         int mNVtx;
         int mNVtxGood;
         int mPU;

@@ -44,23 +44,22 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     }
     //---- configurable parameters --------  
     bool   mIsMCarlo;
-    int    mGoodVtxNdof;
+    int    mGoodVtxNdof,mMinNCaloJets,mMinNPFJets;
     double mGoodVtxZ; 
     double mMinCaloPt,mMinPFPt;
-    int mMinNCaloJets,mMinNPFJets;
-    std::string mCaloJetsName;
-    std::string mCaloJetID;
-    std::string mCaloJetExtender;
-    std::string mPFJetsName;
-    std::string mGenJetsName;
     std::string mCaloJECservice;
     std::string mPFJECservice;
     std::string mPFPayloadName;
     std::string mCaloPayloadName;
+    edm::InputTag mCaloJetsName;
+    edm::InputTag mPFJetsName;
+    edm::InputTag mGenJetsName;
+    edm::InputTag mCaloJetID;
+    edm::InputTag mCaloJetExtender;
     edm::InputTag mSrcPU;
     //---- TRIGGER -------------------------
     std::string   processName_;
-    std::string   triggerName_;
+    std::vector<std::string> triggerNames_;
     edm::InputTag triggerResultsTag_;
     edm::InputTag triggerEventTag_;
     edm::Handle<edm::TriggerResults>   triggerResultsHandle_;
@@ -76,12 +75,6 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     TTree *mTree;
     //---- TREE variables --------
     QCDEvent *mEvent;
-    //QCDEventHdr *mEvtHdr;
-    //QCDMET *mCaloMet,*mPFMet;
-    //std::vector<QCDTriggerObj> *mL1Objects;
-    //std::vector<QCDTriggerObj> *mHLTObjects;
-    //std::vector<QCDCaloJet>    *mCaloJets;
-    //std::vector<QCDPFJet>      *mPFJets;
 };
 
 #endif

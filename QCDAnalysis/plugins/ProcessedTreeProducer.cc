@@ -45,27 +45,27 @@
 
 ProcessedTreeProducer::ProcessedTreeProducer(edm::ParameterSet const& cfg) 
 {
-  mPFJetsName        = cfg.getParameter<std::string>            ("pfjets");
-  mCaloJetsName      = cfg.getParameter<std::string>            ("calojets");
-  mPFJECservice      = cfg.getParameter<std::string>            ("pfjecService");
-  mCaloJECservice    = cfg.getParameter<std::string>            ("calojecService");
-  mPFPayloadName     = cfg.getParameter<std::string>            ("PFPayloadName");
-  mCaloPayloadName   = cfg.getParameter<std::string>            ("CaloPayloadName");
-  mCaloJetID         = cfg.getParameter<std::string>            ("calojetID");
-  mCaloJetExtender   = cfg.getParameter<std::string>            ("calojetExtender");
-  mGoodVtxNdof       = cfg.getParameter<double>                 ("goodVtxNdof");
-  mGoodVtxZ          = cfg.getParameter<double>                 ("goodVtxZ");
-  mMinCaloPt         = cfg.getParameter<double>                 ("minCaloPt");
-  mMinPFPt           = cfg.getParameter<double>                 ("minPFPt");
-  mMinNCaloJets      = cfg.getParameter<int>                    ("minNCaloJets");
-  mMinNPFJets        = cfg.getParameter<int>                    ("minNPFJets");
-  mIsMCarlo          = cfg.getUntrackedParameter<bool>          ("isMCarlo",false);
-  mGenJetsName       = cfg.getUntrackedParameter<std::string>   ("genjets","");
-  mSrcPU             = cfg.getUntrackedParameter<edm::InputTag> ("srcPU",edm::InputTag(""));
-  processName_       = cfg.getParameter<std::string>            ("processName");
-  triggerName_       = cfg.getParameter<std::string>            ("triggerName");
-  triggerResultsTag_ = cfg.getParameter<edm::InputTag>          ("triggerResults");
-  triggerEventTag_   = cfg.getParameter<edm::InputTag>          ("triggerEvent");
+  mPFJECservice      = cfg.getParameter<std::string>               ("pfjecService");
+  mCaloJECservice    = cfg.getParameter<std::string>               ("calojecService");
+  mPFPayloadName     = cfg.getParameter<std::string>               ("PFPayloadName");
+  mCaloPayloadName   = cfg.getParameter<std::string>               ("CaloPayloadName");
+  mGoodVtxNdof       = cfg.getParameter<double>                    ("goodVtxNdof");
+  mGoodVtxZ          = cfg.getParameter<double>                    ("goodVtxZ");
+  mMinCaloPt         = cfg.getParameter<double>                    ("minCaloPt");
+  mMinPFPt           = cfg.getParameter<double>                    ("minPFPt");
+  mMinNCaloJets      = cfg.getParameter<int>                       ("minNCaloJets");
+  mMinNPFJets        = cfg.getParameter<int>                       ("minNPFJets");
+  mCaloJetID         = cfg.getParameter<edm::InputTag>             ("calojetID");
+  mCaloJetExtender   = cfg.getParameter<edm::InputTag>             ("calojetExtender");
+  mPFJetsName        = cfg.getParameter<edm::InputTag>             ("pfjets");
+  mCaloJetsName      = cfg.getParameter<edm::InputTag>             ("calojets");
+  mGenJetsName       = cfg.getUntrackedParameter<edm::InputTag>    ("genjets",edm::InputTag(""));
+  mSrcPU             = cfg.getUntrackedParameter<edm::InputTag>    ("srcPU",edm::InputTag(""));
+  mIsMCarlo          = cfg.getUntrackedParameter<bool>             ("isMCarlo",false);
+  processName_       = cfg.getParameter<std::string>               ("processName");
+  triggerNames_      = cfg.getParameter<std::vector<std::string> > ("triggerName");
+  triggerResultsTag_ = cfg.getParameter<edm::InputTag>             ("triggerResults");
+  triggerEventTag_   = cfg.getParameter<edm::InputTag>             ("triggerEvent");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::beginJob() 
@@ -84,20 +84,21 @@ void ProcessedTreeProducer::beginRun(edm::Run const & iRun, edm::EventSetup cons
   bool changed(true);
   if (hltConfig_.init(iRun,iSetup,processName_,changed)) {
     if (changed) {
-      // check if trigger name in (new) config
-      if (triggerName_!="@") { // "@" means: analyze all triggers in config
+      // check if trigger names in (new) config
+      for(unsigned itrig=0;itrig<triggerNames_.size();itrig++) {
         const unsigned int n(hltConfig_.size());
-        const unsigned int triggerIndex(hltConfig_.triggerIndex(triggerName_));
+        const unsigned int triggerIndex(hltConfig_.triggerIndex(triggerNames_[itrig]));
         if (triggerIndex>=n) {
           cout << "ProcessedTreeProducer::analyze:"
-               << " TriggerName " << triggerName_ 
+               << " TriggerName " << triggerNames_[itrig] 
                << " not available in (new) config!" << endl;
           cout << "Available TriggerNames are: " << endl;
           hltConfig_.dump("Triggers");
         }
       }
     }
-  } else {
+  } 
+  else {
     cout << "ProcessedTreeProducer::analyze:"
          << " config extraction failure with process name "
          << processName_ << endl;
@@ -106,7 +107,6 @@ void ProcessedTreeProducer::beginRun(edm::Run const & iRun, edm::EventSetup cons
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup const& iSetup) 
 { 
-  vector<LorentzVector> mL1Objects,mHLTObjects;
   vector<QCDCaloJet> mCaloJets;
   vector<QCDPFJet> mPFJets;
   QCDEventHdr mEvtHdr; 
@@ -127,54 +127,94 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     cout << "ProcessedTreeProducer::analyze: Error in getting TriggerEvent product from Event!" << endl;
     return;
   }
+  vector<int> L1Prescales,HLTPrescales,Fired;
+  vector<vector<LorentzVector> > mL1Objects,mHLTObjects;
   // sanity check
-  assert(triggerResultsHandle_->size()==hltConfig_.size());
-  const unsigned int triggerIndex(hltConfig_.triggerIndex(triggerName_));
-  assert(triggerIndex == event.triggerNames(*triggerResultsHandle_).triggerIndex(triggerName_));
-  const std::pair<int,int> prescales(hltConfig_.prescaleValues(event,iSetup,triggerName_));
-  mEvtHdr.setPrescales(prescales.first,prescales.second);
-  // modules on this trigger path
-  const vector<string>& moduleLabels(hltConfig_.moduleLabels(triggerIndex));
-  const unsigned int moduleIndex(triggerResultsHandle_->index(triggerIndex));
-  bool foundL1(false);
-  for (unsigned int j=0; j<=moduleIndex; ++j) {
-    const string& moduleLabel(moduleLabels[j]);
-    const string  moduleType(hltConfig_.moduleType(moduleLabel));
-    // check whether the module is packed up in TriggerEvent product
-    const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(moduleLabel,"",processName_)));
-    if (filterIndex<triggerEventHandle_->sizeFilters()) {
-      const Vids& VIDS (triggerEventHandle_->filterIds(filterIndex));
-      const Keys& KEYS(triggerEventHandle_->filterKeys(filterIndex));
-      const size_type nI(VIDS.size());
-      const size_type nK(KEYS.size());
-      assert(nI==nK);
-      const size_type n(max(nI,nK));
-      const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
-      if (foundL1) {
-        //cout<<"HLT: "<<endl; 
-        for (size_type i=0; i!=n; ++i) {
-          const TriggerObject& TO(TOC[KEYS[i]]);
-          TLorentzVector P4;
-          P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
-          LorentzVector qcdhltobj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
-          mHLTObjects.push_back(qcdhltobj);
-          //cout<<TO.pt()<<endl;
-        }
+  assert(triggerResultsHandle_->size() == hltConfig_.size());
+  //------ loop over all trigger names ---------
+  for(unsigned itrig=0;itrig<triggerNames_.size();itrig++) {
+    bool accept(false);
+    bool exists(true);
+    int preL1(-1);
+    int preHLT(-1);
+    int tmpFired(-1); 
+    vector<LorentzVector> vvL1,vvHLT; 
+    try {
+      const unsigned int triggerIndex(hltConfig_.triggerIndex(triggerNames_[itrig]));
+      if (hltConfig_.size() != triggerIndex) {
+        accept = triggerResultsHandle_->accept(triggerIndex);
       }
-      if (!foundL1) { 
-        //cout<<"L1: "<<endl;
-        for (size_type i=0; i!=n; ++i) {
-          const TriggerObject& TO(TOC[KEYS[i]]);
-          TLorentzVector P4;
-          P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
-          LorentzVector qcdl1obj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
-          mL1Objects.push_back(qcdl1obj);
-          //cout<<TO.pt()<<endl;  
-        }
-        foundL1 = true; 
+      else {
+        accept = false;
+        tmpFired = 0;
+        preL1    = 0;
+        preHLT   = 0;
       }
     }
-  }
+    catch (...) {
+      accept = false;
+      exists = false;
+    }
+    if (accept) {
+      tmpFired = 1;
+      const std::pair<int,int> prescales(hltConfig_.prescaleValues(event,iSetup,triggerNames_[itrig]));
+      preL1  = prescales.first;
+      preHLT = prescales.second;
+    }
+    if (exists) {
+      //--------- modules on this trigger path--------------
+      const vector<string>& moduleLabels(hltConfig_.moduleLabels(triggerIndex));
+      const unsigned int moduleIndex(triggerResultsHandle_->index(triggerIndex));
+      bool foundL1(false);
+      for(unsigned int j=0; j<=moduleIndex; ++j) {
+        const string& moduleLabel(moduleLabels[j]);
+        const string  moduleType(hltConfig_.moduleType(moduleLabel));
+        //--------check whether the module is packed up in TriggerEvent product
+        const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(moduleLabel,"",processName_)));
+        if (filterIndex<triggerEventHandle_->sizeFilters()) {
+          const Vids& VIDS (triggerEventHandle_->filterIds(filterIndex));
+          const Keys& KEYS(triggerEventHandle_->filterKeys(filterIndex));
+          const size_type nI(VIDS.size());
+          const size_type nK(KEYS.size());
+          assert(nI==nK);
+          const size_type n(max(nI,nK));
+          const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
+          if (foundL1) {
+            for(size_type i=0; i!=n; ++i) {
+              const TriggerObject& TO(TOC[KEYS[i]]);
+              TLorentzVector P4;
+              P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
+              LorentzVector qcdhltobj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
+              vvHLT.push_back(qcdhltobj);
+              //cout<<TO.pt()<<endl;
+            }
+          }
+          else { 
+            for(size_type i=0; i!=n; ++i) {
+              const TriggerObject& TO(TOC[KEYS[i]]);
+              TLorentzVector P4;
+              P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
+              LorentzVector qcdl1obj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
+              vvL1.push_back(qcdl1obj);
+              //cout<<TO.pt()<<endl;  
+            }
+            foundL1 = true; 
+          }
+        }
+      }// loop over modules
+    }// if the trigger exists in the menu
+    Fired.push_back(tmpFired);
+    L1Prescales.push_back(preL1);
+    HLTPrescales.push_back(preHLT);
+    mL1Objects.push_back(vvL1);
+    mHLTObjects.push_back(vvHLT);
+    //assert(triggerIndex == event.triggerNames(*triggerResultsHandle_).triggerIndex(triggerNames_[itrig]));
+  }// loop over trigger names  
+  mEvent->setTrigFired(Fired);
+  mEvent->setTrigNames(triggerNames_);
+  mEvent->setPrescales(L1Prescales,HLTPrescales);
+  mEvent->setL1Obj(mL1Objects);
+  mEvent->setHLTObj(mHLTObjects);
   //-------------- Vertex Info -----------------------------------
   Handle<reco::VertexCollection> recVtxs;
   event.getByLabel("offlinePrimaryVertices",recVtxs);
