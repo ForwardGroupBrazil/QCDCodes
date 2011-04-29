@@ -4,13 +4,9 @@ void ReadTree()
   gSystem->Load("libFWCoreFWLite.so");
   AutoLibraryLoader::enable();
   TFile *inf  = TFile::Open("ProcessedTree_data.root");
-  TFile *outf = new TFile("Histo.root","RECREATE");
-  TTree *tr = (TTree*)inf->Get("ak5/ProcessedTree");
-  //----------------------------------------------------
-  TH1F *hPFCorMjj = new TH1F("PFCorMjj","PFCorMjj",500,0,5000);
-  //-----------------------------------------------------
+  TTree *tr = (TTree*)inf->Get("ak7/ProcessedTree");
   QCDEvent *Event = new QCDEvent();
-  TBranch *branch = tr->GetBranch("event");
+  TBranch *branch = tr->GetBranch("events");
   branch->SetAddress(&Event);
   
   unsigned NEntries = tr->GetEntries();
@@ -24,26 +20,15 @@ void ReadTree()
       cout<<10*k<<" %"<<endl;
     decade = k;          
     tr->GetEntry(i);
-    cout<<"Event #"<<i<<":"<<endl;
-    cout<<"PFMass = "<<Event->pfmjjcor(0)<<", JEC up:  "<<Event->pfmjjcor(1)<<", JEC down: "<<Event->pfmjjcor(-1)<<endl;
-    cout<<"PFJets: "<<Event->nPFJets()<<endl;
-    for(unsigned j=0;j<Event->nPFJets();j++) {
-      cout<<j<<" pt = "<<(Event->pfjet(j)).ptCor()<<", cor = "<<(Event->pfjet(j)).cor()<<", unc = "<<(Event->pfjet(j)).unc()<<endl;
+    for(unsigned itrig=0;itrig<Event->nTriggers();itrig++) {
+      if (Event->nL1Obj(itrig) > 0) {
+        cout<<"Found "<<Event->nL1Obj(itrig)<<" L1 objects: "<<endl;
+        for(unsigned iobj=0;iobj<Event->nL1Obj(itrig);iobj++)
+          cout<<"pt = "<<Event->l1obj(itrig,iobj).pt()<<endl;
+        cout<<"Found "<<Event->nHLTObj(itrig)<<" HLT objects: "<<endl;
+        for(unsigned iobj=0;iobj<Event->nHLTObj(itrig);iobj++)
+          cout<<"pt = "<<Event->hltobj(itrig,iobj).pt()<<endl;
+      }
     }
-    cout<<"CaloJets: "<<Event->nCaloJets()<<endl;
-    for(unsigned j=0;j<Event->nCaloJets();j++) {
-      cout<<j<<" pt = "<<(Event->calojet(j)).ptCor()<<", cor = "<<(Event->calojet(j)).cor()<<", unc = "<<(Event->calojet(j)).unc()<<endl;
-    }
-    cout<<"HLT Objects: "<<Event->nHLTObj()<<endl;
-    for(unsigned j=0;j<Event->nHLTObj();j++) {
-      cout<<j<<" pt = "<<(Event->hltobj(j)).pt()<<endl;
-    }
-    cout<<"L1 Objects: "<<Event->nL1Obj()<<endl;
-    for(unsigned j=0;j<Event->nL1Obj();j++) {
-      cout<<j<<" pt = "<<(Event->l1obj(j)).pt()<<endl;
-    }
-    hPFCorMjj->Fill(Event->pfmjjcor(0));
   }
-  //hPFCorMjj->Draw();
-  outf->Write();
 }

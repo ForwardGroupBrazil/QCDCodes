@@ -60,6 +60,7 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     //---- TRIGGER -------------------------
     std::string   processName_;
     std::vector<std::string> triggerNames_;
+    std::vector<unsigned int> triggerIndex_;
     edm::InputTag triggerResultsTag_;
     edm::InputTag triggerEventTag_;
     edm::Handle<edm::TriggerResults>   triggerResultsHandle_;
@@ -73,6 +74,7 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     
     edm::Service<TFileService> fs;
     TTree *mTree;
+    TH1F *mTriggerPassHisto,*mTriggerNamesHisto; 
     //---- TREE variables --------
     QCDEvent *mEvent;
 };

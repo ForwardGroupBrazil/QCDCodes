@@ -8,31 +8,31 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.GlobalTag.globaltag = 'GR_R_311_V2::All'
 process.load("CondCore.DBCommon.CondDBCommon_cfi")
 #from CondCore.DBCommon.CondDBSetup_cfi import *
-process.jec = cms.ESSource("PoolDBESSource",
-      DBParameters = cms.PSet(
-        messageLevel = cms.untracked.int32(0)
-        ),
-      timetype = cms.string('runnumber'),
-      toGet = cms.VPSet(
-      cms.PSet(
-            record = cms.string('JetCorrectionsRecord'),
-            tag    = cms.string('JetCorrectorParametersCollection_Jec11V0_AK7PF'),
-            label  = cms.untracked.string('AK7PF')
-            ),
-      cms.PSet(
-            record = cms.string('JetCorrectionsRecord'),
-            tag    = cms.string('JetCorrectorParametersCollection_Jec11V0_AK7Calo'),
-            label  = cms.untracked.string('AK7Calo')
-            )
-      ), 
-      connect = cms.string('sqlite:Jec11V0.db')
-)
+#process.jec = cms.ESSource("PoolDBESSource",
+#      DBParameters = cms.PSet(
+#        messageLevel = cms.untracked.int32(0)
+#        ),
+#      timetype = cms.string('runnumber'),
+#      toGet = cms.VPSet(
+#      cms.PSet(
+#            record = cms.string('JetCorrectionsRecord'),
+#            tag    = cms.string('JetCorrectorParametersCollection_Jec11V0_AK7PF'),
+#            label  = cms.untracked.string('AK7PF')
+#            ),
+#      cms.PSet(
+#            record = cms.string('JetCorrectionsRecord'),
+#            tag    = cms.string('JetCorrectorParametersCollection_Jec11V0_AK7Calo'),
+#            label  = cms.untracked.string('AK7Calo')
+#            )
+#      ), 
+#      connect = cms.string('sqlite:Jec11V0.db')
+#)
 ##-------------------- Import the JEC services -----------------------
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
-process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
+#process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
 #############   Set the number of events #############
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(1000)
+    input = cms.untracked.int32(-1)
 )
 #############   Define the source file ###############
 process.load('KKousour.QCDAnalysis.SkimFileNames_cfi')
@@ -41,7 +41,7 @@ process.load('KKousour.QCDAnalysis.SkimFileNames_cfi')
 #    fileNames = cms.untracked.vstring('file:/data/kkousour/JetAOD_9_1_Bh3.root')
 #)
 ############# processed tree producer ##################
-process.TFileService = cms.Service("TFileService",fileName = cms.string('ProcessedTree_data.root'))
+process.TFileService = cms.Service("TFileService",fileName = cms.string('/uscms_data/d2/kkousour/7TeV/2011/Jets/ProcessedTree_data.root'))
 
 process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     ## jet collections ###########################
@@ -63,7 +63,15 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     minNCaloJets    = cms.int32(1), 
     ## trigger ##############################
     processName     = cms.string('HLT'),
-    triggerName     = cms.vstring('HLT_Jet30_v1','HLT_Jet60_v1','HLT_Jet80_v1'),
+    triggerName     = cms.vstring('HLT_Jet30_v1','HLT_Jet30_v2',
+                                  'HLT_Jet60_v1','HLT_Jet60_v2',
+                                  'HLT_Jet80_v1','HLT_Jet80_v2',
+                                  'HLT_Jet110_v1','HLT_Jet110_v2',
+                                  'HLT_Jet150_v1','HLT_Jet150_v2',
+                                  'HLT_Jet190_v1','HLT_Jet190_v2',
+                                  'HLT_Jet240_v1','HLT_Jet240_v2',
+                                  'HLT_Jet300_v1',
+                                  'HLT_Jet370_v1','HLT_Jet370_v2'),
     triggerResults  = cms.InputTag("TriggerResults","","HLT"),
     triggerEvent    = cms.InputTag("hltTriggerSummaryAOD","","HLT"),
     ## jec services ##############################
@@ -73,6 +81,6 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
 
 process.path = cms.Path(process.ak7)
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 10000
 
 

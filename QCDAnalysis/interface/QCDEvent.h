@@ -24,10 +24,8 @@ class QCDEvent
       void setL1Obj(const std::vector<std::vector<LorentzVector> >& fL1Obj);
       void setHLTObj(const std::vector<std::vector<LorentzVector> >& fHLTObj);
       void setPrescales(const std::vector<int>& fPreL1, const std::vector<int>& fPreHLT) {L1Prescale_ = fPreL1; HLTPrescale_ = fPreHLT;}
-      void setTrigFired(const std::vector<int>& fTrigFired) {TriggerFired_ = fTrigFired;}
-      void setTrigNames(const std::vector<std::string>& fTrigNames) {TriggerNames_ = fTrigNames;}
-      const std::string& triggerName(int i)            const {return TriggerNames_[i];}                             
-      unsigned int nTriggers()                         const {return TriggerNames_.size();}
+      void setTrigDecision(const std::vector<int>& fTrigDecision) {TriggerDecision_ = fTrigDecision;}                           
+      unsigned int nTriggers()                         const {return TriggerDecision_.size();}
       unsigned int nL1Obj(int i)                       const {return L1Obj_[i].size();}
       unsigned int nHLTObj(int i)                      const {return HLTObj_[i].size();}
       unsigned int nPFJets()                           const {return PFJets_.size();}
@@ -53,10 +51,9 @@ class QCDEvent
       QCDEventHdr                              EvtHdr_;
       QCDMET                                   CaloMet_;
       QCDMET                                   PFMet_; 
-      std::vector<int>                         TriggerFired_;
+      std::vector<int>                         TriggerDecision_;
       std::vector<int>                         L1Prescale_;
       std::vector<int>                         HLTPrescale_;
-      std::vector<std::string>                 TriggerNames_;
       std::vector<std::vector<LorentzVector> > HLTObj_;
       std::vector<std::vector<LorentzVector> > L1Obj_;
       std::vector<QCDCaloJet>                  CaloJets_;

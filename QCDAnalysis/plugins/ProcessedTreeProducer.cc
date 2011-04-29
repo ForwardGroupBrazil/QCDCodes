@@ -72,7 +72,13 @@ void ProcessedTreeProducer::beginJob()
 {
   mTree = fs->make<TTree>("ProcessedTree","ProcessedTree");
   mEvent = new QCDEvent();
-  mTree->Branch("event","QCDEvent",&mEvent);
+  mTree->Branch("events","QCDEvent",&mEvent);
+  mTriggerNamesHisto = fs->make<TH1F>("TriggerNames","TriggerNames",1,0,1);
+  mTriggerNamesHisto->SetBit(TH1::kCanRebin);
+  for(unsigned i=0;i<triggerNames_.size();i++)
+    mTriggerNamesHisto->Fill(triggerNames_[i].c_str(),1);
+  mTriggerPassHisto = fs->make<TH1F>("TriggerPass","TriggerPass",1,0,1);
+  mTriggerPassHisto->SetBit(TH1::kCanRebin);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::endJob() 
@@ -85,16 +91,15 @@ void ProcessedTreeProducer::beginRun(edm::Run const & iRun, edm::EventSetup cons
   if (hltConfig_.init(iRun,iSetup,processName_,changed)) {
     if (changed) {
       // check if trigger names in (new) config
+      cout<<"New trigger menu found !!!"<<endl;
+      const unsigned int n(hltConfig_.size());
       for(unsigned itrig=0;itrig<triggerNames_.size();itrig++) {
-        const unsigned int n(hltConfig_.size());
-        const unsigned int triggerIndex(hltConfig_.triggerIndex(triggerNames_[itrig]));
-        if (triggerIndex>=n) {
-          cout << "ProcessedTreeProducer::analyze:"
-               << " TriggerName " << triggerNames_[itrig] 
-               << " not available in (new) config!" << endl;
-          cout << "Available TriggerNames are: " << endl;
-          hltConfig_.dump("Triggers");
-        }
+        triggerIndex_.push_back(hltConfig_.triggerIndex(triggerNames_[itrig]));
+        cout<<triggerNames_[itrig]<<" "<<triggerIndex_[itrig]<<" ";  
+        if (triggerIndex_[itrig] >= n)
+          cout<<"does not exist in the current menu"<<endl;
+        else
+          cout<<"exists"<<endl;
       }
     }
   } 
@@ -134,85 +139,70 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   //------ loop over all trigger names ---------
   for(unsigned itrig=0;itrig<triggerNames_.size();itrig++) {
     bool accept(false);
-    bool exists(true);
     int preL1(-1);
     int preHLT(-1);
     int tmpFired(-1); 
     vector<LorentzVector> vvL1,vvHLT; 
-    unsigned int triggerIndex; 
-    try {
-      triggerIndex = hltConfig_.triggerIndex(triggerNames_[itrig]);
-      if (hltConfig_.size() != triggerIndex) {
-        accept = triggerResultsHandle_->accept(triggerIndex);
-      }
-      else {
-        accept = false;
-        tmpFired = 0;
-        preL1    = 0;
-        preHLT   = 0;
-      }
-    }
-    catch (...) {
-      accept = false;
-      exists = false;
-    }
-    if (accept) {
-      tmpFired = 1;
+    if (triggerIndex_[itrig] < hltConfig_.size()) {
+      accept = triggerResultsHandle_->accept(triggerIndex_[itrig]);
       const std::pair<int,int> prescales(hltConfig_.prescaleValues(event,iSetup,triggerNames_[itrig]));
-      preL1  = prescales.first;
-      preHLT = prescales.second;
-    }
-    if (exists) {
-      //--------- modules on this trigger path--------------
-      const vector<string>& moduleLabels(hltConfig_.moduleLabels(triggerIndex));
-      const unsigned int moduleIndex(triggerResultsHandle_->index(triggerIndex));
-      bool foundL1(false);
-      for(unsigned int j=0; j<=moduleIndex; ++j) {
-        const string& moduleLabel(moduleLabels[j]);
-        const string  moduleType(hltConfig_.moduleType(moduleLabel));
-        //--------check whether the module is packed up in TriggerEvent product
-        const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(moduleLabel,"",processName_)));
-        if (filterIndex<triggerEventHandle_->sizeFilters()) {
-          const Vids& VIDS (triggerEventHandle_->filterIds(filterIndex));
-          const Keys& KEYS(triggerEventHandle_->filterKeys(filterIndex));
-          const size_type nI(VIDS.size());
-          const size_type nK(KEYS.size());
-          assert(nI==nK);
-          const size_type n(max(nI,nK));
-          const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
-          if (foundL1) {
-            for(size_type i=0; i!=n; ++i) {
-              const TriggerObject& TO(TOC[KEYS[i]]);
-              TLorentzVector P4;
-              P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
-              LorentzVector qcdhltobj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
-              vvHLT.push_back(qcdhltobj);
-              //cout<<TO.pt()<<endl;
+      preL1    = prescales.first;
+      preHLT   = prescales.second;
+      if (!accept)
+        tmpFired = 0;
+      else {
+        mTriggerPassHisto->Fill(triggerNames_[itrig].c_str(),1);
+        tmpFired = 1;
+        //--------- modules on this trigger path--------------
+        const vector<string>& moduleLabels(hltConfig_.moduleLabels(triggerIndex_[itrig]));
+        const unsigned int moduleIndex(triggerResultsHandle_->index(triggerIndex_[itrig]));
+        bool foundL1(false);
+        for(unsigned int j=0; j<=moduleIndex; ++j) {
+          const string& moduleLabel(moduleLabels[j]);
+          const string  moduleType(hltConfig_.moduleType(moduleLabel));
+          //--------check whether the module is packed up in TriggerEvent product
+          const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(moduleLabel,"",processName_)));
+          if (filterIndex<triggerEventHandle_->sizeFilters()) {
+            const Vids& VIDS (triggerEventHandle_->filterIds(filterIndex));
+            const Keys& KEYS(triggerEventHandle_->filterKeys(filterIndex));
+            const size_type nI(VIDS.size());
+            const size_type nK(KEYS.size());
+            assert(nI==nK);
+            const size_type n(max(nI,nK));
+            const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
+            if (foundL1) {
+              for(size_type i=0; i!=n; ++i) {
+                const TriggerObject& TO(TOC[KEYS[i]]);
+                TLorentzVector P4;
+                P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
+                LorentzVector qcdhltobj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
+                vvHLT.push_back(qcdhltobj);
+                //cout<<TO.pt()<<endl;
+              }
+            }
+            else { 
+              for(size_type i=0; i!=n; ++i) {
+                const TriggerObject& TO(TOC[KEYS[i]]);
+                TLorentzVector P4;
+                P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
+                LorentzVector qcdl1obj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
+                vvL1.push_back(qcdl1obj);
+                //cout<<TO.pt()<<endl;  
+              }
+              foundL1 = true; 
             }
           }
-          else { 
-            for(size_type i=0; i!=n; ++i) {
-              const TriggerObject& TO(TOC[KEYS[i]]);
-              TLorentzVector P4;
-              P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
-              LorentzVector qcdl1obj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
-              vvL1.push_back(qcdl1obj);
-              //cout<<TO.pt()<<endl;  
-            }
-            foundL1 = true; 
-          }
-        }
-      }// loop over modules
+        }// loop over modules
+      }// if the trigger is fired
     }// if the trigger exists in the menu
+    //cout<<triggerNames_[itrig]<<" "<<triggerIndex_[itrig]<<" "<<accept<<" "<<tmpFired<<endl;
     Fired.push_back(tmpFired);
     L1Prescales.push_back(preL1);
     HLTPrescales.push_back(preHLT);
     mL1Objects.push_back(vvL1);
     mHLTObjects.push_back(vvHLT);
-    //assert(triggerIndex == event.triggerNames(*triggerResultsHandle_).triggerIndex(triggerNames_[itrig]));
   }// loop over trigger names  
-  mEvent->setTrigFired(Fired);
-  mEvent->setTrigNames(triggerNames_);
+  mEvent->setTrigDecision(Fired);
   mEvent->setPrescales(L1Prescales,HLTPrescales);
   mEvent->setL1Obj(mL1Objects);
   mEvent->setHLTObj(mHLTObjects);
