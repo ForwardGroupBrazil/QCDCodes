@@ -140,7 +140,7 @@ void DijetMassHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
     mTree->GetEntry(i);
     if (mUsePF) {
       if (mEvent->evtHdr().isPVgood() == 1 && mEvent->nPFJets() > 1 ) {   
-        int prescale = mEvent->evtHdr().preL1() * mEvent->evtHdr().preHLT();
+        int prescale = mEvent->preL1(0) * mEvent->preHLT(0);
         double ymax = TMath::Max(fabs(mEvent->pfjet(0).y()),fabs(mEvent->pfjet(1).y()));
         int ybin = getBin(ymax,mYBND);
         bool cut1 = (mEvent->pfjet(0).id() == 1 && mEvent->pfjet(0).ptCor() > mMinPt1);
