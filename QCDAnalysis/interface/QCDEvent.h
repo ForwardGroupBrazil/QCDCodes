@@ -30,6 +30,7 @@ class QCDEvent
       unsigned int nHLTObj(int i)                      const {return HLTObj_[i].size();}
       unsigned int nPFJets()                           const {return PFJets_.size();}
       unsigned int nCaloJets()                         const {return CaloJets_.size();}
+      int fired(int i)                                 const {return TriggerDecision_[i];}
       int preL1(int i)                                 const {return L1Prescale_[i];}
       int preHLT(int i)                                const {return HLTPrescale_[i];}
       float pfmjj();

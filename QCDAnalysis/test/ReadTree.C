@@ -21,7 +21,8 @@ void ReadTree()
     decade = k;          
     tr->GetEntry(i);
     for(unsigned itrig=0;itrig<Event->nTriggers();itrig++) {
-      if (Event->nL1Obj(itrig) > 0) {
+      cout<<"Trigger #"<<itrig<<", decision = "<<Event->fired(itrig)<<endl;
+      if (Event->fired(itrig) > 0) {
         cout<<"Found "<<Event->nL1Obj(itrig)<<" L1 objects: "<<endl;
         for(unsigned iobj=0;iobj<Event->nL1Obj(itrig);iobj++)
           cout<<"pt = "<<Event->l1obj(itrig,iobj).pt()<<endl;
