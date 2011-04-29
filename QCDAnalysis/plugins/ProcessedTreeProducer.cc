@@ -139,8 +139,9 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     int preHLT(-1);
     int tmpFired(-1); 
     vector<LorentzVector> vvL1,vvHLT; 
+    unsigned int triggerIndex; 
     try {
-      const unsigned int triggerIndex(hltConfig_.triggerIndex(triggerNames_[itrig]));
+      triggerIndex = hltConfig_.triggerIndex(triggerNames_[itrig]);
       if (hltConfig_.size() != triggerIndex) {
         accept = triggerResultsHandle_->accept(triggerIndex);
       }

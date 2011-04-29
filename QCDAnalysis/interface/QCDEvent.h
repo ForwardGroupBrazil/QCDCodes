@@ -22,18 +22,18 @@ class QCDEvent
       void setCaloJets(const std::vector<QCDCaloJet>& fCaloJets);
       void setPFJets(const std::vector<QCDPFJet>& fPFJets);
       void setL1Obj(const std::vector<std::vector<LorentzVector> >& fL1Obj);
-      void setHLTObj(const std::vector<stdd::vector<LorentzVector> >& fHLTObj);
+      void setHLTObj(const std::vector<std::vector<LorentzVector> >& fHLTObj);
       void setPrescales(const std::vector<int>& fPreL1, const std::vector<int>& fPreHLT) {L1Prescale_ = fPreL1; HLTPrescale_ = fPreHLT;}
-      void setTrigFired(const std::vector<int>& fTrigFired) {TriggerFired_ = fTrigFired};
-      void setTrigNames(const std::vector<std::string>& fTrigNames) {TriggerNames_ = fTrigNames};
-      const std::string& triggerName(i)                const {return TriggerNames_[i];}                             
+      void setTrigFired(const std::vector<int>& fTrigFired) {TriggerFired_ = fTrigFired;}
+      void setTrigNames(const std::vector<std::string>& fTrigNames) {TriggerNames_ = fTrigNames;}
+      const std::string& triggerName(int i)            const {return TriggerNames_[i];}                             
       unsigned int nTriggers()                         const {return TriggerNames_.size();}
       unsigned int nL1Obj(int i)                       const {return L1Obj_[i].size();}
       unsigned int nHLTObj(int i)                      const {return HLTObj_[i].size();}
       unsigned int nPFJets()                           const {return PFJets_.size();}
       unsigned int nCaloJets()                         const {return CaloJets_.size();}
-      int preL1(i)                                     const {return L1Prescale_[i];}
-      int preHLT(i)                                    const {return HLTPrescale_[i];}
+      int preL1(int i)                                 const {return L1Prescale_[i];}
+      int preHLT(int i)                                const {return HLTPrescale_[i];}
       float pfmjj();
       float calomjj();
       float pfmjjcor(int k);
@@ -42,8 +42,8 @@ class QCDEvent
       float calomjjgen();
       const QCDMET&        calomet()                   const {return CaloMet_;}
       const QCDMET&        pfmet()                     const {return PFMet_;} 
-      const LorentzVector& hltobj(int itrig int iobj)  const {return (HLTObj_[itrig])[iobj];}  
-      const LorentzVector& l1obj(int itrig int iobj)   const {return (L1Obj_[itrig])[iobj];}   
+      const LorentzVector& hltobj(int itrig, int iobj) const {return (HLTObj_[itrig])[iobj];}  
+      const LorentzVector& l1obj(int itrig, int iobj)  const {return (L1Obj_[itrig])[iobj];}   
       const QCDPFJet&      pfjet(int i)                const {return PFJets_[i];}
       const QCDCaloJet&    calojet(int i)              const {return CaloJets_[i];}
       const QCDEventHdr&   evtHdr()                    const {return EvtHdr_;}

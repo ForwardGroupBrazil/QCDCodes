@@ -36,8 +36,6 @@ process.maxEvents = cms.untracked.PSet(
 )
 #############   Define the source file ###############
 process.load('KKousour.QCDAnalysis.SkimFileNames_cfi')
-#############   Import the HLT filters ###############
-process.load('KKousour.QCDAnalysis.hltFilters_cff')
 #############   Define the source file ###############
 #process.source = cms.Source("PoolSource",
 #    fileNames = cms.untracked.vstring('file:/data/kkousour/JetAOD_9_1_Bh3.root')
@@ -47,14 +45,14 @@ process.TFileService = cms.Service("TFileService",fileName = cms.string('Process
 
 process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     ## jet collections ###########################
-    pfjets          = cms.string('ak7PFJets'),
-    calojets        = cms.string('ak7CaloJets'),
+    pfjets          = cms.InputTag('ak7PFJets'),
+    calojets        = cms.InputTag('ak7CaloJets'),
     ## database entry for the uncertainties ######
     PFPayloadName   = cms.string(''),
     CaloPayloadName = cms.string(''),
     ## calojet ID and extender for the JTA #######
-    calojetID       = cms.string('ak7JetID'),
-    calojetExtender = cms.string('ak7JetExtender'),
+    calojetID       = cms.InputTag('ak7JetID'),
+    calojetExtender = cms.InputTag('ak7JetExtender'),
     ## set the conditions for bood Vtx counting ##
     goodVtxNdof     = cms.double(4), 
     goodVtxZ        = cms.double(24),
@@ -65,7 +63,7 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     minNCaloJets    = cms.int32(1), 
     ## trigger ##############################
     processName     = cms.string('HLT'),
-    triggerName     = cms.string('HLT_Jet110_v1'),
+    triggerName     = cms.vstring('HLT_Jet30_v1','HLT_Jet60_v1','HLT_Jet80_v1'),
     triggerResults  = cms.InputTag("TriggerResults","","HLT"),
     triggerEvent    = cms.InputTag("hltTriggerSummaryAOD","","HLT"),
     ## jec services ##############################
@@ -73,7 +71,7 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     calojecService  = cms.string('ak7CaloL1L2L3')
 )
 
-process.path = cms.Path(process.hlt110v1 * process.ak7)
+process.path = cms.Path(process.ak7)
 #############   Format MessageLogger #################
 process.MessageLogger.cerr.FwkReport.reportEvery = 100
 

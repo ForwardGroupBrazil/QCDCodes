@@ -123,7 +123,7 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
     decade = k;          
     mTree->GetEntry(i);
     if (mEvent->evtHdr().isPVgood() == 1) {
-      int prescale = mEvent->evtHdr().preL1() * mEvent->evtHdr().preHLT();
+      int prescale = mEvent->preL1(0) * mEvent->preHLT(0);
       if (mUsePF) {
         mhMETovSUMET->Fill(mEvent->pfmet().met_o_sumet());
         for(unsigned j=0;j<mEvent->nPFJets();j++) {
