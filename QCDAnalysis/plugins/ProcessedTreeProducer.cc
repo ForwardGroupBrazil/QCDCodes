@@ -92,6 +92,7 @@ void ProcessedTreeProducer::beginRun(edm::Run const & iRun, edm::EventSetup cons
     if (changed) {
       // check if trigger names in (new) config
       cout<<"New trigger menu found !!!"<<endl;
+      triggerIndex_.clear(); 
       const unsigned int n(hltConfig_.size());
       for(unsigned itrig=0;itrig<triggerNames_.size();itrig++) {
         triggerIndex_.push_back(hltConfig_.triggerIndex(triggerNames_[itrig]));
