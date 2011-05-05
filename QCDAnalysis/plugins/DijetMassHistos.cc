@@ -169,7 +169,7 @@ void DijetMassHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
     }
     else {
       if (mEvent->evtHdr().isPVgood() == 1 && mEvent->nCaloJets() > 1 ) {
-        int prescale = mEvent->evtHdr().preL1() * mEvent->evtHdr().preHLT();
+        int prescale = mEvent->preL1(0) * mEvent->preHLT(0);
         double ymax = TMath::Max(fabs(mEvent->calojet(0).y()),fabs(mEvent->calojet(1).y()));
         int ybin = getBin(ymax,mYBND);
         bool cut1 = (mEvent->calojet(0).id() == 1 && mEvent->calojet(0).ptCor() > mMinPt1);
