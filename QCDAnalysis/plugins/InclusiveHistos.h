@@ -29,9 +29,10 @@ class InclusiveHistos : public edm::EDAnalyzer
     int getBin(double x, const std::vector<double>& boundaries); 
     //---- configurable parameters --------   
     bool mUsePF;
-    bool mTrigComb;
+    bool mIsMC;
+    double mMinPt;
     std::string mFileName,mTreeName,mDirName;
-    std::vector<double> mYBND,mPTBND,mMinPt,mMaxPt;
+    std::vector<double> mYBND,mPTBND;
     std::vector<std::string> mTriggers;
     std::vector<int> mTrigIndex;    
 
@@ -39,8 +40,10 @@ class InclusiveHistos : public edm::EDAnalyzer
     TTree *mTree; 
     TFile *mInf;
     TDirectoryFile *mDir;
-    TH1F *mhJetMulti;
-    std::vector<TH1F*> mhPt,mhNormPt,mhTruncPt,mhNormTruncPt,mhCHF,mhNHF,mhPHF,mhN90hits,mhEMF,mhNTrkCalo,mhNTrkVtx,mhfHPD,mhMETovSUMET;
+    TH1F *mhJetMulti[30];
+    TH1F *mhPt[30][10],*mhNormPt[30][10],*mhX[30][10],*mhNormX[30][10],
+         *mhCHF[30][10],*mhNHF[30][10],*mhPHF[30][10],
+         *mhN90hits[30][10],*mhEMF[30][10],*mhNTrkCalo[30][10],*mhNTrkVtx[30][10],*mhfHPD[30][10],*mhMETovSUMET[30][10];
     //---- TREE variable --------
     QCDEvent *mEvent;
     

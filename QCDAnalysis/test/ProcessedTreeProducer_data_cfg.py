@@ -7,29 +7,29 @@ process.load('Configuration.StandardSequences.Services_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.GlobalTag.globaltag = 'GR_R_311_V2::All'
 process.load("CondCore.DBCommon.CondDBCommon_cfi")
-#from CondCore.DBCommon.CondDBSetup_cfi import *
-#process.jec = cms.ESSource("PoolDBESSource",
-#      DBParameters = cms.PSet(
-#        messageLevel = cms.untracked.int32(0)
-#        ),
-#      timetype = cms.string('runnumber'),
-#      toGet = cms.VPSet(
-#      cms.PSet(
-#            record = cms.string('JetCorrectionsRecord'),
-#            tag    = cms.string('JetCorrectorParametersCollection_Jec11V0_AK7PF'),
-#            label  = cms.untracked.string('AK7PF')
-#            ),
-#      cms.PSet(
-#            record = cms.string('JetCorrectionsRecord'),
-#            tag    = cms.string('JetCorrectorParametersCollection_Jec11V0_AK7Calo'),
-#            label  = cms.untracked.string('AK7Calo')
-#            )
-#      ), 
-#      connect = cms.string('sqlite:Jec11V0.db')
-#)
+from CondCore.DBCommon.CondDBSetup_cfi import *
+process.jec = cms.ESSource("PoolDBESSource",
+      DBParameters = cms.PSet(
+        messageLevel = cms.untracked.int32(0)
+        ),
+      timetype = cms.string('runnumber'),
+      toGet = cms.VPSet(
+      cms.PSet(
+            record = cms.string('JetCorrectionsRecord'),
+            tag    = cms.string('JetCorrectorParametersCollection_Jec10V3_AK7PF'),
+            label  = cms.untracked.string('AK7PF')
+            ),
+      cms.PSet(
+            record = cms.string('JetCorrectionsRecord'),
+            tag    = cms.string('JetCorrectorParametersCollection_Jec10V3_AK7Calo'),
+            label  = cms.untracked.string('AK7Calo')
+            )
+      ), 
+      connect = cms.string('sqlite:Jec10V3.db')
+)
 ##-------------------- Import the JEC services -----------------------
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
-#process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
+process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
 #############   Set the number of events #############
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(-1)
@@ -48,8 +48,8 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     pfjets          = cms.InputTag('ak7PFJets'),
     calojets        = cms.InputTag('ak7CaloJets'),
     ## database entry for the uncertainties ######
-    PFPayloadName   = cms.string(''),
-    CaloPayloadName = cms.string(''),
+    PFPayloadName   = cms.string('AK7PF'),
+    CaloPayloadName = cms.string('AK7Calo'),
     ## calojet ID and extender for the JTA #######
     calojetID       = cms.InputTag('ak7JetID'),
     calojetExtender = cms.InputTag('ak7JetExtender'),
@@ -75,8 +75,8 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     triggerResults  = cms.InputTag("TriggerResults","","HLT"),
     triggerEvent    = cms.InputTag("hltTriggerSummaryAOD","","HLT"),
     ## jec services ##############################
-    pfjecService    = cms.string('ak7PFL1L2L3'),
-    calojecService  = cms.string('ak7CaloL1L2L3')
+    pfjecService    = cms.string('ak7PFL1FastL2L3'),
+    calojecService  = cms.string('ak7CaloL1FastL2L3')
 )
 
 process.path = cms.Path(process.ak7)
