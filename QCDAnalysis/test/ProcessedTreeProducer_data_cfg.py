@@ -59,9 +59,10 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     goodVtxNdof     = cms.double(4), 
     goodVtxZ        = cms.double(24),
     ## preselection cuts ###############
-    maxY            = cms.double(3.5), 
-    minPFPt         = cms.double(20),
-    minCaloPt       = cms.double(20),
+    maxY            = cms.double(5.0), 
+    minPFPt         = cms.double(30),
+    minPFFatPt      = cms.double(10),
+    minCaloPt       = cms.double(30),
     minNPFJets      = cms.int32(1),
     minNCaloJets    = cms.int32(1), 
     ## trigger ##############################

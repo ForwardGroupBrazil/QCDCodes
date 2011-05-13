@@ -21,6 +21,7 @@ class QCDEvent
       void setEvtHdr(const QCDEventHdr& fEvtHdr)                  {EvtHdr_ = fEvtHdr;}
       void setCaloJets(const std::vector<QCDCaloJet>& fCaloJets);
       void setPFJets(const std::vector<QCDPFJet>& fPFJets);
+      void setFatJets(const std::vector<QCDJet>& fFatJets);
       void setGenJets(const std::vector<LorentzVector>& fGenJets);
       void setL1Obj(const std::vector<std::vector<LorentzVector> >& fL1Obj);
       void setHLTObj(const std::vector<std::vector<LorentzVector> >& fHLTObj);
@@ -30,6 +31,7 @@ class QCDEvent
       unsigned int nL1Obj(int i)                       const {return L1Obj_[i].size();}
       unsigned int nHLTObj(int i)                      const {return HLTObj_[i].size();}
       unsigned int nPFJets()                           const {return PFJets_.size();}
+      unsigned int nFatJets()                          const {return FatJets_.size();}
       unsigned int nCaloJets()                         const {return CaloJets_.size();}
       unsigned int nGenJets()                          const {return GenJets_.size();}
       int fired(int i)                                 const {return TriggerDecision_[i];}
@@ -39,6 +41,7 @@ class QCDEvent
       float calomjj();
       float genmjj(); 
       float pfmjjcor(int k);
+      float fatmjjcor(int k);
       float calomjjcor(int k);
       float pfmjjgen();
       float calomjjgen();
@@ -48,6 +51,7 @@ class QCDEvent
       const LorentzVector& l1obj(int itrig, int iobj)  const {return (L1Obj_[itrig])[iobj];}   
       const LorentzVector& genjet(int i)               const {return GenJets_[i];}
       const QCDPFJet&      pfjet(int i)                const {return PFJets_[i];}
+      const QCDJet&        fatjet(int i)               const {return FatJets_[i];}
       const QCDCaloJet&    calojet(int i)              const {return CaloJets_[i];}
       const QCDEventHdr&   evtHdr()                    const {return EvtHdr_;}
  
@@ -64,5 +68,6 @@ class QCDEvent
       std::vector<LorentzVector>               GenJets_;
       std::vector<QCDCaloJet>                  CaloJets_;
       std::vector<QCDPFJet>                    PFJets_;
+      std::vector<QCDJet>                      FatJets_;
 };
 #endif

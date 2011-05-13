@@ -52,6 +52,7 @@ ProcessedTreeProducer::ProcessedTreeProducer(edm::ParameterSet const& cfg)
   mGoodVtxZ          = cfg.getParameter<double>                    ("goodVtxZ");
   mMinCaloPt         = cfg.getParameter<double>                    ("minCaloPt");
   mMinPFPt           = cfg.getParameter<double>                    ("minPFPt");
+  mMinPFFatPt        = cfg.getParameter<double>                    ("minPFFatPt");
   mMaxY              = cfg.getParameter<double>                    ("maxY");
   mMinNCaloJets      = cfg.getParameter<int>                       ("minNCaloJets");
   mMinNPFJets        = cfg.getParameter<int>                       ("minNPFJets");
@@ -115,6 +116,8 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
 { 
   vector<QCDCaloJet>    mCaloJets;
   vector<QCDPFJet>      mPFJets;
+  vector<QCDJet>        mPFFatJets;
+  vector<QCDPFJet>      tmpPFJets;
   vector<LorentzVector> mGenJets;
   QCDEventHdr mEvtHdr; 
   QCDMET mCaloMet,mPFMet;
@@ -280,7 +283,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     edm::RefToBase<reco::Jet> pfjetRef(edm::Ref<PFJetCollection>(pfjets,index));
     double scale = mPFJEC->correction(*i_pfjet,pfjetRef,event,iSetup);
     //---- preselection -----------------
-    if (fabs(i_pfjet->y()) > mMaxY || scale*i_pfjet->pt() < mMinPFPt) continue;
+    if (fabs(i_pfjet->y()) > mMaxY) continue;
     double unc(0.0);
     if (mPFPayloadName != "") {
       mPFUnc->setJetEta(i_pfjet->eta());
@@ -326,9 +329,47 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     else {
       LorentzVector tmpP4(0.0,0.0,0.0,0.0); 
       qcdpfjet.setGen(tmpP4,0);
-    }  
+    }
     if (qcdpfjet.ptCor() >= mMinPFPt)
       mPFJets.push_back(qcdpfjet);
+    if (qcdpfjet.ptCor() >= mMinPFFatPt)
+      tmpPFJets.push_back(qcdpfjet);
+  }
+  //----------- PFFatJets ----------------------
+  if (tmpPFJets.size()>1) {
+    LorentzVector lead[2], fat[2]; 
+    for(unsigned i = 0; i<2; i++) {
+      lead[i] = tmpPFJets[i].p4()*tmpPFJets[i].cor();
+      fat[i]  = tmpPFJets[i].p4()*tmpPFJets[i].cor();
+    }
+    double rmax = 1.1;
+    for(unsigned i = 2; i<tmpPFJets.size(); i++) {
+      if (tmpPFJets[i].looseID() == false) continue;
+      LorentzVector cand = tmpPFJets[i].p4();
+      double dR1 = deltaR(lead[0], cand);
+      double dR2 = deltaR(lead[1], cand);
+      if (dR1 < dR2 && dR1 < rmax) 
+        fat[0] += cand * tmpPFJets[i].cor();
+      else if (dR1 > dR2 && dR2 < rmax) 
+        fat[1] += cand;
+    }
+    QCDJet fatJet[2];
+    for(unsigned i = 0; i<2; i++) { 
+      fatJet[i].setP4(fat[i]);
+      fatJet[i].setLooseID(tmpPFJets[i].looseID());
+      fatJet[i].setTightID(tmpPFJets[i].tightID());
+      fatJet[i].setCor(1.0);
+      fatJet[i].setUnc(tmpPFJets[i].unc());
+      fatJet[i].setGen(tmpPFJets[i].genp4(),tmpPFJets[i].genR());
+    }
+    if (fatJet[0].pt()>fatJet[1].pt()) {
+      mPFFatJets.push_back(fatJet[0]); 
+      mPFFatJets.push_back(fatJet[1]);
+    }
+    else {
+      mPFFatJets.push_back(fatJet[1]); 
+      mPFFatJets.push_back(fatJet[0]);
+    }
   }
   //----------- CaloJets -----------------------
   for(CaloJetCollection::const_iterator i_calojet = calojets->begin(); i_calojet != calojets->end(); i_calojet++) {
@@ -336,7 +377,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     edm::RefToBase<reco::Jet> calojetRef(edm::Ref<CaloJetCollection>(calojets,index));
     double scale = mCALOJEC->correction(*i_calojet,calojetRef,event,iSetup);
     //---- preselection -----------------
-    if (fabs(i_calojet->y()) > mMaxY || scale*i_calojet->pt() < mMinCaloPt) continue;
+    if (fabs(i_calojet->y()) > mMaxY) continue;
     double unc(0.0);
     if (mCaloPayloadName != "") {
       mCALOUnc->setJetEta(i_calojet->eta());
@@ -396,6 +437,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mEvent->setEvtHdr(mEvtHdr);
   mEvent->setCaloJets(mCaloJets);
   mEvent->setPFJets(mPFJets);
+  mEvent->setFatJets(mPFFatJets);
   mEvent->setGenJets(mGenJets);
   mEvent->setCaloMET(mCaloMet);
   mEvent->setPFMET(mPFMet);
