@@ -143,8 +143,8 @@ void DijetMassHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
         int prescale = mEvent->preL1(0) * mEvent->preHLT(0);
         double ymax = TMath::Max(fabs(mEvent->pfjet(0).y()),fabs(mEvent->pfjet(1).y()));
         int ybin = getBin(ymax,mYBND);
-        bool cut1 = (mEvent->pfjet(0).id() == 1 && mEvent->pfjet(0).ptCor() > mMinPt1);
-        bool cut2 = (mEvent->pfjet(1).id() == 1 && mEvent->pfjet(1).ptCor() > mMinPt2);
+        bool cut1 = (mEvent->pfjet(0).looseID() == 1 && mEvent->pfjet(0).ptCor() > mMinPt1);
+        bool cut2 = (mEvent->pfjet(1).looseID() == 1 && mEvent->pfjet(1).ptCor() > mMinPt2);
         if (cut1 && cut2 && ybin > -1) {
           double mjj = mEvent->pfmjjcor(0);
           if (mjj >= mMinMass[ybin]) {
@@ -172,8 +172,8 @@ void DijetMassHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
         int prescale = mEvent->preL1(0) * mEvent->preHLT(0);
         double ymax = TMath::Max(fabs(mEvent->calojet(0).y()),fabs(mEvent->calojet(1).y()));
         int ybin = getBin(ymax,mYBND);
-        bool cut1 = (mEvent->calojet(0).id() == 1 && mEvent->calojet(0).ptCor() > mMinPt1);
-        bool cut2 = (mEvent->calojet(1).id() == 1 && mEvent->calojet(1).ptCor() > mMinPt2);
+        bool cut1 = (mEvent->calojet(0).looseID() == 1 && mEvent->calojet(0).ptCor() > mMinPt1);
+        bool cut2 = (mEvent->calojet(1).looseID() == 1 && mEvent->calojet(1).ptCor() > mMinPt2);
         if (cut1 && cut2 && ybin > -1) {
           double mjj = mEvent->calomjjcor(0);
           if (mjj >= mMinMass[ybin]) {

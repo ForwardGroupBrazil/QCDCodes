@@ -21,6 +21,7 @@ class QCDEvent
       void setEvtHdr(const QCDEventHdr& fEvtHdr)                  {EvtHdr_ = fEvtHdr;}
       void setCaloJets(const std::vector<QCDCaloJet>& fCaloJets);
       void setPFJets(const std::vector<QCDPFJet>& fPFJets);
+      void setGenJets(const std::vector<LorentzVector>& fGenJets);
       void setL1Obj(const std::vector<std::vector<LorentzVector> >& fL1Obj);
       void setHLTObj(const std::vector<std::vector<LorentzVector> >& fHLTObj);
       void setPrescales(const std::vector<int>& fPreL1, const std::vector<int>& fPreHLT) {L1Prescale_ = fPreL1; HLTPrescale_ = fPreHLT;}
@@ -30,11 +31,13 @@ class QCDEvent
       unsigned int nHLTObj(int i)                      const {return HLTObj_[i].size();}
       unsigned int nPFJets()                           const {return PFJets_.size();}
       unsigned int nCaloJets()                         const {return CaloJets_.size();}
+      unsigned int nGenJets()                          const {return GenJets_.size();}
       int fired(int i)                                 const {return TriggerDecision_[i];}
       int preL1(int i)                                 const {return L1Prescale_[i];}
       int preHLT(int i)                                const {return HLTPrescale_[i];}
       float pfmjj();
       float calomjj();
+      float genmjj(); 
       float pfmjjcor(int k);
       float calomjjcor(int k);
       float pfmjjgen();
@@ -43,6 +46,7 @@ class QCDEvent
       const QCDMET&        pfmet()                     const {return PFMet_;} 
       const LorentzVector& hltobj(int itrig, int iobj) const {return (HLTObj_[itrig])[iobj];}  
       const LorentzVector& l1obj(int itrig, int iobj)  const {return (L1Obj_[itrig])[iobj];}   
+      const LorentzVector& genjet(int i)               const {return GenJets_[i];}
       const QCDPFJet&      pfjet(int i)                const {return PFJets_[i];}
       const QCDCaloJet&    calojet(int i)              const {return CaloJets_[i];}
       const QCDEventHdr&   evtHdr()                    const {return EvtHdr_;}
@@ -57,6 +61,7 @@ class QCDEvent
       std::vector<int>                         HLTPrescale_;
       std::vector<std::vector<LorentzVector> > HLTObj_;
       std::vector<std::vector<LorentzVector> > L1Obj_;
+      std::vector<LorentzVector>               GenJets_;
       std::vector<QCDCaloJet>                  CaloJets_;
       std::vector<QCDPFJet>                    PFJets_;
 };

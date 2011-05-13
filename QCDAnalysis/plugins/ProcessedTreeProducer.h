@@ -46,7 +46,7 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     bool   mIsMCarlo;
     int    mGoodVtxNdof,mMinNCaloJets,mMinNPFJets;
     double mGoodVtxZ; 
-    double mMinCaloPt,mMinPFPt;
+    double mMinCaloPt,mMinPFPt,mMinGenPt,mMaxY;
     std::string mCaloJECservice;
     std::string mPFJECservice;
     std::string mPFPayloadName;

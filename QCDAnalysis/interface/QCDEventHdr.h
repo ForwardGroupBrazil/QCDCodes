@@ -14,7 +14,6 @@ class QCDEventHdr
       void setBunch(int fBunch)                              {mBunch = fBunch;}
       void setPthat(float fPthat)                            {mPthat = fPthat;}
       void setWeight(float fWeight)                          {mWeight = fWeight;} 
-      void setPU(float fPU)                                  {mPU = fPU;}
       void setVertices(int fNVtx, int fNVtxGood)             {mNVtx = fNVtx; mNVtxGood = fNVtxGood;}
       void setPV(bool fIsPVgood, float fndof, float fx, float fy, float fz) {mIsPVgood = fIsPVgood; mPVndof = fndof; mPVx = fx; mPVy = fy; mPVz = fz;}
       int runNo()     const {return mRun;} 
@@ -23,7 +22,6 @@ class QCDEventHdr
       int bunch()     const {return mBunch;}
       int nVtx()      const {return mNVtx;}
       int nVtxGood()  const {return mNVtxGood;}
-      int PU()        const {return mPU;}         
       bool isPVgood() const {return mIsPVgood;}
       float PVndof()  const {return mPVndof;} 
       float PVx()     const {return mPVx;}
@@ -39,7 +37,6 @@ class QCDEventHdr
         int mBunch;
         int mNVtx;
         int mNVtxGood;
-        int mPU;
         float mPVndof;
         float mPVx;
         float mPVy;

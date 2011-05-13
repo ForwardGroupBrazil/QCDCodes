@@ -1,14 +1,11 @@
 #include "KKousour/QCDAnalysis/interface/QCDEvent.h"
 //---------------------------------------------------
 QCDEvent::QCDEvent()
-{
-  //EvtHdr_   = new QCDEventHdr();
-  //CaloMet_  = new QCDMET();
-  //PFMet_    = new QCDMET(); 
-  HLTObj_.clear();
+{  
   L1Obj_.clear();
   CaloJets_.clear();
   PFJets_.clear(); 
+  GenJets_.clear();
 }
 //---------------------------------------------------
 QCDEvent::~QCDEvent()
@@ -28,6 +25,14 @@ void QCDEvent::setPFJets(const std::vector<QCDPFJet>& fPFJets)
   PFJets_.clear();
   for(unsigned i=0;i<fPFJets.size();i++) {
     PFJets_.push_back(fPFJets[i]);
+  }
+}
+//---------------------------------------------------
+void QCDEvent::setGenJets(const std::vector<LorentzVector>& fGenJets)
+{
+  GenJets_.clear();
+  for(unsigned i=0;i<fGenJets.size();i++) {
+    GenJets_.push_back(fGenJets[i]);
   }
 }
 //---------------------------------------------------
@@ -52,6 +57,15 @@ void QCDEvent::setHLTObj(const std::vector<std::vector<LorentzVector> >& fHLTObj
       vv.push_back(fHLTObj[i][j]);
     }
     HLTObj_.push_back(vv);
+  }
+}
+//---------------------------------------------------
+float QCDEvent::genmjj()
+{
+  if (GenJets_.size() < 2)
+    return 0.0;
+  else {
+    return (GenJets_[0]+GenJets_[1]).mass();
   }
 }
 //---------------------------------------------------

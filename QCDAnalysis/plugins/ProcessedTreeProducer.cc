@@ -38,7 +38,6 @@
 #include "DataFormats/METReco/interface/CaloMETCollection.h"
 
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
-#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
@@ -53,6 +52,7 @@ ProcessedTreeProducer::ProcessedTreeProducer(edm::ParameterSet const& cfg)
   mGoodVtxZ          = cfg.getParameter<double>                    ("goodVtxZ");
   mMinCaloPt         = cfg.getParameter<double>                    ("minCaloPt");
   mMinPFPt           = cfg.getParameter<double>                    ("minPFPt");
+  mMaxY              = cfg.getParameter<double>                    ("maxY");
   mMinNCaloJets      = cfg.getParameter<int>                       ("minNCaloJets");
   mMinNPFJets        = cfg.getParameter<int>                       ("minNPFJets");
   mCaloJetID         = cfg.getParameter<edm::InputTag>             ("calojetID");
@@ -60,8 +60,8 @@ ProcessedTreeProducer::ProcessedTreeProducer(edm::ParameterSet const& cfg)
   mPFJetsName        = cfg.getParameter<edm::InputTag>             ("pfjets");
   mCaloJetsName      = cfg.getParameter<edm::InputTag>             ("calojets");
   mGenJetsName       = cfg.getUntrackedParameter<edm::InputTag>    ("genjets",edm::InputTag(""));
-  mSrcPU             = cfg.getUntrackedParameter<edm::InputTag>    ("srcPU",edm::InputTag(""));
   mIsMCarlo          = cfg.getUntrackedParameter<bool>             ("isMCarlo",false);
+  mMinGenPt          = cfg.getUntrackedParameter<double>           ("minGenPt",30);
   processName_       = cfg.getParameter<std::string>               ("processName");
   triggerNames_      = cfg.getParameter<std::vector<std::string> > ("triggerName");
   triggerResultsTag_ = cfg.getParameter<edm::InputTag>             ("triggerResults");
@@ -113,8 +113,9 @@ void ProcessedTreeProducer::beginRun(edm::Run const & iRun, edm::EventSetup cons
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup const& iSetup) 
 { 
-  vector<QCDCaloJet> mCaloJets;
-  vector<QCDPFJet> mPFJets;
+  vector<QCDCaloJet>    mCaloJets;
+  vector<QCDPFJet>      mPFJets;
+  vector<LorentzVector> mGenJets;
   QCDEventHdr mEvtHdr; 
   QCDMET mCaloMet,mPFMet;
   //-------------- Basic Event Info ------------------------------
@@ -232,18 +233,14 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mEvtHdr.setPV(isPVgood,PVndof,PVx,PVy,PVz);
   //-------------- Generator Info -------------------------------------
   Handle<GenEventInfoProduct> hEventInfo;
-  Handle<PileupSummaryInfo> puInfo;
   if (mIsMCarlo) { 
     event.getByLabel("generator", hEventInfo);
     mEvtHdr.setPthat(hEventInfo->binningValues()[0]);
     mEvtHdr.setWeight(hEventInfo->weight());
-    event.getByLabel(mSrcPU,puInfo);
-    mEvtHdr.setPU(puInfo->getPU_NumInteractions());
   } 
   else {
     mEvtHdr.setPthat(0);
     mEvtHdr.setWeight(0); 
-    mEvtHdr.setPU(0);
   }
   //---------------- Jets ---------------------------------------------
   mPFJEC   = JetCorrector::getJetCorrector(mPFJECservice,iSetup);
@@ -269,13 +266,21 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   event.getByLabel(mCaloJetsName,calojets);
   event.getByLabel(mCaloJetExtender,calojetExtender);
   event.getByLabel(mCaloJetID,calojetID);
-  if (mIsMCarlo)
+  if (mIsMCarlo) {
     event.getByLabel(mGenJetsName,genjets);
-
+    for(GenJetCollection::const_iterator i_gen = genjets->begin(); i_gen != genjets->end(); i_gen++) {
+      if (i_gen->pt() > mMinGenPt && fabs(i_gen->y()) < mMaxY) {
+        mGenJets.push_back(i_gen->p4());
+      }
+    }
+  }
+  //----------- PFJets -------------------------
   for(PFJetCollection::const_iterator i_pfjet = pfjets->begin(); i_pfjet != pfjets->end(); i_pfjet++) {
     int index = i_pfjet-pfjets->begin();
     edm::RefToBase<reco::Jet> pfjetRef(edm::Ref<PFJetCollection>(pfjets,index));
     double scale = mPFJEC->correction(*i_pfjet,pfjetRef,event,iSetup);
+    //---- preselection -----------------
+    if (fabs(i_pfjet->y()) > mMaxY || scale*i_pfjet->pt() < mMinPFPt) continue;
     double unc(0.0);
     if (mPFPayloadName != "") {
       mPFUnc->setJetEta(i_pfjet->eta());
@@ -291,12 +296,14 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     double phf   = i_pfjet->photonEnergyFraction();
     double elf   = i_pfjet->electronEnergyFraction();
     double chm   = i_pfjet->chargedHadronMultiplicity();
-    int nhm   = i_pfjet->neutralHadronMultiplicity();
-    int phm   = i_pfjet->photonMultiplicity();
-    int elm   = i_pfjet->electronMultiplicity();
-    int npr   = i_pfjet->chargedMultiplicity() + i_pfjet->neutralMultiplicity();
-    bool looseID  = (npr>1 && phf<0.99 && nhf<0.99 && ((fabs(i_pfjet->eta())<=2.4 && elf<0.99 && chf>0 && chm>0) || fabs(i_pfjet->eta())>2.4)) ;
-    qcdpfjet.setID(looseID);
+    int nhm      = i_pfjet->neutralHadronMultiplicity();
+    int phm      = i_pfjet->photonMultiplicity();
+    int elm      = i_pfjet->electronMultiplicity();
+    int npr      = i_pfjet->chargedMultiplicity() + i_pfjet->neutralMultiplicity();
+    bool looseID  = (npr>1 && phf<0.99 && nhf<0.99 && ((fabs(i_pfjet->eta())<=2.4 && elf<0.99 && chf>0 && chm>0) || fabs(i_pfjet->eta())>2.4));
+    bool tightID  = (npr>1 && phf<0.99 && nhf<0.99 && ((fabs(i_pfjet->eta())<=2.4 && nhf<0.9 && phf<0.9 && elf<0.99 && chf>0 && chm>0) || fabs(i_pfjet->eta())>2.4));
+    qcdpfjet.setLooseID(looseID);
+    qcdpfjet.setTightID(tightID);
     qcdpfjet.setFrac(chf,nhf,phf,elf);
     qcdpfjet.setMulti(chm,nhm,phm,elm);
     if (mIsMCarlo) {
@@ -309,7 +316,12 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
           i_matched = i_gen;
         }
       }
-      qcdpfjet.setGen(i_matched->p4(),rmin);
+      if (genjets->size() == 0) {
+        LorentzVector tmpP4(0.0,0.0,0.0,0.0);
+        qcdpfjet.setGen(tmpP4,0);
+      }
+      else
+        qcdpfjet.setGen(i_matched->p4(),rmin);
     }
     else {
       LorentzVector tmpP4(0.0,0.0,0.0,0.0); 
@@ -323,6 +335,8 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     int index = i_calojet-calojets->begin();
     edm::RefToBase<reco::Jet> calojetRef(edm::Ref<CaloJetCollection>(calojets,index));
     double scale = mCALOJEC->correction(*i_calojet,calojetRef,event,iSetup);
+    //---- preselection -----------------
+    if (fabs(i_calojet->y()) > mMaxY || scale*i_calojet->pt() < mMinCaloPt) continue;
     double unc(0.0);
     if (mCaloPayloadName != "") {
       mCALOUnc->setJetEta(i_calojet->eta());
@@ -340,8 +354,10 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     int nTrkVtx  = JetExtendedAssociation::tracksAtVertexNumber(*calojetExtender,*i_calojet);
     int nTrkCalo = JetExtendedAssociation::tracksAtCaloNumber(*calojetExtender,*i_calojet);
     qcdcalojet.setVar(emf,fHPD,fRBX,n90hits,nTrkCalo,nTrkVtx);		   
-    bool looseID  = ((emf > 0.01 || fabs(i_calojet->eta()) > 2.6) && (n90hits > 1) && (fHPD < 0.98));
-    qcdcalojet.setID(looseID);
+    bool looseID  = ((emf>0.01 || fabs(i_calojet->eta())>2.6) && (n90hits>1) && (fHPD<0.98));
+    bool tightID  = ((emf>0.01 || fabs(i_calojet->eta())>2.6) && (n90hits>1) && ((fHPD<0.98 && i_calojet->pt()<=25) || (fHPD<0.95 && i_calojet->pt()>25)));
+    qcdcalojet.setLooseID(looseID);
+    qcdcalojet.setTightID(tightID);
     if (mIsMCarlo) {
       GenJetCollection::const_iterator i_matched;
       float rmin(999);
@@ -352,7 +368,12 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
           i_matched = i_gen;
         }
       }
-      qcdcalojet.setGen(i_matched->p4(),rmin);
+      if (genjets->size() == 0) {
+        LorentzVector tmpP4(0.0,0.0,0.0,0.0);
+        qcdcalojet.setGen(tmpP4,0);
+      }
+      else
+        qcdcalojet.setGen(i_matched->p4(),rmin);
     }
     else {
       LorentzVector tmpP4(0.0,0.0,0.0,0.0); 
@@ -375,6 +396,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mEvent->setEvtHdr(mEvtHdr);
   mEvent->setCaloJets(mCaloJets);
   mEvent->setPFJets(mPFJets);
+  mEvent->setGenJets(mGenJets);
   mEvent->setCaloMET(mCaloMet);
   mEvent->setPFMET(mPFMet);
   mEvent->setL1Obj(mL1Objects);
