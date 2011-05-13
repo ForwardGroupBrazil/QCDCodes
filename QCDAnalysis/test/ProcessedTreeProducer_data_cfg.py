@@ -27,21 +27,23 @@ process.jec = cms.ESSource("PoolDBESSource",
       ), 
       connect = cms.string('sqlite:Jec10V3.db')
 )
+process.load('Configuration.StandardSequences.MagneticField_38T_cff')
+process.load('Configuration.StandardSequences.Geometry_cff')
+process.load('RecoJets.Configuration.RecoPFJets_cff')
+process.load('RecoJets.Configuration.RecoJets_cff')
 ##-------------------- Import the JEC services -----------------------
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
 process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
 #############   Set the number of events #############
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(-1)
+    input = cms.untracked.int32(100)
 )
 #############   Define the source file ###############
-process.load('KKousour.QCDAnalysis.SkimFileNames_cfi')
-#############   Define the source file ###############
-#process.source = cms.Source("PoolSource",
-#    fileNames = cms.untracked.vstring('file:/data/kkousour/JetAOD_9_1_Bh3.root')
-#)
+process.source = cms.Source("PoolSource",
+    fileNames = cms.untracked.vstring('/store/data/Run2011A/Jet/AOD/PromptReco-v1/000/161/311/AE2177F9-DF57-E011-BD15-001D09F26509.root')
+)
 ############# processed tree producer ##################
-process.TFileService = cms.Service("TFileService",fileName = cms.string('/uscms_data/d2/kkousour/7TeV/2011/Jets/ProcessedTree_data.root'))
+process.TFileService = cms.Service("TFileService",fileName = cms.string('ProcessedTree_data.root'))
 
 process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     ## jet collections ###########################
@@ -56,7 +58,8 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     ## set the conditions for bood Vtx counting ##
     goodVtxNdof     = cms.double(4), 
     goodVtxZ        = cms.double(24),
-    ## number of jets to be stored ###############
+    ## preselection cuts ###############
+    maxY            = cms.double(3.5), 
     minPFPt         = cms.double(20),
     minCaloPt       = cms.double(20),
     minNPFJets      = cms.int32(1),
@@ -75,12 +78,18 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     triggerResults  = cms.InputTag("TriggerResults","","HLT"),
     triggerEvent    = cms.InputTag("hltTriggerSummaryAOD","","HLT"),
     ## jec services ##############################
-    pfjecService    = cms.string('ak7PFL1FastL2L3'),
-    calojecService  = cms.string('ak7CaloL1FastL2L3')
+    pfjecService    = cms.string('ak7PFL1FastL2L3Residual'),
+    calojecService  = cms.string('ak7CaloL1L2L3Residual')
 )
+############# turn-on the fastjet area calculation needed for the L1Fastjet ##############
+############# applied only to PFJets because if CaloJets are re-recoed the JetID map will be lost #####
+process.kt6PFJets.doRhoFastjet = True
+process.kt6PFJets.Rho_EtaMax = cms.double(5.0)
+process.ak7PFJets.doAreaFastjet = True
+process.ak7PFJets.Rho_EtaMax = cms.double(5.0)
 
-process.path = cms.Path(process.ak7)
+process.path = cms.Path(process.kt6PFJets * process.ak7PFJets * process.ak7)
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 10000
+process.MessageLogger.cerr.FwkReport.reportEvery = 10
 
 
