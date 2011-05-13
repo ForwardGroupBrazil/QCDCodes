@@ -336,22 +336,32 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       tmpPFJets.push_back(qcdpfjet);
   }
   //----------- PFFatJets ----------------------
+  sort(tmpPFJets.begin(),tmpPFJets.end(),sort_pfjets);
   if (tmpPFJets.size()>1) {
     LorentzVector lead[2], fat[2]; 
+    float sumPt[2],sumPtUnc[2];
     for(unsigned i = 0; i<2; i++) {
-      lead[i] = tmpPFJets[i].p4()*tmpPFJets[i].cor();
-      fat[i]  = tmpPFJets[i].p4()*tmpPFJets[i].cor();
+      lead[i]     = tmpPFJets[i].p4()*tmpPFJets[i].cor();
+      fat[i]      = tmpPFJets[i].p4()*tmpPFJets[i].cor();
+      sumPt[i]    = tmpPFJets[i].ptCor();
+      sumPtUnc[i] = tmpPFJets[i].ptCor() * tmpPFJets[i].unc();
     }
     double rmax = 1.1;
     for(unsigned i = 2; i<tmpPFJets.size(); i++) {
       if (tmpPFJets[i].looseID() == false) continue;
       LorentzVector cand = tmpPFJets[i].p4();
-      double dR1 = deltaR(lead[0], cand);
-      double dR2 = deltaR(lead[1], cand);
-      if (dR1 < dR2 && dR1 < rmax) 
-        fat[0] += cand * tmpPFJets[i].cor();
-      else if (dR1 > dR2 && dR2 < rmax) 
-        fat[1] += cand;
+      double dR1 = deltaR(lead[0],cand);
+      double dR2 = deltaR(lead[1],cand);
+      if (dR1 < dR2 && dR1 < rmax) {
+        fat[0]      += cand * tmpPFJets[i].cor();
+        sumPt[0]    += tmpPFJets[i].ptCor();
+        sumPtUnc[0] += tmpPFJets[i].ptCor()*tmpPFJets[i].unc();
+      }
+      else if (dR1 > dR2 && dR2 < rmax) {
+        fat[1]      += cand;
+        sumPt[1]    += tmpPFJets[i].ptCor();
+        sumPtUnc[1] += tmpPFJets[i].ptCor()*tmpPFJets[i].unc(); 
+      }
     }
     QCDJet fatJet[2];
     for(unsigned i = 0; i<2; i++) { 
@@ -359,7 +369,10 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       fatJet[i].setLooseID(tmpPFJets[i].looseID());
       fatJet[i].setTightID(tmpPFJets[i].tightID());
       fatJet[i].setCor(1.0);
-      fatJet[i].setUnc(tmpPFJets[i].unc());
+      if (sumPt[i] > 0)
+        fatJet[i].setUnc(sumPtUnc[i]/sumPt[i]);
+      else
+        fatJet[i].setUnc(0.0); 
       fatJet[i].setGen(tmpPFJets[i].genp4(),tmpPFJets[i].genR());
     }
     if (fatJet[0].pt()>fatJet[1].pt()) {

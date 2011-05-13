@@ -27,6 +27,7 @@ InclusiveHistos::InclusiveHistos(edm::ParameterSet const& cfg)
   mDirName   = cfg.getParameter<std::string> ("dirname");
   mTriggers  = cfg.getParameter<std::vector<std::string> > ("triggers");
   mIsMC      = cfg.getParameter<bool> ("isMC");
+  mTightID   = cfg.getParameter<bool> ("tightID");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void InclusiveHistos::beginJob() 
@@ -221,7 +222,10 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
               pf_counter_y[itrig][ybin]++;
               if (mEvent->pfjet(j).ptCor() >= mMinPt) {
                 pf_counter_pt[itrig][ybin]++;
-                if (mEvent->pfjet(j).tightID()) {
+                bool cutID = mEvent->pfjet(j).looseID();
+                if (mTightID)
+                  cutID = mEvent->pfjet(j).tightID(); 
+                if (cutID) {
                   pf_counter_id[itrig][ybin]++;
                   nPFGoodJets++;
                   mPFPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor(),wt);
@@ -248,7 +252,10 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
               calo_counter_y[itrig][ybin]++;
               if (mEvent->calojet(j).ptCor() >= mMinPt) {
                 calo_counter_pt[itrig][ybin]++;
-                if (mEvent->calojet(j).tightID()) {
+                bool cutID = mEvent->calojet(j).looseID();
+                if (mTightID)
+                  cutID = mEvent->calojet(j).tightID();
+                if (cutID) {
                   calo_counter_id[itrig][ybin]++;
                   nCaloGoodJets++;
                   mCaloPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor(),wt);

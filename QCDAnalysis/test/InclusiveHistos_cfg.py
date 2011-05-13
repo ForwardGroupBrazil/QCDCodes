@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("myprocess")
-process.TFileService=cms.Service("TFileService",fileName=cms.string('InclusiveHistos_MinPt100.root'))
+process.TFileService=cms.Service("TFileService",fileName=cms.string('InclusiveHistos_MinPt220_looseID.root'))
 
 ##-------------------- Define the source  ----------------------------
 process.maxEvents = cms.untracked.PSet(
@@ -15,8 +15,8 @@ process.inclusive = cms.EDAnalyzer('InclusiveHistos',
     treename      = cms.string('ProcessedTree'),
     dirname       = cms.string('ak7'),
     yBnd          = cms.vdouble(0.0,0.5,1.0,1.5,2.0,2.5,3.0),
-    ptBnd         = cms.vdouble(30, 40, 53, 67, 81, 97, 114, 133, 153, 174, 196, 220, 245, 272, 300, 330, 362, 395, 430, 468, 507, 548, 592, 638, 686, 737, 790, 846, 905, 967, 1032, 1101, 1172, 1248, 1327, 1410, 1497, 1588, 1684, 1784, 1890, 2000, 2116, 2238, 2366, 2500, 2640, 2787, 2941, 3103, 3273, 3500),
-    minPt         = cms.double(100),
+    ptBnd         = cms.vdouble(30, 40, 55, 70, 85, 100, 115, 135, 155, 175, 195, 220, 245, 270, 300, 330, 360, 390, 430, 470, 510, 550, 600, 640, 690, 740, 790, 850, 910, 970, 1030, 1100, 1170, 1250, 1330, 1410, 1500, 1590, 1680, 1780, 1890, 2000, 2120, 2240, 2370, 2500, 2650, 2800, 2950, 3100, 3270, 3500),
+    minPt         = cms.double(220),
     triggers      = cms.vstring('HLT_Jet30_v1','HLT_Jet30_v2',
                                 'HLT_Jet60_v1','HLT_Jet60_v2',
                                 'HLT_Jet80_v1','HLT_Jet80_v2',
@@ -26,8 +26,8 @@ process.inclusive = cms.EDAnalyzer('InclusiveHistos',
                                 'HLT_Jet240_v1','HLT_Jet240_v2',
                                 'HLT_Jet300_v1',
                                 'HLT_Jet370_v1','HLT_Jet370_v2'),
-    isMC          = cms.bool(False),
-    usePF         = cms.bool(True)     
+    isMC          = cms.bool(False),    
+    tightID       = cms.bool(False)
 )
 
 process.p = cms.Path(process.inclusive)

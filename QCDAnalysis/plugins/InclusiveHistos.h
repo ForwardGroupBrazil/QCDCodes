@@ -29,6 +29,7 @@ class InclusiveHistos : public edm::EDAnalyzer
     int getBin(double x, const std::vector<double>& boundaries); 
     //---- configurable parameters --------   
     bool mIsMC;
+    bool mTightID;
     double mMinPt;
     std::string mFileName,mTreeName,mDirName;
     std::vector<double> mYBND,mPTBND;
