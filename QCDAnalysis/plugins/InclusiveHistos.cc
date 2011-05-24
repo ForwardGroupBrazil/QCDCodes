@@ -21,13 +21,17 @@ InclusiveHistos::InclusiveHistos(edm::ParameterSet const& cfg)
 {
   mYBND      = cfg.getParameter<std::vector<double> > ("yBnd");
   mPTBND     = cfg.getParameter<std::vector<double> > ("ptBnd");
-  mMinPt     = cfg.getParameter<double> ("minPt");
+  mMinPt     = cfg.getParameter<std::vector<double> > ("minPt");
   mFileName  = cfg.getParameter<std::string> ("filename");
   mTreeName  = cfg.getParameter<std::string> ("treename");
   mDirName   = cfg.getParameter<std::string> ("dirname");
   mTriggers  = cfg.getParameter<std::vector<std::string> > ("triggers");
   mIsMC      = cfg.getParameter<bool> ("isMC");
-  mTightID   = cfg.getParameter<bool> ("tightID");
+  mNEvents   = cfg.getParameter<int>  ("nEvents"); 
+  mJetID     = cfg.getParameter<int>  ("jetID");
+  mHCALNoise = cfg.getParameter<int>  ("hcalNoiseFilter");
+  if (mMinPt.size() != mTriggers.size())
+    throw cms::Exception("InclusiveHistos: ")<<" Number of pt thresholds must be equal to the number of triggers\n";
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void InclusiveHistos::beginJob() 
@@ -87,6 +91,15 @@ void InclusiveHistos::beginJob()
     mPFJetMulti[itrig]   = mPFDir.make<TH1F>(name,name,20,0,20);
     mCaloJetMulti[itrig] = mCaloDir.make<TH1F>(name,name,20,0,20);
     for(unsigned iy=0;iy<mYBND.size()-1;iy++) {
+      //-------- Njets histograms -------------------------
+      sprintf(name,"NPFJetsVsRun_Ybin%d%s",iy,ss.c_str());
+      mNPFJets[itrig][iy] = mPFDir.make<TH1F>(name,name,3,0,3);
+      mNPFJets[itrig][iy]->SetBit(TH1::kCanRebin);
+      mNPFJets[itrig][iy]->Sumw2();
+      sprintf(name,"NCaloJetsVsRun_Ybin%d%s",iy,ss.c_str());
+      mNCaloJets[itrig][iy] = mCaloDir.make<TH1F>(name,name,3,0,3);
+      mNCaloJets[itrig][iy]->SetBit(TH1::kCanRebin);
+      mNCaloJets[itrig][iy]->Sumw2();
       //-------- pt histograms ----------------------------
       sprintf(name,"Pt_Ybin%d%s",iy,ss.c_str());
       mPFPt[itrig][iy] = mPFDir.make<TH1F>(name,name,mPTBND.size()-1,auxPt);
@@ -162,19 +175,30 @@ int InclusiveHistos::getBin(double x, const std::vector<double>& boundaries)
   return 0;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
+int InclusiveHistos::findRun(int x, const std::vector<int>& runs)
+{
+  int result(-1);
+  for(unsigned i=0;i<runs.size();i++)
+    if (x == runs[i])
+      return i;
+  return result;
+}
+//////////////////////////////////////////////////////////////////////////////////////////
 void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSetup) 
 { 
   unsigned NEntries = mTree->GetEntries();
   cout<<"File: "<<mFileName<<endl;
   cout<<"Reading TREE: "<<NEntries<<" events"<<endl;
   int decade = 0;
-  int counter_hlt[30],counter_pv[30];
+  int counter_hlt[30],counter_pv[30],counter_hcal[30];
   int pf_counter_y[30][10],pf_counter_pt[30][10],pf_counter_id[30][10];
   int calo_counter_y[30][10],calo_counter_pt[30][10],calo_counter_id[30][10];
   int Ntrig = (int)mTriggers.size();
+  vector<int> Runs;
   for(int itrig=0;itrig<TMath::Max(1,Ntrig);itrig++) {
-    counter_hlt[itrig] = 0;
-    counter_pv[itrig]  = 0;
+    counter_hlt[itrig]  = 0;
+    counter_pv[itrig]   = 0;
+    counter_hcal[itrig] = 0;
     for(int iy=0;iy<10;iy++) {
       pf_counter_y[itrig][iy]    = 0;
       pf_counter_pt[itrig][iy]   = 0;
@@ -185,7 +209,10 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
     }
   }
   //---------- loop over the events ----------------------
-  for(unsigned i=0;i<NEntries;i++) {
+  unsigned NN = NEntries;
+  if (mNEvents > -1)
+    NN = (unsigned)mNEvents;
+  for(unsigned i=0;i<NN;i++) {
     double progress = 10.0*i/(1.0*NEntries);
     int k = TMath::FloorNint(progress); 
     if (k > decade) 
@@ -193,12 +220,13 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
     decade = k;          
     mTree->GetEntry(i);
     double wt(1.0);
+    char name[1000];
     if (mIsMC)
       wt = mEvent->evtHdr().weight(); 
     //---------- loop over the triggers ----------------------
     for(int itrig=0;itrig<TMath::Max(1,Ntrig);itrig++) {
       int prescale(1),ihlt;
-      bool hltPass;
+      bool hltPass(false);
       if (Ntrig == 0) {
         ihlt = 0;
         hltPass = true;
@@ -215,68 +243,84 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
         counter_hlt[itrig]++;
         if (mEvent->evtHdr().isPVgood() == 1) {
           counter_pv[itrig]++;
-          int nPFGoodJets(0);
-          for(unsigned j=0;j<mEvent->nPFJets();j++) {
-            int ybin = getBin(fabs(mEvent->pfjet(j).y()),mYBND);  
-            if (ybin > -1) {
-              pf_counter_y[itrig][ybin]++;
-              if (mEvent->pfjet(j).ptCor() >= mMinPt) {
-                pf_counter_pt[itrig][ybin]++;
-                bool cutID = mEvent->pfjet(j).looseID();
-                if (mTightID)
-                  cutID = mEvent->pfjet(j).tightID(); 
-                if (cutID) {
-                  pf_counter_id[itrig][ybin]++;
-                  nPFGoodJets++;
-                  mPFPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor(),wt);
-                  mPFNormPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor(),prescale);
-                  double x = mEvent->pfjet(j).ptCor()*cosh(mEvent->pfjet(j).y())/3500;
-                  mPFX[itrig][ybin]->Fill(x,wt);
-                  mPFNormX[itrig][ybin]->Fill(x,prescale);
-                  mCHF[itrig][ybin]->Fill((mEvent->pfjet(j)).chf(),wt);
-                  mNHF[itrig][ybin]->Fill((mEvent->pfjet(j)).nhf(),wt);
-                  mPHF[itrig][ybin]->Fill((mEvent->pfjet(j)).phf(),wt);
-                }// cut id
-              }// cut max pt
-            }// cut y  
-          }// pfjet loop
-          mPFJetMulti[itrig]->Fill(nPFGoodJets,wt);
-          for(int ii=0;ii<4;ii++) {
-            if (nPFGoodJets > ii)
-              mPFMETovSUMET[itrig][ii]->Fill(mEvent->pfmet().met_o_sumet(),wt);
-          }
-          int nCaloGoodJets(0);
-          for(unsigned j=0;j<mEvent->nCaloJets();j++) {
-            int ybin = getBin(fabs(mEvent->calojet(j).y()),mYBND);
-            if (ybin > -1) {
-              calo_counter_y[itrig][ybin]++;
-              if (mEvent->calojet(j).ptCor() >= mMinPt) {
-                calo_counter_pt[itrig][ybin]++;
-                bool cutID = mEvent->calojet(j).looseID();
-                if (mTightID)
-                  cutID = mEvent->calojet(j).tightID();
-                if (cutID) {
-                  calo_counter_id[itrig][ybin]++;
-                  nCaloGoodJets++;
-                  mCaloPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor(),wt);
-                  mCaloNormPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor(),prescale);
-                  double x = mEvent->calojet(j).ptCor()*cosh(mEvent->calojet(j).y())/3500;
-                  mCaloX[itrig][ybin]->Fill(x,wt);
-                  mCaloNormX[itrig][ybin]->Fill(x,prescale);
-                  mEMF[itrig][ybin] ->Fill((mEvent->calojet(j)).emf(),wt);
-                  mN90hits[itrig][ybin]->Fill((mEvent->calojet(j)).n90hits(),wt);
-                  mfHPD[itrig][ybin]->Fill((mEvent->calojet(j)).fHPD(),wt);
-                  mNTrkCalo[itrig][ybin]->Fill((mEvent->calojet(j)).nTrkCalo(),wt);
-                  mNTrkVtx[itrig][ybin]->Fill((mEvent->calojet(j)).nTrkVtx(),wt);              
-                }// cut id
-              }// cut min pt
-            }// cut y
-          }// calojet loop
-          mCaloJetMulti[itrig]->Fill(nCaloGoodJets,wt);
-          for(int ii=0;ii<4;ii++) {
-            if (nCaloGoodJets > ii)
-              mCaloMETovSUMET[itrig][ii]->Fill(mEvent->calomet().met_o_sumet(),wt);
-          }
+          bool cut_hcalNoise(true);
+          if (mHCALNoise == 1)
+            cut_hcalNoise = mEvent->evtHdr().looseHCALNoise();
+          if (mHCALNoise == 2)
+            cut_hcalNoise = mEvent->evtHdr().tightHCALNoise(); 
+          if (cut_hcalNoise) {
+            counter_hcal[itrig]++;  
+            int nPFGoodJets(0);
+            for(unsigned j=0;j<mEvent->nPFJets();j++) {
+              int ybin = getBin(fabs(mEvent->pfjet(j).y()),mYBND);  
+              if (ybin > -1) {
+                pf_counter_y[itrig][ybin]++;
+                if (mEvent->pfjet(j).ptCor() >= mMinPt[itrig]) {
+                  pf_counter_pt[itrig][ybin]++;
+                  bool cutID(true);
+                  if (mJetID == 1)
+                    cutID = mEvent->pfjet(j).looseID();
+                  if (mJetID == 2)
+                    cutID = mEvent->pfjet(j).tightID();  
+                  if (cutID) {
+                    pf_counter_id[itrig][ybin]++;
+                    nPFGoodJets++;
+                    mPFPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor(),wt);
+                    mPFNormPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor(),prescale);
+                    double x = mEvent->pfjet(j).ptCor()*cosh(mEvent->pfjet(j).y())/3500;
+                    mPFX[itrig][ybin]->Fill(x,wt);
+                    mPFNormX[itrig][ybin]->Fill(x,prescale);
+                    mCHF[itrig][ybin]->Fill((mEvent->pfjet(j)).chf(),wt);
+                    mNHF[itrig][ybin]->Fill((mEvent->pfjet(j)).nhf(),wt);
+                    mPHF[itrig][ybin]->Fill((mEvent->pfjet(j)).phf(),wt); 
+                    sprintf(name,"%d",mEvent->evtHdr().runNo());	
+                    mNPFJets[itrig][ybin]->Fill(name,prescale);
+                  }// cut id
+                }// cut max pt
+              }// cut y  
+            }// pfjet loop
+            mPFJetMulti[itrig]->Fill(nPFGoodJets,wt);
+            for(int ii=0;ii<4;ii++) {
+              if (nPFGoodJets > ii)
+                mPFMETovSUMET[itrig][ii]->Fill(mEvent->pfmet().met_o_sumet(),wt);
+            }
+            int nCaloGoodJets(0);
+            for(unsigned j=0;j<mEvent->nCaloJets();j++) {
+              int ybin = getBin(fabs(mEvent->calojet(j).y()),mYBND);
+              if (ybin > -1) {
+                calo_counter_y[itrig][ybin]++;
+                if (mEvent->calojet(j).ptCor() >= mMinPt[itrig]) {
+                  calo_counter_pt[itrig][ybin]++;
+                  bool cutID(true);
+                  if (mJetID == 1)
+                    cutID = mEvent->calojet(j).looseID();
+                  if (mJetID == 2)
+                    cutID = mEvent->calojet(j).tightID();
+                  if (cutID) {
+                    calo_counter_id[itrig][ybin]++;
+                    nCaloGoodJets++;
+                    mCaloPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor(),wt);
+                    mCaloNormPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor(),prescale);
+                    double x = mEvent->calojet(j).ptCor()*cosh(mEvent->calojet(j).y())/3500;
+                    mCaloX[itrig][ybin]->Fill(x,wt);
+                    mCaloNormX[itrig][ybin]->Fill(x,prescale);
+                    mEMF[itrig][ybin] ->Fill((mEvent->calojet(j)).emf(),wt);
+                    mN90hits[itrig][ybin]->Fill((mEvent->calojet(j)).n90hits(),wt);
+                    mfHPD[itrig][ybin]->Fill((mEvent->calojet(j)).fHPD(),wt);
+                    mNTrkCalo[itrig][ybin]->Fill((mEvent->calojet(j)).nTrkCalo(),wt);
+                    mNTrkVtx[itrig][ybin]->Fill((mEvent->calojet(j)).nTrkVtx(),wt);              
+                    sprintf(name,"%d",mEvent->evtHdr().runNo());
+                    mNCaloJets[itrig][ybin]->Fill(name,prescale);
+                  }// cut id
+                }// cut min pt
+              }// cut y
+            }// calojet loop
+            mCaloJetMulti[itrig]->Fill(nCaloGoodJets,wt);
+            for(int ii=0;ii<4;ii++) {
+              if (nCaloGoodJets > ii)
+                mCaloMETovSUMET[itrig][ii]->Fill(mEvent->calomet().met_o_sumet(),wt);
+            }
+          }// if hcal noise
         }// if pv
       }// if hlt
     }// trigger loop
@@ -285,13 +329,14 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
     cout<<"*********************************************"<<endl;
     if (Ntrig > 0) {
       cout<<"Trigger path: "              <<mTriggers[itrig]<<endl;
-      cout<<"Events passing the trigger: "<<counter_hlt[itrig]<<endl;
+      cout<<"Events passing the trigger:    "<<counter_hlt[itrig]<<endl;
     } 
-    cout<<"Events passing the PV:      "<<counter_pv[itrig]<<endl;
+    cout<<"Events passing the PV:         "<<counter_pv[itrig]<<endl;
+    cout<<"Events passing the HCAL NOISE: "<<counter_hcal[itrig]<<endl;  
     for(unsigned j=0;j<mYBND.size()-1;j++) {
       cout<<"--------------------------------------------"<<endl; 
       cout<<"["<<mYBND[j]<<", "<<mYBND[j+1]<<"]"<<endl;
-      cout<<"pt > "<<mMinPt<<" GeV, PFJets =  "<<pf_counter_pt[itrig][j]<<", CaloJets = "<<calo_counter_pt[itrig][j]<<endl;
+      cout<<"pt > "<<mMinPt[itrig]<<" GeV, PFJets =  "<<pf_counter_pt[itrig][j]<<", CaloJets = "<<calo_counter_pt[itrig][j]<<endl;
       cout<<"id, PFJets = "<<pf_counter_id[itrig][j]<<", CaloJets = "<<calo_counter_id[itrig][j]<<endl;
     }
   }

@@ -16,8 +16,18 @@ process.jec = cms.ESSource("PoolDBESSource",
       toGet = cms.VPSet(
       cms.PSet(
             record = cms.string('JetCorrectionsRecord'),
+            tag    = cms.string('JetCorrectorParametersCollection_Jec10V3_AK5PF'),
+            label  = cms.untracked.string('AK5PF')
+            ),
+      cms.PSet(
+            record = cms.string('JetCorrectionsRecord'),
             tag    = cms.string('JetCorrectorParametersCollection_Jec10V3_AK7PF'),
             label  = cms.untracked.string('AK7PF')
+            ),
+      cms.PSet(
+            record = cms.string('JetCorrectionsRecord'),
+            tag    = cms.string('JetCorrectorParametersCollection_Jec10V3_AK5Calo'),
+            label  = cms.untracked.string('AK5Calo')
             ),
       cms.PSet(
             record = cms.string('JetCorrectionsRecord'),
@@ -36,7 +46,7 @@ process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
 process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
 #############   Set the number of events #############
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100)
+    input = cms.untracked.int32(-1)
 )
 #############   Define the source file ###############
 process.source = cms.Source("PoolSource",
@@ -82,15 +92,28 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     pfjecService    = cms.string('ak7PFL1FastL2L3Residual'),
     calojecService  = cms.string('ak7CaloL1L2L3Residual')
 )
+
+process.ak5 = process.ak7.clone(
+    pfjets          = 'ak5PFJets',
+    calojets        = 'ak5CaloJets',
+    PFPayloadName   = 'AK5PF',
+    CaloPayloadName = 'AK5Calo',
+    calojetID       = 'ak5JetID',
+    calojetExtender = 'ak5JetExtender',
+    pfjecService    = 'ak5PFL1FastL2L3Residual',
+    calojecService  = 'ak5CaloL1L2L3Residual' 
+)
 ############# turn-on the fastjet area calculation needed for the L1Fastjet ##############
 ############# applied only to PFJets because if CaloJets are re-recoed the JetID map will be lost #####
 process.kt6PFJets.doRhoFastjet = True
 process.kt6PFJets.Rho_EtaMax = cms.double(5.0)
 process.ak7PFJets.doAreaFastjet = True
 process.ak7PFJets.Rho_EtaMax = cms.double(5.0)
+process.ak5PFJets.doAreaFastjet = True
+process.ak5PFJets.Rho_EtaMax = cms.double(5.0)
 
-process.path = cms.Path(process.kt6PFJets * process.ak7PFJets * process.ak7)
+process.path = cms.Path(process.kt6PFJets * process.ak5PFJets * process.ak7PFJets * process.ak5 * process.ak7)
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 10
+process.MessageLogger.cerr.FwkReport.reportEvery = 10000
 
 

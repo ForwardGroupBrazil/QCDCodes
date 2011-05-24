@@ -36,6 +36,7 @@
 #include "DataFormats/METReco/interface/PFMETCollection.h"
 #include "DataFormats/METReco/interface/CaloMET.h"
 #include "DataFormats/METReco/interface/CaloMETCollection.h"
+#include "DataFormats/METReco/interface/HcalNoiseSummary.h"
 
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 
@@ -126,6 +127,10 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mEvtHdr.setEvt(event.id().event());
   mEvtHdr.setLumi(event.luminosityBlock());
   mEvtHdr.setBunch(event.bunchCrossing());
+  //-------------- HCAL Noise Summary -----------------------------
+  Handle<HcalNoiseSummary> noiseSummary; 	 
+  event.getByLabel("hcalnoise", noiseSummary); 	 
+  mEvtHdr.setHCALNoise(noiseSummary->passLooseNoiseFilter(),noiseSummary->passTightNoiseFilter());
   //-------------- Trigger Info -----------------------------------
   event.getByLabel(triggerResultsTag_,triggerResultsHandle_);
   if (!triggerResultsHandle_.isValid()) {

@@ -27,10 +27,13 @@ class InclusiveHistos : public edm::EDAnalyzer
 
   private:  
     int getBin(double x, const std::vector<double>& boundaries); 
+    int findRun(int x, const std::vector<int>& runs);
     //---- configurable parameters --------   
-    bool mIsMC;
-    bool mTightID;
-    double mMinPt;
+    bool   mIsMC;
+    int    mJetID;
+    int    mHCALNoise;
+    int    mNEvents;
+    std::vector<double> mMinPt;
     std::string mFileName,mTreeName,mDirName;
     std::vector<double> mYBND,mPTBND;
     std::vector<std::string> mTriggers;
@@ -40,6 +43,7 @@ class InclusiveHistos : public edm::EDAnalyzer
     TTree *mTree; 
     TFile *mInf;
     TDirectoryFile *mDir;
+    TH1F *mNPFJets[30][10],*mNCaloJets[30][10];
     TH1F *mPFJetMulti[30],*mCaloJetMulti[30],*mPFMETovSUMET[30][10],*mCaloMETovSUMET[30][10];
     TH1F *mPFPt[30][10],*mPFNormPt[30][10],*mPFX[30][10],*mPFNormX[30][10],
          *mCaloPt[30][10],*mCaloNormPt[30][10],*mCaloX[30][10],*mCaloNormX[30][10],
