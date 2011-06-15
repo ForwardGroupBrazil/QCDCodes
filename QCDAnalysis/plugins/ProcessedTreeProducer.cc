@@ -54,14 +54,17 @@ ProcessedTreeProducer::ProcessedTreeProducer(edm::ParameterSet const& cfg)
   mMinCaloPt         = cfg.getParameter<double>                    ("minCaloPt");
   mMinPFPt           = cfg.getParameter<double>                    ("minPFPt");
   mMinPFFatPt        = cfg.getParameter<double>                    ("minPFFatPt");
+  mMinJJMass         = cfg.getParameter<double>                    ("minJJMass");
   mMaxY              = cfg.getParameter<double>                    ("maxY");
   mMinNCaloJets      = cfg.getParameter<int>                       ("minNCaloJets");
   mMinNPFJets        = cfg.getParameter<int>                       ("minNPFJets");
   mCaloJetID         = cfg.getParameter<edm::InputTag>             ("calojetID");
   mCaloJetExtender   = cfg.getParameter<edm::InputTag>             ("calojetExtender");
+  mOfflineVertices   = cfg.getParameter<edm::InputTag>             ("offlineVertices");
   mPFJetsName        = cfg.getParameter<edm::InputTag>             ("pfjets");
   mCaloJetsName      = cfg.getParameter<edm::InputTag>             ("calojets");
   mGenJetsName       = cfg.getUntrackedParameter<edm::InputTag>    ("genjets",edm::InputTag(""));
+  mPrintTriggerMenu  = cfg.getUntrackedParameter<bool>             ("printTriggerMenu",false);
   mIsMCarlo          = cfg.getUntrackedParameter<bool>             ("isMCarlo",false);
   mMinGenPt          = cfg.getUntrackedParameter<double>           ("minGenPt",30);
   processName_       = cfg.getParameter<std::string>               ("processName");
@@ -104,6 +107,9 @@ void ProcessedTreeProducer::beginRun(edm::Run const & iRun, edm::EventSetup cons
         else
           cout<<"exists"<<endl;
       }
+      cout << "Available TriggerNames are: " << endl;
+      if (mPrintTriggerMenu)
+        hltConfig_.dump("Triggers");
     }
   } 
   else {
@@ -218,7 +224,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mEvent->setHLTObj(mHLTObjects);
   //-------------- Vertex Info -----------------------------------
   Handle<reco::VertexCollection> recVtxs;
-  event.getByLabel("offlinePrimaryVertices",recVtxs);
+  event.getByLabel(mOfflineVertices,recVtxs);
   int VtxGood(0);
   bool isPVgood(false);
   float PVx(0),PVy(0),PVz(0),PVndof(0);
@@ -462,7 +468,9 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mEvent->setL1Obj(mL1Objects);
   mEvent->setHLTObj(mHLTObjects);
   if ((mEvent->nPFJets() >= (unsigned)mMinNPFJets) && (mEvent->nCaloJets() >= (unsigned)mMinNCaloJets)) {
-    mTree->Fill();
+    if ((mEvent->pfmjjcor(0) >= mMinJJMass) || (mEvent->calomjjcor(0) >= mMinJJMass) || (mEvent->fatmjjcor(0) >= mMinJJMass)) {
+      mTree->Fill();
+    }
   }
   if (mPFPayloadName != "")
     delete mPFUnc;
