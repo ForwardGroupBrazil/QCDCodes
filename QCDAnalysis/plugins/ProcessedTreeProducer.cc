@@ -54,6 +54,7 @@ ProcessedTreeProducer::ProcessedTreeProducer(edm::ParameterSet const& cfg)
   mMinCaloPt         = cfg.getParameter<double>                    ("minCaloPt");
   mMinPFPt           = cfg.getParameter<double>                    ("minPFPt");
   mMinPFFatPt        = cfg.getParameter<double>                    ("minPFFatPt");
+  mMaxPFFatEta       = cfg.getParameter<double>                    ("maxPFFatEta");
   mMinJJMass         = cfg.getParameter<double>                    ("minJJMass");
   mMaxY              = cfg.getParameter<double>                    ("maxY");
   mMinNCaloJets      = cfg.getParameter<int>                       ("minNCaloJets");
@@ -63,6 +64,8 @@ ProcessedTreeProducer::ProcessedTreeProducer(edm::ParameterSet const& cfg)
   mOfflineVertices   = cfg.getParameter<edm::InputTag>             ("offlineVertices");
   mPFJetsName        = cfg.getParameter<edm::InputTag>             ("pfjets");
   mCaloJetsName      = cfg.getParameter<edm::InputTag>             ("calojets");
+  mSrcCaloRho        = cfg.getParameter<edm::InputTag>             ("srcCaloRho");
+  mSrcPFRho          = cfg.getParameter<edm::InputTag>             ("srcPFRho");
   mGenJetsName       = cfg.getUntrackedParameter<edm::InputTag>    ("genjets",edm::InputTag(""));
   mPrintTriggerMenu  = cfg.getUntrackedParameter<bool>             ("printTriggerMenu",false);
   mIsMCarlo          = cfg.getUntrackedParameter<bool>             ("isMCarlo",false);
@@ -245,6 +248,12 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   }
   mEvtHdr.setVertices(recVtxs->size(),VtxGood);
   mEvtHdr.setPV(isPVgood,PVndof,PVx,PVy,PVz);
+  //-------------- Rho ------------------------------------------------
+  Handle<double> rhoCalo;
+  event.getByLabel(mSrcCaloRho,rhoCalo);
+  Handle<double> rhoPF;
+  event.getByLabel(mSrcPFRho,rhoPF);
+  mEvtHdr.setRho(*rhoCalo,*rhoPF);
   //-------------- Generator Info -------------------------------------
   Handle<GenEventInfoProduct> hEventInfo;
   if (mIsMCarlo) { 
@@ -305,6 +314,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     qcdpfjet.setP4(i_pfjet->p4());
     qcdpfjet.setCor(scale);
     qcdpfjet.setUnc(unc);
+    qcdpfjet.setArea(i_pfjet->jetArea());
     double chf   = i_pfjet->chargedHadronEnergyFraction();
     double nhf   = (i_pfjet->neutralHadronEnergy() + i_pfjet->HFHadronEnergy())/i_pfjet->energy();
     double phf   = i_pfjet->photonEnergyFraction();
@@ -343,7 +353,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     }
     if (qcdpfjet.ptCor() >= mMinPFPt)
       mPFJets.push_back(qcdpfjet);
-    if (qcdpfjet.ptCor() >= mMinPFFatPt)
+    if (qcdpfjet.ptCor() >= mMinPFFatPt && fabs(qcdpfjet.eta()) < mMaxPFFatEta)
       tmpPFJets.push_back(qcdpfjet);
   }
   //----------- PFFatJets ----------------------
@@ -380,6 +390,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       fatJet[i].setLooseID(tmpPFJets[i].looseID());
       fatJet[i].setTightID(tmpPFJets[i].tightID());
       fatJet[i].setCor(1.0);
+      fatJet[i].setArea(0.0);
       if (sumPt[i] > 0)
         fatJet[i].setUnc(sumPtUnc[i]/sumPt[i]);
       else
@@ -412,6 +423,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     qcdcalojet.setP4(i_calojet->p4());
     qcdcalojet.setCor(scale);
     qcdcalojet.setUnc(unc);
+    qcdcalojet.setArea(i_calojet->jetArea());
     double emf      = i_calojet->emEnergyFraction();
     int n90hits  = int((*calojetID)[calojetRef].n90Hits);
     double fHPD     = (*calojetID)[calojetRef].fHPD;

@@ -47,7 +47,7 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     bool   mPrintTriggerMenu;
     int    mGoodVtxNdof,mMinNCaloJets,mMinNPFJets;
     double mGoodVtxZ; 
-    double mMinCaloPt,mMinPFPt,mMinPFFatPt,mMinGenPt,mMaxY,mMinJJMass;
+    double mMinCaloPt,mMinPFPt,mMinPFFatPt,mMaxPFFatEta,mMinGenPt,mMaxY,mMinJJMass;
     std::string mCaloJECservice;
     std::string mPFJECservice;
     std::string mPFPayloadName;
@@ -58,6 +58,8 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     edm::InputTag mCaloJetID;
     edm::InputTag mCaloJetExtender;
     edm::InputTag mOfflineVertices;
+    edm::InputTag mSrcCaloRho;
+    edm::InputTag mSrcPFRho;
     //---- TRIGGER -------------------------
     std::string   processName_;
     std::vector<std::string> triggerNames_;
