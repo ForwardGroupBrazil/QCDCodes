@@ -12,8 +12,9 @@ class QCDJet
      ~QCDJet() {}
      void setP4(LorentzVector fP4) {P4_ = fP4;}
      void setGen(LorentzVector fP4, float fgenR) {genP4_ = fP4;genR_ = fgenR;}
-     void setCor(float fCor)       {cor_ = fCor;} 
-     void setUnc(float fUnc)       {unc_ = fUnc;} 
+     void setCor(float fCor)       {cor_  = fCor;} 
+     void setUnc(float fUnc)       {unc_  = fUnc;} 
+     void setArea(float fArea)     {area_ = fArea;}
      void setLooseID(bool fLooseID){looseID_ = fLooseID;} 
      void setTightID(bool fTightID){tightID_ = fTightID;}
      const LorentzVector& p4() const {return P4_;}
@@ -31,6 +32,7 @@ class QCDJet
      float mass()    const {return P4_.mass();}
      float cor()     const {return cor_;}
      float unc()     const {return unc_;} 
+     float area()    const {return area_;} 
      bool  looseID() const {return looseID_;}
      bool  tightID() const {return tightID_;}
 
@@ -39,6 +41,7 @@ class QCDJet
      float genR_;
      float cor_;
      float unc_;
+     float area_;
      bool  looseID_;
      bool  tightID_;
 };
