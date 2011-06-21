@@ -60,6 +60,7 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     edm::InputTag mOfflineVertices;
     edm::InputTag mSrcCaloRho;
     edm::InputTag mSrcPFRho;
+    edm::InputTag mSrcPU;
     //---- TRIGGER -------------------------
     std::string   processName_;
     std::vector<std::string> triggerNames_;

@@ -39,6 +39,7 @@
 #include "DataFormats/METReco/interface/HcalNoiseSummary.h"
 
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
@@ -66,6 +67,7 @@ ProcessedTreeProducer::ProcessedTreeProducer(edm::ParameterSet const& cfg)
   mCaloJetsName      = cfg.getParameter<edm::InputTag>             ("calojets");
   mSrcCaloRho        = cfg.getParameter<edm::InputTag>             ("srcCaloRho");
   mSrcPFRho          = cfg.getParameter<edm::InputTag>             ("srcPFRho");
+  mSrcPU             = cfg.getUntrackedParameter<edm::InputTag>    ("srcPU",edm::InputTag("addPileupInfo"));
   mGenJetsName       = cfg.getUntrackedParameter<edm::InputTag>    ("genjets",edm::InputTag(""));
   mPrintTriggerMenu  = cfg.getUntrackedParameter<bool>             ("printTriggerMenu",false);
   mIsMCarlo          = cfg.getUntrackedParameter<bool>             ("isMCarlo",false);
@@ -256,14 +258,30 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mEvtHdr.setRho(*rhoCalo,*rhoPF);
   //-------------- Generator Info -------------------------------------
   Handle<GenEventInfoProduct> hEventInfo;
+  //-------------- Simulated PU Info ----------------------------------
+  Handle<std::vector<PileupSummaryInfo> > PupInfo;
   if (mIsMCarlo) { 
     event.getByLabel("generator", hEventInfo);
     mEvtHdr.setPthat(hEventInfo->binningValues()[0]);
     mEvtHdr.setWeight(hEventInfo->weight());
+    event.getByLabel(mSrcPU, PupInfo);
+    std::vector<PileupSummaryInfo>::const_iterator PUI;
+    int nbx = PupInfo->size();
+    int ootpuEarly(0),ootpuLate(0),intpu(0);
+    for(PUI = PupInfo->begin(); PUI != PupInfo->end(); ++PUI) {
+      if (PUI->getBunchCrossing() < 0)
+        ootpuEarly += PUI->getPU_NumInteractions();
+      else if (PUI->getBunchCrossing() > 0)
+        ootpuLate += PUI->getPU_NumInteractions();
+      else
+        intpu += PUI->getPU_NumInteractions(); 
+    }
+    mEvtHdr.setPU(nbx,ootpuEarly,ootpuLate,intpu);
   } 
   else {
     mEvtHdr.setPthat(0);
     mEvtHdr.setWeight(0); 
+    mEvtHdr.setPU(0,0,0,0);
   }
   //---------------- Jets ---------------------------------------------
   mPFJEC   = JetCorrector::getJetCorrector(mPFJECservice,iSetup);
