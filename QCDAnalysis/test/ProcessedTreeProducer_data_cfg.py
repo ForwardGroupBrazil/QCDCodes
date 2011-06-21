@@ -49,7 +49,7 @@ process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(100)
 )
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 10
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 #############   Define the source file ###############
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring('/store/data/Run2011A/Jet/AOD/PromptReco-v4/000/166/530/B6A20FDB-4C92-E011-89C2-0030487C6090.root',
