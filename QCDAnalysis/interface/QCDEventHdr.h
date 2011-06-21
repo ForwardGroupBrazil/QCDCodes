@@ -14,6 +14,7 @@ class QCDEventHdr
       void setBunch(int fBunch)                              {mBunch = fBunch;}
       void setPthat(float fPthat)                            {mPthat = fPthat;}
       void setWeight(float fWeight)                          {mWeight = fWeight;} 
+      void setRho(float fCaloRho, float fPFRho)              {mCaloRho = fCaloRho; mPFRho = fPFRho;}
       void setVertices(int fNVtx, int fNVtxGood)             {mNVtx = fNVtx; mNVtxGood = fNVtxGood;}
       void setPV(bool fIsPVgood, float fndof, float fx, float fy, float fz) {mIsPVgood = fIsPVgood; mPVndof = fndof; mPVx = fx; mPVy = fy; mPVz = fz;}
       void setHCALNoise(bool fLoose, bool fTight)            {mLooseHCALNoise = fLoose; mTightHCALNoise = fTight;}
@@ -32,6 +33,8 @@ class QCDEventHdr
       float PVz()           const {return mPVz;}
       float pthat()         const {return mPthat;}
       float weight()        const {return mWeight;} 
+      float caloRho()       const {return mCaloRho;} 
+      float pfRho()         const {return mPFRho;} 
       private:
         bool mIsPVgood; 
         bool mLooseHCALNoise;
@@ -48,5 +51,7 @@ class QCDEventHdr
         float mPVz;
         float mPthat;
         float mWeight;
+        float mCaloRho;
+        float mPFRho;
 };
 #endif
