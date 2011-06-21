@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("myprocess")
-process.TFileService=cms.Service("TFileService",fileName=cms.string('InclusiveHistos_MinPt100_mc.root'))
+process.TFileService=cms.Service("TFileService",fileName=cms.string('InclusiveHistos_mc.root'))
 
 ##-------------------- Define the source  ----------------------------
 process.maxEvents = cms.untracked.PSet(
@@ -10,17 +10,23 @@ process.maxEvents = cms.untracked.PSet(
 process.source = cms.Source("EmptySource")
 
 ##-------------------- User analyzer  --------------------------------
-process.inclusive = cms.EDAnalyzer('InclusiveHistos',
-    filename      = cms.string('/uscms_data/d2/kkousour/7TeV/Spring11/ProcessedTree_mc.root'),
-    treename      = cms.string('ProcessedTree'),
-    dirname       = cms.string('ak7'),
-    yBnd          = cms.vdouble(0.0,0.5,1.0,1.5,2.0,2.5,3.0),
-    ptBnd         = cms.vdouble(30, 40, 55, 70, 85, 100, 115, 135, 155, 175, 195, 220, 245, 270, 300, 330, 360, 390, 430, 470, 510, 550, 600, 640, 690, 740, 
-790, 850, 910, 970, 1030, 1100, 1170, 1250, 1330, 1410, 1500, 1590, 1680, 1780, 1890, 2000, 2120, 2240, 2370, 2500, 2650, 2800, 2950, 3100, 3270, 3500),
-    minPt         = cms.double(100),
-    triggers      = cms.vstring(),
-    isMC          = cms.bool(True)     
+process.minPT81   = cms.EDAnalyzer('InclusiveHistos',
+    filename        = cms.string('/uscms_data/d2/kkousour/7TeV/2011/Jets/mc/Summer11Flat_ProcessedTree_mc.root'),
+    treename        = cms.string('ProcessedTree'),
+    dirname         = cms.string('ak7'),
+    yBnd            = cms.vdouble(0.0,0.5,1.0,1.5,2.0,2.5,3.0),
+    ptBnd           = cms.vdouble(40,53,67,81,97,114,133,153,174,196,220,245,272,300,330,362,395,430,468,507,548,592,638,686,737,790,846,905,967,1032,1101,1172,1248,1327,1410,1497,1588,1684,1784,1890,2000,2116,2238,2366,2500,2640,2787,2941,3103,3273,3500),
+    triggers        = cms.vstring(),
+    minPt           = cms.vdouble(81),
+    isMC            = cms.bool(True),    
+    jetID           = cms.int32(2),
+    hcalNoiseFilter = cms.int32(0),
+    nEvents         = cms.int32(-1)
 )
 
-process.p = cms.Path(process.inclusive)
+process.minPT153 = process.minPT81.clone(minPt = cms.vdouble(153))
+process.minPT272 = process.minPT81.clone(minPt = cms.vdouble(272))
+process.minPT468 = process.minPT81.clone(minPt = cms.vdouble(468))
+
+process.p = cms.Path(process.minPT81 * process.minPT153 * process.minPT272 * process.minPT468)
 

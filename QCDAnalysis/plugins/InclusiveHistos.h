@@ -43,12 +43,12 @@ class InclusiveHistos : public edm::EDAnalyzer
     TTree *mTree; 
     TFile *mInf;
     TDirectoryFile *mDir;
-    TH1F *mNPFJets[30][10],*mNCaloJets[30][10];
-    TH1F *mPFJetMulti[30],*mCaloJetMulti[30],*mPFMETovSUMET[30][10],*mCaloMETovSUMET[30][10];
-    TH1F *mPFPt[30][10],*mPFNormPt[30][10],*mPFX[30][10],*mPFNormX[30][10],
-         *mCaloPt[30][10],*mCaloNormPt[30][10],*mCaloX[30][10],*mCaloNormX[30][10],
-         *mCHF[30][10],*mNHF[30][10],*mPHF[30][10],
-         *mN90hits[30][10],*mEMF[30][10],*mNTrkCalo[30][10],*mNTrkVtx[30][10],*mfHPD[30][10];
+    TH1F *mNPFJets[50][6],*mNCaloJets[50][6];
+    TH1F *mPFJetMulti[50],*mCaloJetMulti[50],*mPFMETovSUMET[50][6],*mCaloMETovSUMET[50][6];
+    TH1F *mPFPt[50][6],*mPFNormPt[50][6],*mPFX[50][6],*mPFNormX[50][6],
+         *mCaloPt[50][6],*mCaloNormPt[50][6],*mCaloX[50][6],*mCaloNormX[50][6],
+         *mCHF[50][6],*mNHF[50][6],*mPHF[50][6],
+         *mN90hits[50][6],*mEMF[50][6],*mNTrkCalo[50][6],*mNTrkVtx[50][6],*mfHPD[50][6];
     //---- TREE variable --------
     QCDEvent *mEvent;
     

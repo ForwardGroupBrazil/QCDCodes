@@ -30,8 +30,16 @@ InclusiveHistos::InclusiveHistos(edm::ParameterSet const& cfg)
   mNEvents   = cfg.getParameter<int>  ("nEvents"); 
   mJetID     = cfg.getParameter<int>  ("jetID");
   mHCALNoise = cfg.getParameter<int>  ("hcalNoiseFilter");
-  if (mMinPt.size() != mTriggers.size())
-    throw cms::Exception("InclusiveHistos: ")<<" Number of pt thresholds must be equal to the number of triggers\n";
+  if (mTriggers.size() > 0) {
+    if (mMinPt.size() != mTriggers.size()) {
+      throw cms::Exception("InclusiveHistos: ")<<" Number of pt thresholds must be equal to the number of triggers\n";
+    }
+  }
+  else {
+    if (mMinPt.size() != 1) {
+      throw cms::Exception("InclusiveHistos: ")<<" Number of pt thresholds must be equal to 1 when no triggers are defined\n";
+    }
+  }
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void InclusiveHistos::beginJob() 
@@ -75,7 +83,7 @@ void InclusiveHistos::beginJob()
   double auxPt[500],auxX[500];
   for(unsigned ipt=0;ipt<mPTBND.size();ipt++) {
     auxPt[ipt] = mPTBND[ipt];
-    auxX[ipt]  = mPTBND[ipt]/3500.;
+    auxX[ipt] = mPTBND[ipt]/1000.; 
   }
   int Ntrig = (int)mTriggers.size();
   for(int itrig=0;itrig<TMath::Max(Ntrig,1);itrig++) {
@@ -190,9 +198,9 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
   cout<<"File: "<<mFileName<<endl;
   cout<<"Reading TREE: "<<NEntries<<" events"<<endl;
   int decade = 0;
-  int counter_hlt[30],counter_pv[30],counter_hcal[30];
-  int pf_counter_y[30][10],pf_counter_pt[30][10],pf_counter_id[30][10];
-  int calo_counter_y[30][10],calo_counter_pt[30][10],calo_counter_id[30][10];
+  int counter_hlt[50],counter_pv[50],counter_hcal[50];
+  int pf_counter_y[50][10],pf_counter_pt[50][10],pf_counter_id[50][10];
+  int calo_counter_y[50][10],calo_counter_pt[50][10],calo_counter_id[50][10];
   int Ntrig = (int)mTriggers.size();
   vector<int> Runs;
   for(int itrig=0;itrig<TMath::Max(1,Ntrig);itrig++) {
@@ -267,7 +275,7 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
                     nPFGoodJets++;
                     mPFPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor(),wt);
                     mPFNormPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor(),prescale);
-                    double x = mEvent->pfjet(j).ptCor()*cosh(mEvent->pfjet(j).y())/3500;
+                    double x = mEvent->pfjet(j).ptCor()/1000.;
                     mPFX[itrig][ybin]->Fill(x,wt);
                     mPFNormX[itrig][ybin]->Fill(x,prescale);
                     mCHF[itrig][ybin]->Fill((mEvent->pfjet(j)).chf(),wt);
@@ -301,7 +309,7 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
                     nCaloGoodJets++;
                     mCaloPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor(),wt);
                     mCaloNormPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor(),prescale);
-                    double x = mEvent->calojet(j).ptCor()*cosh(mEvent->calojet(j).y())/3500;
+                    double x = mEvent->calojet(j).ptCor()/1000.;
                     mCaloX[itrig][ybin]->Fill(x,wt);
                     mCaloNormX[itrig][ybin]->Fill(x,prescale);
                     mEMF[itrig][ybin] ->Fill((mEvent->calojet(j)).emf(),wt);
