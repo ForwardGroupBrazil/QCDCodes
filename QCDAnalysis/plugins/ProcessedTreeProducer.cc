@@ -37,6 +37,7 @@
 #include "DataFormats/METReco/interface/CaloMET.h"
 #include "DataFormats/METReco/interface/CaloMETCollection.h"
 #include "DataFormats/METReco/interface/HcalNoiseSummary.h"
+#include "DataFormats/BeamSpot/interface/BeamSpot.h"
 
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
@@ -138,6 +139,14 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mEvtHdr.setEvt(event.id().event());
   mEvtHdr.setLumi(event.luminosityBlock());
   mEvtHdr.setBunch(event.bunchCrossing());
+  //-------------- Beam Spot --------------------------------------
+  Handle<reco::BeamSpot> beamSpot;
+  event.getByLabel("offlineBeamSpot", beamSpot);
+  if (beamSpot.isValid())
+    mEvtHdr.setBS(beamSpot->x0(),beamSpot->y0(),beamSpot->z0());
+  else
+    mEvtHdr.setBS(-999,-999,-999);
+
   //-------------- HCAL Noise Summary -----------------------------
   Handle<HcalNoiseSummary> noiseSummary; 	 
   event.getByLabel("hcalnoise", noiseSummary); 	 
@@ -337,17 +346,19 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     double nhf   = (i_pfjet->neutralHadronEnergy() + i_pfjet->HFHadronEnergy())/i_pfjet->energy();
     double phf   = i_pfjet->photonEnergyFraction();
     double elf   = i_pfjet->electronEnergyFraction();
-    double chm   = i_pfjet->chargedHadronMultiplicity();
+    double muf   = i_pfjet->muonEnergyFraction();
+    int chm      = i_pfjet->chargedHadronMultiplicity();
     int nhm      = i_pfjet->neutralHadronMultiplicity();
     int phm      = i_pfjet->photonMultiplicity();
     int elm      = i_pfjet->electronMultiplicity();
+    int mum      = i_pfjet->muonMultiplicity();
     int npr      = i_pfjet->chargedMultiplicity() + i_pfjet->neutralMultiplicity();
     bool looseID  = (npr>1 && phf<0.99 && nhf<0.99 && ((fabs(i_pfjet->eta())<=2.4 && elf<0.99 && chf>0 && chm>0) || fabs(i_pfjet->eta())>2.4));
     bool tightID  = (npr>1 && phf<0.99 && nhf<0.99 && ((fabs(i_pfjet->eta())<=2.4 && nhf<0.9 && phf<0.9 && elf<0.99 && chf>0 && chm>0) || fabs(i_pfjet->eta())>2.4));
     qcdpfjet.setLooseID(looseID);
     qcdpfjet.setTightID(tightID);
-    qcdpfjet.setFrac(chf,nhf,phf,elf);
-    qcdpfjet.setMulti(chm,nhm,phm,elm);
+    qcdpfjet.setFrac(chf,nhf,phf,elf,muf);
+    qcdpfjet.setMulti(npr,chm,nhm,phm,elm,mum);
     if (mIsMCarlo) {
       GenJetCollection::const_iterator i_matched;
       float rmin(999);
@@ -371,7 +382,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     }
     if (qcdpfjet.ptCor() >= mMinPFPt)
       mPFJets.push_back(qcdpfjet);
-    if (qcdpfjet.ptCor() >= mMinPFFatPt && fabs(qcdpfjet.eta()) < mMaxPFFatEta)
+    if (qcdpfjet.ptCor() >= mMinPFFatPt && fabs(qcdpfjet.eta()) < mMaxPFFatEta && qcdpfjet.looseID())
       tmpPFJets.push_back(qcdpfjet);
   }
   //----------- PFFatJets ----------------------
@@ -387,20 +398,19 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     }
     double rmax = 1.1;
     for(unsigned i = 2; i<tmpPFJets.size(); i++) {
-      if (tmpPFJets[i].looseID() == false) continue;
       LorentzVector cand = tmpPFJets[i].p4();
       double dR1 = deltaR(lead[0],cand);
       double dR2 = deltaR(lead[1],cand);
-      if (dR1 < dR2 && dR1 < rmax) {
-        fat[0]      += cand * tmpPFJets[i].cor();
-        sumPt[0]    += tmpPFJets[i].ptCor();
-        sumPtUnc[0] += tmpPFJets[i].ptCor()*tmpPFJets[i].unc();
-      }
-      else if (dR1 > dR2 && dR2 < rmax) {
-        fat[1]      += cand;
-        sumPt[1]    += tmpPFJets[i].ptCor();
-        sumPtUnc[1] += tmpPFJets[i].ptCor()*tmpPFJets[i].unc(); 
-      }
+      int index(-1);
+      if (dR1 < dR2 && dR1 < rmax) 
+        index = 0;
+      if (dR1 > dR2 && dR2 < rmax)
+        index = 1;
+      if (index > -1) {
+        fat[index]      += cand * tmpPFJets[i].cor();
+        sumPt[index]    += tmpPFJets[i].ptCor();
+        sumPtUnc[index] += tmpPFJets[i].ptCor()*tmpPFJets[i].unc();
+      } 
     }
     QCDJet fatJet[2];
     for(unsigned i = 0; i<2; i++) { 
@@ -442,15 +452,15 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     qcdcalojet.setCor(scale);
     qcdcalojet.setUnc(unc);
     qcdcalojet.setArea(i_calojet->jetArea());
-    double emf      = i_calojet->emEnergyFraction();
-    int n90hits  = int((*calojetID)[calojetRef].n90Hits);
-    double fHPD     = (*calojetID)[calojetRef].fHPD;
-    double fRBX     = (*calojetID)[calojetRef].fRBX;
-    int nTrkVtx  = JetExtendedAssociation::tracksAtVertexNumber(*calojetExtender,*i_calojet);
-    int nTrkCalo = JetExtendedAssociation::tracksAtCaloNumber(*calojetExtender,*i_calojet);
-    qcdcalojet.setVar(emf,fHPD,fRBX,n90hits,nTrkCalo,nTrkVtx);		   
+    double emf    = i_calojet->emEnergyFraction();
+    int n90hits   = int((*calojetID)[calojetRef].n90Hits);
+    double fHPD   = (*calojetID)[calojetRef].fHPD;
+    double fRBX   = (*calojetID)[calojetRef].fRBX;
+    int nTrkVtx   = JetExtendedAssociation::tracksAtVertexNumber(*calojetExtender,*i_calojet);
+    int nTrkCalo  = JetExtendedAssociation::tracksAtCaloNumber(*calojetExtender,*i_calojet);		   
     bool looseID  = ((emf>0.01 || fabs(i_calojet->eta())>2.6) && (n90hits>1) && (fHPD<0.98));
     bool tightID  = ((emf>0.01 || fabs(i_calojet->eta())>2.6) && (n90hits>1) && ((fHPD<0.98 && i_calojet->pt()<=25) || (fHPD<0.95 && i_calojet->pt()>25)));
+    qcdcalojet.setVar(emf,fHPD,fRBX,n90hits,nTrkCalo,nTrkVtx);
     qcdcalojet.setLooseID(looseID);
     qcdcalojet.setTightID(tightID);
     if (mIsMCarlo) {
@@ -483,8 +493,8 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   Handle<CaloMETCollection> calomet;
   event.getByLabel("pfMet",pfmet);
   event.getByLabel("met",calomet);
-  mPFMet.setVar((*pfmet)[0].et(),(*pfmet)[0].sumEt());
-  mCaloMet.setVar((*calomet)[0].et(),(*calomet)[0].sumEt());
+  mPFMet.setVar((*pfmet)[0].et(),(*pfmet)[0].sumEt(),(*pfmet)[0].phi());
+  mCaloMet.setVar((*calomet)[0].et(),(*calomet)[0].sumEt(),(*calomet)[0].phi());
   //-------------- fill the tree -------------------------------------  
   sort(mCaloJets.begin(),mCaloJets.end(),sort_calojets);
   sort(mPFJets.begin(),mPFJets.end(),sort_pfjets);
