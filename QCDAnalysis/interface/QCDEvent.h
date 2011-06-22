@@ -13,9 +13,10 @@ class QCDEvent
     public:
       typedef reco::Particle::LorentzVector LorentzVector;
       //------------ Constructor ------------------------------
-      QCDEvent();
+      QCDEvent()
       //------------ Destructor -------------------------------
-      ~QCDEvent();
+      ~QCDEvent()
+      //------------ Set methods ------------------------------
       void setCaloMET(const QCDMET& fCaloMET)                     {CaloMet_ = fCaloMET;}
       void setPFMET(const QCDMET& fPFMET)                         {PFMet_ = fPFMET;}
       void setEvtHdr(const QCDEventHdr& fEvtHdr)                  {EvtHdr_ = fEvtHdr;}
@@ -27,6 +28,7 @@ class QCDEvent
       void setHLTObj(const std::vector<std::vector<LorentzVector> >& fHLTObj);
       void setPrescales(const std::vector<int>& fPreL1, const std::vector<int>& fPreHLT) {L1Prescale_ = fPreL1; HLTPrescale_ = fPreHLT;}
       void setTrigDecision(const std::vector<int>& fTrigDecision) {TriggerDecision_ = fTrigDecision;}                           
+      //------------ Get methods ------------------------------- 
       unsigned int nTriggers()                         const {return TriggerDecision_.size();}
       unsigned int nL1Obj(int i)                       const {return L1Obj_[i].size();}
       unsigned int nHLTObj(int i)                      const {return HLTObj_[i].size();}
@@ -56,18 +58,29 @@ class QCDEvent
       const QCDEventHdr&   evtHdr()                    const {return EvtHdr_;}
  
     private:
-     
+      //---- event header (contains all the event info) --------------
       QCDEventHdr                              EvtHdr_;
+      //---- CALO met object -----------------------------------------
       QCDMET                                   CaloMet_;
+      //---- PF met object -------------------------------------------
       QCDMET                                   PFMet_; 
+      //---- trigger decision vector --------------------------------- 
       std::vector<int>                         TriggerDecision_;
+      //---- L1 prescale vector --------------------------------------
       std::vector<int>                         L1Prescale_;
+      //---- HLT prescale vector -------------------------------------
       std::vector<int>                         HLTPrescale_;
+      //---- HLT objects ---------------------------------------------  
       std::vector<std::vector<LorentzVector> > HLTObj_;
+      //---- L1 objects ----------------------------------------------
       std::vector<std::vector<LorentzVector> > L1Obj_;
+      //---- Genjets -------------------------------------------------
       std::vector<LorentzVector>               GenJets_;
+      //---- CaloJets ------------------------------------------------ 
       std::vector<QCDCaloJet>                  CaloJets_;
+      //---- PFJets --------------------------------------------------
       std::vector<QCDPFJet>                    PFJets_;
+      //---- FatJets -------------------------------------------------
       std::vector<QCDJet>                      FatJets_;
 };
 #endif

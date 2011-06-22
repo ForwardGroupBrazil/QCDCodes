@@ -8,6 +8,7 @@ class QCDEventHdr
       QCDEventHdr() { mRun = 0;}
       //------------ Destructor -------------------------------
       ~QCDEventHdr() {}
+      //------------ Set methods ------------------------------
       void setRun(int fRun)                                  {mRun   = fRun;}
       void setEvt(int fEvt)                                  {mEvent = fEvt;}
       void setLumi(int fLumi)                                {mLumi  = fLumi;}
@@ -20,6 +21,7 @@ class QCDEventHdr
       void setBS(float fBSx, float fBSy, float fBSz) {mBSx = fBSx; mBSy = fBSy; mBSz = fBSz;}
       void setHCALNoise(bool fLoose, bool fTight)            {mLooseHCALNoise = fLoose; mTightHCALNoise = fTight;}
       void setPU(int fNBX, int fOOTPUEarly, int fOOTPULate, int fINTPU) {mNBX = fNBX; mOOTPUEarly = fOOTPUEarly; mOOTPULate = fOOTPULate; mINTPU = fINTPU;}
+      //------------ Get methods ------------------------------
       int runNo()           const {return mRun;} 
       int event()           const {return mEvent;} 
       int lumi()            const {return mLumi;}
@@ -43,29 +45,48 @@ class QCDEventHdr
       float caloRho()       const {return mCaloRho;} 
       float pfRho()         const {return mPFRho;} 
       private:
+        //---- flag about the PV quality -------------- 
         bool mIsPVgood; 
+        //---- flags about the HCAL noise -------------
         bool mLooseHCALNoise;
         bool mTightHCALNoise;
+        //---- run number ----------------------------- 
         int mRun;
+        //---- event number ---------------------------
         int mEvent; 
+        //---- lumi section ---------------------------
         int mLumi;
+        //---- bunch crossing -------------------------
         int mBunch;
+        //---- number of reconstructed vertices -------
         int mNVtx;
+        //---- number of good reco vertice ------------ 
         int mNVtxGood;
+        //---- simulated (early) out-of-time pu -------
         int mOOTPUEarly;
+        //---- simulated (late) out-of-time pu --------
         int mOOTPULate;
+        //---- simulated in-time pu -------------------
         int mINTPU;
+        //---- number of simulated bunch crossings ----
         int mNBX; 
+        //---- ndof for the primary vertex ------------
         float mPVndof;
+        //---- position of the primary vertex --------- 
         float mPVx;
         float mPVy;
         float mPVz;
+        //---- position of the beam spot --------------
         float mBSx;
         float mBSy;
         float mBSz;
+        //---- simulated pthat variable ---------------
         float mPthat;
+        //---- simulation weight ----------------------
         float mWeight;
+        //---- median CALO pt density -----------------
         float mCaloRho;
+        //---- median PF pt density -------------------
         float mPFRho;
 };
 #endif
