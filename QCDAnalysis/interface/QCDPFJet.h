@@ -5,27 +5,33 @@
 class QCDPFJet : public QCDJet {
    public:
      //------------ Constructor ------------------------------
-     QCDPFJet() {chf_=0;nhf_=0;phf_=0;elf_=0;chm_=0;nhm_=0;phm_=0;elm_=0;}
+     QCDPFJet() {chf_=0;nhf_=0;phf_=0;elf_=0;muf_=0;chm_=0;nhm_=0;phm_=0;elm_=0;mum_=0;}
      //------------ Destructor -------------------------------
      ~QCDPFJet() {};
-     void setFrac(float fchf, float fnhf, float fphf, float felf)  {chf_ = fchf; nhf_ = fnhf; phf_ = fphf; elf_ = felf;}
-     void setMulti(int fchm, int fnhm, int fphm, int felm) {chm_ = fchm; nhm_ = fnhm; phm_ = fphm; elm_ = felm;}
+     void setFrac(float fchf, float fnhf, float fphf, float felf, float fmuf)  {chf_ = fchf; nhf_ = fnhf; phf_ = fphf; elf_ = felf; muf_ = fmuf;}
+     void setMulti(int fncand, int fchm, int fnhm, int fphm, int felm, int fmum) {ncand_ = fncand; chm_ = fchm; nhm_ = fnhm; phm_ = fphm; elm_ = felm; mum_ = fmum;}
      float chf() const {return chf_;} 
      float nhf() const {return nhf_;}
      float phf() const {return phf_;} 
      float elf() const {return elf_;}
+     float muf() const {return muf_;}
      int chm()   const {return chm_;}
      int nhm()   const {return nhm_;}
      int phm()   const {return phm_;}
      int elm()   const {return elm_;}
+     int mum()   const {return mum_;}
+     int ncand() const {return ncand_;}
    private:
      float chf_;
      float nhf_;
      float phf_;
      float elf_;
+     float muf_;
      int chm_;
      int nhm_;
      int phm_;
      int elm_;
+     int mum_;
+     int ncand_;
     };
 #endif    
