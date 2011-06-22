@@ -17,6 +17,7 @@ class QCDEventHdr
       void setRho(float fCaloRho, float fPFRho)              {mCaloRho = fCaloRho; mPFRho = fPFRho;}
       void setVertices(int fNVtx, int fNVtxGood)             {mNVtx = fNVtx; mNVtxGood = fNVtxGood;}
       void setPV(bool fIsPVgood, float fndof, float fx, float fy, float fz) {mIsPVgood = fIsPVgood; mPVndof = fndof; mPVx = fx; mPVy = fy; mPVz = fz;}
+      void setBS(float fBSx, float fBSy, float fBSz) {mBSx = fBSx; mBSy = fBSy; mBSz = fBSz;}
       void setHCALNoise(bool fLoose, bool fTight)            {mLooseHCALNoise = fLoose; mTightHCALNoise = fTight;}
       void setPU(int fNBX, int fOOTPUEarly, int fOOTPULate, int fINTPU) {mNBX = fNBX; mOOTPUEarly = fOOTPUEarly; mOOTPULate = fOOTPULate; mINTPU = fINTPU;}
       int runNo()           const {return mRun;} 
@@ -59,6 +60,9 @@ class QCDEventHdr
         float mPVx;
         float mPVy;
         float mPVz;
+        float mBSx;
+        float mBSy;
+        float mBSz;
         float mPthat;
         float mWeight;
         float mCaloRho;
