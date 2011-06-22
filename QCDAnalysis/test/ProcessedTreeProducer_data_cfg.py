@@ -124,8 +124,10 @@ process.kt6CaloJets.doRhoFastjet = True
 process.kt6CaloJets.Rho_EtaMax = cms.double(5.0)
 process.ak7PFJets.doAreaFastjet = True
 process.ak7PFJets.Rho_EtaMax = cms.double(5.0)
+process.ak7PFJets.jetPtMin = cms.double(5.0)
 process.ak5PFJets.doAreaFastjet = True
 process.ak5PFJets.Rho_EtaMax = cms.double(5.0)
+process.ak5PFJets.jetPtMin = cms.double(5.0)
 
 process.path = cms.Path(process.kt6PFJets * process.kt6CaloJets * process.ak5PFJets * process.ak7PFJets * process.ak5 * process.ak7)
 
