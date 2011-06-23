@@ -13,9 +13,9 @@ class QCDEvent
     public:
       typedef reco::Particle::LorentzVector LorentzVector;
       //------------ Constructor ------------------------------
-      QCDEvent()
+      QCDEvent();
       //------------ Destructor -------------------------------
-      ~QCDEvent()
+      ~QCDEvent();
       //------------ Set methods ------------------------------
       void setCaloMET(const QCDMET& fCaloMET)                     {CaloMet_ = fCaloMET;}
       void setPFMET(const QCDMET& fPFMET)                         {PFMet_ = fPFMET;}

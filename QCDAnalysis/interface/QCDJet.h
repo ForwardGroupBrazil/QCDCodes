@@ -40,7 +40,7 @@ class QCDJet
 
    private:
      //------ jet 4-momentum vector------------------
-     LorentzVector P4_
+     LorentzVector P4_;
      //------ matched genjet 4-momentum vector-------
      LorentzVector genP4_;
      //------ matching radius -----------------------
