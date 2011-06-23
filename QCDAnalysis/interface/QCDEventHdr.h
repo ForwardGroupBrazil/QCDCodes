@@ -40,6 +40,9 @@ class QCDEventHdr
       float PVx()           const {return mPVx;}
       float PVy()           const {return mPVy;}
       float PVz()           const {return mPVz;}
+      float BSx()           const {return mBSx;}
+      float BSy()           const {return mBSy;}
+      float BSz()           const {return mBSz;}
       float pthat()         const {return mPthat;}
       float weight()        const {return mWeight;} 
       float caloRho()       const {return mCaloRho;} 
