@@ -86,12 +86,12 @@ void InclusiveHistos::beginJob()
     auxX[ipt] = mPTBND[ipt]/1000.; 
   }
   mNPV = fs->make<TH1F>("NPV","NPV",30,0,30);
-  mPVx = fs->make<TH1F>("PVx","PVx",200,-50,50);
-  mPVy = fs->make<TH1F>("PVy","PVy",200,-50,50);
+  mPVx = fs->make<TH1F>("PVx","PVx",200,-0.1,0.1);
+  mPVy = fs->make<TH1F>("PVy","PVy",200,-0.1,0.1);
   mPVz = fs->make<TH1F>("PVz","PVz",200,-30,30);
-  mBSx = fs->make<TH1F>("BSx","BSx",200,-50,50);
-  mBSy = fs->make<TH1F>("BSy","BSy",200,-50,50);
-  mBSz = fs->make<TH1F>("BSz","BSz",200,-50,50);
+  mBSx = fs->make<TH1F>("BSx","BSx",200,-0.1,0.1);
+  mBSy = fs->make<TH1F>("BSy","BSy",200,-0.1,0.1);
+  mBSz = fs->make<TH1F>("BSz","BSz",200,-0.2,0.2);
   mCaloRhoVsRun = fs->make<TProfile>("CaloRhoVsRun","CaloRhoVsRun",3,0,3,0,50);
   mCaloRhoVsRun->SetBit(TH1::kCanRebin);
   mPFRhoVsRun = fs->make<TProfile>("PFRhoVsRun","PFRhoVsRun",3,0,3,0,50);
