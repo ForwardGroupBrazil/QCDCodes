@@ -15,6 +15,7 @@
 #include "TTree.h"
 #include "TH1F.h"
 #include "TFile.h"
+#include "TProfile.h"
 
 class InclusiveHistos : public edm::EDAnalyzer 
 {
@@ -43,12 +44,16 @@ class InclusiveHistos : public edm::EDAnalyzer
     TTree *mTree; 
     TFile *mInf;
     TDirectoryFile *mDir;
+    TH1F *mBSx,*mBSy,*mBSz,*mNPV,*mPVx,*mPVy,*mPVz;
     TH1F *mNPFJets[50][6],*mNCaloJets[50][6];
     TH1F *mPFJetMulti[50],*mCaloJetMulti[50],*mPFMETovSUMET[50][6],*mCaloMETovSUMET[50][6];
     TH1F *mPFPt[50][6],*mPFNormPt[50][6],*mPFX[50][6],*mPFNormX[50][6],
          *mCaloPt[50][6],*mCaloNormPt[50][6],*mCaloX[50][6],*mCaloNormX[50][6],
-         *mCHF[50][6],*mNHF[50][6],*mPHF[50][6],
+         *mCHF[50][6],*mNHF[50][6],*mPHF[50][6],*mELF[50][6],
          *mN90hits[50][6],*mEMF[50][6],*mNTrkCalo[50][6],*mNTrkVtx[50][6],*mfHPD[50][6];
+    TProfile *mEMFVsRun[50][6],*mNTrkCaloVsRun[50][6],*mNTrkVtxVsRun[50][6];
+    TProfile *mNHFVsRun[50][6],*mPHFVsRun[50][6],*mCHFVsRun[50][6],*mELFVsRun[50][6];
+    TProfile *mCaloRhoVsRun,*mPFRhoVsRun,*mCaloRhoVsNPV,*mPFRhoVsNPV; 
     //---- TREE variable --------
     QCDEvent *mEvent;
     

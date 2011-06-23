@@ -85,6 +85,19 @@ void InclusiveHistos::beginJob()
     auxPt[ipt] = mPTBND[ipt];
     auxX[ipt] = mPTBND[ipt]/1000.; 
   }
+  mNPV = fs->make<TH1F>("NPV","NPV",30,0,30);
+  mPVx = fs->make<TH1F>("PVx","PVx",200,-50,50);
+  mPVy = fs->make<TH1F>("PVy","PVy",200,-50,50);
+  mPVz = fs->make<TH1F>("PVz","PVz",200,-30,30);
+  mBSx = fs->make<TH1F>("BSx","BSx",200,-50,50);
+  mBSy = fs->make<TH1F>("BSy","BSy",200,-50,50);
+  mBSz = fs->make<TH1F>("BSz","BSz",200,-50,50);
+  mCaloRhoVsRun = fs->make<TProfile>("CaloRhoVsRun","CaloRhoVsRun",3,0,3,0,50);
+  mCaloRhoVsRun->SetBit(TH1::kCanRebin);
+  mPFRhoVsRun = fs->make<TProfile>("PFRhoVsRun","PFRhoVsRun",3,0,3,0,50);
+  mPFRhoVsRun->SetBit(TH1::kCanRebin);
+  mCaloRhoVsNPV = fs->make<TProfile>("CaloRhoVsNPV","CaloRhoVsNPV",30,0,30,0,50);
+  mPFRhoVsNPV = fs->make<TProfile>("PFRhoVsNPV","PFRhoVsNPV",30,0,30,0,50);
   int Ntrig = (int)mTriggers.size();
   for(int itrig=0;itrig<TMath::Max(Ntrig,1);itrig++) {
     string ss("");
@@ -144,7 +157,23 @@ void InclusiveHistos::beginJob()
       sprintf(name,"PHF_Ybin%d%s",iy,ss.c_str());
       mPHF[itrig][iy] = mPFDir.make<TH1F>(name,name,100,0,1.001);
       mPHF[itrig][iy]->Sumw2();
-      
+      sprintf(name,"ELF_Ybin%d%s",iy,ss.c_str());
+      mELF[itrig][iy] = mPFDir.make<TH1F>(name,name,100,0,1.001);
+      mELF[itrig][iy]->Sumw2();
+ 
+      sprintf(name,"CHFVsRun_Ybin%d%s",iy,ss.c_str()); 
+      mCHFVsRun[itrig][iy] = mPFDir.make<TProfile>(name,name,3,0,3,0,1.1);
+      mCHFVsRun[itrig][iy]->SetBit(TH1::kCanRebin);
+      sprintf(name,"NHFVsRun_Ybin%d%s",iy,ss.c_str()); 
+      mNHFVsRun[itrig][iy] = mPFDir.make<TProfile>(name,name,3,0,3,0,1.1);
+      mNHFVsRun[itrig][iy]->SetBit(TH1::kCanRebin);
+      sprintf(name,"PHFVsRun_Ybin%d%s",iy,ss.c_str()); 
+      mPHFVsRun[itrig][iy] = mPFDir.make<TProfile>(name,name,3,0,3,0,1.1);
+      mPHFVsRun[itrig][iy]->SetBit(TH1::kCanRebin);
+      sprintf(name,"ELFVsRun_Ybin%d%s",iy,ss.c_str());
+      mELFVsRun[itrig][iy] = mPFDir.make<TProfile>(name,name,3,0,3,0,1.1);
+      mELFVsRun[itrig][iy]->SetBit(TH1::kCanRebin); 
+     
       sprintf(name,"EMF_Ybin%d%s",iy,ss.c_str());
       mEMF[itrig][iy] = mCaloDir.make<TH1F>(name,name,100,0,1.001);
       mEMF[itrig][iy]->Sumw2();
@@ -160,6 +189,16 @@ void InclusiveHistos::beginJob()
       sprintf(name,"NTrkVtx_Ybin%d%s",iy,ss.c_str());
       mNTrkVtx[itrig][iy] = mCaloDir.make<TH1F>(name,name,200,0,200);
       mNTrkVtx[itrig][iy]->Sumw2();
+
+      sprintf(name,"EMFVsRun_Ybin%d%s",iy,ss.c_str()); 
+      mEMFVsRun[itrig][iy] = mCaloDir.make<TProfile>(name,name,3,0,3,0,1.1);
+      mEMFVsRun[itrig][iy]->SetBit(TH1::kCanRebin);
+      sprintf(name,"NTrkCaloVsRun_Ybin%d%s",iy,ss.c_str());
+      mNTrkCaloVsRun[itrig][iy] = mCaloDir.make<TProfile>(name,name,3,0,3,0,1.1);
+      mNTrkCaloVsRun[itrig][iy]->SetBit(TH1::kCanRebin);
+      sprintf(name,"NTrkVtxVsRun_Ybin%d%s",iy,ss.c_str());
+      mNTrkVtxVsRun[itrig][iy] = mCaloDir.make<TProfile>(name,name,3,0,3,0,1.1);
+      mNTrkVtxVsRun[itrig][iy]->SetBit(TH1::kCanRebin);
     }// y loop
   }// trigger loop
 }
@@ -281,15 +320,25 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
                     mCHF[itrig][ybin]->Fill((mEvent->pfjet(j)).chf(),wt);
                     mNHF[itrig][ybin]->Fill((mEvent->pfjet(j)).nhf(),wt);
                     mPHF[itrig][ybin]->Fill((mEvent->pfjet(j)).phf(),wt); 
+                    mELF[itrig][ybin]->Fill((mEvent->pfjet(j)).elf(),wt);
                     sprintf(name,"%d",mEvent->evtHdr().runNo());	
                     mNPFJets[itrig][ybin]->Fill(name,prescale);
+                    mCHFVsRun[itrig][ybin]->Fill(name,(mEvent->pfjet(j)).chf(),1);
+                    mNHFVsRun[itrig][ybin]->Fill(name,(mEvent->pfjet(j)).nhf(),1); 
+                    mPHFVsRun[itrig][ybin]->Fill(name,(mEvent->pfjet(j)).phf(),1);
+                    mELFVsRun[itrig][ybin]->Fill(name,(mEvent->pfjet(j)).elf(),1);
                   }// cut id
                 }// cut max pt
               }// cut y  
             }// pfjet loop
+            if (nPFGoodJets > 0) {
+              sprintf(name,"%d",mEvent->evtHdr().runNo());
+              mPFRhoVsRun->Fill(name,mEvent->evtHdr().pfRho(),1);
+              mPFRhoVsNPV->Fill(mEvent->evtHdr().nVtxGood(),mEvent->evtHdr().pfRho(),1);
+            }
             mPFJetMulti[itrig]->Fill(nPFGoodJets,wt);
             for(int ii=0;ii<4;ii++) {
-              if (nPFGoodJets > ii)
+              if (nPFGoodJets == ii+1)
                 mPFMETovSUMET[itrig][ii]->Fill(mEvent->pfmet().met_o_sumet(),wt);
             }
             int nCaloGoodJets(0);
@@ -319,14 +368,31 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
                     mNTrkVtx[itrig][ybin]->Fill((mEvent->calojet(j)).nTrkVtx(),wt);              
                     sprintf(name,"%d",mEvent->evtHdr().runNo());
                     mNCaloJets[itrig][ybin]->Fill(name,prescale);
+                    mEMFVsRun[itrig][ybin]->Fill(name,(mEvent->calojet(j)).emf(),1);
+                    mNTrkCaloVsRun[itrig][ybin]->Fill(name,(mEvent->calojet(j)).nTrkCalo(),1);
+                    mNTrkVtxVsRun[itrig][ybin]->Fill(name,(mEvent->calojet(j)).nTrkVtx(),1);
                   }// cut id
                 }// cut min pt
               }// cut y
             }// calojet loop
             mCaloJetMulti[itrig]->Fill(nCaloGoodJets,wt);
             for(int ii=0;ii<4;ii++) {
-              if (nCaloGoodJets > ii)
+              if (nCaloGoodJets == ii+1)
                 mCaloMETovSUMET[itrig][ii]->Fill(mEvent->calomet().met_o_sumet(),wt);
+            }
+            if (nCaloGoodJets > 0) {
+              sprintf(name,"%d",mEvent->evtHdr().runNo());
+              mCaloRhoVsRun->Fill(name,mEvent->evtHdr().caloRho(),1);
+              mCaloRhoVsNPV->Fill(mEvent->evtHdr().nVtxGood(),mEvent->evtHdr().caloRho(),1);
+            } 
+            if (nPFGoodJets > 0 && nCaloGoodJets > 0) {
+              mNPV->Fill(mEvent->evtHdr().nVtx());
+              mPVx->Fill(mEvent->evtHdr().PVx());
+              mPVy->Fill(mEvent->evtHdr().PVy());
+              mPVz->Fill(mEvent->evtHdr().PVz());
+              mBSx->Fill(mEvent->evtHdr().BSx());
+              mBSy->Fill(mEvent->evtHdr().BSy());
+              mBSz->Fill(mEvent->evtHdr().BSz());
             }
           }// if hcal noise
         }// if pv
