@@ -6,44 +6,44 @@ process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.GlobalTag.globaltag = 'GR_R_42_V12::All'
-#process.load("CondCore.DBCommon.CondDBCommon_cfi")
-#from CondCore.DBCommon.CondDBSetup_cfi import *
-#process.jec = cms.ESSource("PoolDBESSource",
-#      DBParameters = cms.PSet(
-#        messageLevel = cms.untracked.int32(0)
-#        ),
-#      timetype = cms.string('runnumber'),
-#      toGet = cms.VPSet(
-#      cms.PSet(
-#            record = cms.string('JetCorrectionsRecord'),
-#            tag    = cms.string('JetCorrectorParametersCollection_Jec10V3_AK5PF'),
-#            label  = cms.untracked.string('AK5PF')
-#            ),
-#      cms.PSet(
-#            record = cms.string('JetCorrectionsRecord'),
-#            tag    = cms.string('JetCorrectorParametersCollection_Jec10V3_AK7PF'),
-#            label  = cms.untracked.string('AK7PF')
-#            ),
-#      cms.PSet(
-#            record = cms.string('JetCorrectionsRecord'),
-#            tag    = cms.string('JetCorrectorParametersCollection_Jec10V3_AK5Calo'),
-#            label  = cms.untracked.string('AK5Calo')
-#            ),
-#      cms.PSet(
-#            record = cms.string('JetCorrectionsRecord'),
-#            tag    = cms.string('JetCorrectorParametersCollection_Jec10V3_AK7Calo'),
-#            label  = cms.untracked.string('AK7Calo')
-#            )
-#      ), 
-#      connect = cms.string('sqlite:Jec10V3.db')
-#)
+process.load("CondCore.DBCommon.CondDBCommon_cfi")
+from CondCore.DBCommon.CondDBSetup_cfi import *
+process.jec = cms.ESSource("PoolDBESSource",
+      DBParameters = cms.PSet(
+        messageLevel = cms.untracked.int32(0)
+        ),
+      timetype = cms.string('runnumber'),
+      toGet = cms.VPSet(
+      cms.PSet(
+            record = cms.string('JetCorrectionsRecord'),
+            tag    = cms.string('JetCorrectorParametersCollection_Jec11V2_AK5PF'),
+            label  = cms.untracked.string('AK5PF')
+            ),
+      cms.PSet(
+            record = cms.string('JetCorrectionsRecord'),
+            tag    = cms.string('JetCorrectorParametersCollection_Jec11V2_AK7PF'),
+            label  = cms.untracked.string('AK7PF')
+            ),
+      cms.PSet(
+            record = cms.string('JetCorrectionsRecord'),
+            tag    = cms.string('JetCorrectorParametersCollection_Jec11V2_AK5Calo'),
+            label  = cms.untracked.string('AK5Calo')
+            ),
+      cms.PSet(
+            record = cms.string('JetCorrectionsRecord'),
+            tag    = cms.string('JetCorrectorParametersCollection_Jec11V2_AK7Calo'),
+            label  = cms.untracked.string('AK7Calo')
+            )
+      ), 
+      connect = cms.string('sqlite:Jec11V2.db')
+)
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Geometry_cff')
 process.load('RecoJets.Configuration.RecoPFJets_cff')
 process.load('RecoJets.Configuration.RecoJets_cff')
 ##-------------------- Import the JEC services -----------------------
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
-#process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
+process.es_prefer_jec = cms.ESPrefer('PoolDBESSource','jec')
 #############   Set the number of events #############
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(100)
@@ -65,8 +65,8 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     pfjets          = cms.InputTag('ak7PFJets'),
     calojets        = cms.InputTag('ak7CaloJets'),
     ## database entry for the uncertainties ######
-    PFPayloadName   = cms.string(''),
-    CaloPayloadName = cms.string(''),
+    PFPayloadName   = cms.string('AK7PF'),
+    CaloPayloadName = cms.string('AK7Calo'),
     ## calojet ID and extender for the JTA #######
     calojetID       = cms.InputTag('ak7JetID'),
     calojetExtender = cms.InputTag('ak7JetExtender'),
@@ -79,10 +79,10 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     srcPFRho        = cms.InputTag('kt6PFJets','rho'),
     ## preselection cuts #########################
     maxY            = cms.double(5.0), 
-    minPFPt         = cms.double(30),
+    minPFPt         = cms.double(50),
     minPFFatPt      = cms.double(10),
     maxPFFatEta     = cms.double(2.5),
-    minCaloPt       = cms.double(30),
+    minCaloPt       = cms.double(50),
     minNPFJets      = cms.int32(1),
     minNCaloJets    = cms.int32(1), 
     minJJMass       = cms.double(-1),
@@ -101,19 +101,19 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     triggerResults  = cms.InputTag("TriggerResults","","HLT"),
     triggerEvent    = cms.InputTag("hltTriggerSummaryAOD","","HLT"),
     ## jec services ##############################
-    pfjecService    = cms.string('ak7PFL1FastL2L3'),
-    calojecService  = cms.string('ak7CaloL1L2L3')
+    pfjecService    = cms.string('ak7PFL1FastL2L3Residual'),
+    calojecService  = cms.string('ak7CaloL1L2L3Residual')
 )
 
 process.ak5 = process.ak7.clone(
     pfjets           = 'ak5PFJets',
     calojets         = 'ak5CaloJets',
-    PFPayloadName    = '',
-    CaloPayloadName  = '',
+    PFPayloadName    = 'AK5PF',
+    CaloPayloadName  = 'AK5Calo',
     calojetID        = 'ak5JetID',
     calojetExtender  = 'ak5JetExtender',
-    pfjecService     = 'ak5PFL1FastL2L3',
-    calojecService   = 'ak5CaloL1L2L3',
+    pfjecService     = 'ak5PFL1FastL2L3Residual',
+    calojecService   = 'ak5CaloL1L2L3Residual',
     printTriggerMenu = False 
 )
 ############# turn-on the fastjet area calculation needed for the L1Fastjet ##############
