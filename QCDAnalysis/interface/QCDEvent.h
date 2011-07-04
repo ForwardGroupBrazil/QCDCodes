@@ -36,15 +36,16 @@ class QCDEvent
       unsigned int nFatJets()                          const {return FatJets_.size();}
       unsigned int nCaloJets()                         const {return CaloJets_.size();}
       unsigned int nGenJets()                          const {return GenJets_.size();}
+      int nGoodJets(int unc, int id, float ymax, float ptmin, std::vector<QCDJet> jets);
       int fired(int i)                                 const {return TriggerDecision_[i];}
       int preL1(int i)                                 const {return L1Prescale_[i];}
       int preHLT(int i)                                const {return HLTPrescale_[i];}
       float pfmjj();
       float calomjj();
       float genmjj(); 
-      float pfmjjcor(int k);
-      float fatmjjcor(int k);
-      float calomjjcor(int k);
+      float pfmjjcor(int unc);
+      float fatmjjcor(int unc);
+      float calomjjcor(int unc);
       float pfmjjgen();
       float calomjjgen();
       const QCDMET&        calomet()                   const {return CaloMet_;}

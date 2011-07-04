@@ -68,6 +68,31 @@ void QCDEvent::setHLTObj(const std::vector<std::vector<LorentzVector> >& fHLTObj
   }
 }
 //---------------------------------------------------
+int QCDEvent::nGoodJets(int unc, int id, float ymax, float ptmin, std::vector<QCDJet> jets)
+{
+  // unc defines the uncertainty
+  // id defines the jet id
+  // ymax defines the maximum rapidity
+  // ptmin defines the minimum jet pt
+  int sign(0),counter(0);
+  if (unc > 0)
+    sign = 1;
+  if (unc < 0)
+    sign = -1;
+  for(unsigned i=0;i<jets.size();i++) {
+    bool passID(true);
+    if (id == 1 && !jets[i].looseID())
+      passID = false;
+    if (id == 2 && !jets[i].tightID()) 
+      passID = false;
+    if (passID) {
+      if (fabs(jets[i].y()) <= ymax && jets[i].ptCor()*(1+sign*jets[i].unc()) >= ptmin)
+        counter++;
+    }
+  }
+  return counter;
+}
+//---------------------------------------------------
 float QCDEvent::genmjj()
 {
   if (GenJets_.size() < 2)
