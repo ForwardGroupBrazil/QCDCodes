@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("myprocess")
-process.TFileService=cms.Service("TFileService",fileName=cms.string('ResponseHistos.root'))
+process.TFileService=cms.Service("TFileService",fileName=cms.string('ResponseHistos_ak7.root'))
 
 ##-------------------- Define the source  ----------------------------
 process.maxEvents = cms.untracked.PSet(
@@ -10,15 +10,16 @@ process.maxEvents = cms.untracked.PSet(
 process.source = cms.Source("EmptySource")
 
 ##-------------------- User analyzer  --------------------------------
-process.response   = cms.EDAnalyzer('ResponseHistos',
-    filename        = cms.string('/uscms_data/d2/kkousour/7TeV/2011/Jets/mc/Summer11Flat_ProcessedTree_mc.root'),
+process.response2J   = cms.EDAnalyzer('ResponseHistos',
+    filename        = cms.string('/uscms_data/d2/kkousour/7TeV/2011/Jets/mc/Summer11PythiaZ2Flat_InclusiveJetsTree_mc.root'),
     treename        = cms.string('ProcessedTree'),
-    dirname         = cms.string('ak5'),
-    etaBnd          = cms.vdouble(-5.0,-3.0,-1.3,1.3,3.0,5.0),
+    dirname         = cms.string('ak7'),
+    yBnd            = cms.vdouble(0.0,0.5,1.0,1.5,2.0,2.05,3.0),
     ptBnd           = cms.vdouble(30,50,100,200,500,1000,2000,3500),
     maxDR           = cms.double(0.25),
+    nJets           = cms.int32(2),
     nEvents         = cms.int32(-1)
 )
-
-process.p = cms.Path(process.response)
+process.responseAll = process.response2J.clone(nJets = 100)
+process.p = cms.Path(process.response2J * process.responseAll)
 
