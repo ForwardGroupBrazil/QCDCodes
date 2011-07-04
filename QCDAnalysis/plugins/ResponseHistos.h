@@ -25,16 +25,17 @@ class ResponseHistos : public edm::EDAnalyzer
     //---- configurable parameters --------   
     std::string mFileName,mTreeName,mDirName;
     std::vector<double> mPtBND;
-    std::vector<double> mEtaBND;
+    std::vector<double> mYBND;
     double mMaxDR;
     int    mNEvents;
+    int    mMaxJets;
 
     edm::Service<TFileService> fs;
     QCDEvent *mEvent;
     TTree *mTree; 
     TFile *mInf;
     TDirectoryFile *mDir;
-    TH2F *mCaloRspVsEta[20],*mCaloRspVsPt[20],*mPFRspVsEta[20],*mPFRspVsPt[20];
+    TH2F *mCaloRspVsY[20],*mCaloRspVsPt[20],*mPFRspVsY[20],*mPFRspVsPt[20],*mPFDYVsPt[20],*mCaloDYVsPt[20];
 };
 
 #endif

@@ -25,12 +25,13 @@ using namespace std;
 ResponseHistos::ResponseHistos(edm::ParameterSet const& cfg) 
 {
   mPtBND     = cfg.getParameter<std::vector<double> > ("ptBnd");
-  mEtaBND    = cfg.getParameter<std::vector<double> > ("etaBnd");
-  mMaxDR     = cfg.getParameter<double> ("maxDR");
-  mNEvents   = cfg.getParameter<int>  ("nEvents");
-  mFileName  = cfg.getParameter<std::string> ("filename");
-  mTreeName  = cfg.getParameter<std::string> ("treename");
-  mDirName   = cfg.getParameter<std::string> ("dirname");
+  mYBND      = cfg.getParameter<std::vector<double> > ("yBnd");
+  mMaxDR     = cfg.getParameter<double>               ("maxDR");
+  mNEvents   = cfg.getParameter<int>                  ("nEvents");
+  mMaxJets   = cfg.getParameter<int>                  ("nJets");
+  mFileName  = cfg.getParameter<std::string>          ("filename");
+  mTreeName  = cfg.getParameter<std::string>          ("treename");
+  mDirName   = cfg.getParameter<std::string>          ("dirname");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void ResponseHistos::beginJob() 
@@ -38,22 +39,29 @@ void ResponseHistos::beginJob()
   char name[1000];
   //----------- Response Vs Eta Histos -----------
   for (unsigned ipt=0;ipt<mPtBND.size()-1;ipt++) {
-    sprintf(name,"CaloRspVsEta_PtBin%d",ipt);
-    mCaloRspVsEta[ipt] = fs->make<TH2F>(name,name,200,-5,5,500,0,2);
-    mCaloRspVsEta[ipt]->Sumw2();
-    sprintf(name,"PFRspVsEta_PtBin%d",ipt);
-    mPFRspVsEta[ipt] = fs->make<TH2F>(name,name,200,-5,5,500,0,2);
-    mPFRspVsEta[ipt]->Sumw2();
+    sprintf(name,"CaloRspVsY_PtBin%d",ipt);
+    mCaloRspVsY[ipt] = fs->make<TH2F>(name,name,200,-5,5,500,0,2);
+    mCaloRspVsY[ipt]->Sumw2();
+    sprintf(name,"PFRspVsY_PtBin%d",ipt);
+    mPFRspVsY[ipt] = fs->make<TH2F>(name,name,200,-5,5,500,0,2);
+    mPFRspVsY[ipt]->Sumw2();
   }
   //----------- Response Vs Pt Histos ------------
-  for (unsigned ieta=0;ieta<mEtaBND.size()-1;ieta++) {
-    sprintf(name,"CaloRspVsPt_EtaBin%d",ieta);
-    mCaloRspVsPt[ieta] = fs->make<TH2F>(name,name,140,0,3500,500,0,2);
-    mCaloRspVsPt[ieta]->Sumw2();
-    sprintf(name,"PFRspVsPt_EtaBin%d",ieta);
-    mPFRspVsPt[ieta] = fs->make<TH2F>(name,name,140,0,3500,500,0,2);
-    mPFRspVsPt[ieta]->Sumw2();
+  for (unsigned iy=0;iy<mYBND.size()-1;iy++) {
+    sprintf(name,"CaloRspVsPt_YBin%d",iy);
+    mCaloRspVsPt[iy] = fs->make<TH2F>(name,name,140,0,3500,500,0,2);
+    mCaloRspVsPt[iy]->Sumw2();
+    sprintf(name,"PFRspVsPt_YBin%d",iy);
+    mPFRspVsPt[iy] = fs->make<TH2F>(name,name,140,0,3500,500,0,2);
+    mPFRspVsPt[iy]->Sumw2();
+    sprintf(name,"CaloDYVsPt_Ybin%d",iy);
+    mCaloDYVsPt[iy] = fs->make<TH2F>(name,name,140,0,3500,500,-0.1,0.1);
+    mCaloDYVsPt[iy]->Sumw2();
+    sprintf(name,"PFDYVsPt_Ybin%d",iy);
+    mPFDYVsPt[iy] = fs->make<TH2F>(name,name,140,0,3500,500,-0.1,0.1);
+    mPFDYVsPt[iy]->Sumw2();
   }
+  cout<<"Histograms booked"<<endl;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void ResponseHistos::endJob() 
@@ -89,14 +97,15 @@ void ResponseHistos::analyze(edm::Event const& event, edm::EventSetup const& iSe
     for(unsigned j=0;j<mEvent->nPFJets();j++) {
       double rGen   = (mEvent->pfjet(j)).genR();
       double ptGen  = (mEvent->pfjet(j)).genpt();
-      double etaGen = (mEvent->pfjet(j)).geneta();
+      double yGen   = (mEvent->pfjet(j)).genp4().Rapidity();
       if (rGen < mMaxDR) {
-        int etaBin = getBin(etaGen,mEtaBND);
+        int yBin = getBin(fabs(yGen),mYBND);
         int ptBin  = getBin(ptGen,mPtBND);
-        if (etaBin > -1 && ptBin > -1) { 
+        if (yBin > -1 && ptBin > -1) { 
           double rsp = (mEvent->pfjet(j)).ptCor()/ptGen;
-          mPFRspVsEta[ptBin]->Fill(etaGen,rsp,wt);
-          mPFRspVsPt[etaBin]->Fill(ptGen,rsp,wt);
+          mPFDYVsPt[yBin]->Fill(ptGen,mEvent->pfjet(j).y()-yGen,wt);
+          mPFRspVsY[ptBin]->Fill(yGen,rsp,wt);
+          mPFRspVsPt[yBin]->Fill(ptGen,rsp,wt);
         }
       }
     }
@@ -104,14 +113,15 @@ void ResponseHistos::analyze(edm::Event const& event, edm::EventSetup const& iSe
     for(unsigned j=0;j<mEvent->nCaloJets();j++) {
       double rGen   = (mEvent->calojet(j)).genR();
       double ptGen  = (mEvent->calojet(j)).genpt();
-      double etaGen = (mEvent->calojet(j)).geneta();
+      double yGen   = (mEvent->calojet(j)).genp4().Rapidity();
       if (rGen < mMaxDR) {
-        int etaBin = getBin(etaGen,mEtaBND);
+        int yBin = getBin(fabs(yGen),mYBND);
         int ptBin  = getBin(ptGen,mPtBND);
-        if (etaBin > -1 && ptBin > -1) {
+        if (yBin > -1 && ptBin > -1) {
           double rsp = (mEvent->calojet(j)).ptCor()/ptGen;
-          mCaloRspVsEta[ptBin]->Fill(etaGen,rsp,wt);
-          mCaloRspVsPt[etaBin]->Fill(ptGen,rsp,wt);
+          mCaloDYVsPt[yBin]->Fill(ptGen,mEvent->calojet(j).y()-yGen,wt);
+          mCaloRspVsY[ptBin]->Fill(yGen,rsp,wt);
+          mCaloRspVsPt[yBin]->Fill(ptGen,rsp,wt);
         }
       }
     }
