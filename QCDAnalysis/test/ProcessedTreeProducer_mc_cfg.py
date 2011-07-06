@@ -17,10 +17,10 @@ process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(100)
 )
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+process.MessageLogger.cerr.FwkReport.reportEvery = 10
 #############   Define the source file ###############
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('/store/mc/Summer11/QCD_Pt-15to3000_TuneZ2_Flat_7TeV_pythia6/AODSIM/PU_S3_START42_V11-v2/0004/FA6FEF7F-8E7E-E011-AC35-001A92971B78.root')
+    fileNames = cms.untracked.vstring('rfio:/castor/cern.ch/user/b/bbilin/qbhfast/QBH_511_fastsim.root')
 )
 ############# processed tree producer ##################
 process.TFileService = cms.Service("TFileService",fileName = cms.string('ProcessedTree_mc.root'))
@@ -30,7 +30,6 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     pfjets          = cms.InputTag('ak7PFJets'),
     calojets        = cms.InputTag('ak7CaloJets'),
     genjets         = cms.untracked.InputTag('ak7GenJets'),
-    isMCarlo        = cms.untracked.bool(True),
     ## database entry for the uncertainties ######
     PFPayloadName   = cms.string(''),
     CaloPayloadName = cms.string(''),
@@ -44,9 +43,12 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     ## rho #######################################
     srcCaloRho      = cms.InputTag('kt6CaloJets','rho'),
     srcPFRho        = cms.InputTag('kt6PFJets','rho'),
+    ## MC $ Generator flags ######################
+    isMCarlo        = cms.untracked.bool(True),
+    useGenInfo      = cms.untracked.bool(False),
     ## simulated PU ##############################
     srcPU           = cms.untracked.InputTag('addPileupInfo'),
-    ## number of jets to be stored ###############
+    ## preselection cuts #########################
     maxY            = cms.double(5.0), 
     minPFPt         = cms.double(20),
     minPFFatPt      = cms.double(10),
@@ -56,7 +58,7 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     minNPFJets      = cms.int32(1),
     minNCaloJets    = cms.int32(1), 
     minJJMass       = cms.double(-1),
-    ## trigger ##############################
+    ## trigger ###################################
     printTriggerMenu = cms.untracked.bool(True),
     processName     = cms.string('HLT'),
     triggerName     = cms.vstring('HLT_Jet110'),

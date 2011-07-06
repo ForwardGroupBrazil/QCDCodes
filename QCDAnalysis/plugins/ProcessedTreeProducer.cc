@@ -72,6 +72,7 @@ ProcessedTreeProducer::ProcessedTreeProducer(edm::ParameterSet const& cfg)
   mGenJetsName       = cfg.getUntrackedParameter<edm::InputTag>    ("genjets",edm::InputTag(""));
   mPrintTriggerMenu  = cfg.getUntrackedParameter<bool>             ("printTriggerMenu",false);
   mIsMCarlo          = cfg.getUntrackedParameter<bool>             ("isMCarlo",false);
+  mUseGenInfo        = cfg.getUntrackedParameter<bool>             ("useGenInfo",false);
   mMinGenPt          = cfg.getUntrackedParameter<double>           ("minGenPt",30);
   processName_       = cfg.getParameter<std::string>               ("processName");
   triggerNames_      = cfg.getParameter<std::vector<std::string> > ("triggerName");
@@ -149,8 +150,12 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
 
   //-------------- HCAL Noise Summary -----------------------------
   Handle<HcalNoiseSummary> noiseSummary; 	 
-  event.getByLabel("hcalnoise", noiseSummary); 	 
-  mEvtHdr.setHCALNoise(noiseSummary->passLooseNoiseFilter(),noiseSummary->passTightNoiseFilter());
+  if (!mIsMCarlo) {
+    event.getByLabel("hcalnoise", noiseSummary);         
+    mEvtHdr.setHCALNoise(noiseSummary->passLooseNoiseFilter(),noiseSummary->passTightNoiseFilter());
+  }
+  else
+    mEvtHdr.setHCALNoise(true,true);
   //-------------- Trigger Info -----------------------------------
   event.getByLabel(triggerResultsTag_,triggerResultsHandle_);
   if (!triggerResultsHandle_.isValid()) {
@@ -269,7 +274,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   Handle<GenEventInfoProduct> hEventInfo;
   //-------------- Simulated PU Info ----------------------------------
   Handle<std::vector<PileupSummaryInfo> > PupInfo;
-  if (mIsMCarlo) { 
+  if (mIsMCarlo && mUseGenInfo) { 
     event.getByLabel("generator", hEventInfo);
     mEvtHdr.setPthat(hEventInfo->binningValues()[0]);
     mEvtHdr.setWeight(hEventInfo->weight());

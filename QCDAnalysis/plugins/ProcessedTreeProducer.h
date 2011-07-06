@@ -44,6 +44,7 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     }
     //---- configurable parameters --------  
     bool   mIsMCarlo;
+    bool   mUseGenInfo;
     bool   mPrintTriggerMenu;
     int    mGoodVtxNdof,mMinNCaloJets,mMinNPFJets;
     double mGoodVtxZ; 
