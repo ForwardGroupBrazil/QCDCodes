@@ -35,7 +35,7 @@ class InclusiveHistos : public edm::EDAnalyzer
     int    mHCALNoise;
     int    mNEvents;
     std::vector<double> mMinPt;
-    std::string mFileName,mTreeName,mDirName;
+    std::string mFileName,mTreeName,mDirName,mCaloJECres,mPFJECres;
     std::vector<double> mYBND,mPTBND;
     std::vector<std::string> mTriggers;
     std::vector<int> mTrigIndex;    
@@ -47,7 +47,7 @@ class InclusiveHistos : public edm::EDAnalyzer
     TH1F *mBSx,*mBSy,*mBSz,*mNPV,*mPVx,*mPVy,*mPVz;
     TH1F *mNPFJets[50][6],*mNCaloJets[50][6];
     TH1F *mPFJetMulti[50],*mCaloJetMulti[50],*mPFMETovSUMET[50][6],*mCaloMETovSUMET[50][6];
-    TH1F *mPFPt[50][6],*mPFNormPt[50][6],*mPFX[50][6],*mPFNormX[50][6],
+    TH1F *mGenPt[6],*mGenX[6],*mPFPt[50][6],*mPFNormPt[50][6],*mPFX[50][6],*mPFNormX[50][6],
          *mCaloPt[50][6],*mCaloNormPt[50][6],*mCaloX[50][6],*mCaloNormX[50][6],
          *mCHF[50][6],*mNHF[50][6],*mPHF[50][6],*mELF[50][6],
          *mN90hits[50][6],*mEMF[50][6],*mNTrkCalo[50][6],*mNTrkVtx[50][6],*mfHPD[50][6];

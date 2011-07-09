@@ -14,22 +14,26 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
+#include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 
 using namespace std;
 
 InclusiveHistos::InclusiveHistos(edm::ParameterSet const& cfg) 
 {
-  mYBND      = cfg.getParameter<std::vector<double> > ("yBnd");
-  mPTBND     = cfg.getParameter<std::vector<double> > ("ptBnd");
-  mMinPt     = cfg.getParameter<std::vector<double> > ("minPt");
-  mFileName  = cfg.getParameter<std::string> ("filename");
-  mTreeName  = cfg.getParameter<std::string> ("treename");
-  mDirName   = cfg.getParameter<std::string> ("dirname");
-  mTriggers  = cfg.getParameter<std::vector<std::string> > ("triggers");
-  mIsMC      = cfg.getParameter<bool> ("isMC");
-  mNEvents   = cfg.getParameter<int>  ("nEvents"); 
-  mJetID     = cfg.getParameter<int>  ("jetID");
-  mHCALNoise = cfg.getParameter<int>  ("hcalNoiseFilter");
+  mYBND       = cfg.getParameter<std::vector<double> > ("yBnd");
+  mPTBND      = cfg.getParameter<std::vector<double> > ("ptBnd");
+  mMinPt      = cfg.getParameter<std::vector<double> > ("minPt");
+  mFileName   = cfg.getParameter<std::string> ("filename");
+  mTreeName   = cfg.getParameter<std::string> ("treename");
+  mDirName    = cfg.getParameter<std::string> ("dirname");
+  mCaloJECres = cfg.getUntrackedParameter<std::string> ("caloJECResiduals","");
+  mPFJECres   = cfg.getUntrackedParameter<std::string> ("pfJECResiduals","");
+  mTriggers   = cfg.getParameter<std::vector<std::string> > ("triggers");
+  mIsMC       = cfg.getParameter<bool> ("isMC");
+  mNEvents    = cfg.getParameter<int>  ("nEvents"); 
+  mJetID      = cfg.getParameter<int>  ("jetID");
+  mHCALNoise  = cfg.getParameter<int>  ("hcalNoiseFilter");
   if (mTriggers.size() > 0) {
     if (mMinPt.size() != mTriggers.size()) {
       throw cms::Exception("InclusiveHistos: ")<<" Number of pt thresholds must be equal to the number of triggers\n";
@@ -122,6 +126,14 @@ void InclusiveHistos::beginJob()
       mNCaloJets[itrig][iy]->SetBit(TH1::kCanRebin);
       mNCaloJets[itrig][iy]->Sumw2();
       //-------- pt histograms ----------------------------
+      if (mIsMC) {
+        sprintf(name,"GenPt_Ybin%d",iy);
+        mGenPt[iy] = fs->make<TH1F>(name,name,mPTBND.size()-1,auxPt);
+        mGenPt[iy]->Sumw2();
+        sprintf(name,"GenX_Ybin%d",iy);
+        mGenX[iy] = fs->make<TH1F>(name,name,mPTBND.size()-1,auxX);
+        mGenX[iy]->Sumw2();
+      }
       sprintf(name,"Pt_Ybin%d%s",iy,ss.c_str());
       mPFPt[itrig][iy] = mPFDir.make<TH1F>(name,name,mPTBND.size()-1,auxPt);
       mPFPt[itrig][iy]->Sumw2();
@@ -233,6 +245,19 @@ int InclusiveHistos::findRun(int x, const std::vector<int>& runs)
 //////////////////////////////////////////////////////////////////////////////////////////
 void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSetup) 
 { 
+  vector<JetCorrectorParameters> vCaloPar;
+  vector<JetCorrectorParameters> vPFPar;
+  FactorizedJetCorrector *CaloJEC(0),*PFJEC(0);
+  if (mCaloJECres != "") {
+    JetCorrectorParameters *JetCorPar = new JetCorrectorParameters(mCaloJECres);
+    vCaloPar.push_back(*JetCorPar);
+    CaloJEC = new FactorizedJetCorrector(vCaloPar);
+  }
+  if (mPFJECres != "") {
+    JetCorrectorParameters *JetCorPar = new JetCorrectorParameters(mPFJECres);
+    vPFPar.push_back(*JetCorPar);
+    PFJEC = new FactorizedJetCorrector(vPFPar);
+  }
   unsigned NEntries = mTree->GetEntries();
   cout<<"File: "<<mFileName<<endl;
   cout<<"Reading TREE: "<<NEntries<<" events"<<endl;
@@ -268,8 +293,16 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
     mTree->GetEntry(i);
     double wt(1.0);
     char name[1000];
-    if (mIsMC)
-      wt = mEvent->evtHdr().weight(); 
+    if (mIsMC) {
+      wt = mEvent->evtHdr().weight();
+      for(unsigned j=0;j<mEvent->nGenJets();j++) {
+        int ybin = getBin(fabs(mEvent->genjet(j).Rapidity()),mYBND);
+        if (ybin > -1) {
+          mGenPt[ybin]->Fill(mEvent->genjet(j).pt(),wt);
+          mGenX[ybin]->Fill(0.001*mEvent->genjet(j).pt(),wt);
+        }
+      }
+    }
     //---------- loop over the triggers ----------------------
     for(int itrig=0;itrig<TMath::Max(1,Ntrig);itrig++) {
       int prescale(1),ihlt;
@@ -312,9 +345,17 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
                   if (cutID) {
                     pf_counter_id[itrig][ybin]++;
                     nPFGoodJets++;
-                    mPFPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor(),wt);
-                    mPFNormPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor(),prescale);
-                    double x = mEvent->pfjet(j).ptCor()/1000.;
+                    double ptCor = mEvent->pfjet(j).ptCor();
+                    double res(1.0);
+                    if (mPFJECres != "") {
+                      PFJEC->setJetEta(mEvent->pfjet(j).eta());
+                      PFJEC->setJetPt(ptCor);
+                      res = PFJEC->getCorrection();
+                    }
+                    ptCor *= res;  
+                    mPFPt[itrig][ybin]->Fill(ptCor,wt);
+                    mPFNormPt[itrig][ybin]->Fill(ptCor,prescale);
+                    double x = ptCor/1000.;
                     mPFX[itrig][ybin]->Fill(x,wt);
                     mPFNormX[itrig][ybin]->Fill(x,prescale);
                     mCHF[itrig][ybin]->Fill((mEvent->pfjet(j)).chf(),wt);
@@ -356,9 +397,17 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
                   if (cutID) {
                     calo_counter_id[itrig][ybin]++;
                     nCaloGoodJets++;
-                    mCaloPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor(),wt);
-                    mCaloNormPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor(),prescale);
-                    double x = mEvent->calojet(j).ptCor()/1000.;
+                    double ptCor = mEvent->calojet(j).ptCor();
+                    double res(1.0);
+                    if (mCaloJECres != "") {
+                      CaloJEC->setJetEta(mEvent->calojet(j).eta());
+                      CaloJEC->setJetPt(ptCor);
+                      res = CaloJEC->getCorrection();
+                    }
+                    ptCor *= res;
+                    mCaloPt[itrig][ybin]->Fill(ptCor,wt);
+                    mCaloNormPt[itrig][ybin]->Fill(ptCor,prescale);
+                    double x = ptCor/1000.;
                     mCaloX[itrig][ybin]->Fill(x,wt);
                     mCaloNormX[itrig][ybin]->Fill(x,prescale);
                     mEMF[itrig][ybin] ->Fill((mEvent->calojet(j)).emf(),wt);
