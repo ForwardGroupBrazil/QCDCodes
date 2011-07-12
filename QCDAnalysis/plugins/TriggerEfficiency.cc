@@ -20,6 +20,7 @@ using namespace std;
 TriggerEfficiency::TriggerEfficiency(edm::ParameterSet const& cfg) 
 {
   mYBND       = cfg.getParameter<std::vector<double> >      ("yBnd");
+  mPTBND      = cfg.getParameter<std::vector<double> >      ("ptBnd");
   mMinPt      = cfg.getParameter<double>                    ("minPt");
   mL1Pt       = cfg.getParameter<std::vector<double> >      ("L1Pt");
   mHLTPt      = cfg.getParameter<std::vector<double> >      ("HLTPt");
@@ -64,22 +65,25 @@ void TriggerEfficiency::beginJob()
     cout<<mRefTrigger[itrig]<<" --> "<<mRefTrigIndex[itrig]<<endl; 
   }
   //--------- book histos ---------------------------------
+  double vpt[100];
+  for(unsigned ipt=0;ipt<mPTBND.size();ipt++)
+    vpt[ipt] = mPTBND[ipt];
   TFileDirectory mPFDir   = fs->mkdir(mDirName+"pf");
   TFileDirectory mCaloDir = fs->mkdir(mDirName+"calo");
   for(unsigned itrig=0;itrig<mRefTrigger.size();itrig++) {
     for(unsigned iy=0;iy<mYBND.size()-1;iy++) {
       //-------- pt histograms ----------------------------
-      sprintf(name,"Pt_Ybin%d_hlt%d",iy,(int)mHLTPt[itrig]);
-      mPFPt[itrig][iy] = mPFDir.make<TH1F>(name,name,1000,0,1000);
+      sprintf(name,"Pt_Ybin%d_%s_hlt%d",iy,mRefTrigger[itrig].c_str(),(int)mHLTPt[itrig]);
+      mPFPt[itrig][iy] = mPFDir.make<TH1F>(name,name,mPTBND.size()-1,vpt);
       mPFPt[itrig][iy]->Sumw2();
-      sprintf(name,"RefPt_Ybin%d_hlt%d",iy,(int)mHLTPt[itrig]);
-      mPFRefPt[itrig][iy] = mPFDir.make<TH1F>(name,name,1000,0,1000);
+      sprintf(name,"RefPt_Ybin%d_%s_hlt%d",iy,mRefTrigger[itrig].c_str(),(int)mHLTPt[itrig]);
+      mPFRefPt[itrig][iy] = mPFDir.make<TH1F>(name,name,mPTBND.size()-1,vpt);
       mPFRefPt[itrig][iy]->Sumw2();
-      sprintf(name,"Pt_Ybin%d_hlt%d",iy,(int)mHLTPt[itrig]);
-      mCaloPt[itrig][iy] = mCaloDir.make<TH1F>(name,name,1000,0,1000);
+      sprintf(name,"Pt_Ybin%d_%s_hlt%d",iy,mRefTrigger[itrig].c_str(),(int)mHLTPt[itrig]);
+      mCaloPt[itrig][iy] = mCaloDir.make<TH1F>(name,name,mPTBND.size()-1,vpt);
       mCaloPt[itrig][iy]->Sumw2();
-      sprintf(name,"RefPt_Ybin%d_hlt%d",iy,(int)mHLTPt[itrig]);
-      mCaloRefPt[itrig][iy] = mCaloDir.make<TH1F>(name,name,1000,0,1000);
+      sprintf(name,"RefPt_Ybin%d_%s_hlt%d",iy,mRefTrigger[itrig].c_str(),(int)mHLTPt[itrig]);
+      mCaloRefPt[itrig][iy] = mCaloDir.make<TH1F>(name,name,mPTBND.size()-1,vpt);
       mCaloRefPt[itrig][iy]->Sumw2();
     }// y loop
   }// trigger loop

@@ -31,7 +31,7 @@ class TriggerEfficiency : public edm::EDAnalyzer
     int mJetID,mHCALNoise,mNEvents;   
     double mMinPt;
     std::vector<int> mRefTrigIndex;
-    std::vector<double> mYBND,mL1Pt,mHLTPt;
+    std::vector<double> mPTBND,mYBND,mL1Pt,mHLTPt;
     std::vector<std::string> mRefTrigger; 
     std::string mFileName,mTreeName,mDirName;
 
