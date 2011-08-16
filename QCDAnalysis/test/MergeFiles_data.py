@@ -5,7 +5,7 @@ import sys
 
 path        = "/pnfs/cms/WAX/11/store/user/kkousour/2011/Jets/data/"
 prefix      = "dcap://cmsdca1.fnal.gov:24140/pnfs/fnal.gov/usr/cms/WAX/11/store/user/kkousour/2011/Jets/data/"
-destination = "/uscms_data/d2/kkousour/7TeV/2011/Jets/data/June21st/"
+destination = "/uscms_data/d2/kkousour/7TeV/2011/Jets/data/July8th/"
 
 DIR = os.listdir(path)
 

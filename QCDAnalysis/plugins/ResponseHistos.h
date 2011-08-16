@@ -10,6 +10,7 @@
 #include "TTree.h"
 #include "TH2F.h"
 #include "TFile.h"
+#include "TProfile.h"
 
 class ResponseHistos : public edm::EDAnalyzer 
 {
@@ -23,9 +24,10 @@ class ResponseHistos : public edm::EDAnalyzer
   private:  
     int getBin(double x, const std::vector<double>& boundaries);
     //---- configurable parameters --------   
-    std::string mFileName,mTreeName,mDirName;
+    std::string mFileName,mTreeName,mDirName,mPFBiasCorName;
     std::vector<double> mPtBND;
     std::vector<double> mYBND;
+    std::vector<double> mFineYBND;
     double mMaxDR;
     int    mNEvents;
     int    mMaxJets;
@@ -36,6 +38,9 @@ class ResponseHistos : public edm::EDAnalyzer
     TFile *mInf;
     TDirectoryFile *mDir;
     TH2F *mCaloRspVsY[20],*mCaloRspVsPt[20],*mPFRspVsY[20],*mPFRspVsPt[20],*mPFDYVsPt[20],*mCaloDYVsPt[20];
+    TProfile *mCaloDYVsY[20],*mPFDYVsY[20],*mCaloDYVsAbsY[20],*mPFDYVsAbsY[20],*mCaloPtVsAbsY[20],*mPFPtVsAbsY[20];
+    TProfile *mPFDCorYVsY[20];
+    TH2F *mGenYVsPt;
 };
 
 #endif

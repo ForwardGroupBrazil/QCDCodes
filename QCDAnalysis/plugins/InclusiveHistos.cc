@@ -16,6 +16,7 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 
 using namespace std;
 
@@ -27,6 +28,10 @@ InclusiveHistos::InclusiveHistos(edm::ParameterSet const& cfg)
   mFileName   = cfg.getParameter<std::string> ("filename");
   mTreeName   = cfg.getParameter<std::string> ("treename");
   mDirName    = cfg.getParameter<std::string> ("dirname");
+  mPUFileName = cfg.getUntrackedParameter<std::string> ("puFile","");
+  mPUHistName = cfg.getUntrackedParameter<std::string> ("puHisto","");
+  mPFYBiasCor   = cfg.getUntrackedParameter<std::string> ("pfYBiasCor","");
+  mCaloYBiasCor = cfg.getUntrackedParameter<std::string> ("caloYBiasCor","");
   mCaloJECres = cfg.getUntrackedParameter<std::string> ("caloJECResiduals","");
   mPFJECres   = cfg.getUntrackedParameter<std::string> ("pfJECResiduals","");
   mTriggers   = cfg.getParameter<std::vector<std::string> > ("triggers");
@@ -48,6 +53,10 @@ InclusiveHistos::InclusiveHistos(edm::ParameterSet const& cfg)
 //////////////////////////////////////////////////////////////////////////////////////////
 void InclusiveHistos::beginJob() 
 {
+  if (mIsMC && mPUFileName != "" && mPUHistName != "") {
+    mPUf = TFile::Open(mPUFileName.c_str());
+    mPUh = (TH1F*)mPUf->Get(mPUHistName.c_str());
+  }
   mInf = TFile::Open(mFileName.c_str());
   mDir = (TDirectoryFile*)mInf->Get(mDirName.c_str());
   mTree = (TTree*)mDir->Get(mTreeName.c_str());
@@ -258,13 +267,23 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
     vPFPar.push_back(*JetCorPar);
     PFJEC = new FactorizedJetCorrector(vPFPar);
   }
+  JetCorrectorParameters *pfYBiasPar(0), *caloYBiasPar(0);
+  JetCorrectionUncertainty *pfYBiasCor(0), *caloYBiasCor(0);
+  if (mPFYBiasCor != "") {
+    pfYBiasPar = new JetCorrectorParameters(mPFYBiasCor);
+    pfYBiasCor = new JetCorrectionUncertainty(*pfYBiasPar);
+  } 
+  if (mCaloYBiasCor != "") {
+    caloYBiasPar = new JetCorrectorParameters(mCaloYBiasCor);
+    caloYBiasCor = new JetCorrectionUncertainty(*caloYBiasPar);
+  }
   unsigned NEntries = mTree->GetEntries();
   cout<<"File: "<<mFileName<<endl;
   cout<<"Reading TREE: "<<NEntries<<" events"<<endl;
   int decade = 0;
-  int counter_hlt[50],counter_pv[50],counter_hcal[50];
-  int pf_counter_y[50][10],pf_counter_pt[50][10],pf_counter_id[50][10];
-  int calo_counter_y[50][10],calo_counter_pt[50][10],calo_counter_id[50][10];
+  int counter_hlt[100],counter_pv[100],counter_hcal[100];
+  int pf_counter_y[100][10],pf_counter_pt[100][10],pf_counter_id[100][10];
+  int calo_counter_y[100][10],calo_counter_pt[100][10],calo_counter_id[100][10];
   int Ntrig = (int)mTriggers.size();
   vector<int> Runs;
   for(int itrig=0;itrig<TMath::Max(1,Ntrig);itrig++) {
@@ -295,6 +314,17 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
     char name[1000];
     if (mIsMC) {
       wt = mEvent->evtHdr().weight();
+      if (mPUFileName != "" && mPUHistName != "") {
+        int nINTpu = mEvent->evtHdr().intpu();
+        int nOOTpu = mEvent->evtHdr().ootpuEarly()+mEvent->evtHdr().ootpuLate();
+        double wtINT(0.0),wtOOT(0.0);
+        if (nINTpu < mPUh->GetNbinsX())   
+          wtINT = mPUh->GetBinContent(nINTpu+1); 
+        if (nOOTpu < mPUh->GetNbinsX())
+          wtOOT = mPUh->GetBinContent(nOOTpu+1);
+        wt *= wtINT*wtOOT;
+        //cout<<"INTpu = "<<nINTpu<<", wINT = "<<wtINT<<", OOTpu = "<<nOOTpu<<", wOOT = "<<wtOOT<<", total weight = "<<wtINT*wtOOT<<endl;
+      }
       for(unsigned j=0;j<mEvent->nGenJets();j++) {
         int ybin = getBin(fabs(mEvent->genjet(j).Rapidity()),mYBND);
         if (ybin > -1) {
@@ -332,7 +362,16 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
             counter_hcal[itrig]++;  
             int nPFGoodJets(0);
             for(unsigned j=0;j<mEvent->nPFJets();j++) {
-              int ybin = getBin(fabs(mEvent->pfjet(j).y()),mYBND);  
+              //---- correct for rapidity bias ------------------
+              double y = mEvent->pfjet(j).y();
+              double dy(0);
+              if (mPFYBiasCor != "") {
+                pfYBiasCor->setJetEta(y);
+                pfYBiasCor->setJetPt(mEvent->pfjet(j).ptCor());
+                dy = pfYBiasCor->getUncertainty(true);
+              }
+              double yCor = y+dy;
+              int ybin = getBin(fabs(yCor),mYBND);  
               if (ybin > -1) {
                 pf_counter_y[itrig][ybin]++;
                 if (mEvent->pfjet(j).ptCor() >= mMinPt[itrig]) {
@@ -384,7 +423,15 @@ void InclusiveHistos::analyze(edm::Event const& evt, edm::EventSetup const& iSet
             }
             int nCaloGoodJets(0);
             for(unsigned j=0;j<mEvent->nCaloJets();j++) {
-              int ybin = getBin(fabs(mEvent->calojet(j).y()),mYBND);
+              double y = mEvent->calojet(j).y();
+              double dy(0);
+              if (mCaloYBiasCor != "") {
+                caloYBiasCor->setJetEta(y);
+                caloYBiasCor->setJetPt(mEvent->calojet(j).ptCor());
+                dy = caloYBiasCor->getUncertainty(true);
+              }
+              double yCor = y+dy;
+              int ybin = getBin(fabs(yCor),mYBND);
               if (ybin > -1) {
                 calo_counter_y[itrig][ybin]++;
                 if (mEvent->calojet(j).ptCor() >= mMinPt[itrig]) {

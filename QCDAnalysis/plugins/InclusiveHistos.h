@@ -35,24 +35,24 @@ class InclusiveHistos : public edm::EDAnalyzer
     int    mHCALNoise;
     int    mNEvents;
     std::vector<double> mMinPt;
-    std::string mFileName,mTreeName,mDirName,mCaloJECres,mPFJECres;
+    std::string mFileName,mTreeName,mDirName,mCaloJECres,mPFJECres,mCaloYBiasCor,mPFYBiasCor,mPUHistName,mPUFileName;
     std::vector<double> mYBND,mPTBND;
     std::vector<std::string> mTriggers;
     std::vector<int> mTrigIndex;    
 
     edm::Service<TFileService> fs;
     TTree *mTree; 
-    TFile *mInf;
+    TFile *mInf,*mPUf;
     TDirectoryFile *mDir;
-    TH1F *mBSx,*mBSy,*mBSz,*mNPV,*mPVx,*mPVy,*mPVz;
-    TH1F *mNPFJets[50][6],*mNCaloJets[50][6];
-    TH1F *mPFJetMulti[50],*mCaloJetMulti[50],*mPFMETovSUMET[50][6],*mCaloMETovSUMET[50][6];
-    TH1F *mGenPt[6],*mGenX[6],*mPFPt[50][6],*mPFNormPt[50][6],*mPFX[50][6],*mPFNormX[50][6],
-         *mCaloPt[50][6],*mCaloNormPt[50][6],*mCaloX[50][6],*mCaloNormX[50][6],
-         *mCHF[50][6],*mNHF[50][6],*mPHF[50][6],*mELF[50][6],
-         *mN90hits[50][6],*mEMF[50][6],*mNTrkCalo[50][6],*mNTrkVtx[50][6],*mfHPD[50][6];
-    TProfile *mEMFVsRun[50][6],*mNTrkCaloVsRun[50][6],*mNTrkVtxVsRun[50][6];
-    TProfile *mNHFVsRun[50][6],*mPHFVsRun[50][6],*mCHFVsRun[50][6],*mELFVsRun[50][6];
+    TH1F *mBSx,*mBSy,*mBSz,*mNPV,*mPVx,*mPVy,*mPVz,*mPUh;
+    TH1F *mNPFJets[100][6],*mNCaloJets[100][6];
+    TH1F *mPFJetMulti[100],*mCaloJetMulti[100],*mPFMETovSUMET[100][6],*mCaloMETovSUMET[100][6];
+    TH1F *mGenPt[6],*mGenX[6],*mPFPt[100][6],*mPFNormPt[100][6],*mPFX[100][6],*mPFNormX[100][6],
+         *mCaloPt[100][6],*mCaloNormPt[100][6],*mCaloX[100][6],*mCaloNormX[100][6],
+         *mCHF[100][6],*mNHF[100][6],*mPHF[100][6],*mELF[100][6],
+         *mN90hits[100][6],*mEMF[100][6],*mNTrkCalo[100][6],*mNTrkVtx[100][6],*mfHPD[100][6];
+    TProfile *mEMFVsRun[100][6],*mNTrkCaloVsRun[100][6],*mNTrkVtxVsRun[100][6];
+    TProfile *mNHFVsRun[100][6],*mPHFVsRun[100][6],*mCHFVsRun[100][6],*mELFVsRun[100][6];
     TProfile *mCaloRhoVsRun,*mPFRhoVsRun,*mCaloRhoVsNPV,*mPFRhoVsNPV; 
     //---- TREE variable --------
     QCDEvent *mEvent;
