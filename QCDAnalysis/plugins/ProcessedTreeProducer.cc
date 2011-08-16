@@ -188,47 +188,47 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       else {
         mTriggerPassHisto->Fill(triggerNames_[itrig].c_str(),1);
         tmpFired = 1;
-        //--------- modules on this trigger path--------------
-        const vector<string>& moduleLabels(hltConfig_.moduleLabels(triggerIndex_[itrig]));
-        const unsigned int moduleIndex(triggerResultsHandle_->index(triggerIndex_[itrig]));
-        bool foundL1(false);
-        for(unsigned int j=0; j<=moduleIndex; ++j) {
-          const string& moduleLabel(moduleLabels[j]);
-          const string  moduleType(hltConfig_.moduleType(moduleLabel));
-          //--------check whether the module is packed up in TriggerEvent product
-          const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(moduleLabel,"",processName_)));
-          if (filterIndex<triggerEventHandle_->sizeFilters()) {
-            const Vids& VIDS (triggerEventHandle_->filterIds(filterIndex));
-            const Keys& KEYS(triggerEventHandle_->filterKeys(filterIndex));
-            const size_type nI(VIDS.size());
-            const size_type nK(KEYS.size());
-            assert(nI==nK);
-            const size_type n(max(nI,nK));
-            const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
-            if (foundL1) {
-              for(size_type i=0; i!=n; ++i) {
-                const TriggerObject& TO(TOC[KEYS[i]]);
-                TLorentzVector P4;
-                P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
-                LorentzVector qcdhltobj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
-                vvHLT.push_back(qcdhltobj);
-                //cout<<TO.pt()<<endl;
-              }
-            }
-            else { 
-              for(size_type i=0; i!=n; ++i) {
-                const TriggerObject& TO(TOC[KEYS[i]]);
-                TLorentzVector P4;
-                P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
-                LorentzVector qcdl1obj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
-                vvL1.push_back(qcdl1obj);
-                //cout<<TO.pt()<<endl;  
-              }
-              foundL1 = true; 
+      }
+      //--------- modules on this trigger path--------------
+      const vector<string>& moduleLabels(hltConfig_.moduleLabels(triggerIndex_[itrig]));
+      const unsigned int moduleIndex(triggerResultsHandle_->index(triggerIndex_[itrig]));
+      bool foundL1(false);
+      for(unsigned int j=0; j<=moduleIndex; ++j) {
+        const string& moduleLabel(moduleLabels[j]);
+        const string  moduleType(hltConfig_.moduleType(moduleLabel));
+        //--------check whether the module is packed up in TriggerEvent product
+        const unsigned int filterIndex(triggerEventHandle_->filterIndex(InputTag(moduleLabel,"",processName_)));
+        if (filterIndex<triggerEventHandle_->sizeFilters()) {
+          const Vids& VIDS (triggerEventHandle_->filterIds(filterIndex));
+          const Keys& KEYS(triggerEventHandle_->filterKeys(filterIndex));
+          const size_type nI(VIDS.size());
+          const size_type nK(KEYS.size());
+          assert(nI==nK);
+          const size_type n(max(nI,nK));
+          const TriggerObjectCollection& TOC(triggerEventHandle_->getObjects());
+          if (foundL1) {
+            for(size_type i=0; i!=n; ++i) {
+              const TriggerObject& TO(TOC[KEYS[i]]);
+              TLorentzVector P4;
+              P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
+              LorentzVector qcdhltobj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
+              vvHLT.push_back(qcdhltobj);
+              //cout<<TO.pt()<<endl;
             }
           }
-        }// loop over modules
-      }// if the trigger is fired
+          else { 
+            for(size_type i=0; i!=n; ++i) {
+              const TriggerObject& TO(TOC[KEYS[i]]);
+              TLorentzVector P4;
+              P4.SetPtEtaPhiM(TO.pt(),TO.eta(),TO.phi(),TO.mass());
+              LorentzVector qcdl1obj(P4.Px(),P4.Py(),P4.Pz(),P4.E());
+              vvL1.push_back(qcdl1obj);
+              //cout<<TO.pt()<<endl;  
+            }
+            foundL1 = true; 
+          }
+        }
+      }// loop over modules
     }// if the trigger exists in the menu
     //cout<<triggerNames_[itrig]<<" "<<triggerIndex_[itrig]<<" "<<accept<<" "<<tmpFired<<endl;
     Fired.push_back(tmpFired);
