@@ -11,18 +11,20 @@ class QCDPFJet : public QCDJet {
      //------------ Set methods ------------------------------
      void setFrac(float fchf, float fnhf, float fphf, float felf, float fmuf)  {chf_ = fchf; nhf_ = fnhf; phf_ = fphf; elf_ = felf; muf_ = fmuf;}
      void setMulti(int fncand, int fchm, int fnhm, int fphm, int felm, int fmum) {ncand_ = fncand; chm_ = fchm; nhm_ = fnhm; phm_ = fphm; elm_ = felm; mum_ = fmum;}
+     void setBeta(float fbeta) {beta_ = fbeta;}
      //------------ Get methods ------------------------------ 
-     float chf() const {return chf_;} 
-     float nhf() const {return nhf_;}
-     float phf() const {return phf_;} 
-     float elf() const {return elf_;}
-     float muf() const {return muf_;}
-     int chm()   const {return chm_;}
-     int nhm()   const {return nhm_;}
-     int phm()   const {return phm_;}
-     int elm()   const {return elm_;}
-     int mum()   const {return mum_;}
-     int ncand() const {return ncand_;}
+     float beta() const {return beta_;}                
+     float chf()  const {return chf_;} 
+     float nhf()  const {return nhf_;}
+     float phf()  const {return phf_;} 
+     float elf()  const {return elf_;}
+     float muf()  const {return muf_;}
+     int chm()    const {return chm_;}
+     int nhm()    const {return nhm_;}
+     int phm()    const {return phm_;}
+     int elm()    const {return elm_;}
+     int mum()    const {return mum_;}
+     int ncand()  const {return ncand_;}
    private:
      //---- charged hadron energy fraction ----
      float chf_;
@@ -46,5 +48,7 @@ class QCDPFJet : public QCDJet {
      int mum_;
      //---- number of PF candidates -----------
      int ncand_;
+     //---- fraction of track pt coming from the signal vertex ---
+     float beta_;
     };
 #endif    

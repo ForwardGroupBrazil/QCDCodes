@@ -38,6 +38,7 @@
 #include "DataFormats/METReco/interface/CaloMETCollection.h"
 #include "DataFormats/METReco/interface/HcalNoiseSummary.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
 
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
@@ -244,6 +245,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   //-------------- Vertex Info -----------------------------------
   Handle<reco::VertexCollection> recVtxs;
   event.getByLabel(mOfflineVertices,recVtxs);
+  //------------- reject events without reco vertices ------------
   int VtxGood(0);
   bool isPVgood(false);
   float PVx(0),PVy(0),PVz(0),PVndof(0);
@@ -331,18 +333,43 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   }
   //----------- PFJets -------------------------
   for(PFJetCollection::const_iterator i_pfjet = pfjets->begin(); i_pfjet != pfjets->end(); i_pfjet++) {
+    QCDPFJet qcdpfjet;
     int index = i_pfjet-pfjets->begin();
     edm::RefToBase<reco::Jet> pfjetRef(edm::Ref<PFJetCollection>(pfjets,index));
     double scale = mPFJEC->correction(*i_pfjet,pfjetRef,event,iSetup);
     //---- preselection -----------------
     if (fabs(i_pfjet->y()) > mMaxY) continue;
+    //---- vertex association -----------
+    //---- get the vector of tracks -----
+    reco::TrackRefVector vTrks(i_pfjet->getTrackRefs());
+    float sumTrkPt(0.0),sumTrkPtBeta(0.0),beta(0.0);
+    //---- loop over the tracks of the jet ----
+    for(reco::TrackRefVector::const_iterator i_trk = vTrks.begin(); i_trk != vTrks.end(); i_trk++) {
+      if (recVtxs->size() == 0) break;
+      sumTrkPt += (*i_trk)->pt();
+      //---- loop over the tracks associated with the signal vertex ---
+      if (!((*recVtxs)[0].isFake()) && (*recVtxs)[0].ndof() >= mGoodVtxNdof && fabs((*recVtxs)[0].z()) <= mGoodVtxZ) {
+        for(reco::Vertex::trackRef_iterator i_vtxTrk = (*recVtxs)[0].tracks_begin(); i_vtxTrk != (*recVtxs)[0].tracks_end(); ++i_vtxTrk) {
+          //---- match the jet track to the track from the vertex ----
+          reco::TrackRef trkRef(i_vtxTrk->castTo<reco::TrackRef>());
+          //---- check if the tracks match -------------------------
+          if (trkRef == (*i_trk)) {
+            sumTrkPtBeta += (*i_trk)->pt();
+            break;
+          }
+        } 
+      }
+    }
+    if (sumTrkPt > 0)
+      beta = sumTrkPtBeta/sumTrkPt;
+    qcdpfjet.setBeta(beta);
+    //---- jec uncertainty --------------
     double unc(0.0);
     if (mPFPayloadName != "") {
       mPFUnc->setJetEta(i_pfjet->eta());
       mPFUnc->setJetPt(scale * i_pfjet->pt());
       unc = mPFUnc->getUncertainty(true);
     }
-    QCDPFJet qcdpfjet;
     qcdpfjet.setP4(i_pfjet->p4());
     qcdpfjet.setCor(scale);
     qcdpfjet.setUnc(unc);
