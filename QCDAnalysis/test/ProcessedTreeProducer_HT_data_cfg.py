@@ -56,14 +56,11 @@ process.ak5 = cms.EDAnalyzer('ProcessedTreeProducer',
     ## trigger ###################################
     printTriggerMenu = cms.untracked.bool(True),
     processName     = cms.string('HLT'),
-    triggerName     = cms.vstring('HLT_HT200_v1','HLT_HT200_v2','HLT_HT200_v3','HLT_HT200_v4','HLT_HT200_v5','HLT_HT200_v6','HLT_HT200_v7',
-                                  'HLT_HT250_v1','HLT_HT250_v2','HLT_HT250_v3','HLT_HT250_v4','HLT_HT250_v5','HLT_HT250_v6','HLT_HT250_v7',
-                                  'HLT_HT300_v1','HLT_HT300_v2','HLT_HT300_v3','HLT_HT300_v4','HLT_HT300_v5','HLT_HT300_v6','HLT_HT300_v7','HLT_HT300_v8',
-                                  'HLT_HT350_v1','HLT_HT350_v2','HLT_HT350_v3','HLT_HT350_v4','HLT_HT350_v5','HLT_HT350_v6','HLT_HT350_v7',
-                                  'HLT_HT400_v1','HLT_HT400_v2','HLT_HT400_v3','HLT_HT400_v4','HLT_HT400_v5','HLT_HT400_v6','HLT_HT400_v7',
-                                  'HLT_HT450_v1','HLT_HT450_v2','HLT_HT450_v3','HLT_HT450_v4','HLT_HT450_v5','HLT_HT450_v6','HLT_HT450_v7',
-                                  'HLT_HT500_v1','HLT_HT500_v2','HLT_HT500_v3','HLT_HT500_v4','HLT_HT500_v5','HLT_HT500_v6','HLT_HT500_v7',
-                                  'HLT_HT550_v1','HLT_HT550_v2','HLT_HT550_v3','HLT_HT550_v4','HLT_HT550_v5','HLT_HT550_v6','HLT_HT550_v7'),
+    triggerName     = cms.vstring(
+      'HLT_HT450_v1','HLT_HT450_v2','HLT_HT450_v3','HLT_HT450_v4','HLT_HT450_v5','HLT_HT450_v6','HLT_HT450_v7','HLT_HT450_v8',
+      'HLT_HT500_v1','HLT_HT500_v2','HLT_HT500_v3','HLT_HT500_v4','HLT_HT500_v5','HLT_HT500_v6','HLT_HT500_v7','HLT_HT500_v8',
+      'HLT_HT550_v1','HLT_HT550_v2','HLT_HT550_v3','HLT_HT550_v4','HLT_HT550_v5','HLT_HT550_v6','HLT_HT550_v7','HLT_HT550_v8'
+    ),
     triggerResults  = cms.InputTag("TriggerResults","","HLT"),
     triggerEvent    = cms.InputTag("hltTriggerSummaryAOD","","HLT"),
     ## jec services ##############################
@@ -83,14 +80,11 @@ process.ak5PFJets.jetPtMin = cms.double(5.0)
 ############# hlt filter #########################
 process.hltFilter = cms.EDFilter('HLTHighLevel',
     TriggerResultsTag  = cms.InputTag('TriggerResults','','HLT'),
-    HLTPaths           = cms.vstring('HLT_HT200_v1','HLT_HT200_v2','HLT_HT200_v3','HLT_HT200_v4','HLT_HT200_v5','HLT_HT200_v6','HLT_HT200_v7',
-                                     'HLT_HT250_v1','HLT_HT250_v2','HLT_HT250_v3','HLT_HT250_v4','HLT_HT250_v5','HLT_HT250_v6','HLT_HT250_v7',
-                                     'HLT_HT300_v1','HLT_HT300_v2','HLT_HT300_v3','HLT_HT300_v4','HLT_HT300_v5','HLT_HT300_v6','HLT_HT300_v7','HLT_HT300_v8',
-                                     'HLT_HT350_v1','HLT_HT350_v2','HLT_HT350_v3','HLT_HT350_v4','HLT_HT350_v5','HLT_HT350_v6','HLT_HT350_v7',
-                                     'HLT_HT400_v1','HLT_HT400_v2','HLT_HT400_v3','HLT_HT400_v4','HLT_HT400_v5','HLT_HT400_v6','HLT_HT400_v7',
-                                     'HLT_HT450_v1','HLT_HT450_v2','HLT_HT450_v3','HLT_HT450_v4','HLT_HT450_v5','HLT_HT450_v6','HLT_HT450_v7',
-                                     'HLT_HT500_v1','HLT_HT500_v2','HLT_HT500_v3','HLT_HT500_v4','HLT_HT500_v5','HLT_HT500_v6','HLT_HT500_v7',
-                                     'HLT_HT550_v1','HLT_HT550_v2','HLT_HT550_v3','HLT_HT550_v4','HLT_HT550_v5','HLT_HT550_v6','HLT_HT550_v7'),
+    HLTPaths           = cms.vstring(
+       'HLT_HT450_v1','HLT_HT450_v2','HLT_HT450_v3','HLT_HT450_v4','HLT_HT450_v5','HLT_HT450_v6','HLT_HT450_v7','HLT_HT450_v8',
+       'HLT_HT500_v1','HLT_HT500_v2','HLT_HT500_v3','HLT_HT500_v4','HLT_HT500_v5','HLT_HT500_v6','HLT_HT500_v7','HLT_HT500_v8',
+       'HLT_HT550_v1','HLT_HT550_v2','HLT_HT550_v3','HLT_HT550_v4','HLT_HT550_v5','HLT_HT550_v6','HLT_HT550_v7','HLT_HT550_v8'
+    ),
     eventSetupPathsKey = cms.string(''),
     andOr              = cms.bool(True), #----- True = OR, False = AND between the HLTPaths
     throw              = cms.bool(False)

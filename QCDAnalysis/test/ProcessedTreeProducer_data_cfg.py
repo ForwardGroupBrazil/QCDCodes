@@ -53,7 +53,7 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 #############   Define the source file ###############
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-       '/store/data/Run2011A/Jet/AOD/PromptReco-v4/000/167/913/EEE2D986-8EA3-E011-8995-003048F118AC.root'
+    '/store/data/Run2011A/Jet/AOD/PromptReco-v6/000/173/244/E2AB1AE4-50C7-E011-937E-003048F11CF0.root'
     )
 )
 ############# processed tree producer ##################
