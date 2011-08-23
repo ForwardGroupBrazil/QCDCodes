@@ -27,6 +27,7 @@ MultijetSearchHistos::MultijetSearchHistos(edm::ParameterSet const& cfg)
   mJetID     = cfg.getParameter<int>                       ("jetID");
   mHCALNoise = cfg.getParameter<int>                       ("hcalNoiseFilter");
   mMaxEta    = cfg.getParameter<double>                    ("maxEta");
+  mMinHT     = cfg.getParameter<double>                    ("minHT");
   mMinPt     = cfg.getParameter<std::vector<double> >      ("minPt");
   mTriggers  = cfg.getParameter<std::vector<std::string> > ("triggers");
   //------------- MC -----------------------------------------------------------
@@ -86,6 +87,7 @@ void MultijetSearchHistos::beginJob()
   mM2J        = mPFDir.make<TH1F>("M2J","M2J",700,0,7000);
   mM4J        = mPFDir.make<TH1F>("M4J","M4J",700,0,7000);
   mDR         = mPFDir.make<TH1F>("DR","DR",100,0,10);
+  mPtRatio    = mPFDir.make<TH1F>("PtRatio","PtRatio",100,0,1);
   mJetMulti   = mPFDir.make<TH1F>("JetMulti","JetMulti",20,0,20);
   mMETovSUMET->Sumw2();
   mPtHat->Sumw2();
@@ -96,6 +98,7 @@ void MultijetSearchHistos::beginJob()
   mM4J->Sumw2();
   mM2J->Sumw2();
   mDR->Sumw2();
+  mPtRatio->Sumw2();
   mJetMulti->Sumw2(); 
   for(int j=0;j<8;j++) {
     sprintf(name,"JetPt%d",j);
@@ -123,6 +126,10 @@ void MultijetSearchHistos::beginJob()
     sprintf(name,"MUF%d",j);
     mMUF[j] = mPFDir.make<TH1F>(name,name,100,0,1.001);
     mMUF[j]->Sumw2();
+    //-------- vertex association ------------------------
+    sprintf(name,"Beta%d",j);
+    mBeta[j] = mPFDir.make<TH1F>(name,name,100,0,1.001);
+    mBeta[j]->Sumw2();
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -137,7 +144,7 @@ void MultijetSearchHistos::analyze(edm::Event const& evt, edm::EventSetup const&
   cout<<"File: "<<mFileName<<endl;
   cout<<"Reading TREE: "<<NEntries<<" events"<<endl;
   int decade = 0;
-  int counter_hlt(0),counter_pv(0),counter_hcal(0),counter_kin(0),counter_id(0);
+  int counter_hlt(0),counter_pv(0),counter_hcal(0),counter_kin(0),counter_ht(0),counter_id(0);
   int Ntrig = (int)mTriggers.size();
   //---------- loop over the events ----------------------
   unsigned NN = NEntries;
@@ -197,7 +204,7 @@ void MultijetSearchHistos::analyze(edm::Event const& evt, edm::EventSetup const&
         if (cut_hcalNoise) {
           counter_hcal++;  
           if (int(mEvent->nPFJets()) > mRank-1) {
-            bool cutPt(true),cutEta(true),cutID(true);
+            bool cutPt(true),cutEta(true),cutID(true),cutHT(true);
             double HT(0),HTAll(0);
             LorentzVector P4[8],P4AllJ(0,0,0,0);
             for (int j=0;j<mRank;j++) { 
@@ -213,6 +220,7 @@ void MultijetSearchHistos::analyze(edm::Event const& evt, edm::EventSetup const&
               P4[j] = mEvent->pfjet(j).cor() * mEvent->pfjet(j).p4();
               P4AllJ += P4[j];
             }
+            cutHT = (HT >= mMinHT);
             int njets(mRank);
             HTAll = HT;
             for(unsigned k=mRank;k<mEvent->nPFJets();k++) {
@@ -227,47 +235,53 @@ void MultijetSearchHistos::analyze(edm::Event const& evt, edm::EventSetup const&
                 njets++;
                 HTAll += mEvent->pfjet(k).ptCor();
               }
-            } 
+            }
             if (cutPt && cutEta) {
               counter_kin++;
-              if (cutID) {
-                counter_id++;
-                mMAllJ->Fill(P4AllJ.mass(),wt);
-                mMETovSUMET->Fill(mEvent->pfmet().met_o_sumet(),wt);
-                mHT->Fill(HT,wt); 
-                mHTAll->Fill(HTAll,wt);
-                mPtHat->Fill(pthat);
-                mJetMulti->Fill(njets,wt);
-                //----- 4J combinatorics --------
-                for(int j1=0;j1<mRank-3;j1++) {
-                  for(int j2=j1+1;j2<mRank-2;j2++) {
-                    for(int j3=j2+1;j3<mRank-1;j3++) {
-                      for(int j4=j3+1;j4<mRank;j4++) {
-                        mM4J->Fill((P4[j1]+P4[j2]+P4[j3]+P4[j4]).mass(),wt);
+              if (cutHT) {
+                counter_ht++;
+                if (cutID) {
+                  counter_id++;
+                  mMAllJ->Fill(P4AllJ.mass(),wt);
+                  mMETovSUMET->Fill(mEvent->pfmet().met_o_sumet(),wt);
+                  mHT->Fill(HT,wt); 
+                  mHTAll->Fill(HTAll,wt);
+                  mPtHat->Fill(pthat);
+                  mJetMulti->Fill(njets,wt);
+                  //----- 4J combinatorics --------
+                  for(int j1=0;j1<mRank-3;j1++) {
+                    for(int j2=j1+1;j2<mRank-2;j2++) {
+                      for(int j3=j2+1;j3<mRank-1;j3++) {
+                        for(int j4=j3+1;j4<mRank;j4++) {
+                          mM4J->Fill((P4[j1]+P4[j2]+P4[j3]+P4[j4]).mass(),wt);
+                        }
                       }
                     }
                   }
-                }
-                //----- 2J combinatorics -------- 
-                for(int j1=0;j1<mRank-1;j1++) {
-                  for(int j2=j1+1;j2<mRank;j2++) {
-                    double m2j = (P4[j1]+P4[j2]).mass();
-                    double dR  = sqrt(pow(P4[j1].eta()-P4[j2].eta(),2)+pow(P4[j1].phi()-P4[j2].phi(),2));     
-                    mM2J->Fill(m2j,wt);
-                    mDR->Fill(dR,wt); 
+                  //----- 2J combinatorics -------- 
+                  for(int j1=0;j1<mRank-1;j1++) {
+                    for(int j2=j1+1;j2<mRank;j2++) {
+                      double m2j = (P4[j1]+P4[j2]).mass();
+                      double dR  = sqrt(pow(P4[j1].eta()-P4[j2].eta(),2)+pow(P4[j1].phi()-P4[j2].phi(),2));     
+                      mM2J->Fill(m2j,wt);
+                      mDR->Fill(dR,wt); 
+                    }
                   }
-                }
-                for(int j=0;j<mRank;j++) {
-                  mPt[j]->Fill((mEvent->pfjet(j)).ptCor(),wt);
-                  mPhi[j]->Fill((mEvent->pfjet(j)).phi(),wt);
-                  mEta[j]->Fill((mEvent->pfjet(j)).eta(),wt);
-                  mCHF[j]->Fill((mEvent->pfjet(j)).chf(),wt);
-                  mNHF[j]->Fill((mEvent->pfjet(j)).nhf(),wt);
-                  mPHF[j]->Fill((mEvent->pfjet(j)).phf(),wt);
-                  mELF[j]->Fill((mEvent->pfjet(j)).elf(),wt);
-                  mMUF[j]->Fill((mEvent->pfjet(j)).muf(),wt);
-                }// pfjet loop
-              }// id cuts
+                  mPtRatio->Fill(mEvent->pfjet(mRank-1).ptCor()/mEvent->pfjet(0).ptCor(),wt);
+                  for(int j=0;j<mRank;j++) {
+                    mPt[j]->Fill((mEvent->pfjet(j)).ptCor(),wt);
+                    mPhi[j]->Fill((mEvent->pfjet(j)).phi(),wt);
+                    mEta[j]->Fill((mEvent->pfjet(j)).eta(),wt);
+                    mCHF[j]->Fill((mEvent->pfjet(j)).chf(),wt);
+                    mNHF[j]->Fill((mEvent->pfjet(j)).nhf(),wt);
+                    mPHF[j]->Fill((mEvent->pfjet(j)).phf(),wt);
+                    mELF[j]->Fill((mEvent->pfjet(j)).elf(),wt);
+                    mMUF[j]->Fill((mEvent->pfjet(j)).muf(),wt);
+                    if (!mIsMC)
+                      mBeta[j]->Fill(mEvent->pfjet(j).beta(),wt); 
+                  }// pfjet loop
+                }// id cuts
+              }// ht cut
             }// kinematic cuts
           }// at least 8 pfjets
         }// if pv
@@ -280,6 +294,7 @@ void MultijetSearchHistos::analyze(edm::Event const& evt, edm::EventSetup const&
   cout<<"Events passing the PV:            "<<counter_pv<<endl;
   cout<<"Events passing the HCAL NOISE:    "<<counter_hcal<<endl;  
   cout<<"Events passing kinematic cuts:    "<<counter_kin<<endl;
+  cout<<"Events passing the HT cut:        "<<counter_ht<<endl;
   cout<<"Events passing the jet id cuts:   "<<counter_id<<endl;
 }
 //////////////////////////////////////////////////////////////////////////////////////////

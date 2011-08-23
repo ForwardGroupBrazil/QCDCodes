@@ -1,0 +1,59 @@
+#include "FWCore/Framework/interface/EDFilter.h"
+#include "FWCore/Framework/interface/Event.h"
+#include "DataFormats/Common/interface/Handle.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "Geometry/Records/interface/IdealGeometryRecord.h"
+
+#include "DataFormats/JetReco/interface/CaloJet.h"
+#include "DataFormats/JetReco/interface/CaloJetCollection.h"
+#include "DataFormats/JetReco/interface/PFJet.h"
+#include "DataFormats/JetReco/interface/PFJetCollection.h"
+#include "DataFormats/JetReco/interface/GenJet.h"
+#include "DataFormats/JetReco/interface/GenJetCollection.h"
+#include "KKousour/QCDAnalysis/plugins/MultijetFilter.h"
+
+using namespace std;
+using namespace reco;
+using namespace edm;
+
+template<class Jet>
+MultijetFilter<Jet>::MultijetFilter(ParameterSet const& cfg) 
+{
+  jets_     = cfg.getParameter<edm::InputTag>("jets");
+  minNjets_ = cfg.getParameter<int>("minNjets");
+  minPt_    = cfg.getParameter<double>("minPt");
+}
+////////////////////////////////////////////////////////////////////
+template<class Jet>
+void MultijetFilter<Jet>::beginJob() 
+{
+}
+////////////////////////////////////////////////////////////////////
+template<class Jet>
+bool MultijetFilter<Jet>::filter(edm::Event &event, const edm::EventSetup &iSetup)
+{
+  edm::Handle<JetCollection> jets;
+  typename JetCollection::const_iterator i_jet;
+  event.getByLabel(jets_,jets); 
+  int N(0);
+  bool check(false);
+  //////// Find the number of real jets (pt>ptTrhreshold) /////////// 
+  for(i_jet = jets->begin(); i_jet != jets->end(); i_jet++) {
+    double pt = i_jet->pt();
+    if (pt > minPt_) {
+      N++;
+    }
+  }
+  if (N >= minNjets_) {
+    check = true; 
+  } 
+  return check;
+}
+//////////////////////////////////////////////////////////////////////////////////////////
+template<class Jet>
+void MultijetFilter<Jet>::endJob() 
+{
+}
+
