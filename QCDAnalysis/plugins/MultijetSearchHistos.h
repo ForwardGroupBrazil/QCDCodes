@@ -36,6 +36,8 @@ class MultijetSearchHistos : public edm::EDAnalyzer
     int    mHCALNoise;
     int    mNEvents;
     int    mRank;
+    double mScale4J;
+    double mOffset4J;
     double mMaxEta;
     double mMinHT;
     std::string mFileName,mTreeName,mDirName;
@@ -48,7 +50,8 @@ class MultijetSearchHistos : public edm::EDAnalyzer
     TTree *mTree; 
     TFile *mInf;
     TDirectoryFile *mDir;
-    TH1F *mMETovSUMET,*mHT,*mHTAll,*mMAllJ,*mM4J,*mM2J,*mDR,*mJetMulti,*mPtHat,*mPtHatAll,*mPtRatio;
+    TH1F *mMETovSUMET,*mHT,*mHTAll,*mHT4J,*mHT4Jcut,*mMAllJ,*mM4J,*mM4Jcut,*mM2J,*mDR,*mJetMulti,*mPtHat,*mPtHatAll,*mPtRatio;
+    TH2F *mM4JvsHT4J;
     TH1F *mPt[8],*mPhi[8],*mEta[8],*mCHF[8],*mNHF[8],*mPHF[8],*mELF[8],*mMUF[8],*mBeta[8];
     //---- TREE variable --------
     QCDEvent *mEvent;

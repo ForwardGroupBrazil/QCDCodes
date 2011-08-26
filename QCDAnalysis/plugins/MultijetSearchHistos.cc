@@ -26,6 +26,8 @@ MultijetSearchHistos::MultijetSearchHistos(edm::ParameterSet const& cfg)
   mNEvents   = cfg.getParameter<int>                       ("nEvents"); 
   mJetID     = cfg.getParameter<int>                       ("jetID");
   mHCALNoise = cfg.getParameter<int>                       ("hcalNoiseFilter");
+  mScale4J   = cfg.getParameter<double>                    ("scale4j");
+  mOffset4J  = cfg.getParameter<double>                    ("offset4j");
   mMaxEta    = cfg.getParameter<double>                    ("maxEta");
   mMinHT     = cfg.getParameter<double>                    ("minHT");
   mMinPt     = cfg.getParameter<std::vector<double> >      ("minPt");
@@ -83,23 +85,31 @@ void MultijetSearchHistos::beginJob()
   mPtHatAll   = mPFDir.make<TH1F>("PtHatAll","PtHatAll",700,0,3500);
   mHT         = mPFDir.make<TH1F>("HT","HT",200,0,5000);
   mHTAll      = mPFDir.make<TH1F>("HTAll","HTAll",200,0,5000);
+  mHT4J       = mPFDir.make<TH1F>("HT4J","HT4J",200,0,5000);
+  mHT4Jcut    = mPFDir.make<TH1F>("HT4Jcut","HT4Jcut",200,0,5000);
   mMAllJ      = mPFDir.make<TH1F>("MAllJ","MAllJ",140,0,7000);
   mM2J        = mPFDir.make<TH1F>("M2J","M2J",700,0,7000);
   mM4J        = mPFDir.make<TH1F>("M4J","M4J",700,0,7000);
+  mM4Jcut     = mPFDir.make<TH1F>("M4Jcut","M4Jcut",700,0,7000);
   mDR         = mPFDir.make<TH1F>("DR","DR",100,0,10);
   mPtRatio    = mPFDir.make<TH1F>("PtRatio","PtRatio",100,0,1);
   mJetMulti   = mPFDir.make<TH1F>("JetMulti","JetMulti",20,0,20);
+  mM4JvsHT4J  = mPFDir.make<TH2F>("M4JvsHT4J","M4JvsHT4J",200,0,5000,700,0,7000);
   mMETovSUMET->Sumw2();
   mPtHat->Sumw2();
   mPtHatAll->Sumw2();
   mHT->Sumw2();
+  mHT4J->Sumw2();
+  mHT4Jcut->Sumw2();
   mHTAll->Sumw2();
   mMAllJ->Sumw2();
   mM4J->Sumw2();
+  mM4Jcut->Sumw2();
   mM2J->Sumw2();
   mDR->Sumw2();
   mPtRatio->Sumw2();
   mJetMulti->Sumw2(); 
+  mM4JvsHT4J->Sumw2();
   for(int j=0;j<8;j++) {
     sprintf(name,"JetPt%d",j);
     mPt[j] = mPFDir.make<TH1F>(name,name,350,0,3500);
@@ -253,7 +263,15 @@ void MultijetSearchHistos::analyze(edm::Event const& evt, edm::EventSetup const&
                     for(int j2=j1+1;j2<mRank-2;j2++) {
                       for(int j3=j2+1;j3<mRank-1;j3++) {
                         for(int j4=j3+1;j4<mRank;j4++) {
-                          mM4J->Fill((P4[j1]+P4[j2]+P4[j3]+P4[j4]).mass(),wt);
+                          double m = (P4[j1]+P4[j2]+P4[j3]+P4[j4]).mass();
+                          mM4J->Fill(m,wt);
+                          double HT4J = P4[j1].pt()+P4[j2].pt()+P4[j3].pt()+P4[j4].pt();
+                          mHT4J->Fill(HT4J,wt);
+                          mM4JvsHT4J->Fill(HT4J,m,wt);
+                          if (m > mScale4J*(HT4J-mOffset4J)) {
+                            mM4Jcut->Fill(m,wt);
+                            mHT4Jcut->Fill(HT4J,wt);
+                          }
                         }
                       }
                     }
@@ -269,14 +287,14 @@ void MultijetSearchHistos::analyze(edm::Event const& evt, edm::EventSetup const&
                   }
                   mPtRatio->Fill(mEvent->pfjet(mRank-1).ptCor()/mEvent->pfjet(0).ptCor(),wt);
                   for(int j=0;j<mRank;j++) {
-                    mPt[j]->Fill((mEvent->pfjet(j)).ptCor(),wt);
-                    mPhi[j]->Fill((mEvent->pfjet(j)).phi(),wt);
-                    mEta[j]->Fill((mEvent->pfjet(j)).eta(),wt);
-                    mCHF[j]->Fill((mEvent->pfjet(j)).chf(),wt);
-                    mNHF[j]->Fill((mEvent->pfjet(j)).nhf(),wt);
-                    mPHF[j]->Fill((mEvent->pfjet(j)).phf(),wt);
-                    mELF[j]->Fill((mEvent->pfjet(j)).elf(),wt);
-                    mMUF[j]->Fill((mEvent->pfjet(j)).muf(),wt);
+                    mPt[j]->Fill(mEvent->pfjet(j).ptCor(),wt);
+                    mPhi[j]->Fill(mEvent->pfjet(j).phi(),wt);
+                    mEta[j]->Fill(mEvent->pfjet(j).eta(),wt);
+                    mCHF[j]->Fill(mEvent->pfjet(j).chf(),wt);
+                    mNHF[j]->Fill(mEvent->pfjet(j).nhf(),wt);
+                    mPHF[j]->Fill(mEvent->pfjet(j).phf(),wt);
+                    mELF[j]->Fill(mEvent->pfjet(j).elf(),wt);
+                    mMUF[j]->Fill(mEvent->pfjet(j).muf(),wt);
                     if (!mIsMC)
                       mBeta[j]->Fill(mEvent->pfjet(j).beta(),wt); 
                   }// pfjet loop
