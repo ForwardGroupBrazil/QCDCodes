@@ -34,6 +34,7 @@ class MultijetSearchTree : public edm::EDAnalyzer
     int    mHCALNoise;
     int    mNEvents;
     double mEtaMax;
+    double mPtMin;
     std::string mFileName,mTreeName,mDirName;
     std::vector<double> mPtHatLumi,mPtHatBnd;
     std::vector<std::string> mTriggers;
@@ -44,10 +45,10 @@ class MultijetSearchTree : public edm::EDAnalyzer
     TFile *mInf;
     TDirectoryFile *mDir;
     //---- output TREE variables ------
-    int mRun,mEvt,mM4JIndex[2],mM2JIndex[2][2];
+    int mRun,mEvt,mNPV,mM4JIndex[2],mM2JIndex[2][2];
     float mHT,mM8J,mM4J[2],mHT4J[2],mCosThetaStar,mM4JBalance,mWeight,mPtHat;
-    float mM2J[2][2],mM2JBalance[2],mDphi2J[2][2],mDphi4J,mM2JAll[28];
-    float mPt[8],mEta[8],mPhi[8],mMass[8],mCHF[8],mNHF[8],mPHF[8],mELF[8],mMUF[8];
+    float mM2J[2][2],mM2JBalance[2],mDphi4J,mM2JAll[28],mM4JAll[70],mHT4JAll[70];
+    float mPt[8],mEta[8],mPhi[8],mMass[8],mCHF[8],mNHF[8],mPHF[8],mELF[8],mMUF[8],mBeta[8];
     //---- input TREE variable --------
     QCDEvent *mEvent;
 };

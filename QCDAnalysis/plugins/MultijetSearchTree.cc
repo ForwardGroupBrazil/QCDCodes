@@ -32,6 +32,7 @@ MultijetSearchTree::MultijetSearchTree(edm::ParameterSet const& cfg)
   mJetID       = cfg.getParameter<int>  ("jetID");
   mHCALNoise   = cfg.getParameter<int>  ("hcalNoiseFilter");
   mEtaMax      = cfg.getParameter<double> ("etaMAX");
+  mPtMin       = cfg.getParameter<double> ("ptMIN");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void MultijetSearchTree::beginJob() 
@@ -45,9 +46,9 @@ void MultijetSearchTree::beginJob()
   mOutTree = fs->make<TTree>("tr","tr");
   mOutTree->Branch("runNo"       ,&mRun         ,"mRun/I");
   mOutTree->Branch("evtNo"       ,&mEvt         ,"mEvt/I");
+  mOutTree->Branch("npv"         ,&mNPV         ,"mNPV/I");
   mOutTree->Branch("m4jIndex"    ,&mM4JIndex    ,"mM4JIndex[2]/I");
   mOutTree->Branch("m2jIndex"    ,&mM2JIndex    ,"mM2JIndex[2][2]/I");
-  mOutTree->Branch("dphi2j"      ,&mDphi2J      ,"mDphi2J[2][2]/F");
   mOutTree->Branch("dphi4j"      ,&mDphi4J      ,"mDphi4J/F");
   mOutTree->Branch("ht"          ,&mHT          ,"mHT/F");
   mOutTree->Branch("m8j"         ,&mM8J         ,"mM8J/F");
@@ -56,12 +57,16 @@ void MultijetSearchTree::beginJob()
   mOutTree->Branch("m4jBalance"  ,&mM4JBalance  ,"mM4JBalance/F");
   mOutTree->Branch("m2jBalance"  ,&mM2JBalance  ,"mM2JBalance[2]/F"); 
   mOutTree->Branch("m4j"         ,&mM4J         ,"mM4J[2]/F");
+  mOutTree->Branch("ht4j"        ,&mHT4J        ,"mHT4J[2]/F");
   mOutTree->Branch("m2j"         ,&mM2J         ,"mM2J[2][2]/F");
   mOutTree->Branch("m2jAll"      ,&mM2JAll      ,"mM2JAll[28]/F");
-  mOutTree->Branch("ht4j"        ,&mHT4J        ,"mHT4J[2]/F");
+  mOutTree->Branch("m4jAll"      ,&mM4JAll      ,"mM4JAll[70]/F");
+  mOutTree->Branch("ht4jAll"     ,&mHT4JAll     ,"mHT4JAll[70]/F");
   mOutTree->Branch("pt"          ,&mPt          ,"mPt[8]/F");
+  mOutTree->Branch("beta"        ,&mBeta        ,"mBeta[8]/F");
   mOutTree->Branch("eta"         ,&mEta         ,"mEta[8]/F");
   mOutTree->Branch("phi"         ,&mPhi         ,"mPhi[8]/F");
+  mOutTree->Branch("mass"        ,&mMass        ,"mMass[8]/F");
   mOutTree->Branch("chf"         ,&mCHF         ,"mCHF[8]/F");
   mOutTree->Branch("nhf"         ,&mNHF         ,"mNHF[8]/F");
   mOutTree->Branch("phf"         ,&mPHF         ,"mPHF[8]/F");
@@ -182,6 +187,7 @@ void MultijetSearchTree::analyze(edm::Event const& evt, edm::EventSetup const& i
           if (mEvent->nPFJets() > 7) {
             bool cutID(true);
             bool cut_eta(true);
+            bool cut_pt = (mEvent->pfjet(7).ptCor() > mPtMin);
             LorentzVector P4[8],P48J(0,0,0,0);
             for (int j=0;j<8;j++) { 
               if (mJetID == 1)
@@ -193,9 +199,27 @@ void MultijetSearchTree::analyze(edm::Event const& evt, edm::EventSetup const& i
               P48J += P4[j];
               cut_eta *= (fabs(mEvent->pfjet(j).eta()) < mEtaMax);
             }
-            if (cutID && cut_eta) {
-              counter_id++;
+            if (cutID && cut_eta && cut_pt) {
+              mM8J    = P48J.mass();
+              mHT     = HT;
+              mRun    = mEvent->evtHdr().runNo();
+              mEvt    = mEvent->evtHdr().event();
+              mNPV    = mEvent->evtHdr().nVtxGood();
+              mWeight = wt;
               //----- 4J combinatorics --------
+              int jj(0);
+              for(int j1=0;j1<5;j1++) {
+                for(int j2=j1+1;j2<6;j2++) {
+                  for(int j3=j2+1;j3<7;j3++) {
+                    for(int j4=j3+1;j4<8;j4++) {
+                      mM4JAll[jj]  = (P4[j1]+P4[j2]+P4[j3]+P4[j4]).mass();
+                      mHT4JAll[jj] = P4[j1].pt()+P4[j2].pt()+P4[j3].pt()+P4[j4].pt();
+                      jj++;
+                    }
+                  }
+                }
+              }
+              //----- most probable 4J combinations -----------             
               vector<int> v1,v2,v4J[2]; 
               LorentzVector P44J_1,P44J_2;
               double d,dmin(10000);
@@ -237,8 +261,9 @@ void MultijetSearchTree::analyze(edm::Event const& evt, edm::EventSetup const& i
                   }
                 }
               }
+              mM4JBalance   = 2*fabs(mM4J[0]-mM4J[1])/(mM4J[0]+mM4J[1]);
               //----- 2J combinatorics -------- 
-              int jj(0);
+              jj = 0;
               for(int j1=0;j1<8;j1++) {
                 for(int j2=j1+1;j2<8;j2++) {
                   mM2JAll[jj] = (P4[j1]+P4[j2]).mass();
@@ -268,8 +293,6 @@ void MultijetSearchTree::analyze(edm::Event const& evt, edm::EventSetup const& i
                       mM2JBalance[k] = 2*fabs(mM2J[k][0]-mM2J[k][1])/(mM2J[k][0]+mM2J[k][1]);
                       mM2JIndex[k][0] = (v4J[k][v1[0]]+1)*10+(v4J[k][v1[1]]+1);
                       mM2JIndex[k][1] = (v4J[k][v2[0]]+1)*10+(v4J[k][v2[1]]+1);
-                      mDphi2J[k][0] = deltaPhi(P4[v4J[k][v1[0]]].phi(),P4[v4J[k][v1[1]]].phi());
-                      mDphi2J[k][1] = deltaPhi(P4[v4J[k][v2[0]]].phi(),P4[v4J[k][v2[1]]].phi());
                       dmin = d;
                     }
                   }    
@@ -283,22 +306,22 @@ void MultijetSearchTree::analyze(edm::Event const& evt, edm::EventSetup const& i
               */
               for(int j=0;j<8;j++) {
                 mPt[j]  = mEvent->pfjet(j).ptCor();
+                if (!mIsMC) 
+                  //--- to be fixed when beta will be available in the MC ntuples
+                  mBeta[j] = mEvent->pfjet(j).beta();
+                else
+                  mBeta[j] = 1.0;
                 mPhi[j] = mEvent->pfjet(j).phi();
                 mEta[j] = mEvent->pfjet(j).eta();
-                mMass[j]= mEvent->pfjet(j).mass()*mEvent->pfjet(j).cor();
+                mMass[j]= mEvent->pfjet(j).mass() * mEvent->pfjet(j).cor();
                 mCHF[j] = mEvent->pfjet(j).chf();
                 mNHF[j] = mEvent->pfjet(j).nhf();
                 mPHF[j] = mEvent->pfjet(j).phf();
                 mELF[j] = mEvent->pfjet(j).elf();
                 mMUF[j] = mEvent->pfjet(j).muf();
               }// pfjet loop
-              mM8J          = P48J.mass();
-              mM4JBalance   = 2*fabs(mM4J[0]-mM4J[1])/(mM4J[0]+mM4J[1]);
-              mHT           = HT;
-              mRun          = mEvent->evtHdr().runNo();
-              mEvt          = mEvent->evtHdr().event();
-              mWeight       = wt;
               mOutTree->Fill();
+              counter_id++;
             }// id cuts
           }// at least 8 pfjets
         }// if pv
@@ -310,7 +333,7 @@ void MultijetSearchTree::analyze(edm::Event const& evt, edm::EventSetup const& i
   } 
   cout<<"Events passing the PV:            "<<counter_pv<<endl;
   cout<<"Events passing the HCAL NOISE:    "<<counter_hcal<<endl;  
-  cout<<"Events passing id cuts:           "<<counter_id<<endl;
+  cout<<"Events passing id & Kin cuts:     "<<counter_id<<endl;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 vector<int> MultijetSearchTree::findIndices(const vector<int>& v, int rank)
