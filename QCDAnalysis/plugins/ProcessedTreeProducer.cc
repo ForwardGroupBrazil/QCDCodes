@@ -173,7 +173,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   // sanity check
   assert(triggerResultsHandle_->size() == hltConfig_.size());
   //------ loop over all trigger names ---------
-  for(unsigned itrig=0;itrig<triggerNames_.size();itrig++) {
+  for(unsigned itrig=0;itrig<triggerNames_.size() && !mIsMCarlo;itrig++) {
     bool accept(false);
     int preL1(-1);
     int preHLT(-1);
@@ -342,27 +342,38 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     //---- vertex association -----------
     //---- get the vector of tracks -----
     reco::TrackRefVector vTrks(i_pfjet->getTrackRefs());
-    float sumTrkPt(0.0),sumTrkPtBeta(0.0),beta(0.0);
+    float sumTrkPt(0.0),sumTrkPtBeta(0.0),sumTrkPtBetaStar(0.0),beta(0.0),betaStar(0.0);
     //---- loop over the tracks of the jet ----
     for(reco::TrackRefVector::const_iterator i_trk = vTrks.begin(); i_trk != vTrks.end(); i_trk++) {
       if (recVtxs->size() == 0) break;
       sumTrkPt += (*i_trk)->pt();
-      //---- loop over the tracks associated with the signal vertex ---
-      if (!((*recVtxs)[0].isFake()) && (*recVtxs)[0].ndof() >= mGoodVtxNdof && fabs((*recVtxs)[0].z()) <= mGoodVtxZ) {
-        for(reco::Vertex::trackRef_iterator i_vtxTrk = (*recVtxs)[0].tracks_begin(); i_vtxTrk != (*recVtxs)[0].tracks_end(); ++i_vtxTrk) {
-          //---- match the jet track to the track from the vertex ----
-          reco::TrackRef trkRef(i_vtxTrk->castTo<reco::TrackRef>());
-          //---- check if the tracks match -------------------------
-          if (trkRef == (*i_trk)) {
-            sumTrkPtBeta += (*i_trk)->pt();
-            break;
+      //---- loop over all vertices ----------------------------
+      for(unsigned ivtx = 0;ivtx < recVtxs->size();ivtx++) {
+        //---- loop over the tracks associated with the vertex ---
+        if (!((*recVtxs)[ivtx].isFake()) && (*recVtxs)[ivtx].ndof() >= mGoodVtxNdof && fabs((*recVtxs)[ivtx].z()) <= mGoodVtxZ) {
+          for(reco::Vertex::trackRef_iterator i_vtxTrk = (*recVtxs)[ivtx].tracks_begin(); i_vtxTrk != (*recVtxs)[ivtx].tracks_end(); ++i_vtxTrk) {
+            //---- match the jet track to the track from the vertex ----
+            reco::TrackRef trkRef(i_vtxTrk->castTo<reco::TrackRef>());
+            //---- check if the tracks match -------------------------
+            if (trkRef == (*i_trk)) {
+              if (ivtx == 0) {
+                sumTrkPtBeta += (*i_trk)->pt();
+              }
+              else {
+                sumTrkPtBetaStar += (*i_trk)->pt();
+              }   
+              break;
+            }
           }
         } 
       }
     }
-    if (sumTrkPt > 0)
-      beta = sumTrkPtBeta/sumTrkPt;
+    if (sumTrkPt > 0) {
+      beta     = sumTrkPtBeta/sumTrkPt;
+      betaStar = sumTrkPtBetaStar/sumTrkPt;
+    }
     qcdpfjet.setBeta(beta);
+    qcdpfjet.setBetaStar(betaStar);
     //---- jec uncertainty --------------
     double unc(0.0);
     if (mPFPayloadName != "") {
