@@ -21,7 +21,6 @@
 <use   name="CondFormats/L1TObjects"/>
 <use   name="CondFormats/DataRecord"/>
 <use   name="KKousour/QCDAnalysis"/>
-<use   name="KKousour/MultiJetAnalysis"/> 
 <flags   EDM_PLUGIN="1"/>
 </library>
 
