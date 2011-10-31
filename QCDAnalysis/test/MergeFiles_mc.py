@@ -3,8 +3,8 @@ import os
 import getopt
 import sys
 
-path        = "/pnfs/cms/WAX/11/store/user/kkousour/2011/Jets/mc/"
-prefix      = "dcap://cmsdca1.fnal.gov:24140/pnfs/fnal.gov/usr/cms/WAX/11/store/user/kkousour/2011/Jets/mc/"
+path        = "/pnfs/cms/WAX/11/store/user/kkousour/2011/Jets/mc/processed/"
+prefix      = "dcap://cmsdca1.fnal.gov:24140/pnfs/fnal.gov/usr/cms/WAX/11/store/user/kkousour/2011/Jets/mc/processed/"
 destination = "/uscms_data/d2/kkousour/7TeV/2011/Jets/mc/"
 
 DIR = os.listdir(path)

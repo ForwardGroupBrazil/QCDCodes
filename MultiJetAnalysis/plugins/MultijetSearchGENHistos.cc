@@ -10,7 +10,7 @@
 #include <cassert>
 #include "TMath.h"
 
-#include "KKousour/QCDAnalysis/plugins/MultijetSearchGENHistos.h"
+#include "KKousour/MultiJetAnalysis/plugins/MultijetSearchGENHistos.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/MakerMacros.h"

@@ -1,7 +1,7 @@
 #include "FWCore/PluginManager/interface/ModuleDef.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
-#include "KKousour/QCDAnalysis/plugins/MultijetFilter.h"
+#include "KKousour/MultiJetAnalysis/plugins/MultijetFilter.h"
 
 #include "DataFormats/JetReco/interface/CaloJet.h"
 #include "DataFormats/JetReco/interface/PFJet.h"

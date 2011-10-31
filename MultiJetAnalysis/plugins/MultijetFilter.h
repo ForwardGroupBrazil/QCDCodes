@@ -16,6 +16,6 @@ class MultijetFilter : public edm::EDFilter
     double minPt_;
     int minNjets_;
 };
-#include "KKousour/QCDAnalysis/plugins/MultijetFilter.icc"
+#include "KKousour/MultiJetAnalysis/plugins/MultijetFilter.icc"
 #endif
 
