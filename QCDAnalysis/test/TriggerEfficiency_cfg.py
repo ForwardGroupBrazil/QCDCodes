@@ -11,7 +11,13 @@ process.source = cms.Source("EmptySource")
 
 ##-------------------- User analyzer  --------------------------------
 process.efficiency  = cms.EDAnalyzer('TriggerEfficiency',
-    filename        = cms.string('/uscms_data/d2/kkousour/7TeV/2011/Jets/data/July8th/InclusiveJetsTree_data.root'),
+    filenames       = cms.vstring(
+                                   '/uscms_data/d2/kkousour/7TeV/2011/Jets/data/Oct11th/Jet_Run2011A_May10_ProcessedTree_data.root',
+                                   '/uscms_data/d2/kkousour/7TeV/2011/Jets/data/Oct11th/Jet_Run2011A_PromptV4_ProcessedTree_data.root',
+                                   '/uscms_data/d2/kkousour/7TeV/2011/Jets/data/Oct11th/Jet_Run2011A_Aug05_ProcessedTree_data.root',
+                                   '/uscms_data/d2/kkousour/7TeV/2011/Jets/data/Oct11th/Jet_Run2011A_PromptV6_ProcessedTree_data.root',
+                                   '/uscms_data/d2/kkousour/7TeV/2011/Jets/data/Oct11th/Jet_Run2011B_PromptV1_ProcessedTree_data.root'
+    ),
     treename        = cms.string('ProcessedTree'),
     dirname         = cms.string('ak7'),
     refTrigger      = cms.vstring('HLT_Jet30_v1','HLT_Jet30_v2','HLT_Jet30_v3','HLT_Jet30_v4','HLT_Jet30_v5','HLT_Jet30_v6',
@@ -26,7 +32,7 @@ process.efficiency  = cms.EDAnalyzer('TriggerEfficiency',
     L1Pt            = cms.vdouble(36,36,36,36,36,36,68,68,68,68,68,68,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92),
     HLTPt           = cms.vdouble(60,60,60,60,60,60,110,110,110,110,110,110,190,190,190,190,190,190,240,240,240,240,240,240,370,370,370,370,370,370),
     jetID           = cms.int32(2),
-    hcalNoiseFilter = cms.int32(0),
+    hcalNoiseFilter = cms.int32(1),
     nEvents         = cms.int32(-1)
 )
 

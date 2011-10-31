@@ -33,7 +33,8 @@ class TriggerEfficiency : public edm::EDAnalyzer
     std::vector<int> mRefTrigIndex;
     std::vector<double> mPTBND,mYBND,mL1Pt,mHLTPt;
     std::vector<std::string> mRefTrigger; 
-    std::string mFileName,mTreeName,mDirName;
+    std::string mTreeName,mDirName;
+    std::vector<std::string> mFileNames;
 
     edm::Service<TFileService> fs;
     TTree *mTree; 

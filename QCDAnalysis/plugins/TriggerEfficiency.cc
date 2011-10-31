@@ -24,7 +24,7 @@ TriggerEfficiency::TriggerEfficiency(edm::ParameterSet const& cfg)
   mMinPt      = cfg.getParameter<double>                    ("minPt");
   mL1Pt       = cfg.getParameter<std::vector<double> >      ("L1Pt");
   mHLTPt      = cfg.getParameter<std::vector<double> >      ("HLTPt");
-  mFileName   = cfg.getParameter<std::string>               ("filename");
+  mFileNames  = cfg.getParameter<std::vector<std::string> > ("filenames");
   mTreeName   = cfg.getParameter<std::string>               ("treename");
   mDirName    = cfg.getParameter<std::string>               ("dirname");
   mRefTrigger = cfg.getParameter<std::vector<std::string> > ("refTrigger");
@@ -38,12 +38,9 @@ TriggerEfficiency::TriggerEfficiency(edm::ParameterSet const& cfg)
 //////////////////////////////////////////////////////////////////////////////////////////
 void TriggerEfficiency::beginJob() 
 {
-  mInf = TFile::Open(mFileName.c_str());
+  mInf = TFile::Open(mFileNames[0].c_str());
   mDir = (TDirectoryFile*)mInf->Get(mDirName.c_str());
-  mTree = (TTree*)mDir->Get(mTreeName.c_str());
   mEvent = new QCDEvent();
-  TBranch *branch = mTree->GetBranch("events");
-  branch->SetAddress(&mEvent);
   char name[1000];
   //--------- trigger mapping -------------------
   TH1F *hTrigNames = (TH1F*)mDir->Get("TriggerNames");
@@ -109,96 +106,102 @@ int TriggerEfficiency::getBin(double x, const std::vector<double>& boundaries)
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void TriggerEfficiency::analyze(edm::Event const& evt, edm::EventSetup const& iSetup) 
-{ 
-  unsigned NEntries = mTree->GetEntries();
-  cout<<"File: "<<mFileName<<endl;
-  cout<<"Reading TREE: "<<NEntries<<" events"<<endl;
-  int decade = 0;
-  //---------- loop over the events ----------------------
-  unsigned NN = NEntries;
-  if (mNEvents > -1)
-    NN = (unsigned)mNEvents;
-  for(unsigned i=0;i<NN;i++) {
-    double progress = 10.0*i/(1.0*NEntries);
-    int k = TMath::FloorNint(progress); 
-    if (k > decade) 
-      cout<<10*k<<" %"<<endl;
-    decade = k;          
-    mTree->GetEntry(i);
-    //------ loop over the triggers ----------------------
-    for(unsigned itrig=0;itrig<mRefTrigger.size();itrig++) {
-      int ihlt = mRefTrigIndex[itrig]; 
-      bool hltPass(false);
-      if (mEvent->fired(ihlt) > 0) {
-        hltPass = true;
-      }
-      //-------- cut flow ------------------------------------
-      bool emulateL1(false),emulateHLT(false);
-      if (hltPass) {
-        if (mEvent->evtHdr().isPVgood() == 1) {
-          bool cut_hcalNoise(true);
-          if (mHCALNoise == 1)
-            cut_hcalNoise = mEvent->evtHdr().looseHCALNoise();
-          if (mHCALNoise == 2)
-            cut_hcalNoise = mEvent->evtHdr().tightHCALNoise(); 
-          if (cut_hcalNoise) {
-            //-------- loop over the L1 objects ------------------
-            for(unsigned j=0;j<mEvent->nL1Obj(ihlt);j++) {
-              if (mEvent->l1obj(ihlt,j).pt() >= mL1Pt[itrig]) {
-                emulateL1 = true;
+{
+  for(unsigned iFile=0;iFile<mFileNames.size();iFile++) {
+    TFile *inf = TFile::Open(mFileNames[iFile].c_str());
+    TTree *mTree = (TTree*)inf->Get((mDirName+"/"+mTreeName).c_str()); 
+    TBranch *branch = mTree->GetBranch("events");
+    branch->SetAddress(&mEvent);
+    unsigned NEntries = mTree->GetEntries();
+    cout<<"File: "<<mFileNames[iFile]<<endl;
+    cout<<"Reading TREE: "<<NEntries<<" events"<<endl;
+    int decade = 0;
+    //---------- loop over the events ----------------------
+    unsigned NN = NEntries;
+    if (mNEvents > -1)
+      NN = (unsigned)mNEvents;
+    for(unsigned i=0;i<NN;i++) {
+      double progress = 10.0*i/(1.0*NEntries);
+      int k = TMath::FloorNint(progress); 
+      if (k > decade) 
+        cout<<10*k<<" %"<<endl;
+      decade = k;          
+      mTree->GetEntry(i);
+      //------ loop over the triggers ----------------------
+      for(unsigned itrig=0;itrig<mRefTrigger.size();itrig++) {
+        int ihlt = mRefTrigIndex[itrig]; 
+        bool hltPass(false);
+        if (mEvent->fired(ihlt) > 0) {
+          hltPass = true;
+        }
+        //-------- cut flow ------------------------------------
+        bool emulateL1(false),emulateHLT(false);
+        if (hltPass) {
+          if (mEvent->evtHdr().isPVgood() == 1) {
+            bool cut_hcalNoise(true);
+            if (mHCALNoise == 1)
+              cut_hcalNoise = mEvent->evtHdr().looseHCALNoise();
+            if (mHCALNoise == 2)
+              cut_hcalNoise = mEvent->evtHdr().tightHCALNoise(); 
+            if (cut_hcalNoise) {
+              //-------- loop over the L1 objects ------------------
+              for(unsigned j=0;j<mEvent->nL1Obj(ihlt);j++) {
+                if (mEvent->l1obj(ihlt,j).pt() >= mL1Pt[itrig]) {
+                  emulateL1 = true;
+                  continue;
+                }
+              }
+              //-------- loop over the HLT objects ------------------
+              for(unsigned j=0;j<mEvent->nHLTObj(ihlt);j++) {
+                if (mEvent->hltobj(ihlt,j).pt() >= mHLTPt[itrig]) {
+                  emulateHLT = true;
                 continue;
+                }
               }
-            }
-            //-------- loop over the HLT objects ------------------
-            for(unsigned j=0;j<mEvent->nHLTObj(ihlt);j++) {
-              if (mEvent->hltobj(ihlt,j).pt() >= mHLTPt[itrig]) {
-                emulateHLT = true;
-              continue;
-              }
-            }
-            //-------- loop over the PFJets ------------------
-            for(unsigned j=0;j<mEvent->nPFJets();j++) {
-              int ybin = getBin(fabs(mEvent->pfjet(j).y()),mYBND);  
-              if (ybin > -1) {
-                if (mEvent->pfjet(j).ptCor() >= mMinPt) {
-                  bool cutID(true);
-                  if (mJetID == 1)
-                    cutID = mEvent->pfjet(j).looseID();
-                  if (mJetID == 2)
-                    cutID = mEvent->pfjet(j).tightID();  
-                  if (cutID) {
-                    mPFRefPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor());
-                    if (emulateL1 && emulateHLT) {
-                      mPFPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor());
-                    }
-                  }// cut id
-                }// cut max pt
-              }// cut y  
-            }// pfjet loop
-            //-------- loop over the CaloJets ------------------
-            for(unsigned j=0;j<mEvent->nCaloJets();j++) {
-              int ybin = getBin(fabs(mEvent->calojet(j).y()),mYBND);
-              if (ybin > -1) {
-                if (mEvent->calojet(j).ptCor() >= mMinPt) {
-                  bool cutID(true);
-                  if (mJetID == 1)
-                    cutID = mEvent->calojet(j).looseID();
-                  if (mJetID == 2)
-                    cutID = mEvent->calojet(j).tightID();
-                  if (cutID) {
-                    mCaloRefPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor());
-                    if (emulateL1 && emulateHLT) {
-                      mCaloPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor());
-                    }
-                  }// cut id
-                }// cut min pt
-              }// cut y
-            }// calojet loop
-          }// if hcal noise
-        }// if pv
-      }// if hlt
-    }// trigger loop
-  }// tree loop
+              //-------- loop over the PFJets ------------------
+              for(unsigned j=0;j<mEvent->nPFJets();j++) {
+                int ybin = getBin(fabs(mEvent->pfjet(j).y()),mYBND);  
+                if (ybin > -1) {
+                  if (mEvent->pfjet(j).ptCor() >= mMinPt) {
+                    bool cutID(true);
+                    if (mJetID == 1)
+                      cutID = mEvent->pfjet(j).looseID();
+                    if (mJetID == 2)
+                      cutID = mEvent->pfjet(j).tightID();  
+                    if (cutID) {
+                      mPFRefPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor());
+                      if (emulateL1 && emulateHLT) {
+                        mPFPt[itrig][ybin]->Fill((mEvent->pfjet(j)).ptCor());
+                      }
+                    }// cut id
+                  }// cut max pt
+                }// cut y  
+              }// pfjet loop
+              //-------- loop over the CaloJets ------------------
+              for(unsigned j=0;j<mEvent->nCaloJets();j++) {
+                int ybin = getBin(fabs(mEvent->calojet(j).y()),mYBND);
+                if (ybin > -1) {
+                  if (mEvent->calojet(j).ptCor() >= mMinPt) {
+                    bool cutID(true);
+                    if (mJetID == 1)
+                      cutID = mEvent->calojet(j).looseID();
+                    if (mJetID == 2)
+                      cutID = mEvent->calojet(j).tightID();
+                    if (cutID) {
+                      mCaloRefPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor());
+                      if (emulateL1 && emulateHLT) {
+                        mCaloPt[itrig][ybin]->Fill((mEvent->calojet(j)).ptCor());
+                      }
+                    }// cut id
+                  }// cut min pt
+                }// cut y
+              }// calojet loop
+            }// if hcal noise
+          }// if pv
+        }// if hlt
+      }// trigger loop
+    }// tree loop
+  }// file loop
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 TriggerEfficiency::~TriggerEfficiency() 

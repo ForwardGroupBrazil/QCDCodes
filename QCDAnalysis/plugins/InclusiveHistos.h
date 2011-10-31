@@ -13,7 +13,9 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "TTree.h"
+#include "TChain.h"
 #include "TH1F.h"
+#include "TH2F.h"
 #include "TFile.h"
 #include "TProfile.h"
 
@@ -35,17 +37,16 @@ class InclusiveHistos : public edm::EDAnalyzer
     int    mHCALNoise;
     int    mNEvents;
     std::vector<double> mMinPt;
-    std::string mFileName,mTreeName,mDirName,mCaloJECres,mPFJECres,mCaloYBiasCor,mPFYBiasCor,mPUHistName,mPUFileName;
+    std::string mTreeName,mDirName,mPUHistName,mPUFileName,mLogName;
     std::vector<double> mYBND,mPTBND;
     std::vector<std::string> mTriggers;
+    std::vector<std::string> mFileNames;
     std::vector<int> mTrigIndex;    
 
     edm::Service<TFileService> fs;
-    TTree *mTree; 
-    TFile *mInf,*mPUf;
-    TDirectoryFile *mDir;
+    TFile *mPUf;
     TH1F *mBSx,*mBSy,*mBSz,*mNPV,*mPVx,*mPVy,*mPVz,*mPUh;
-    TH1F *mNPFJets[100][6],*mNCaloJets[100][6];
+    TH1F *mNPFJets[100][6],*mNCaloJets[100][6],*mNPFNormJets[100][6],*mNCaloNormJets[100][6];
     TH1F *mPFJetMulti[100],*mCaloJetMulti[100],*mPFMETovSUMET[100][6],*mCaloMETovSUMET[100][6];
     TH1F *mGenPt[6],*mGenX[6],*mPFPt[100][6],*mPFNormPt[100][6],*mPFX[100][6],*mPFNormX[100][6],
          *mCaloPt[100][6],*mCaloNormPt[100][6],*mCaloX[100][6],*mCaloNormX[100][6],
@@ -54,6 +55,7 @@ class InclusiveHistos : public edm::EDAnalyzer
     TProfile *mEMFVsRun[100][6],*mNTrkCaloVsRun[100][6],*mNTrkVtxVsRun[100][6];
     TProfile *mNHFVsRun[100][6],*mPHFVsRun[100][6],*mCHFVsRun[100][6],*mELFVsRun[100][6];
     TProfile *mCaloRhoVsRun,*mPFRhoVsRun,*mCaloRhoVsNPV,*mPFRhoVsNPV; 
+    TH2F *mPFPtVsNPV[100][6],*mCaloPtVsNPV[100][6];
     //---- TREE variable --------
     QCDEvent *mEvent;
     

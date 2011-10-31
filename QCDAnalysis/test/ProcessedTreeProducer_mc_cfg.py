@@ -14,13 +14,18 @@ process.load('RecoJets.Configuration.RecoJets_cff')
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
 #############   Set the number of events #############
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100)
+    input = cms.untracked.int32(1000)
 )
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 10
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 #############   Define the source file ###############
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('rfio:/castor/cern.ch/user/b/bbilin/qbhfast/QBH_511_fastsim.root')
+    fileNames = cms.untracked.vstring('/store/mc/Summer11/ZJetsToNuNu_50_HT_100_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/FEE84183-B3BD-E011-B6BB-0025901D493C.root',
+    '/store/mc/Summer11/ZJetsToNuNu_50_HT_100_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/18538256-B2BD-E011-8371-002481E76052.root',
+    '/store/mc/Summer11/ZJetsToNuNu_50_HT_100_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/16EC63F9-AFBD-E011-A55D-002481E0DDE8.root',
+    '/store/mc/Summer11/ZJetsToNuNu_50_HT_100_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/16B0B126-B7BD-E011-9E8F-002481E0DBE0.root',
+    '/store/mc/Summer11/ZJetsToNuNu_50_HT_100_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/1686157D-AEBD-E011-AC60-003048C6930E.root',
+    '/store/mc/Summer11/ZJetsToNuNu_50_HT_100_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/165AD271-ABBD-E011-B6F1-0025901D4938.root')
 )
 ############# processed tree producer ##################
 process.TFileService = cms.Service("TFileService",fileName = cms.string('ProcessedTree_mc.root'))
@@ -61,7 +66,7 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     ## trigger ###################################
     printTriggerMenu = cms.untracked.bool(True),
     processName     = cms.string('HLT'),
-    triggerName     = cms.vstring('HLT_Jet110'),
+    triggerName     = cms.vstring('HLT_Jet110_v1'),
     triggerResults  = cms.InputTag("TriggerResults","","HLT"),
     triggerEvent    = cms.InputTag("hltTriggerSummaryAOD","","HLT"),
     ## jec services ##############################
@@ -91,6 +96,6 @@ process.ak7PFJets.Rho_EtaMax = cms.double(5.0)
 process.ak5PFJets.doAreaFastjet = True
 process.ak5PFJets.Rho_EtaMax = cms.double(5.0)
 
-process.path = cms.Path(process.kt6PFJets * process.kt6CaloJets * process.ak5PFJets * process.ak7PFJets * process.ak5 * process.ak7)
+process.path = cms.Path(process.kt6PFJets * process.kt6CaloJets * process.ak7)
 
 
