@@ -92,11 +92,11 @@ process.selectedPatJetsCHS.cut     = "pt > 20 && abs(eta) < 3.0"
 ##--------- keep only jet and MET PAT objects ---
 removeAllPATObjectsBut(process,["Jets","METs"])
 ##--------- output commands ---------------------
-process.out.fileName = 'patuple_multijets_mc.root'
+process.out.fileName = 'patuple_madgraph.root'
 process.out.outputCommands = [
          'keep *_generator_*_*',
          'keep *_addPileupInfo_*_*',  
-         'keep *_ak5GenJets_*_*',
+         'keep recoGenJets_ak5GenJets_*_*',
          'keep *_kt6PFJets_rho_PAT',
          'keep *_kt6PFJetsCHS_rho_PAT',
          'keep *_kt6CaloJets_rho_PAT', 
@@ -117,7 +117,8 @@ process.maxEvents.input = 1000
 process.MessageLogger.cerr.FwkReport.reportEvery = 10
 
 process.source.fileNames = [
-'/store/mc/Summer11/QCD_Pt-15to3000_TuneZ2_Flat_7TeV_pythia6/AODSIM/PU_S3_START42_V11-v2/0004/FA6FEF7F-8E7E-E011-AC35-001A92971B78.root'
+#'/store/user/kkousour/2011/Jets/mc/Axigluon/axiaxi800_hulubar_ussbar_hulbaru_ubarddbar_1_1_sh0.root'
+"/store/mc/Summer11/QCD_TuneZ2_HT-1000_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/1AB5A492-C4C5-E011-BCD9-90E6BA19A203.root"
 ]
 
 process.options.wantSummary = False
