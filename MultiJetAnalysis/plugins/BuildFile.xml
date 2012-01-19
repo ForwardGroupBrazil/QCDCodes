@@ -20,7 +20,6 @@
 <use   name="L1Trigger/GlobalTriggerAnalyzer"/>
 <use   name="CondFormats/L1TObjects"/>
 <use   name="CondFormats/DataRecord"/>
-<use   name="KKousour/QCDAnalysis"/>
 <flags   EDM_PLUGIN="1"/>
 </library>
 
