@@ -49,7 +49,7 @@ class MultijetSearchTree : public edm::EDAnalyzer
     //---- output TREE variables ------
     int mRun,mEvt,mNPV,mM4JIndex[2],mM2JIndex[2][2];
     float mHT,mM8J,mM4J[2],mHT4J[2],mCosThetaStar,mM4JBalance,mWeight,mPtHat;
-    float mM2J[2][2],mM2JBalance[2],mDphi4J,mM2JAll[28],mM4JAll[70],mHT4JAll[70];
+    float mM2J[2][2],mM2JBalance[2],mDphi4J,mM2JAll[28],mDR2JAll[28],mM4JAll[70],mHT4JAll[70];
     float mPt[8],mEta[8],mPhi[8],mMass[8],mCHF[8],mNHF[8],mPHF[8],mELF[8],mMUF[8],mBeta[8],mBetaStar[8],mPUTag[8];
     //---- input TREE variable --------
     QCDEvent *mEvent;

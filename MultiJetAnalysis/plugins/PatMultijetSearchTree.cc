@@ -20,60 +20,54 @@
 #include "DataFormats/METReco/interface/MET.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 using namespace std;
 using namespace reco;
 
 PatMultijetSearchTree::PatMultijetSearchTree(edm::ParameterSet const& cfg) 
 {
-  srcJets_     = cfg.getParameter<edm::InputTag>             ("jets");
-  srcMET_      = cfg.getParameter<edm::InputTag>             ("met");
-  srcBeta_     = cfg.getParameter<string>                    ("beta"); 
-  mEtaMax      = cfg.getParameter<double>                    ("etaMAX");
-  mPtMin       = cfg.getParameter<double>                    ("ptMIN");
-  mBetaMax     = cfg.getParameter<double>                    ("betaMAX");
-  vector<double> vLumi(0),vBnd(0);
-  mIsMC        = cfg.getUntrackedParameter<bool>             ("isMC",false);
-  mPtHatLumi   = cfg.getUntrackedParameter<vector<double> >  ("ptHatLumi",vLumi);
-  mPtHatBnd    = cfg.getUntrackedParameter<vector<double> >  ("ptHatBnd",vBnd);
+  srcJets_ = cfg.getParameter<edm::InputTag> ("jets");
+  srcMET_  = cfg.getParameter<edm::InputTag> ("met");
+  srcBeta_ = cfg.getParameter<string>        ("beta"); 
+  etaMax_  = cfg.getParameter<double>        ("etaMAX");
+  ptMin_   = cfg.getParameter<double>        ("ptMIN");
+  betaMax_ = cfg.getParameter<double>        ("betaMAX");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatMultijetSearchTree::beginJob() 
 {
-  mOutTree = fs->make<TTree>("events","events");
-  mOutTree->Branch("runNo"       ,&mRun         ,"mRun/I");
-  mOutTree->Branch("evtNo"       ,&mEvt         ,"mEvt/I");
-  mOutTree->Branch("npv"         ,&mNPV         ,"mNPV/I");
-  mOutTree->Branch("m4jIndex"    ,&mM4JIndex    ,"mM4JIndex[2]/I");
-  mOutTree->Branch("m2jIndex"    ,&mM2JIndex    ,"mM2JIndex[2][2]/I");
-  mOutTree->Branch("metSig"      ,&mMetSig      ,"mMetSig/F");
-  mOutTree->Branch("dphi4j"      ,&mDphi4J      ,"mDphi4J/F");
-  mOutTree->Branch("ht"          ,&mHT          ,"mHT/F");
-  mOutTree->Branch("m8j"         ,&mM8J         ,"mM8J/F");
-  mOutTree->Branch("weight"      ,&mWeight      ,"mWeight/F");
-  mOutTree->Branch("cosThetaStar",&mCosThetaStar,"mCosThetaStar/F");
-  mOutTree->Branch("m4jBalance"  ,&mM4JBalance  ,"mM4JBalance/F");
-  mOutTree->Branch("m2jBalance"  ,&mM2JBalance  ,"mM2JBalance[2]/F"); 
-  mOutTree->Branch("m4j"         ,&mM4J         ,"mM4J[2]/F");
-  mOutTree->Branch("ht4j"        ,&mHT4J        ,"mHT4J[2]/F");
-  mOutTree->Branch("m2j"         ,&mM2J         ,"mM2J[2][2]/F");
-  mOutTree->Branch("m2jAll"      ,&mM2JAll      ,"mM2JAll[28]/F");
-  mOutTree->Branch("dR2jAll"     ,&mDR2JAll     ,"mDR2JAll[28]/F");
-  mOutTree->Branch("m4jAll"      ,&mM4JAll      ,"mM4JAll[70]/F");
-  mOutTree->Branch("ht4jAll"     ,&mHT4JAll     ,"mHT4JAll[70]/F");
-  mOutTree->Branch("pt"          ,&mPt          ,"mPt[8]/F");
-  mOutTree->Branch("beta"        ,&mBeta        ,"mBeta[8]/F");
-  mOutTree->Branch("eta"         ,&mEta         ,"mEta[8]/F");
-  mOutTree->Branch("phi"         ,&mPhi         ,"mPhi[8]/F");
-  mOutTree->Branch("mass"        ,&mMass        ,"mMass[8]/F");
-  mOutTree->Branch("chf"         ,&mCHF         ,"mCHF[8]/F");
-  mOutTree->Branch("nhf"         ,&mNHF         ,"mNHF[8]/F");
-  mOutTree->Branch("phf"         ,&mPHF         ,"mPHF[8]/F");
-  mOutTree->Branch("muf"         ,&mMUF         ,"mMUF[8]/F");
-  mOutTree->Branch("elf"         ,&mELF         ,"mELF[8]/F");
-  if (mIsMC) {
-    mOutTree->Branch("pthat",&mPtHat,"mPtHat/F");
-  }
+  outTree_ = fs_->make<TTree>("events","events");
+  outTree_->Branch("runNo"       ,&run_         ,"run_/I");
+  outTree_->Branch("evtNo"       ,&evt_         ,"evt_/I");
+  outTree_->Branch("nvtx"        ,&nVtx_        ,"nVtx_/I");
+  outTree_->Branch("pu"          ,&simPU_       ,"simPU_/I");
+  outTree_->Branch("m4jIndex"    ,&m4JIndex_    ,"m4JIndex_[2]/I");
+  outTree_->Branch("m2jIndex"    ,&m2JIndex_    ,"m2JIndex_[2][2]/I");
+  outTree_->Branch("metSig"      ,&metSig_      ,"metSig_/F");
+  outTree_->Branch("dphi4j"      ,&dPhi4J_      ,"dPhi4J_/F");
+  outTree_->Branch("ht"          ,&ht_          ,"ht_/F");
+  outTree_->Branch("m8j"         ,&m8J_         ,"m8J_/F");
+  outTree_->Branch("cosThetaStar",&cosThetaStar_,"cosThetaStar_/F");
+  outTree_->Branch("m4jBalance"  ,&m4JBalance_  ,"m4JBalance_/F");
+  outTree_->Branch("m2jBalance"  ,&m2JBalance_  ,"m2JBalance_[2]/F"); 
+  outTree_->Branch("m4j"         ,&m4J_         ,"m4J_[2]_/F");
+  outTree_->Branch("ht4j"        ,&ht4J_        ,"ht4J_[2]/F");
+  outTree_->Branch("eta4j"       ,&eta4J_       ,"eta4J_[2]/F");
+  outTree_->Branch("pt4j"        ,&pt4J_        ,"pt4J_[2]/F");
+  outTree_->Branch("m2j"         ,&m2J_         ,"m2J_[2][2]/F");
+  outTree_->Branch("dR2jAll"     ,&dR2JAll_     ,"dR2JAll_[28]/F");
+  outTree_->Branch("pt"          ,&pt_          ,"pt_[8]/F");
+  outTree_->Branch("beta"        ,&beta_        ,"beta_[8]/F");
+  outTree_->Branch("eta"         ,&eta_         ,"eta_[8]/F");
+  outTree_->Branch("phi"         ,&phi_         ,"phi_[8]/F");
+  outTree_->Branch("mass"        ,&mass_        ,"mass_[8]/F");
+  outTree_->Branch("chf"         ,&chf_         ,"chf_[8]/F");
+  outTree_->Branch("nhf"         ,&nhf_         ,"nhf_[8]/F");
+  outTree_->Branch("phf"         ,&phf_         ,"phf_[8]/F");
+  outTree_->Branch("muf"         ,&muf_         ,"muf_[8]/F");
+  outTree_->Branch("elf"         ,&elf_         ,"elf_[8]/F");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatMultijetSearchTree::endJob() 
@@ -81,39 +75,48 @@ void PatMultijetSearchTree::endJob()
 
 }
 //////////////////////////////////////////////////////////////////////////////////////////
-int PatMultijetSearchTree::getBin(double x, const std::vector<double>& boundaries)
+void PatMultijetSearchTree::initialize()
 {
-  int i;
-  int n = boundaries.size()-1;
-  if (x<boundaries[0] || x>=boundaries[n])
-    return -1;
-  for(i=0;i<n;i++)
-   {
-     if (x>=boundaries[i] && x<boundaries[i+1])
-       return i;
-   }
-  return 0;
+  run_          = -999;
+  evt_          = -999;
+  nVtx_         = -999;
+  simPU_        = -999;
+  metSig_       = -999;
+  dPhi4J_       = -999;
+  ht_           = -999;
+  m8J_          = -999;
+  cosThetaStar_ = -999;
+  m4JBalance_   = -999;
+  for(int i=0;i<2;i++) {
+    m4JIndex_[i]   = -999;
+    m2JBalance_[i] = -999;
+    m4J_[i]        = -999;
+    ht4J_[i]       = -999;
+    eta4J_[i]      = -999;
+    pt4J_[i]       = -999;
+    for(int j=0;j<2;j++) {
+      m2JIndex_[i][j] = -999;
+      m2J_[i][j]      = -999;
+    }
+  }
+  for(int i=0;i<28;i++) {
+    dR2JAll_[i] = -999;
+  }
+  for(int i=0;i<8;i++) {
+    pt_[i]   = -999;
+    eta_[i]  = -999;
+    phi_[i]  = -999;
+    mass_[i] = -999;
+    chf_[i]  = -999;
+    nhf_[i]  = -999;
+    phf_[i]  = -999;
+    elf_[i]  = -999;
+    muf_[i]  = -999;
+  }  
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup) 
 {
-  //----- MC -------------------
-  double wt(1.0);
-  /*
-  if (mIsMC) {
-  mPtHat = mEvent->evtHdr().pthat();
-  wt = mEvent->evtHdr().weight();
-  if (mPtHatBnd.size() > 1) {
-    int ipthat = getBin(mPtHat,mPtHatBnd);
-    if (ipthat > -1) {
-      double Leff = mPtHatLumi[ipthat];
-      wt = 1./Leff; 
-    }
-    else {
-      wt = 0.0;
-    }
-  } 
-  */
   edm::Handle<edm::View<pat::Jet> > jets;
   iEvent.getByLabel(srcJets_,jets);
   edm::View<pat::Jet> pat_jets = *jets;
@@ -124,11 +127,22 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
   edm::Handle<reco::VertexCollection> recVtxs;
   iEvent.getByLabel("goodOfflinePrimaryVertices",recVtxs);
 
+  edm::Handle<GenEventInfoProduct> hEventInfo;
+  edm::Handle<std::vector<PileupSummaryInfo> > PupInfo;
+
+  int intpu(0);
+  if (!iEvent.isRealData()) {
+    iEvent.getByLabel("addPileupInfo",PupInfo);
+    for(vector<PileupSummaryInfo>::const_iterator ipu = PupInfo->begin(); ipu != PupInfo->end(); ++ipu) {
+      if (ipu->getBunchCrossing() == 0)
+        intpu += ipu->getPU_NumInteractions(); 
+    }
+  } 
   bool cut_vtx = (recVtxs->size() > 0);
   bool cut_njets = (pat_jets.size() > 7);
 
   if (cut_vtx && cut_njets) {
-    double HT(0),HT4J_1(0),HT4J_2(0),M4J(0),M4J_1(0),M4J_2(0),cosThetaStar(0);
+    double HT(0),HT4J_1(0),HT4J_2(0),M4J_1(0),M4J_2(0),cosThetaStar(0);
     bool cutID(true),cut_eta(true),cut_pt(true),cut_pu(true);
     LorentzVector P4[8],P48J(0,0,0,0);
     int N(0);
@@ -143,46 +157,33 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
       int npr = ijet->chargedMultiplicity() + ijet->neutralMultiplicity();
       id = (npr>1 && phf<0.99 && nhf<0.99 && ((fabs(ijet->eta())<=2.4 && nhf<0.9 && phf<0.9 && elf<0.99 && muf<0.99 && chf>0 && chm>0) || fabs(ijet->eta())>2.4));
       double beta = ijet->userFloat(srcBeta_);
-      cut_pu *= (beta < mBetaMax);
+      cut_pu *= (beta < betaMax_);
       cutID *= id;
-      cut_pt  *= (ijet->pt() > mPtMin);
-      cut_eta *= (fabs(ijet->eta()) < mEtaMax);
+      cut_pt  *= (ijet->pt() > ptMin_);
+      cut_eta *= (fabs(ijet->eta()) < etaMax_);
       HT += ijet->pt();
       P4[N] = ijet->p4();
       P48J += P4[N];
-      mPt[N]  = ijet->pt();
-      mPhi[N] = ijet->phi();
-      mEta[N] = ijet->eta();
-      mMass[N]= ijet->mass();
-      mBeta[N]= beta;
-      mCHF[N] = chf;
-      mNHF[N] = nhf;
-      mPHF[N] = phf;
-      mELF[N] = elf;
-      mMUF[N] = muf;
+      pt_[N]  = ijet->pt();
+      phi_[N] = ijet->phi();
+      eta_[N] = ijet->eta();
+      mass_[N]= ijet->mass();
+      beta_[N]= beta;
+      chf_[N] = chf;
+      nhf_[N] = nhf;
+      phf_[N] = phf;
+      elf_[N] = elf;
+      muf_[N] = muf;
       N++;
     }// jet loop
     if (cutID && cut_pu && cut_eta && cut_pt) {
-      mM8J    = P48J.mass();
-      mHT     = HT;
-      mMetSig = (*met)[0].et()/(*met)[0].sumEt();
-      mRun    = iEvent.id().run();
-      mEvt    = iEvent.id().event();
-      mNPV    = recVtxs->size();
-      mWeight = wt;
-      //----- 4J combinatorics --------
-      int jj(0);
-      for(int j1=0;j1<5;j1++) {
-        for(int j2=j1+1;j2<6;j2++) {
-          for(int j3=j2+1;j3<7;j3++) {
-            for(int j4=j3+1;j4<8;j4++) {
-              mM4JAll[jj]  = (P4[j1]+P4[j2]+P4[j3]+P4[j4]).mass();
-              mHT4JAll[jj] = P4[j1].pt()+P4[j2].pt()+P4[j3].pt()+P4[j4].pt();
-              jj++;
-            }
-          }
-        }
-      }
+      m8J_    = P48J.mass();
+      ht_     = HT;
+      metSig_ = (*met)[0].et()/(*met)[0].sumEt();
+      run_    = iEvent.id().run();
+      evt_    = iEvent.id().event();
+      nVtx_   = recVtxs->size();
+      simPU_  = intpu;
       //----- most probable 4J combinations -----------             
       vector<int> v1,v2,v4J[2]; 
       LorentzVector P44J_1,P44J_2;
@@ -208,15 +209,18 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
               cosThetaStar = tanh(0.5*(P44J_1.eta()-P44J_2.eta()));
               d = fabs(M4J_1-M4J_2);
               if (d < dmin) {
-                mM4J[0] = M4J_1;
-                mM4J[1] = M4J_2;
-                M4J = 0.5*(M4J_1+M4J_2);
-                mHT4J[0] = HT4J_1;
-                mHT4J[1] = HT4J_2;
-                mCosThetaStar = cosThetaStar;
-                mDphi4J = deltaPhi(P44J_1.phi(),P44J_2.phi());  
-                mM4JIndex[0] = (v1[0]+1)*1000+(v1[1]+1)*100+(v1[2]+1)*10+(v1[3]+1);
-                mM4JIndex[1] = (v2[0]+1)*1000+(v2[1]+1)*100+(v2[2]+1)*10+(v2[3]+1);
+                m4J_[0] = M4J_1;
+                m4J_[1] = M4J_2;
+                eta4J_[0] = P44J_1.eta();
+                eta4J_[1] = P44J_2.eta();
+                pt4J_[0] = P44J_1.pt();
+                pt4J_[1] = P44J_2.pt();
+                ht4J_[0] = HT4J_1;
+                ht4J_[1] = HT4J_2;
+                cosThetaStar_ = cosThetaStar;
+                dPhi4J_ = deltaPhi(P44J_1.phi(),P44J_2.phi());  
+                m4JIndex_[0] = (v1[0]+1)*1000+(v1[1]+1)*100+(v1[2]+1)*10+(v1[3]+1);
+                m4JIndex_[1] = (v2[0]+1)*1000+(v2[1]+1)*100+(v2[2]+1)*10+(v2[3]+1);
                 v4J[0] = v1;
                 v4J[1] = v2;
                 dmin = d;
@@ -225,13 +229,12 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
           }
         }
       }
-      mM4JBalance = 2*fabs(mM4J[0]-mM4J[1])/(mM4J[0]+mM4J[1]);
+      m4JBalance_ = 2*fabs(m4J_[0]-m4J_[1])/(m4J_[0]+m4J_[1]);
       //----- 2J combinatorics -------- 
-      jj = 0;
+      int jj(0);
       for(int j1=0;j1<8;j1++) {
         for(int j2=j1+1;j2<8;j2++) {
-          mM2JAll[jj] = (P4[j1]+P4[j2]).mass();
-          mDR2JAll[jj] = deltaR(P4[j1],P4[j2]);
+          dR2JAll_[jj] = deltaR(P4[j1],P4[j2]);
           jj++;
         }
       } 
@@ -253,11 +256,11 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
             d = fabs(M2J[0]-M2J[1]);
             if (d < dmin) {
               //cout<<k<<" Found new min: "<<v4J[k][v1[0]]<<" "<<v4J[k][v1[1]]<<" "<<v4J[k][v2[0]]<<" "<<v4J[k][v2[1]]<<" "<<M2J[0]<<" "<<M2J[1]<<endl; 
-              mM2J[k][0] = M2J[0];
-              mM2J[k][1] = M2J[1];
-              mM2JBalance[k] = 2*fabs(mM2J[k][0]-mM2J[k][1])/(mM2J[k][0]+mM2J[k][1]);
-              mM2JIndex[k][0] = (v4J[k][v1[0]]+1)*10+(v4J[k][v1[1]]+1);
-              mM2JIndex[k][1] = (v4J[k][v2[0]]+1)*10+(v4J[k][v2[1]]+1);
+              m2J_[k][0] = M2J[0];
+              m2J_[k][1] = M2J[1];
+              m2JBalance_[k] = 2*fabs(m2J_[k][0]-m2J_[k][1])/(m2J_[k][0]+m2J_[k][1]);
+              m2JIndex_[k][0] = (v4J[k][v1[0]]+1)*10+(v4J[k][v1[1]]+1);
+              m2JIndex_[k][1] = (v4J[k][v2[0]]+1)*10+(v4J[k][v2[1]]+1);
               dmin = d;
             }
           }    
@@ -269,7 +272,7 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
       cout<<"Second 4j group: "<<mM4JIndex[1]<<endl;
       cout<<"2j doublets: "<<mM2JIndex[1][0]<<" "<<mM2JIndex[1][1]<<endl;
       */
-      mOutTree->Fill();
+      outTree_->Fill();
     }// if jet cuts
   }// if vtx and jet multi
 }
@@ -289,7 +292,6 @@ vector<int> PatMultijetSearchTree::findIndices(const vector<int>& v, int rank)
       indices.push_back(i);
     }
   }
-  //cout<<indices.size()<<" "<<indices[0]<<indices[1]<<indices[2]<<indices[3]<<endl;
   return indices;
 }
 //////////////////////////////////////////////////////////////////////////////////////////

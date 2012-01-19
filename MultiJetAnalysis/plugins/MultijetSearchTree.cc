@@ -15,6 +15,7 @@
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
+#include "DataFormats/Math/interface/deltaR.h"
 
 using namespace std;
 
@@ -59,6 +60,7 @@ void MultijetSearchTree::beginJob()
   mOutTree->Branch("ht4j"        ,&mHT4J        ,"mHT4J[2]/F");
   mOutTree->Branch("m2j"         ,&mM2J         ,"mM2J[2][2]/F");
   mOutTree->Branch("m2jAll"      ,&mM2JAll      ,"mM2JAll[28]/F");
+  mOutTree->Branch("dR2jAll"     ,&mDR2JAll     ,"mDR2JAll[28]/F");
   mOutTree->Branch("m4jAll"      ,&mM4JAll      ,"mM4JAll[70]/F");
   mOutTree->Branch("ht4jAll"     ,&mHT4JAll     ,"mHT4JAll[70]/F");
   mOutTree->Branch("pt"          ,&mPt          ,"mPt[8]/F");
@@ -286,6 +288,7 @@ void MultijetSearchTree::analyze(edm::Event const& evt, edm::EventSetup const& i
                 for(int j1=0;j1<8;j1++) {
                   for(int j2=j1+1;j2<8;j2++) {
                     mM2JAll[jj] = (P4[j1]+P4[j2]).mass();
+                    mDR2JAll[jj] = deltaR(P4[j1],P4[j2]);
                     jj++;
                   }
                 } 

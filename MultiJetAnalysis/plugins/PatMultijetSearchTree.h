@@ -21,23 +21,19 @@ class PatMultijetSearchTree : public edm::EDAnalyzer
     virtual ~PatMultijetSearchTree();
 
   private:  
+    void initialize();
     std::vector<int> findIndices(const std::vector<int>& v, int rank);
-    int getBin(double x, const std::vector<double>& boundaries);
     //---- configurable parameters --------   
-    bool   mIsMC;
-    double mEtaMax;
-    double mPtMin;
-    double mBetaMax;
-    std::vector<double> mPtHatLumi,mPtHatBnd;
+    double etaMax_,ptMin_,betaMax_;
     std::string srcBeta_;
     edm::InputTag srcJets_,srcMET_;
-    edm::Service<TFileService> fs;
-    TTree *mOutTree; 
+    edm::Service<TFileService> fs_;
+    TTree *outTree_; 
     //---- output TREE variables ------
-    int mRun,mEvt,mNPV,mM4JIndex[2],mM2JIndex[2][2];
-    float mHT,mM8J,mM4J[2],mHT4J[2],mCosThetaStar,mM4JBalance,mWeight,mPtHat,mMetSig;
-    float mM2J[2][2],mM2JBalance[2],mDphi4J,mM2JAll[28],mDR2JAll[28],mM4JAll[70],mHT4JAll[70];
-    float mPt[8],mEta[8],mPhi[8],mMass[8],mCHF[8],mNHF[8],mPHF[8],mELF[8],mMUF[8],mBeta[8];
+    int run_,evt_,nVtx_,simPU_,m4JIndex_[2],m2JIndex_[2][2];
+    float ht_,m8J_,m4J_[2],ht4J_[2],pt4J_[2],eta4J_[2],cosThetaStar_,m4JBalance_,metSig_;
+    float m2J_[2][2],m2JBalance_[2],dPhi4J_,dR2JAll_[28];
+    float pt_[8],eta_[8],phi_[8],mass_[8],chf_[8],nhf_[8],phf_[8],elf_[8],muf_[8],beta_[8];
 };
 
 #endif
