@@ -44,6 +44,7 @@ process.pfJetsCHS.doAreaFastjet = True
 process.pfJetsCHS.doRhoFastjet = False
 
 process.ak5PFJets.doAreaFastjet = True
+process.kt6PFJets.doRhoFastjet = True
 process.kt6CaloJets.doRhoFastjet = True
 
 process.kt6PFJetsCHS = process.kt6PFJets.clone(
@@ -92,7 +93,7 @@ process.selectedPatJetsCHS.cut     = "pt > 20 && abs(eta) < 3.0"
 ##--------- keep only jet and MET PAT objects ---
 removeAllPATObjectsBut(process,["Jets","METs"])
 ##--------- output commands ---------------------
-process.out.fileName = 'patuple_madgraph.root'
+process.out.fileName = 'patuple.root'
 process.out.outputCommands = [
          'keep *_generator_*_*',
          'keep *_addPileupInfo_*_*',  
@@ -114,7 +115,7 @@ process.multiJetFilter = cms.EDFilter('PatMultijetFilter',
 )
 
 process.maxEvents.input = 1000
-process.MessageLogger.cerr.FwkReport.reportEvery = 10
+process.MessageLogger.cerr.FwkReport.reportEvery = 100
 
 process.source.fileNames = [
 #'/store/user/kkousour/2011/Jets/mc/Axigluon/axiaxi800_hulubar_ussbar_hulbaru_ubarddbar_1_1_sh0.root'

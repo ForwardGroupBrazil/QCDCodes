@@ -50,6 +50,7 @@ process.pfJetsCHS.doAreaFastjet = True
 process.pfJetsCHS.doRhoFastjet = False
 
 process.ak5PFJets.doAreaFastjet = True
+process.kt6PFJets.doRhoFastjet = True
 process.kt6CaloJets.doRhoFastjet = True
 
 process.kt6PFJetsCHS = process.kt6PFJets.clone(
