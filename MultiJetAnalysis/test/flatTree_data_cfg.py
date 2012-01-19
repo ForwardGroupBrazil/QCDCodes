@@ -4,7 +4,7 @@ process = cms.Process("myprocess")
 
 process.load('FWCore.MessageService.MessageLogger_cfi')
 
-process.TFileService=cms.Service("TFileService",fileName=cms.string('PatMultijetSearchTree.root'))
+process.TFileService=cms.Service("TFileService",fileName=cms.string('flatTree.root'))
 
 ##-------------------- Define the source  ----------------------------
 process.maxEvents = cms.untracked.PSet(
