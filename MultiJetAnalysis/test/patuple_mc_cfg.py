@@ -95,7 +95,6 @@ removeAllPATObjectsBut(process,["Jets","METs"])
 ##--------- output commands ---------------------
 process.out.fileName = 'patuple.root'
 process.out.outputCommands = [
-         'keep *_generator_*_*',
          'keep *_addPileupInfo_*_*',  
          'keep recoGenJets_ak5GenJets_*_*',
          'keep *_kt6PFJets_rho_PAT',
