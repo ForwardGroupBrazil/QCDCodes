@@ -12,7 +12,7 @@ process.maxEvents = cms.untracked.PSet(
         )
 process.source = cms.Source("PoolSource",
         fileNames = cms.untracked.vstring(
-        '/store/user/kkousour/HT/HT_Run2011A_Aug05-Multijets-PAT/708474a592ff9c61b51f3f4524309977/patuple_multijets_100_1_1Ke.root'
+       '/store/user/kkousour/HT/HT_Run2011A_Aug05-Multijets-PAT/708474a592ff9c61b51f3f4524309977/patuple_multijets_9_1_3EX.root'
         )
 )
 #############   Format MessageLogger #################
