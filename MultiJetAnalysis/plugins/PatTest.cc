@@ -24,7 +24,6 @@ class PatTest: public edm::EDAnalyzer
 
   private:
     edm::InputTag srcJets_,srcRho_,srcMet_;
-    string srcBeta_,srcQGL_;
 };
 
 PatTest::PatTest(edm::ParameterSet const& cfg) 
@@ -32,8 +31,6 @@ PatTest::PatTest(edm::ParameterSet const& cfg)
   srcJets_ = cfg.getParameter<edm::InputTag> ("jets");
   srcRho_  = cfg.getParameter<edm::InputTag> ("rho");
   srcMet_  = cfg.getParameter<edm::InputTag> ("met"); 
-  srcBeta_ = cfg.getParameter<string>        ("beta");
-  srcQGL_  = cfg.getParameter<string>        ("qgl");
 }  
 
 void PatTest::beginJob() 
@@ -63,9 +60,14 @@ void PatTest::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup)
 
   // ------ jet loop -----------------------------
   for(edm::View<pat::Jet>::const_iterator ijet = pat_jets.begin();ijet != pat_jets.end(); ++ijet) {
-    float beta = ijet->userFloat(srcBeta_);
-    float qgl = ijet->userFloat(srcQGL_);
-    cout<<"pt = "<<ijet->pt()<<", eta = "<<ijet->eta()<<", beta = "<<beta<<", qgl = "<<qgl<<endl;
+    float beta   = ijet->userFloat("beta");
+    float ptD    = ijet->userFloat("ptD");
+    float ptMax  = ijet->userFloat("ptMax");
+    float axis1  = ijet->userFloat("axis1");
+    float axis2  = ijet->userFloat("axis2");
+    float tana   = ijet->userFloat("tana");
+    float ttheta = ijet->userFloat("ttheta");
+    cout<<"pt = "<<ijet->pt()<<", eta = "<<ijet->eta()<<", beta = "<<beta<<", ptD = "<<ptD<<", ptMax = "<<ptMax<<", axis1 = "<<axis1<<", axis2 = "<<axis2<<", tana = "<<tana<<", ttheta = "<<ttheta<<endl;
   }
 }
 
