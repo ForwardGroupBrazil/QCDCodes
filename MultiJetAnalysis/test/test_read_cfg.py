@@ -4,28 +4,24 @@ process = cms.Process("myprocess")
 
 process.load('FWCore.MessageService.MessageLogger_cfi')
 
-process.TFileService=cms.Service("TFileService",fileName=cms.string('flatTree.root'))
-
 ##-------------------- Define the source  ----------------------------
 process.maxEvents = cms.untracked.PSet(
         input = cms.untracked.int32(-1)
         )
 process.source = cms.Source("PoolSource",
         fileNames = cms.untracked.vstring(
-       '/store/user/kkousour/HT/HT_Run2011A_Aug05-Multijets-PAT/708474a592ff9c61b51f3f4524309977/patuple_multijets_9_1_3EX.root'
+       'file://./test_vbf_patuple.root'
         )
 )
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+process.MessageLogger.cerr.FwkReport.reportEvery = 1
 ##-------------------- User analyzer  --------------------------------
-process.multijets = cms.EDAnalyzer('PatMultijetSearchTree',
+process.test = cms.EDAnalyzer('PatTest',
     jets    = cms.InputTag('selectedPatJets'),
     met     = cms.InputTag('pfMet'),
     rho     = cms.InputTag('kt6PFJets','rho'),
     beta    = cms.string('betaAK5PF'),
-    etaMAX  = cms.double(2.5),
-    ptMIN   = cms.double(30),
-    betaMAX = cms.double(1)
+    qgl     = cms.string('qglAK5PF')
 )
 
 process.hlt  = cms.EDFilter('HLTHighLevel',
@@ -36,5 +32,5 @@ process.hlt  = cms.EDFilter('HLTHighLevel',
     throw              = cms.bool(False)
 )
 
-process.p = cms.Path(process.hlt * process.multijets)
+process.p = cms.Path(process.test)
 

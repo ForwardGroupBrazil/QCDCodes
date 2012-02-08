@@ -28,12 +28,14 @@ using namespace reco;
 
 PatMultijetSearchTree::PatMultijetSearchTree(edm::ParameterSet const& cfg) 
 {
-  srcJets_ = cfg.getParameter<edm::InputTag> ("jets");
-  srcMET_  = cfg.getParameter<edm::InputTag> ("met");
-  srcBeta_ = cfg.getParameter<string>        ("beta"); 
-  etaMax_  = cfg.getParameter<double>        ("etaMAX");
-  ptMin_   = cfg.getParameter<double>        ("ptMIN");
-  betaMax_ = cfg.getParameter<double>        ("betaMAX");
+  srcJets_ = cfg.getParameter<edm::InputTag>   ("jets");
+  srcMET_  = cfg.getParameter<edm::InputTag>   ("met");
+  srcRho_  = cfg.getParameter<edm::InputTag>   ("rho");
+  srcBeta_ = cfg.getParameter<string>          ("beta"); 
+  srcPU_   = cfg.getUntrackedParameter<string> ("pu","");
+  etaMax_  = cfg.getParameter<double>          ("etaMAX");
+  ptMin_   = cfg.getParameter<double>          ("ptMIN");
+  betaMax_ = cfg.getParameter<double>          ("betaMAX");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatMultijetSearchTree::beginJob() 
@@ -43,21 +45,24 @@ void PatMultijetSearchTree::beginJob()
   outTree_->Branch("evtNo"       ,&evt_         ,"evt_/I");
   outTree_->Branch("nvtx"        ,&nVtx_        ,"nVtx_/I");
   outTree_->Branch("pu"          ,&simPU_       ,"simPU_/I");
-  outTree_->Branch("m4jIndex"    ,&m4JIndex_    ,"m4JIndex_[2]/I");
-  outTree_->Branch("m2jIndex"    ,&m2JIndex_    ,"m2JIndex_[2][2]/I");
+  outTree_->Branch("index2J"     ,&index2J_     ,"index2J_[4][2]/I");
+  outTree_->Branch("index4J"     ,&index4J_     ,"index4J_[2][4]/I");
+  outTree_->Branch("rho"         ,&rho_         ,"rho_/F");
   outTree_->Branch("metSig"      ,&metSig_      ,"metSig_/F");
-  outTree_->Branch("dphi4j"      ,&dPhi4J_      ,"dPhi4J_/F");
+  outTree_->Branch("dphi4j"      ,&dPhi4j_      ,"dPhi4j_/F");
   outTree_->Branch("ht"          ,&ht_          ,"ht_/F");
-  outTree_->Branch("m8j"         ,&m8J_         ,"m8J_/F");
+  outTree_->Branch("m8j"         ,&m8j_         ,"m8J_/F");
+  outTree_->Branch("m4jAve"      ,&m4jAve_      ,"m4jAve_/F");
+  outTree_->Branch("m2jAve"      ,&m2jAve_      ,"m2jAve_/F");
+  outTree_->Branch("m2jSig"      ,&m2jSigma_    ,"m2jSigma_/F");
   outTree_->Branch("cosThetaStar",&cosThetaStar_,"cosThetaStar_/F");
-  outTree_->Branch("m4jBalance"  ,&m4JBalance_  ,"m4JBalance_/F");
-  outTree_->Branch("m2jBalance"  ,&m2JBalance_  ,"m2JBalance_[2]/F"); 
-  outTree_->Branch("m4j"         ,&m4J_         ,"m4J_[2]_/F");
-  outTree_->Branch("ht4j"        ,&ht4J_        ,"ht4J_[2]/F");
-  outTree_->Branch("eta4j"       ,&eta4J_       ,"eta4J_[2]/F");
-  outTree_->Branch("pt4j"        ,&pt4J_        ,"pt4J_[2]/F");
-  outTree_->Branch("m2j"         ,&m2J_         ,"m2J_[2][2]/F");
-  outTree_->Branch("dR2jAll"     ,&dR2JAll_     ,"dR2JAll_[28]/F");
+  outTree_->Branch("m4jBalance"  ,&m4jBalance_  ,"m4jBalance_/F");
+  outTree_->Branch("m2j"         ,&m2j_         ,"m2j_[4]/F");
+  outTree_->Branch("m4j"         ,&m4j_         ,"m4j_[2]_/F");
+  outTree_->Branch("ht4j"        ,&ht4j_        ,"ht4j_[2]/F");
+  outTree_->Branch("eta4j"       ,&eta4j_       ,"eta4j_[2]/F");
+  outTree_->Branch("pt4j"        ,&pt4j_        ,"pt4j_[2]/F");
+  outTree_->Branch("dR2jAll"     ,&dR2jAll_     ,"dR2jAll_[28]/F");
   outTree_->Branch("pt"          ,&pt_          ,"pt_[8]/F");
   outTree_->Branch("beta"        ,&beta_        ,"beta_[8]/F");
   outTree_->Branch("eta"         ,&eta_         ,"eta_[8]/F");
@@ -81,26 +86,24 @@ void PatMultijetSearchTree::initialize()
   evt_          = -999;
   nVtx_         = -999;
   simPU_        = -999;
+  rho_          = -999;
   metSig_       = -999;
-  dPhi4J_       = -999;
+  dPhi4j_       = -999;
   ht_           = -999;
-  m8J_          = -999;
+  m8j_          = -999;
+  m4jAve_       = -999;
+  m2jAve_       = -999;
+  m2jSigma_     = -999;
   cosThetaStar_ = -999;
-  m4JBalance_   = -999;
+  m4jBalance_   = -999;
   for(int i=0;i<2;i++) {
-    m4JIndex_[i]   = -999;
-    m2JBalance_[i] = -999;
-    m4J_[i]        = -999;
-    ht4J_[i]       = -999;
-    eta4J_[i]      = -999;
-    pt4J_[i]       = -999;
-    for(int j=0;j<2;j++) {
-      m2JIndex_[i][j] = -999;
-      m2J_[i][j]      = -999;
-    }
+    m4j_[i]   = -999;
+    ht4j_[i]  = -999;
+    eta4j_[i] = -999;
+    pt4j_[i]  = -999;
   }
   for(int i=0;i<28;i++) {
-    dR2JAll_[i] = -999;
+    dR2jAll_[i] = -999;
   }
   for(int i=0;i<8;i++) {
     pt_[i]   = -999;
@@ -124,15 +127,20 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
   edm::Handle<edm::View<MET> >  met;
   iEvent.getByLabel(srcMET_,met);
 
+  edm::Handle<double> rho;
+  iEvent.getByLabel(srcRho_,rho);
+
   edm::Handle<reco::VertexCollection> recVtxs;
   iEvent.getByLabel("goodOfflinePrimaryVertices",recVtxs);
 
   edm::Handle<GenEventInfoProduct> hEventInfo;
   edm::Handle<std::vector<PileupSummaryInfo> > PupInfo;
 
+  initialize();
+
   int intpu(0);
-  if (!iEvent.isRealData()) {
-    iEvent.getByLabel("addPileupInfo",PupInfo);
+  if (!iEvent.isRealData() && srcPU_ != "") {
+    iEvent.getByLabel(srcPU_,PupInfo);
     for(vector<PileupSummaryInfo>::const_iterator ipu = PupInfo->begin(); ipu != PupInfo->end(); ++ipu) {
       if (ipu->getBunchCrossing() == 0)
         intpu += ipu->getPU_NumInteractions(); 
@@ -142,10 +150,10 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
   bool cut_njets = (pat_jets.size() > 7);
 
   if (cut_vtx && cut_njets) {
-    double HT(0),HT4J_1(0),HT4J_2(0),M4J_1(0),M4J_2(0),cosThetaStar(0);
     bool cutID(true),cut_eta(true),cut_pt(true),cut_pu(true);
-    LorentzVector P4[8],P48J(0,0,0,0);
+    LorentzVector P4[10],P48J(0,0,0,0);
     int N(0);
+    double HT(0.0);
     for(edm::View<pat::Jet>::const_iterator ijet = pat_jets.begin();ijet != pat_jets.end() && N < 8; ++ijet) { 
       bool id(false);
       double chf = ijet->chargedHadronEnergyFraction();
@@ -157,8 +165,8 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
       int npr = ijet->chargedMultiplicity() + ijet->neutralMultiplicity();
       id = (npr>1 && phf<0.99 && nhf<0.99 && ((fabs(ijet->eta())<=2.4 && nhf<0.9 && phf<0.9 && elf<0.99 && muf<0.99 && chf>0 && chm>0) || fabs(ijet->eta())>2.4));
       double beta = ijet->userFloat(srcBeta_);
-      cut_pu *= (beta < betaMax_);
-      cutID *= id;
+      cut_pu  *= (beta < betaMax_);
+      cutID   *= id;
       cut_pt  *= (ijet->pt() > ptMin_);
       cut_eta *= (fabs(ijet->eta()) < etaMax_);
       HT += ijet->pt();
@@ -177,101 +185,124 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
       N++;
     }// jet loop
     if (cutID && cut_pu && cut_eta && cut_pt) {
-      m8J_    = P48J.mass();
+      m8j_    = P48J.mass();
       ht_     = HT;
+      rho_    = *rho;
       metSig_ = (*met)[0].et()/(*met)[0].sumEt();
       run_    = iEvent.id().run();
       evt_    = iEvent.id().event();
       nVtx_   = recVtxs->size();
       simPU_  = intpu;
-      //----- most probable 4J combinations -----------             
-      vector<int> v1,v2,v4J[2]; 
-      LorentzVector P44J_1,P44J_2;
-      double d,dmin(10000);
-      for(int j1=0;j1<1;j1++) {
-        for(int j2=j1+1;j2<6;j2++) {
-          for(int j3=j2+1;j3<7;j3++) {
+      //----- construct all possible 4 doublet configurations
+      double sigMIN(10000);
+      LorentzVector pairP4[2][2];
+      int pairInd[2][2];
+      for(int j1=0;j1<8;j1++) {
+        for(int j2=j1+1;j2<8;j2++) {
+          if (j2==j1) continue;
+          for(int j3=0;j3<8;j3++) {
+            if (j3==j2 || j3==j1) continue;
             for(int j4=j3+1;j4<8;j4++) {
-              v1.clear();
-              v2.clear();
-              v1.push_back(j1);
-              v1.push_back(j2);
-              v1.push_back(j3);
-              v1.push_back(j4);   
-              // find the complementary 4 jet indices
-              v2 = findIndices(v1,4);
-              P44J_1 = P4[v1[0]]+P4[v1[1]]+P4[v1[2]]+P4[v1[3]];
-              P44J_2 = P4[v2[0]]+P4[v2[1]]+P4[v2[2]]+P4[v2[3]];
-              M4J_1  = P44J_1.mass();
-              M4J_2  = P44J_2.mass();
-              HT4J_1 = P4[v1[0]].pt()+P4[v1[1]].pt()+P4[v1[2]].pt()+P4[v1[3]].pt();
-              HT4J_2 = P4[v2[0]].pt()+P4[v2[1]].pt()+P4[v2[2]].pt()+P4[v2[3]].pt();
-              cosThetaStar = tanh(0.5*(P44J_1.eta()-P44J_2.eta()));
-              d = fabs(M4J_1-M4J_2);
-              if (d < dmin) {
-                m4J_[0] = M4J_1;
-                m4J_[1] = M4J_2;
-                eta4J_[0] = P44J_1.eta();
-                eta4J_[1] = P44J_2.eta();
-                pt4J_[0] = P44J_1.pt();
-                pt4J_[1] = P44J_2.pt();
-                ht4J_[0] = HT4J_1;
-                ht4J_[1] = HT4J_2;
-                cosThetaStar_ = cosThetaStar;
-                dPhi4J_ = deltaPhi(P44J_1.phi(),P44J_2.phi());  
-                m4JIndex_[0] = (v1[0]+1)*1000+(v1[1]+1)*100+(v1[2]+1)*10+(v1[3]+1);
-                m4JIndex_[1] = (v2[0]+1)*1000+(v2[1]+1)*100+(v2[2]+1)*10+(v2[3]+1);
-                v4J[0] = v1;
-                v4J[1] = v2;
-                dmin = d;
-              } 
+              if (j4==j3 || j4==j2 || j4==j1) continue;
+              for(int j5=0;j5<8;j5++) { 
+                if (j5==j4 || j5==j3 || j5==j2 || j5==j1) continue;
+                for(int j6=j5+1;j6<8;j6++) {
+                  if (j6==j5 || j6==j4 || j6==j3 || j6==j2 || j6==j1) continue;
+                  for(int j7=0;j7<8;j7++) {
+                    if (j7==j6 || j7==j5 || j7==j4 || j7==j3 || j7==j2 || j7==j1) continue;
+                    for(int j8=j7+1;j8<8;j8++) {
+                      if (j8==j7 || j8==j6 || j8==j5 || j8==j4 || j8==j3 || j8==j2 || j8==j1) continue;
+                      pairP4[0][0] = P4[j1];
+                      pairP4[0][1] = P4[j2];
+                      pairP4[1][0] = P4[j3];
+                      pairP4[1][1] = P4[j4];
+                      pairP4[2][0] = P4[j5];
+                      pairP4[2][1] = P4[j6];
+                      pairP4[3][0] = P4[j7];
+                      pairP4[3][1] = P4[j8];
+                      pairInd[0][0] = j1;
+                      pairInd[0][1] = j2;
+                      pairInd[1][0] = j3;
+                      pairInd[1][1] = j4;
+                      pairInd[2][0] = j5;
+                      pairInd[2][1] = j6;
+                      pairInd[3][0] = j7;
+                      pairInd[3][1] = j8; 
+                      double sum(0.0),sum2(0.0),M2J[4];
+                      for(int ip=0;ip<4;ip++) {
+                        M2J[ip] = (pairP4[ip][0]+pairP4[ip][1]).mass();
+                        sum  += M2J[ip];
+                        sum2 += M2J[ip]*M2J[ip];
+                      }
+                      double ave = 0.25*sum;
+                      double sig = sqrt((sum2-4*ave*ave)/3.0); 
+                      if (sig < sigMIN) {
+                        m2jAve_   = ave;
+                        m2jSigma_ = sig;
+                        for(int ip=0;ip<4;ip++) {
+                          m2j_[ip] = M2J[ip];
+                          index2J_[ip][0] = pairInd[ip][0];
+                          index2J_[ip][1] = pairInd[ip][1];
+                        }
+                        sigMIN = sig;
+                      }       
+                    }// j8
+                  }// j7
+                }// j6
+              }// j5 
+            }//j4 
+          }// j3
+        }// j2  
+      }//j1 
+      //---- loop over the optimum set of pairs --------
+      vector<int> v[2];
+      LorentzVector quartetP4[2];
+      double d,dmin(10000),quartetM[2];
+      int q1[2],q2[2],q3[2],q4[2];
+      for(int jj1=0;jj1<1;jj1++){
+        for(int jj2=jj1+1;jj2<4;jj2++){
+          v[0].clear();
+          v[1].clear();
+          v[0].push_back(jj1);
+          v[0].push_back(jj2);
+          // find the complementary indices
+          v[1] = findIndices(v[0],2);
+          for(int iq=0;iq<2;iq++) {
+            q1[iq] = index2J_[v[iq][0]][0];
+            q2[iq] = index2J_[v[iq][0]][1];
+            q3[iq] = index2J_[v[iq][1]][0];  
+            q4[iq] = index2J_[v[iq][1]][1];
+            quartetP4[iq] = P4[q1[iq]]+P4[q2[iq]]+P4[q3[iq]]+P4[q4[iq]];
+            quartetM[iq] = quartetP4[iq].mass();
+          } 
+          d = abs(quartetM[0]-quartetM[1]);
+          if (d < dmin) {
+            m4jAve_       = 0.5*(quartetM[0]+quartetM[1]);
+            m4jBalance_   = fabs(quartetM[0]-quartetM[1])/m4jAve_;
+            cosThetaStar_ = tanh(0.5*(quartetP4[0].Rapidity()-quartetP4[1].Rapidity()));
+            dPhi4j_       = abs(deltaPhi(quartetP4[0].phi(),quartetP4[1].phi()));
+            for(int iq=0;iq<2;iq++) {
+              ht4j_[iq]  = P4[q1[iq]].pt()+P4[q2[iq]].pt()+P4[q3[iq]].pt()+P4[q4[iq]].pt();
+              eta4j_[iq] = quartetP4[iq].eta();
+              pt4j_[iq]  = quartetP4[iq].pt();
+              m4j_[iq]   = quartetP4[iq].mass();
+              index4J_[iq][0] = q1[iq];
+              index4J_[iq][1] = q2[iq];
+              index4J_[iq][2] = q3[iq];
+              index4J_[iq][3] = q4[iq];
             }
-          }
+            dmin = d;
+          } 
         }
-      }
-      m4JBalance_ = 2*fabs(m4J_[0]-m4J_[1])/(m4J_[0]+m4J_[1]);
+      }// jj1 loop  
       //----- 2J combinatorics -------- 
       int jj(0);
       for(int j1=0;j1<8;j1++) {
         for(int j2=j1+1;j2<8;j2++) {
-          dR2JAll_[jj] = deltaR(P4[j1],P4[j2]);
+          dR2jAll_[jj] = deltaR(P4[j1],P4[j2]);
           jj++;
         }
       } 
-      LorentzVector P42J[2];
-      double M2J[2];
-      for(int k=0;k<2;k++) {// loop over the quartrets
-        dmin = 10000;
-        for(int j1=0;j1<1;j1++) {
-          for(int j2=j1+1;j2<4;j2++) {
-            v1.clear();
-            v2.clear();
-            v1.push_back(j1);
-            v1.push_back(j2);
-            v2 = findIndices(v1,2);
-            P42J[0] = P4[v4J[k][v1[0]]]+P4[v4J[k][v1[1]]];
-            P42J[1] = P4[v4J[k][v2[0]]]+P4[v4J[k][v2[1]]];
-            M2J[0] = P42J[0].mass();
-            M2J[1] = P42J[1].mass();
-            d = fabs(M2J[0]-M2J[1]);
-            if (d < dmin) {
-              //cout<<k<<" Found new min: "<<v4J[k][v1[0]]<<" "<<v4J[k][v1[1]]<<" "<<v4J[k][v2[0]]<<" "<<v4J[k][v2[1]]<<" "<<M2J[0]<<" "<<M2J[1]<<endl; 
-              m2J_[k][0] = M2J[0];
-              m2J_[k][1] = M2J[1];
-              m2JBalance_[k] = 2*fabs(m2J_[k][0]-m2J_[k][1])/(m2J_[k][0]+m2J_[k][1]);
-              m2JIndex_[k][0] = (v4J[k][v1[0]]+1)*10+(v4J[k][v1[1]]+1);
-              m2JIndex_[k][1] = (v4J[k][v2[0]]+1)*10+(v4J[k][v2[1]]+1);
-              dmin = d;
-            }
-          }    
-        }
-      }
-      /*
-      cout<<"First 4j group: "<<mM4JIndex[0]<<endl;
-      cout<<"2j doublets: "<<mM2JIndex[0][0]<<" "<<mM2JIndex[0][1]<<endl;
-      cout<<"Second 4j group: "<<mM4JIndex[1]<<endl;
-      cout<<"2j doublets: "<<mM2JIndex[1][0]<<" "<<mM2JIndex[1][1]<<endl;
-      */
       outTree_->Fill();
     }// if jet cuts
   }// if vtx and jet multi

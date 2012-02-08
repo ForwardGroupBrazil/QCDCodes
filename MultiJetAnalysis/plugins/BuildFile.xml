@@ -1,4 +1,6 @@
 <library   file="*.cc" name="KKousourMultiJetAnalysisPlugins">
+<use   name="rootcore"/>
+<use   name="rootrflx"/>
 <use   name="RecoMET/METAlgorithms"/>
 <use   name="JetMETCorrections/Algorithms"/>
 <use   name="RecoJets/JetAlgorithms"/>

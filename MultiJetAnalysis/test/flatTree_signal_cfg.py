@@ -4,18 +4,13 @@ process = cms.Process("myprocess")
 
 process.load('FWCore.MessageService.MessageLogger_cfi')
 
-process.TFileService=cms.Service("TFileService",fileName=cms.string('flatTree.root'))
+process.TFileService=cms.Service("TFileService",fileName=cms.string('PatMultijetSearchTree_Axi600sig200.root'))
 
 ##-------------------- Define the source  ----------------------------
-#process.source = cms.Source("PoolSource",
-#        fileNames = cms.untracked.vstring(
-#        'file://./patuple_madgraph.root'
-#        )
-#)
-process.load('KKousour.MultiJetAnalysis.QCD_HT-1000_cfi')
 process.maxEvents = cms.untracked.PSet(
         input = cms.untracked.int32(-1)
         )
+process.load('KKousour.MultiJetAnalysis.Axi600sig200_cfi')
 #############   Format MessageLogger #################
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 ##-------------------- User analyzer  --------------------------------

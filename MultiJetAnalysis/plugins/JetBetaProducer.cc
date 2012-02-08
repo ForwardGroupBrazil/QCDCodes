@@ -88,7 +88,7 @@ JetBetaProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
       } 
     }
     if (sumTrkPt > 0) {
-      beta = sumTrkPtBeta/sumTrkPt;  
+      beta = 1.-sumTrkPtBeta/sumTrkPt;  
     }
     values.push_back(beta);
      ++jetIdx;
