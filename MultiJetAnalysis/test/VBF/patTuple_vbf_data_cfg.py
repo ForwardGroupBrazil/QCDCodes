@@ -21,23 +21,12 @@ removeCleaning(process)
 process.patJets.embedPFCandidates = False
 process.patJets.embedCaloTowers = False
 process.patJets.addTagInfos = True
-process.patJets.userData.userFloats.src = ['betaAK5PF','qglAK5PF']
 ##--------- good primary vertices ---------------
 process.goodOfflinePrimaryVertices = cms.EDFilter("PrimaryVertexObjectFilter",
     src          = cms.InputTag('offlinePrimaryVertices'),
     filterParams = pvSelector.clone( minNdof = cms.double(4.0), maxZ = cms.double(24.0) )
 )
-##--------- value map for betastar variable -----
-process.betaAK5PF = cms.EDProducer("JetBetaProducer",
-          jets   = cms.InputTag("ak5PFJets")
-)
-##--------- value map for qg likelihood variable -----
-process.qglAK5PF   = cms.EDProducer("JetQGLProducer",
-          jets     = cms.InputTag("ak5PFJets"),
-          rho      = cms.InputTag('kt6PFJetsISO','rho'),
-          jec      = cms.string('ak5PFL1FastL2L3Residual'),
-          filename = cms.string('./QG_QCD_Pt-15to3000_TuneZ2_Flat_7TeV_pythia6_Summer11-PU_S3_START42_V11-v2.root')
-)
+
 ##--------- PF2PAT -----------------------------
 postfix = 'CHS'
 usePF2PAT(process,runPF2PAT=True, jetAlgo='AK5', runOnMC=False, postfix=postfix,
@@ -96,18 +85,27 @@ process.out.outputCommands = [
          'keep *_kt6PFJets_rho_PAT',
          'keep *_kt6PFJetsCHS_rho_PAT',
          'keep *_kt6PFJetsISO_rho_PAT',## needed for the QG likelihood
-         'keep *_selectedPatJets__*',
-         'keep *_selectedPatJetsCHS__*',
+         #'keep *_selectedPatJets__*',
+         #'keep *_selectedPatJetsCHS__*',
+         'keep *_jetExtender*_*_*', 
          'keep *_HBHENoiseFilterResultProducer_*_*', 
          'keep *_pfMet_*_*', 
          'keep recoVertexs_goodOfflinePrimaryVertices_*_*',
          'keep edmTriggerResults_TriggerResults_*_HLT',
-         'keep *_hltTriggerSummaryAOD_*_*',
+         'keep *_hltTriggerSummaryAOD_*_*'
          #'keep L1GlobalTriggerObjectMapRecord_*_*_*',
          #'keep L1GlobalTriggerReadoutRecord_*_*_*',
-         'keep *_betaAK5PF_*_*',
-         'keep *_qgl*_*_*'
 ]
+
+process.jetExtender = cms.EDProducer("JetExtendedProducer",
+    jets   = cms.InputTag('selectedPatJets'),
+    result = cms.string('extendedPatJets') 
+)
+
+process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
+    jets   = cms.InputTag('selectedPatJetsCHS'),
+    result = cms.string('extendedPatJetsCHS') 
+)
 
 process.multiJetFilter = cms.EDFilter('PatMultijetFilter',
     jets     = cms.InputTag('selectedPatJets'),
@@ -124,7 +122,7 @@ process.hltFilter = cms.EDFilter('HLTHighLevel',
     throw              = cms.bool(False)
 )
 
-process.maxEvents.input = -1
+process.maxEvents.input = 1000
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.source.fileNames = [
@@ -134,16 +132,27 @@ process.source.fileNames = [
 process.options.wantSummary = False
 
 process.p = cms.Path(
+   #----- skim based on HLT paths ------------------------------
    process.hltFilter +
+   #----- produce the HBHE noise flag --------------------------
    process.HBHENoiseFilterResultProducer +
+   #----- re-cluster ak5PFJets after activating the jet area ---
    process.ak5PFJets +
+   #----- re-cluster kt6PFJets after activating rho ------------
    process.kt6PFJets +
+   #----- re-cluster kt6PFJets after activating rho for ISO ----
    process.kt6PFJetsISO +
+   #----- create the collection of good PV ---------------------
    process.goodOfflinePrimaryVertices +
-   process.betaAK5PF +
-   process.qglAK5PF +
+   #----- run the PF2PAT sequence: doing CHS -------------------
    process.patPF2PATseq +
+   #----- run the default PAT sequence -------------------------
    process.patDefaultSequence +
+   #----- extend the PAT jets with additional variables --------
+   process.jetExtender +
+   #----- extend the CHS PAT jets with additional variables ----
+   process.jetExtenderCHS +
+   #----- further skim on number of jets -----------------------
    process.multiJetFilter
 )
 
