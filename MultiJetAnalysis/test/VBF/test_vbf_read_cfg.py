@@ -10,7 +10,7 @@ process.maxEvents = cms.untracked.PSet(
         )
 process.source = cms.Source("PoolSource",
         fileNames = cms.untracked.vstring(
-       'file://./test_vbf_patuple.root'
+       'file://./patTuple.root'
         )
 )
 #############   Format MessageLogger #################
@@ -30,11 +30,11 @@ process.testCHS = cms.EDAnalyzer('PatTest',
 
 process.hlt  = cms.EDFilter('HLTHighLevel',
     TriggerResultsTag  = cms.InputTag('TriggerResults','','HLT'),
-    HLTPaths           = cms.vstring('HLT_HT550_v*','HLT_HT600_v*','HLT_HT650_v*','HLT_HT700_v*','HLT_HT750_v*'),
+    HLTPaths           = cms.vstring('HLT_QuadJet40_v*','HLT_QuadJet70_v*','HLT_QuadJet80_v*'),
     eventSetupPathsKey = cms.string(''),
     andOr              = cms.bool(True), #----- True = OR, False = AND between the HLTPaths
     throw              = cms.bool(False)
 )
 
-process.p = cms.Path(process.test * process.testCHS)
+process.p = cms.Path(process.hlt * process.test)
 
