@@ -122,7 +122,7 @@ process.hltFilter = cms.EDFilter('HLTHighLevel',
     throw              = cms.bool(False)
 )
 
-process.maxEvents.input = 1000
+process.maxEvents.input = 5000
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.source.fileNames = [
