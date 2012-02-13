@@ -74,8 +74,8 @@ switchJetCollection(process,cms.InputTag('ak5PFJets'),
                  doJetID      = False
                  )
 
-process.selectedPatJets.cut        = "pt > 20 && abs(eta) < 4.5"
-process.selectedPatJetsCHS.cut     = "pt > 20 && abs(eta) < 4.5"
+process.selectedPatJets.cut        = "pt > 10 && abs(eta) < 4.7"
+process.selectedPatJetsCHS.cut     = "pt > 10 && abs(eta) < 4.7"
 
 ##--------- keep only jet and MET PAT objects ---
 removeAllPATObjectsBut(process,["Jets","METs"])
@@ -98,19 +98,21 @@ process.out.outputCommands = [
 ]
 
 process.jetExtender = cms.EDProducer("JetExtendedProducer",
-    jets   = cms.InputTag('selectedPatJets'),
-    result = cms.string('extendedPatJets') 
+    jets    = cms.InputTag('selectedPatJets'),
+    result  = cms.string('extendedPatJets'),
+    payload = cms.string('AK5PF')
 )
 
 process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
-    jets   = cms.InputTag('selectedPatJetsCHS'),
-    result = cms.string('extendedPatJetsCHS') 
+    jets    = cms.InputTag('selectedPatJetsCHS'),
+    result  = cms.string('extendedPatJetsCHS'),
+    payload = cms.string('AK5PFchs') 
 )
 
 process.multiJetFilter = cms.EDFilter('PatMultijetFilter',
     jets     = cms.InputTag('selectedPatJets'),
     minNjets = cms.int32(4),
-    minPt    = cms.double(20)
+    minPt    = cms.double(10)
 )
 
 ############# hlt filter #########################
@@ -122,8 +124,8 @@ process.hltFilter = cms.EDFilter('HLTHighLevel',
     throw              = cms.bool(False)
 )
 
-process.maxEvents.input = 5000
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+process.maxEvents.input = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 10
 
 process.source.fileNames = [
 '/store/data/Run2011B/MultiJet/AOD/PromptReco-v1/000/175/835/7A821FBE-94DB-E011-9146-BCAEC5364C6C.root'
