@@ -4,16 +4,15 @@
 #include <string>
 #include <vector>
 
-// user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDProducer.h"
-
 #include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "DataFormats/Common/interface/ValueMap.h"
 
+#include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/JetReco/interface/PFJet.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
@@ -21,6 +20,11 @@
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
+
+#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
+#include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
+#include "JetMETCorrections/Objects/interface/JetCorrector.h"
 
 #include "TMath.h"
 
@@ -35,16 +39,20 @@ class JetExtendedProducer : public edm::EDProducer {
       virtual void endJob() ;
 
       // ----------member data --------------------------
-        edm::InputTag src_;
-        std::string name_;
+      edm::InputTag src_;
+      std::string name_,payload_;
+      bool isJecUncSet_;
+      JetCorrectionUncertainty *jecUnc_;
 };
 
 JetExtendedProducer::JetExtendedProducer(const edm::ParameterSet& iConfig)
 {
-  src_  = iConfig.getParameter<edm::InputTag>("jets");
-  name_ = iConfig.getParameter<std::string>("result");
+  src_     = iConfig.getParameter<edm::InputTag> ("jets");
+  name_    = iConfig.getParameter<std::string>   ("result");
+  payload_ = iConfig.getParameter<std::string>   ("payload");
 
   produces<pat::JetCollection>(name_);
+  isJecUncSet_ = false;
 }
 
 JetExtendedProducer::~JetExtendedProducer()
@@ -66,6 +74,15 @@ void JetExtendedProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSe
   //-------------- Vertex Info -----------------------------------
   Handle<reco::VertexCollection> recVtxs;
   iEvent.getByLabel("goodOfflinePrimaryVertices",recVtxs);
+
+  //-------------- Set the JEC uncertainty object ----------------
+  if (!isJecUncSet_ && payload_ != "") {
+    edm::ESHandle<JetCorrectorParametersCollection> JetCorParColl;
+    iSetup.get<JetCorrectionsRecord>().get(payload_,JetCorParColl); 
+    JetCorrectorParameters const& par = (*JetCorParColl)["Uncertainty"];
+    jecUnc_ = new JetCorrectionUncertainty(par);
+    isJecUncSet_ = true;
+  }
     
   unsigned int jetIdx = 0;
   for(edm::View<pat::Jet>::const_iterator ijet = pat_jets.begin(); ijet != pat_jets.end(); ++ijet) {
@@ -74,14 +91,7 @@ void JetExtendedProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSe
     int n_pf = pfConst.size();                                                                                          
     float phiJet = ijet->phi();                                                                                         
     float etaJet = ijet->eta();                                                                                         
-    float deta,dphi,dR,weight;                                                                                          
-    float sum  = 0; 
-    float sum2 = 0;                                                                                        
-    float sum_deta = 0; 
-    float sum_dphi = 0;                                                                             
-    float sum_deta2 = 0; 
-    float sum_dphi2 = 0; 
-    float sum_detadphi = 0;                                                   
+    float deta,dphi,dR,weight,sum(0.0),sum2(0.0),sum_deta(0.0),sum_dphi(0.0),sum_deta2(0.0),sum_dphi2(0.0),sum_detadphi(0.0);                                                   
     // variables for the jet thrust computation               
     float weightT, Teta(0), Tphi(0);                                                                                                   
     float sumT=0; 
@@ -160,6 +170,9 @@ void JetExtendedProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       beta = 1.-sumTrkPtBeta/sumTrkPt;  
     }
     pat::Jet * extendedJet = ijet->clone();
+    jecUnc_->setJetEta(ijet->eta());
+    jecUnc_->setJetPt(ijet->pt());
+    extendedJet->addUserFloat("jecUnc",jecUnc_->getUncertainty(true));
     extendedJet->addUserFloat("beta",beta);
     extendedJet->addUserFloat("ptMax",jetPtMax);
     extendedJet->addUserFloat("ptD",ptD);

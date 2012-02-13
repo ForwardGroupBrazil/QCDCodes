@@ -25,17 +25,17 @@ class PatVBFTree : public edm::EDAnalyzer
     //---- configurable parameters --------   
     double etaMax_,ptMin_;
     edm::InputTag srcJets_,srcMET_,srcRho_;
-    std::string srcBtag_;
+    std::string srcBtag_,srcPU_;
     edm::Service<TFileService> fs_;
     TTree *outTree_; 
     //---- output TREE variables ------
     //---- global event variables -----
-    int run_,evt_,nVtx_,lumi_;
-    float rho_,met_,metSig_,mqq_,mbb_,dEtaqq_;
+    int run_,evt_,nVtx_,lumi_,inpu_,otpu_;
+    float pvx_,pvy_,pvz_,rho_,met_,metSig_,ht_,htAll_,mqq_,mbb_,dEtaqq_;
     //---- jet variables --------------
-    int btagIdx_[4];
-    float pt_[4],jec_[4],eta_[4],phi_[4],mass_[4],chf_[4],nhf_[4],phf_[4],elf_[4],muf_[4];
-    float beta_[4],ptD_[4],ptMax_[4],axis_[2][4],tana_[4],ttheta_[4],btag_[4];
+    int btagIdx_[5];
+    float pt_[5],jec_[5],unc_[5],eta_[5],phi_[5],mass_[5],chf_[5],nhf_[5],phf_[5],elf_[5],muf_[5];
+    float beta_[5],ptD_[5],ptMax_[5],axis_[2][5],tana_[5],ttheta_[5],btag_[5];
 };
 
 #endif
