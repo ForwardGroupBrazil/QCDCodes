@@ -24,7 +24,6 @@ class PatVBFTree : public edm::EDAnalyzer
   private:  
     void initialize();
     //---- configurable parameters --------   
-    bool isBKG_;
     edm::InputTag srcJets_,srcMET_,srcRho_;
     std::string srcBtag_,srcPU_;
     edm::Service<TFileService> fs_;
@@ -40,7 +39,7 @@ class PatVBFTree : public edm::EDAnalyzer
     TClonesArray *softTrackJetP4_;
     //---- MC variables ---------------
     int inpu_,otpu_;
-    std::vector<int> *partonId_,*partonMo_,*partonSt_;
+    std::vector<int> *partonId_,*partonSt_;
     TClonesArray *partonP4_;
 };
 

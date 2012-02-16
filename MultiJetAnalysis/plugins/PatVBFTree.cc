@@ -35,7 +35,6 @@ PatVBFTree::PatVBFTree(edm::ParameterSet const& cfg)
   srcRho_  = cfg.getParameter<edm::InputTag>        ("rho");
   srcBtag_ = cfg.getParameter<std::string>          ("btagger");
   srcPU_   = cfg.getUntrackedParameter<std::string> ("pu","");
-  isBKG_   = cfg.getUntrackedParameter<bool>        ("isBKG",false);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatVBFTree::beginJob() 
@@ -83,10 +82,8 @@ void PatVBFTree::beginJob()
   outTree_->Branch("inpu"          ,&inpu_          ,"inpu_/I");
   outTree_->Branch("otpu"          ,&otpu_          ,"otpu_/I");
   partonId_ = new std::vector<int>;
-  partonMo_ = new std::vector<int>;
   partonSt_ = new std::vector<int>;
   outTree_->Branch("partonId"      ,"vector<int>"   ,&partonId_);
-  outTree_->Branch("partonMo"      ,"vector<int>"   ,&partonMo_);
   outTree_->Branch("partonSt"      ,"vector<int>"   ,&partonSt_);
   partonP4_ = new TClonesArray("TLorentzVector",100);
   outTree_->Branch("partonP4"      ,"TClonesArray"  ,&partonP4_,32000,0);
@@ -96,7 +93,6 @@ void PatVBFTree::endJob()
 {
   delete partonSt_;
   delete partonId_;
-  delete partonMo_;
   delete partonP4_;
   delete softTrackJetP4_;
 }
@@ -216,48 +212,20 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
       int Npart(0);
       for(unsigned ip = 0; ip < genParticles->size(); ++ ip) {
         const GenParticle &p = (*genParticles)[ip];
-        int id = p.pdgId();
         int st = p.status();
-        int mo(9999),mst(0);
-        const Candidate *mot = p.mother();
-        if (mot) {
-          mo  = mot->pdgId();
-          mst = mot->status();   
-        }
-        if (isBKG_){
-	  if (!(((abs(id)>0 && abs(id)<7) || abs(id)==21) && st==2 && p.pt() > 5.0)) continue;
-	  if ((mst == 3 || (mst == 2 && mo != id))) { 
-            partonId_->push_back(id);
-            partonMo_->push_back(mo);
-            partonSt_->push_back(st);
-            new((*partonP4_)[Npart])TLorentzVector(p.px(),p.py(),p.pz(),p.energy());
-            Npart++;
-	  }
-        }// if bkg
-        else {
-          //-- keep only status 3 partons ------
-          if (st != 3) continue;
-	  int ndst3(0);
-	  for(unsigned k = 0; k < p.numberOfDaughters(); k++) {
-	    if (p.daughter(k)->status() == 3) {
-              ndst3++; 
-            }
-	  }
-	  if (fabs(id) == 5 && mo == 25) {
-	    partonId_->push_back(id);
-	    partonMo_->push_back(mo);
-            partonSt_->push_back(st); 
-            new((*partonP4_)[Npart])TLorentzVector(p.px(),p.py(),p.pz(),p.energy()); 
-            Npart++;
-	  }
-	  if ((fabs(id)==1 || fabs(id)==2 || fabs(id)==3 || fabs(id)==4 || (fabs(id)==5 && mo!=25)) && ndst3==0) {
-	    partonId_->push_back(id);
-            partonMo_->push_back(mo);
-            partonSt_->push_back(st);
-            new((*partonP4_)[Npart])TLorentzVector(p.px(),p.py(),p.pz(),p.energy());
-            Npart++;
-	  }
-        }// if !bkg
+        if (st != 3) continue;
+        int ndst3(0);
+	for(unsigned k = 0; k < p.numberOfDaughters(); k++) {
+	  if (p.daughter(k)->status() == 3) {
+            ndst3++; 
+          }
+	}
+        if (ndst3 > 0) continue;
+        int id = p.pdgId();
+        partonId_->push_back(id);
+	partonSt_->push_back(st); 
+        new((*partonP4_)[Npart])TLorentzVector(p.px(),p.py(),p.pz(),p.energy()); 
+        Npart++;
       }// parton loop
     }// if MC    
     ht_     = ht;
@@ -326,7 +294,6 @@ void PatVBFTree::initialize()
   otpu_ = -999;
   partonSt_->clear();
   partonId_->clear();
-  partonMo_->clear();
   partonP4_->Clear();
 }
 //////////////////////////////////////////////////////////////////////////////////////////

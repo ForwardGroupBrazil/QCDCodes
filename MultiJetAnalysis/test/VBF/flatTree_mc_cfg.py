@@ -4,7 +4,7 @@ process = cms.Process("myprocess")
 
 process.load('FWCore.MessageService.MessageLogger_cfi')
 
-process.TFileService=cms.Service("TFileService",fileName=cms.string('flatTree_mc.root'))
+process.TFileService=cms.Service("TFileService",fileName=cms.string('flatTree.root'))
 
 ##-------------------- Define the source  ----------------------------
 process.maxEvents = cms.untracked.PSet(
@@ -12,18 +12,17 @@ process.maxEvents = cms.untracked.PSet(
         )
 process.source = cms.Source("PoolSource",
         fileNames = cms.untracked.vstring(
-        'file://./patTuple_mc.root'
+        'file://./patTuple_signal.root'
         )
 )
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 ##-------------------- User analyzer  --------------------------------
 process.Hbb = cms.EDAnalyzer('PatVBFTree',
     jets    = cms.InputTag('jetExtender','extendedPatJets'),
     met     = cms.InputTag('pfMet'),
     rho     = cms.InputTag('kt6PFJets','rho'),
     pu      = cms.untracked.string('addPileupInfo'),
-    isBKG   = cms.untracked.bool(True),
     btagger = cms.string('combinedSecondaryVertexBJetTags')
 )
 

@@ -83,11 +83,11 @@ process.selectedPatJetsCHS.cut     = "pt > 10 && abs(eta) < 4.7"
 ##--------- keep only jet and MET PAT objects ---
 removeAllPATObjectsBut(process,["Jets","METs"])
 ##--------- output commands ---------------------
-process.out.fileName = 'patTuple_mc.root'
+process.out.fileName = 'patTuple.root'
 process.out.outputCommands = [
          #------ MC block ----------------
          'keep *_addPileupInfo_*_*',  
-         'keep recoGenJets_ak5GenJets_*_*',
+         'keep recoGenJets_ak5GenJets*_*_*',
          'keep *_genParticles_*_*',
          #--------------------------------
          'keep *_kt6PFJets_rho_PAT',
@@ -106,7 +106,12 @@ process.out.outputCommands = [
          #'keep L1GlobalTriggerReadoutRecord_*_*_*',
 ]
 
-process.outTracks = cms.EDProducer('PatTracksOutOfJets')
+process.outTracks = cms.EDProducer('PatTracksOutOfJets',
+    jets    = cms.InputTag('selectedPatJets'),
+    vtx     = cms.InputTag('goodOfflinePrimaryVertices'),
+    tracks  = cms.InputTag('generalTracks'),
+    btagger = cms.string('combinedSecondaryVertexBJetTags')
+)
 process.ak5SoftTrackJets = process.ak5TrackJets.clone(src = 'outTracks',jetPtMin = 1.0)
 
 process.jetExtender = cms.EDProducer("JetExtendedProducer",
@@ -124,11 +129,11 @@ process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
 process.multiJetFilter = cms.EDFilter('PatMultijetFilter',
     jets     = cms.InputTag('selectedPatJets'),
     minNjets = cms.int32(4),
-    minPt    = cms.double(10)
+    minPt    = cms.double(20)
 )
 
 process.maxEvents.input = 100
-process.MessageLogger.cerr.FwkReport.reportEvery = 10
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.source.fileNames = [
 '/store/mc/Summer11/QCD_TuneZ2_HT-1000_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/1AB5A492-C4C5-E011-BCD9-90E6BA19A203.root'
@@ -159,7 +164,6 @@ process.p = cms.Path(
    process.outTracks +
    #----- reconstruct track jets from the soft tracks ----------
    process.ak5SoftTrackJets +
-   #----- further skim on number of jets -----------------------
    process.multiJetFilter
 )
 
