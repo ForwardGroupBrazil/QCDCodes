@@ -44,6 +44,7 @@ class QCDEvent
       float calomjj();
       float genmjj(); 
       float pfmjjcor(int unc);
+      float pfmjjcor(int unc,int src);
       float fatmjjcor(int unc);
       float calomjjcor(int unc);
       float pfmjjgen();

@@ -133,6 +133,26 @@ float QCDEvent::pfmjjcor(int k)
   }
 }
 //---------------------------------------------------
+float QCDEvent::pfmjjcor(int k,int src)
+{
+  int sign(0);
+  if (PFJets_.size() < 2)
+    return 0.0;
+  else {
+    if (k>0)
+      sign = 1;
+    if (k<0)
+      sign = -1;
+    const LorentzVector& P0 = PFJets_[0].p4();
+    const LorentzVector& P1 = PFJets_[1].p4();
+    double cor0 = PFJets_[0].cor();
+    double cor1 = PFJets_[1].cor();
+    double unc0 = PFJets_[0].uncSrc(src);
+    double unc1 = PFJets_[1].uncSrc(src);
+    return (cor0*(1+sign*unc0)*P0+cor1*(1+sign*unc1)*P1).mass();
+  }
+}
+//---------------------------------------------------
 float QCDEvent::fatmjjcor(int k)
 {
   int sign(0);
