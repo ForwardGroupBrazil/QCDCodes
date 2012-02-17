@@ -79,6 +79,8 @@ ProcessedTreeProducer::ProcessedTreeProducer(edm::ParameterSet const& cfg)
   triggerNames_      = cfg.getParameter<std::vector<std::string> > ("triggerName");
   triggerResultsTag_ = cfg.getParameter<edm::InputTag>             ("triggerResults");
   triggerEventTag_   = cfg.getParameter<edm::InputTag>             ("triggerEvent");
+  mPFJECUncSrc       = cfg.getParameter<std::string>               ("jecUncSrc");
+  mPFJECUncSrcNames  = cfg.getParameter<std::vector<std::string> > ("jecUncSrcNames");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::beginJob() 
@@ -92,6 +94,8 @@ void ProcessedTreeProducer::beginJob()
     mTriggerNamesHisto->Fill(triggerNames_[i].c_str(),1);
   mTriggerPassHisto = fs->make<TH1F>("TriggerPass","TriggerPass",1,0,1);
   mTriggerPassHisto->SetBit(TH1::kCanRebin);
+  isPFJecUncSet_ = false;
+  isCaloJecUncSet_ = false;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::endJob() 
@@ -150,13 +154,13 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     mEvtHdr.setBS(-999,-999,-999);
 
   //-------------- HCAL Noise Summary -----------------------------
-  Handle<HcalNoiseSummary> noiseSummary; 	 
+  Handle<bool> noiseSummary; 	 
   if (!mIsMCarlo) {
-    event.getByLabel("hcalnoise", noiseSummary);         
-    mEvtHdr.setHCALNoise(noiseSummary->passLooseNoiseFilter(),noiseSummary->passTightNoiseFilter());
+    event.getByLabel(edm::InputTag("HBHENoiseFilterResultProducer","HBHENoiseFilterResult"), noiseSummary);         
+    mEvtHdr.setHCALNoise(*noiseSummary);
   }
   else
-    mEvtHdr.setHCALNoise(true,true);
+    mEvtHdr.setHCALNoise(true);
   //-------------- Trigger Info -----------------------------------
   event.getByLabel(triggerResultsTag_,triggerResultsHandle_);
   if (!triggerResultsHandle_.isValid()) {
@@ -303,16 +307,25 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mPFJEC   = JetCorrector::getJetCorrector(mPFJECservice,iSetup);
   mCALOJEC = JetCorrector::getJetCorrector(mCaloJECservice,iSetup);
   edm::ESHandle<JetCorrectorParametersCollection> PFJetCorParColl;
-  if (mPFPayloadName != ""){
+  if (mPFPayloadName != "" && !isPFJecUncSet_){
     iSetup.get<JetCorrectionsRecord>().get(mPFPayloadName,PFJetCorParColl); 
     JetCorrectorParameters const& PFJetCorPar = (*PFJetCorParColl)["Uncertainty"];
     mPFUnc = new JetCorrectionUncertainty(PFJetCorPar);
+    if (mPFJECUncSrc != "") {
+      for(unsigned isrc=0;isrc<mPFJECUncSrcNames.size();isrc++) {
+        JetCorrectorParameters *par = new JetCorrectorParameters(mPFJECUncSrc,mPFJECUncSrcNames[isrc]); 
+        JetCorrectionUncertainty *tmpUnc = new JetCorrectionUncertainty(*par);
+        mPFUncSrc.push_back(tmpUnc);
+      }
+    }
+    isPFJecUncSet_ = true;
   }
   edm::ESHandle<JetCorrectorParametersCollection> CaloJetCorParColl;
-  if (mPFPayloadName != ""){
+  if (mCaloPayloadName != "" && !isCaloJecUncSet_){
     iSetup.get<JetCorrectionsRecord>().get(mCaloPayloadName,CaloJetCorParColl);    
     JetCorrectorParameters const& CaloJetCorPar = (*CaloJetCorParColl)["Uncertainty"];
     mCALOUnc = new JetCorrectionUncertainty(CaloJetCorPar);
+    isCaloJecUncSet_ = true;
   }
   Handle<GenJetCollection>  genjets;
   Handle<PFJetCollection>   pfjets;
@@ -376,14 +389,24 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     qcdpfjet.setBetaStar(betaStar);
     //---- jec uncertainty --------------
     double unc(0.0);
+    vector<float> uncSrc(0);
     if (mPFPayloadName != "") {
       mPFUnc->setJetEta(i_pfjet->eta());
       mPFUnc->setJetPt(scale * i_pfjet->pt());
       unc = mPFUnc->getUncertainty(true);
     }
+    if (mPFJECUncSrc != "") {
+      for(unsigned isrc=0;isrc<mPFJECUncSrcNames.size();isrc++) {
+        mPFUncSrc[isrc]->setJetEta(i_pfjet->eta());
+        mPFUncSrc[isrc]->setJetPt(scale * i_pfjet->pt());
+        float unc1 = mPFUncSrc[isrc]->getUncertainty(true);
+        uncSrc.push_back(unc1);
+      }
+    }
     qcdpfjet.setP4(i_pfjet->p4());
     qcdpfjet.setCor(scale);
     qcdpfjet.setUnc(unc);
+    qcdpfjet.setUncSrc(uncSrc);
     qcdpfjet.setArea(i_pfjet->jetArea());
     double chf   = i_pfjet->chargedHadronEnergyFraction();
     double nhf   = (i_pfjet->neutralHadronEnergy() + i_pfjet->HFHadronEnergy())/i_pfjet->energy();
@@ -456,12 +479,14 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       } 
     }
     QCDJet fatJet[2];
+    vector<float> uncSrc(0);
     for(unsigned i = 0; i<2; i++) { 
       fatJet[i].setP4(fat[i]);
       fatJet[i].setLooseID(tmpPFJets[i].looseID());
       fatJet[i].setTightID(tmpPFJets[i].tightID());
       fatJet[i].setCor(1.0);
       fatJet[i].setArea(0.0);
+      fatJet[i].setUncSrc(uncSrc); 
       if (sumPt[i] > 0)
         fatJet[i].setUnc(sumPtUnc[i]/sumPt[i]);
       else
@@ -485,6 +510,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     //---- preselection -----------------
     if (fabs(i_calojet->y()) > mMaxY) continue;
     double unc(0.0);
+    vector<float> uncSrc(0);
     if (mCaloPayloadName != "") {
       mCALOUnc->setJetEta(i_calojet->eta());
       mCALOUnc->setJetPt(scale * i_calojet->pt());
@@ -494,6 +520,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     qcdcalojet.setP4(i_calojet->p4());
     qcdcalojet.setCor(scale);
     qcdcalojet.setUnc(unc);
+    qcdcalojet.setUncSrc(uncSrc);
     qcdcalojet.setArea(i_calojet->jetArea());
     double emf    = i_calojet->emEnergyFraction();
     int n90hits   = int((*calojetID)[calojetRef].n90Hits);
@@ -555,10 +582,12 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       mTree->Fill();
     }
   }
-  if (mPFPayloadName != "")
-    delete mPFUnc;
-  if (mCaloPayloadName != "")
-    delete mCALOUnc;
+  //if (mPFPayloadName != "") {
+    //delete mPFUnc;
+    //delete mPFUncSrc;
+ //}
+  //if (mCaloPayloadName != "")
+    //delete mCALOUnc;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 ProcessedTreeProducer::~ProcessedTreeProducer() 

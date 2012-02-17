@@ -19,7 +19,7 @@ class QCDEventHdr
       void setVertices(int fNVtx, int fNVtxGood)             {mNVtx = fNVtx; mNVtxGood = fNVtxGood;}
       void setPV(bool fIsPVgood, float fndof, float fx, float fy, float fz) {mIsPVgood = fIsPVgood; mPVndof = fndof; mPVx = fx; mPVy = fy; mPVz = fz;}
       void setBS(float fBSx, float fBSy, float fBSz) {mBSx = fBSx; mBSy = fBSy; mBSz = fBSz;}
-      void setHCALNoise(bool fLoose, bool fTight)            {mLooseHCALNoise = fLoose; mTightHCALNoise = fTight;}
+      void setHCALNoise(bool fNoise) {mHCALNoise = fNoise;}
       void setPU(int fNBX, int fOOTPUEarly, int fOOTPULate, int fINTPU) {mNBX = fNBX; mOOTPUEarly = fOOTPUEarly; mOOTPULate = fOOTPULate; mINTPU = fINTPU;}
       //------------ Get methods ------------------------------
       int runNo()           const {return mRun;} 
@@ -34,8 +34,7 @@ class QCDEventHdr
       int nbx()             const {return mNBX;} 
       int pu()              const {return mOOTPUEarly+mOOTPULate+mINTPU;}
       bool isPVgood()       const {return mIsPVgood;}
-      bool looseHCALNoise() const {return mLooseHCALNoise;}
-      bool tightHCALNoise() const {return mTightHCALNoise;}
+      bool hcalNoise()      const {return mHCALNoise;}
       float PVndof()        const {return mPVndof;} 
       float PVx()           const {return mPVx;}
       float PVy()           const {return mPVy;}
@@ -51,8 +50,7 @@ class QCDEventHdr
         //---- flag about the PV quality -------------- 
         bool mIsPVgood; 
         //---- flags about the HCAL noise -------------
-        bool mLooseHCALNoise;
-        bool mTightHCALNoise;
+        bool mHCALNoise;
         //---- run number ----------------------------- 
         int mRun;
         //---- event number ---------------------------

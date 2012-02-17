@@ -249,10 +249,7 @@ void DijetSearchHistos::analyze(edm::Event const& evt, edm::EventSetup const& iS
       if (mEvent->evtHdr().isPVgood() == 1) {
         counter_pv++;
         bool cut_hcalNoise(true);
-        if (mHCALNoise == 1)
-          cut_hcalNoise = mEvent->evtHdr().looseHCALNoise();
-        if (mHCALNoise == 2)
-          cut_hcalNoise = mEvent->evtHdr().tightHCALNoise(); 
+        cut_hcalNoise = mEvent->evtHdr().hcalNoise();
         if (cut_hcalNoise) {
           counter_hcal++;  
           if (mEvent->nPFJets() > 1) {

@@ -15,6 +15,7 @@ class QCDJet
      void setGen(LorentzVector fP4, float fgenR) {genP4_ = fP4;genR_ = fgenR;}
      void setCor(float fCor)                     {cor_  = fCor;} 
      void setUnc(float fUnc)                     {unc_  = fUnc;} 
+     void setUncSrc(std::vector<float> fUncSrc)  {uncSrc_ = fUncSrc;}
      void setArea(float fArea)                   {area_ = fArea;}
      void setLooseID(bool fLooseID)              {looseID_ = fLooseID;} 
      void setTightID(bool fTightID)              {tightID_ = fTightID;}
@@ -34,6 +35,7 @@ class QCDJet
      float mass()                 const {return P4_.mass();}
      float cor()                  const {return cor_;}
      float unc()                  const {return unc_;} 
+     float uncSrc(int i)          const {return uncSrc_[i];}
      float area()                 const {return area_;} 
      bool  looseID()              const {return looseID_;}
      bool  tightID()              const {return tightID_;}
@@ -49,6 +51,8 @@ class QCDJet
      float cor_;
      //------ jec uncertainty -----------------------
      float unc_;
+     //------ jec uncertainty sources ---------------
+     std::vector<float> uncSrc_;
      //------ jet area ------------------------------
      float area_;
      //------ loose ID flag -------------------------

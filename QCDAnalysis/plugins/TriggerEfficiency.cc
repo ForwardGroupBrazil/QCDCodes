@@ -139,10 +139,7 @@ void TriggerEfficiency::analyze(edm::Event const& evt, edm::EventSetup const& iS
         if (hltPass) {
           if (mEvent->evtHdr().isPVgood() == 1) {
             bool cut_hcalNoise(true);
-            if (mHCALNoise == 1)
-              cut_hcalNoise = mEvent->evtHdr().looseHCALNoise();
-            if (mHCALNoise == 2)
-              cut_hcalNoise = mEvent->evtHdr().tightHCALNoise(); 
+            cut_hcalNoise = mEvent->evtHdr().hcalNoise();
             if (cut_hcalNoise) {
               //-------- loop over the L1 objects ------------------
               for(unsigned j=0;j<mEvent->nL1Obj(ihlt);j++) {
