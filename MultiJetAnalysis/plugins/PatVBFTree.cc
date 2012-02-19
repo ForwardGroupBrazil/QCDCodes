@@ -40,61 +40,79 @@ PatVBFTree::PatVBFTree(edm::ParameterSet const& cfg)
 void PatVBFTree::beginJob() 
 {
   outTree_ = fs_->make<TTree>("events","events");
-  outTree_->Branch("runNo"         ,&run_           ,"run_/I");
-  outTree_->Branch("evtNo"         ,&evt_           ,"evt_/I");
-  outTree_->Branch("lumi"          ,&lumi_          ,"lumi_/I");
-  outTree_->Branch("nvtx"          ,&nVtx_          ,"nVtx_/I");
-  outTree_->Branch("nSoftTrackJets",&nSoftTrackJets_,"nSoftTrackJets_/I");
-  outTree_->Branch("btagIdx"       ,&btagIdx_       ,"btagIdx_[5]/I");
-  outTree_->Branch("pvx"           ,&pvx_           ,"pvx_/F");
-  outTree_->Branch("pvy"           ,&pvy_           ,"pvy_/F");
-  outTree_->Branch("pvz"           ,&pvz_           ,"pvz_/F");
-  outTree_->Branch("rho"           ,&rho_           ,"rho_/F");
-  outTree_->Branch("ht"            ,&ht_            ,"ht_/F");
-  outTree_->Branch("htAll"         ,&htAll_         ,"htAll_/F");
-  outTree_->Branch("pvz"           ,&pvz_           ,"pvz_/F");
-  outTree_->Branch("met"           ,&met_           ,"met_/F");
-  outTree_->Branch("metSig"        ,&metSig_        ,"metSig_/F");
-  outTree_->Branch("mqq"           ,&mqq_           ,"mqq_/F");
-  outTree_->Branch("mbb"           ,&mbb_           ,"mbb_/F");
-  outTree_->Branch("dEtaqq"        ,&dEtaqq_        ,"dEtaqq_/F");
-  outTree_->Branch("jetPt"         ,&pt_            ,"pt_[5]/F");
-  outTree_->Branch("jetBtag"       ,&btag_          ,"btag_[5]/F");
-  outTree_->Branch("jetJec"        ,&jec_           ,"jec_[5]/F");
-  outTree_->Branch("jetUnc"        ,&unc_           ,"unc_[5]/F");
-  outTree_->Branch("jetBeta"       ,&beta_          ,"beta_[5]/F");
-  outTree_->Branch("jetEta"        ,&eta_           ,"eta_[5]/F");
-  outTree_->Branch("jetPhi"        ,&phi_           ,"phi_[5]/F");
-  outTree_->Branch("jetMass"       ,&mass_          ,"mass_[5]/F");
-  outTree_->Branch("jetChf"        ,&chf_           ,"chf_[5]/F");
-  outTree_->Branch("jetNhf"        ,&nhf_           ,"nhf_[5]/F");
-  outTree_->Branch("jetPhf"        ,&phf_           ,"phf_[5]/F");
-  outTree_->Branch("jetMuf"        ,&muf_           ,"muf_[5]/F");
-  outTree_->Branch("jetElf"        ,&elf_           ,"elf_[5]/F");
-  outTree_->Branch("jetAxis"       ,&axis_          ,"axis_[2][5]/F");
-  outTree_->Branch("jetPtD"        ,&ptD_           ,"ptD_[5]/F");
-  outTree_->Branch("jetPtMax"      ,&ptMax_         ,"ptMax_[5]/F");
-  outTree_->Branch("jetTana"       ,&tana_          ,"tana_[5]/F");
-  outTree_->Branch("jetTtheta"     ,&ttheta_        ,"ttheta_[5]/F");
-  softTrackJetP4_ = new TClonesArray("TLorentzVector",100);
-  outTree_->Branch("softTrackJetP4","TClonesArray"  ,&softTrackJetP4_,32000,0);
+  outTree_->Branch("runNo"          ,&run_           ,"run_/I");
+  outTree_->Branch("evtNo"          ,&evt_           ,"evt_/I");
+  outTree_->Branch("lumi"           ,&lumi_          ,"lumi_/I");
+  outTree_->Branch("nvtx"           ,&nVtx_          ,"nVtx_/I");
+  outTree_->Branch("nSoftTrackJets" ,&nSoftTrackJets_,"nSoftTrackJets_/I");
+  outTree_->Branch("btagIdx"        ,&btagIdx_       ,"btagIdx_[5]/I");
+  outTree_->Branch("pvx"            ,&pvx_           ,"pvx_/F");
+  outTree_->Branch("pvy"            ,&pvy_           ,"pvy_/F");
+  outTree_->Branch("pvz"            ,&pvz_           ,"pvz_/F");
+  outTree_->Branch("rho"            ,&rho_           ,"rho_/F");
+  outTree_->Branch("ht"             ,&ht_            ,"ht_/F");
+  outTree_->Branch("htAll"          ,&htAll_         ,"htAll_/F");
+  outTree_->Branch("pvz"            ,&pvz_           ,"pvz_/F");
+  outTree_->Branch("met"            ,&met_           ,"met_/F");
+  outTree_->Branch("metSig"         ,&metSig_        ,"metSig_/F");
+  outTree_->Branch("mqq"            ,&mqq_           ,"mqq_/F");
+  outTree_->Branch("mbb"            ,&mbb_           ,"mbb_/F");
+  outTree_->Branch("dEtaqq"         ,&dEtaqq_        ,"dEtaqq_/F");
+  outTree_->Branch("jetPt"          ,&pt_            ,"pt_[5]/F");
+  outTree_->Branch("jetBtag"        ,&btag_          ,"btag_[5]/F");
+  outTree_->Branch("jetJec"         ,&jec_           ,"jec_[5]/F");
+  outTree_->Branch("jetUnc"         ,&unc_           ,"unc_[5]/F");
+  outTree_->Branch("jetBeta"        ,&beta_          ,"beta_[5]/F");
+  outTree_->Branch("jetEta"         ,&eta_           ,"eta_[5]/F");
+  outTree_->Branch("jetPhi"         ,&phi_           ,"phi_[5]/F");
+  outTree_->Branch("jetMass"        ,&mass_          ,"mass_[5]/F");
+  outTree_->Branch("jetChf"         ,&chf_           ,"chf_[5]/F");
+  outTree_->Branch("jetNhf"         ,&nhf_           ,"nhf_[5]/F");
+  outTree_->Branch("jetPhf"         ,&phf_           ,"phf_[5]/F");
+  outTree_->Branch("jetMuf"         ,&muf_           ,"muf_[5]/F");
+  outTree_->Branch("jetElf"         ,&elf_           ,"elf_[5]/F");
+  outTree_->Branch("jetAxis"        ,&axis_          ,"axis_[2][5]/F");
+  outTree_->Branch("jetPtD"         ,&ptD_           ,"ptD_[5]/F");
+  outTree_->Branch("jetPtMax"       ,&ptMax_         ,"ptMax_[5]/F");
+  outTree_->Branch("jetTana"        ,&tana_          ,"tana_[5]/F");
+  outTree_->Branch("jetTtheta"      ,&ttheta_        ,"ttheta_[5]/F");
+  softTrackJetPt_  = new std::vector<float>;
+  softTrackJetEta_ = new std::vector<float>;
+  softTrackJetPhi_ = new std::vector<float>;
+  softTrackJetE_   = new std::vector<float>;
+  outTree_->Branch("softTrackJetPt" ,"vector<float>" ,&softTrackJetPt_);
+  outTree_->Branch("softTrackJetEta","vector<float>" ,&softTrackJetEta_);
+  outTree_->Branch("softTrackJetPhi","vector<float>" ,&softTrackJetPhi_);
+  outTree_->Branch("softTrackJetE"  ,"vector<float>" ,&softTrackJetE_);
   //------------------- MC ---------------------------------
-  outTree_->Branch("inpu"          ,&inpu_          ,"inpu_/I");
-  outTree_->Branch("otpu"          ,&otpu_          ,"otpu_/I");
-  partonId_ = new std::vector<int>;
-  partonSt_ = new std::vector<int>;
-  outTree_->Branch("partonId"      ,"vector<int>"   ,&partonId_);
-  outTree_->Branch("partonSt"      ,"vector<int>"   ,&partonSt_);
-  partonP4_ = new TClonesArray("TLorentzVector",100);
-  outTree_->Branch("partonP4"      ,"TClonesArray"  ,&partonP4_,32000,0);
+  outTree_->Branch("inpu"           ,&inpu_          ,"inpu_/I");
+  outTree_->Branch("otpu"           ,&otpu_          ,"otpu_/I");
+  partonId_  = new std::vector<int>;
+  partonSt_  = new std::vector<int>;
+  partonPt_  = new std::vector<float>;
+  partonEta_ = new std::vector<float>;
+  partonPhi_ = new std::vector<float>;
+  partonE_   = new std::vector<float>;
+  outTree_->Branch("partonId"       ,"vector<int>"   ,&partonId_);
+  outTree_->Branch("partonSt"       ,"vector<int>"   ,&partonSt_);
+  outTree_->Branch("partonPt"       ,"vector<float>" ,&partonPt_);
+  outTree_->Branch("partonEta"      ,"vector<float>" ,&partonEta_);
+  outTree_->Branch("partonPhi"      ,"vector<float>" ,&partonPhi_);
+  outTree_->Branch("partonE"        ,"vector<float>" ,&partonE_);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatVBFTree::endJob() 
 {
   delete partonSt_;
   delete partonId_;
-  delete partonP4_;
-  delete softTrackJetP4_;
+  delete partonPt_;
+  delete partonEta_;
+  delete partonPhi_;
+  delete partonE_;
+  delete softTrackJetPt_;
+  delete softTrackJetEta_;
+  delete softTrackJetPhi_;
+  delete softTrackJetE_;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup) 
@@ -129,8 +147,11 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
   if (cut_vtx && cut_njets) {
     //----- soft track jets ----------------------
     nSoftTrackJets_ = int(softTrackJets->size());
-    for(int it=0;it<nSoftTrackJets_;it++) {
-      new((*softTrackJetP4_)[it])TLorentzVector((*softTrackJets)[it].px(),(*softTrackJets)[it].py(),(*softTrackJets)[it].pz(),(*softTrackJets)[it].energy());
+    for(int it=0;it<TMath::Min(nSoftTrackJets_,3);it++) {
+      softTrackJetPt_ ->push_back((*softTrackJets)[it].pt());
+      softTrackJetEta_->push_back((*softTrackJets)[it].eta());
+      softTrackJetPhi_->push_back((*softTrackJets)[it].phi());
+      softTrackJetE_  ->push_back((*softTrackJets)[it].energy());
     }
     //----- PF jets ------------------------------
     bool cutID(true);
@@ -212,8 +233,7 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
       int Npart(0);
       for(unsigned ip = 0; ip < genParticles->size(); ++ ip) {
         const GenParticle &p = (*genParticles)[ip];
-        int st = p.status();
-        if (st != 3) continue;
+        if (p.status() != 3) continue;
         int ndst3(0);
 	for(unsigned k = 0; k < p.numberOfDaughters(); k++) {
 	  if (p.daughter(k)->status() == 3) {
@@ -221,10 +241,12 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
           }
 	}
         if (ndst3 > 0) continue;
-        int id = p.pdgId();
-        partonId_->push_back(id);
-	partonSt_->push_back(st); 
-        new((*partonP4_)[Npart])TLorentzVector(p.px(),p.py(),p.pz(),p.energy()); 
+        partonId_ ->push_back(p.pdgId());
+	partonSt_ ->push_back(p.status()); 
+        partonPt_ ->push_back(p.pt());
+        partonEta_->push_back(p.eta());
+        partonPhi_->push_back(p.phi());
+        partonE_  ->push_back(p.energy()); 
         Npart++;
       }// parton loop
     }// if MC    
@@ -288,13 +310,19 @@ void PatVBFTree::initialize()
     tana_[i]    = -999;
     ttheta_[i]  = -999;
   } 
-  softTrackJetP4_->Clear(); 
+  softTrackJetPt_ ->clear(); 
+  softTrackJetEta_->clear();
+  softTrackJetPhi_->clear();
+  softTrackJetE_  ->clear();
   //----- MC -------
   inpu_ = -999;
   otpu_ = -999;
-  partonSt_->clear();
-  partonId_->clear();
-  partonP4_->Clear();
+  partonSt_ ->clear();
+  partonId_ ->clear();
+  partonPt_ ->clear();
+  partonEta_->clear();
+  partonPhi_->clear();
+  partonE_  ->clear();
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 PatVBFTree::~PatVBFTree() 
