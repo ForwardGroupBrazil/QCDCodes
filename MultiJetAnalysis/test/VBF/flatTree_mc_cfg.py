@@ -22,6 +22,8 @@ process.Hbb = cms.EDAnalyzer('PatVBFTree',
     jets    = cms.InputTag('jetExtender','extendedPatJets'),
     met     = cms.InputTag('pfMet'),
     rho     = cms.InputTag('kt6PFJets','rho'),
+    mbbMin  = cms.double(50.0),
+    dEtaMin = cms.double(1.0),
     pu      = cms.untracked.string('addPileupInfo'),
     btagger = cms.string('combinedSecondaryVertexBJetTags')
 )

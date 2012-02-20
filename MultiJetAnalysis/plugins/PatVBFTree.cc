@@ -34,6 +34,8 @@ PatVBFTree::PatVBFTree(edm::ParameterSet const& cfg)
   srcMET_  = cfg.getParameter<edm::InputTag>        ("met");
   srcRho_  = cfg.getParameter<edm::InputTag>        ("rho");
   srcBtag_ = cfg.getParameter<std::string>          ("btagger");
+  mbbMin_  = cfg.getParameter<double>               ("mbbMin");
+  dEtaMin_ = cfg.getParameter<double>               ("dEtaMin");
   srcPU_   = cfg.getUntrackedParameter<std::string> ("pu","");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -58,6 +60,7 @@ void PatVBFTree::beginJob()
   outTree_->Branch("mqq"            ,&mqq_           ,"mqq_/F");
   outTree_->Branch("mbb"            ,&mbb_           ,"mbb_/F");
   outTree_->Branch("dEtaqq"         ,&dEtaqq_        ,"dEtaqq_/F");
+  outTree_->Branch("dEtabb"         ,&dEtabb_        ,"dEtabb_/F");
   outTree_->Branch("jetPt"          ,&pt_            ,"pt_[5]/F");
   outTree_->Branch("jetBtag"        ,&btag_          ,"btag_[5]/F");
   outTree_->Branch("jetJec"         ,&jec_           ,"jec_[5]/F");
@@ -264,8 +267,9 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
     lumi_   = iEvent.id().luminosityBlock();
     mqq_    = (pat_jets[btagIdx_[2]].p4()+pat_jets[btagIdx_[3]].p4()).mass();
     mbb_    = (pat_jets[btagIdx_[0]].p4()+pat_jets[btagIdx_[1]].p4()).mass();
-    dEtaqq_ = fabs(pat_jets[btagIdx_[2]].eta()-pat_jets[btagIdx_[3]].eta());
-    if (cutID) {
+    dEtabb_ = pat_jets[btagIdx_[0]].eta()-pat_jets[btagIdx_[1]].eta();
+    dEtaqq_ = pat_jets[btagIdx_[2]].eta()-pat_jets[btagIdx_[3]].eta();
+    if (cutID && (mbb_ > mbbMin_) && (fabs(dEtaqq_) > dEtaMin_)) {
       outTree_->Fill();
     }
   }// if vtx and jet multi
@@ -289,6 +293,7 @@ void PatVBFTree::initialize()
   mqq_    = -999;
   mbb_    = -999;
   dEtaqq_ = -999;
+  dEtabb_ = -999;
   for(int i=0;i<5;i++) {
     pt_[i]      = -999;
     eta_[i]     = -999;
