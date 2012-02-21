@@ -61,6 +61,10 @@ void PatVBFTree::beginJob()
   outTree_->Branch("mbb"            ,&mbb_           ,"mbb_/F");
   outTree_->Branch("dEtaqq"         ,&dEtaqq_        ,"dEtaqq_/F");
   outTree_->Branch("dEtabb"         ,&dEtabb_        ,"dEtabb_/F");
+  outTree_->Branch("ptqq"           ,&ptqq_          ,"ptqq_/F");
+  outTree_->Branch("ptbb"           ,&ptbb_          ,"ptbb_/F");
+  outTree_->Branch("dPhiqq"         ,&dPhiqq_        ,"dPhiqq_/F");
+  outTree_->Branch("dPhibb"         ,&dPhibb_        ,"dPhibb_/F");
   outTree_->Branch("jetPt"          ,&pt_            ,"pt_[5]/F");
   outTree_->Branch("jetBtag"        ,&btag_          ,"btag_[5]/F");
   outTree_->Branch("jetJec"         ,&jec_           ,"jec_[5]/F");
@@ -203,6 +207,7 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
       tmp_btag[i] = btag_[i];
       ht += pt_[i]; 
     }
+    btagIdx_[4] = 4;
     for(int i=0;i<4;i++) {
       for(int j=i+1;j<4;j++) {
         if (tmp_btag[j] > tmp_btag[i]) {
@@ -233,7 +238,6 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
       otpu_ = otpu;
       //---------- partons ------------------
       iEvent.getByLabel("genParticles", genParticles);
-      int Npart(0);
       for(unsigned ip = 0; ip < genParticles->size(); ++ ip) {
         const GenParticle &p = (*genParticles)[ip];
         if (p.status() != 3) continue;
@@ -250,7 +254,6 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
         partonEta_->push_back(p.eta());
         partonPhi_->push_back(p.phi());
         partonE_  ->push_back(p.energy()); 
-        Npart++;
       }// parton loop
     }// if MC    
     ht_     = ht;
@@ -267,8 +270,12 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
     lumi_   = iEvent.id().luminosityBlock();
     mqq_    = (pat_jets[btagIdx_[2]].p4()+pat_jets[btagIdx_[3]].p4()).mass();
     mbb_    = (pat_jets[btagIdx_[0]].p4()+pat_jets[btagIdx_[1]].p4()).mass();
-    dEtabb_ = pat_jets[btagIdx_[0]].eta()-pat_jets[btagIdx_[1]].eta();
-    dEtaqq_ = pat_jets[btagIdx_[2]].eta()-pat_jets[btagIdx_[3]].eta();
+    ptqq_   = (pat_jets[btagIdx_[2]].p4()+pat_jets[btagIdx_[3]].p4()).pt();
+    ptbb_   = (pat_jets[btagIdx_[0]].p4()+pat_jets[btagIdx_[1]].p4()).pt();
+    dEtabb_ = fabs(pat_jets[btagIdx_[0]].eta()-pat_jets[btagIdx_[1]].eta());
+    dEtaqq_ = fabs(pat_jets[btagIdx_[2]].eta()-pat_jets[btagIdx_[3]].eta());
+    dPhibb_ = fabs(deltaPhi(pat_jets[btagIdx_[0]].phi(),pat_jets[btagIdx_[1]].phi()));
+    dPhiqq_ = fabs(deltaPhi(pat_jets[btagIdx_[2]].phi(),pat_jets[btagIdx_[3]].phi()));
     if (cutID && (mbb_ > mbbMin_) && (fabs(dEtaqq_) > dEtaMin_)) {
       outTree_->Fill();
     }
@@ -292,8 +299,12 @@ void PatVBFTree::initialize()
   pvz_    = -999;
   mqq_    = -999;
   mbb_    = -999;
+  ptqq_   = -999;
+  ptbb_   = -999;
   dEtaqq_ = -999;
   dEtabb_ = -999;
+  dPhiqq_ = -999;
+  dPhibb_ = -999;
   for(int i=0;i<5;i++) {
     pt_[i]      = -999;
     eta_[i]     = -999;
@@ -306,6 +317,7 @@ void PatVBFTree::initialize()
     muf_[i]     = -999;
     jec_[i]     = -999;
     btag_[i]    = -999;
+    btagIdx_[i] = -999;
     beta_[i]    = -999;
     unc_[i]     = -999;
     ptD_[i]     = -999;

@@ -31,7 +31,6 @@ PatMultijetSearchTree::PatMultijetSearchTree(edm::ParameterSet const& cfg)
   srcJets_ = cfg.getParameter<edm::InputTag>   ("jets");
   srcMET_  = cfg.getParameter<edm::InputTag>   ("met");
   srcRho_  = cfg.getParameter<edm::InputTag>   ("rho");
-  srcBeta_ = cfg.getParameter<string>          ("beta"); 
   srcPU_   = cfg.getUntrackedParameter<string> ("pu","");
   etaMax_  = cfg.getParameter<double>          ("etaMAX");
   ptMin_   = cfg.getParameter<double>          ("ptMIN");
@@ -44,7 +43,6 @@ void PatMultijetSearchTree::beginJob()
   outTree_->Branch("runNo"       ,&run_         ,"run_/I");
   outTree_->Branch("evtNo"       ,&evt_         ,"evt_/I");
   outTree_->Branch("nvtx"        ,&nVtx_        ,"nVtx_/I");
-  outTree_->Branch("pu"          ,&simPU_       ,"simPU_/I");
   outTree_->Branch("index2J"     ,&index2J_     ,"index2J_[4][2]/I");
   outTree_->Branch("index4J"     ,&index4J_     ,"index4J_[2][4]/I");
   outTree_->Branch("rho"         ,&rho_         ,"rho_/F");
@@ -73,11 +71,30 @@ void PatMultijetSearchTree::beginJob()
   outTree_->Branch("phf"         ,&phf_         ,"phf_[8]/F");
   outTree_->Branch("muf"         ,&muf_         ,"muf_[8]/F");
   outTree_->Branch("elf"         ,&elf_         ,"elf_[8]/F");
+  //------------------- MC ---------------------------------
+  outTree_->Branch("pu"          ,&simPU_       ,"simPU_/I");
+  partonId_  = new std::vector<int>;
+  partonSt_  = new std::vector<int>;
+  partonPt_  = new std::vector<float>;
+  partonEta_ = new std::vector<float>;
+  partonPhi_ = new std::vector<float>;
+  partonE_   = new std::vector<float>;
+  outTree_->Branch("partonId"       ,"vector<int>"   ,&partonId_);
+  outTree_->Branch("partonSt"       ,"vector<int>"   ,&partonSt_);
+  outTree_->Branch("partonPt"       ,"vector<float>" ,&partonPt_);
+  outTree_->Branch("partonEta"      ,"vector<float>" ,&partonEta_);
+  outTree_->Branch("partonPhi"      ,"vector<float>" ,&partonPhi_);
+  outTree_->Branch("partonE"        ,"vector<float>" ,&partonE_);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatMultijetSearchTree::endJob() 
 {
-
+  delete partonSt_;
+  delete partonId_;
+  delete partonPt_;
+  delete partonEta_;
+  delete partonPhi_;
+  delete partonE_;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatMultijetSearchTree::initialize()
@@ -85,7 +102,6 @@ void PatMultijetSearchTree::initialize()
   run_          = -999;
   evt_          = -999;
   nVtx_         = -999;
-  simPU_        = -999;
   rho_          = -999;
   metSig_       = -999;
   dPhi4j_       = -999;
@@ -116,6 +132,14 @@ void PatMultijetSearchTree::initialize()
     elf_[i]  = -999;
     muf_[i]  = -999;
   }  
+  //----- MC -------
+  simPU_ = -999;
+  partonSt_ ->clear();
+  partonId_ ->clear();
+  partonPt_ ->clear();
+  partonEta_->clear();
+  partonPhi_->clear();
+  partonE_  ->clear();
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup) 
@@ -134,17 +158,40 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
   iEvent.getByLabel("goodOfflinePrimaryVertices",recVtxs);
 
   edm::Handle<GenEventInfoProduct> hEventInfo;
+  edm::Handle<GenParticleCollection> genParticles;
   edm::Handle<std::vector<PileupSummaryInfo> > PupInfo;
 
   initialize();
 
   int intpu(0);
-  if (!iEvent.isRealData() && srcPU_ != "") {
-    iEvent.getByLabel(srcPU_,PupInfo);
-    for(vector<PileupSummaryInfo>::const_iterator ipu = PupInfo->begin(); ipu != PupInfo->end(); ++ipu) {
-      if (ipu->getBunchCrossing() == 0)
-        intpu += ipu->getPU_NumInteractions(); 
+  if (!iEvent.isRealData()) {
+    if (srcPU_ != "") {
+      iEvent.getByLabel(srcPU_,PupInfo);
+      for(vector<PileupSummaryInfo>::const_iterator ipu = PupInfo->begin(); ipu != PupInfo->end(); ++ipu) {
+        if (ipu->getBunchCrossing() == 0) {
+          intpu += ipu->getPU_NumInteractions();
+        } 
+      }
     }
+    //---------- partons ------------------
+    iEvent.getByLabel("genParticles", genParticles);
+    for(unsigned ip = 0; ip < genParticles->size(); ++ ip) {
+      const GenParticle &p = (*genParticles)[ip];
+      if (p.status() != 3) continue;
+      int ndst3(0);
+      for(unsigned k = 0; k < p.numberOfDaughters(); k++) {
+        if (p.daughter(k)->status() == 3) {
+          ndst3++; 
+        }
+      }
+      if (ndst3 > 0) continue;
+      partonId_ ->push_back(p.pdgId());
+      partonSt_ ->push_back(p.status()); 
+      partonPt_ ->push_back(p.pt());
+      partonEta_->push_back(p.eta());
+      partonPhi_->push_back(p.phi());
+      partonE_  ->push_back(p.energy()); 
+    }// parton loop
   } 
   bool cut_vtx = (recVtxs->size() > 0);
   bool cut_njets = (pat_jets.size() > 7);
@@ -164,7 +211,7 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
       int chm = ijet->chargedHadronMultiplicity();
       int npr = ijet->chargedMultiplicity() + ijet->neutralMultiplicity();
       id = (npr>1 && phf<0.99 && nhf<0.99 && ((fabs(ijet->eta())<=2.4 && nhf<0.9 && phf<0.9 && elf<0.99 && muf<0.99 && chf>0 && chm>0) || fabs(ijet->eta())>2.4));
-      double beta = ijet->userFloat(srcBeta_);
+      double beta = ijet->userFloat("beta");
       cut_pu  *= (beta < betaMax_);
       cutID   *= id;
       cut_pt  *= (ijet->pt() > ptMin_);
