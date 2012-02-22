@@ -44,27 +44,20 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     }
     //---- configurable parameters --------  
     bool   mIsMCarlo;
-    bool   mUseGenInfo;
     bool   mPrintTriggerMenu;
-    bool   isPFJecUncSet_,isCaloJecUncSet_;
     int    mGoodVtxNdof,mMinNCaloJets,mMinNPFJets;
     double mGoodVtxZ; 
-    double mMinCaloPt,mMinPFPt,mMinPFFatPt,mMaxPFFatEta,mMinGenPt,mMaxY,mMinJJMass;
+    double mMinCaloPt,mMinPFPt,mMinPFFatPt,mMinGenPt,mMaxY,mMinJJMass;
     std::string mCaloJECservice;
     std::string mPFJECservice;
     std::string mPFPayloadName;
     std::string mCaloPayloadName;
-    std::string mPFJECUncSrc;
-    std::vector<std::string> mPFJECUncSrcNames;
     edm::InputTag mCaloJetsName;
     edm::InputTag mPFJetsName;
     edm::InputTag mGenJetsName;
     edm::InputTag mCaloJetID;
     edm::InputTag mCaloJetExtender;
     edm::InputTag mOfflineVertices;
-    edm::InputTag mSrcCaloRho;
-    edm::InputTag mSrcPFRho;
-    edm::InputTag mSrcPU;
     //---- TRIGGER -------------------------
     std::string   processName_;
     std::vector<std::string> triggerNames_;
@@ -79,7 +72,6 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     const JetCorrector *mCALOJEC;
     JetCorrectionUncertainty *mCALOUnc;
     JetCorrectionUncertainty *mPFUnc;
-    std::vector<JetCorrectionUncertainty*> mPFUncSrc;
     
     edm::Service<TFileService> fs;
     TTree *mTree;

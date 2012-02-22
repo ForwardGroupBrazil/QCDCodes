@@ -1,0 +1,10 @@
+universe = vanilla
+Executable = read_mc.csh
+Requirements = Memory >= 199 &&OpSys == "LINUX"&& (Arch != "DUMMY" )&& Disk > 1000000
+Should_Transfer_Files = YES
+WhenToTransferOutput = ON_EXIT
+Output = mc.stdout
+Error = mc.stderr
+Log = mc.log
+notify_user = kkousour@fnal.gov
+Queue 1
