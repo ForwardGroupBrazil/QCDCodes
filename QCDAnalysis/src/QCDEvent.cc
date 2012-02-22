@@ -68,31 +68,6 @@ void QCDEvent::setHLTObj(const std::vector<std::vector<LorentzVector> >& fHLTObj
   }
 }
 //---------------------------------------------------
-int QCDEvent::nGoodJets(int unc, int id, float ymax, float ptmin, std::vector<QCDJet> jets)
-{
-  // unc defines the uncertainty
-  // id defines the jet id
-  // ymax defines the maximum rapidity
-  // ptmin defines the minimum jet pt
-  int sign(0),counter(0);
-  if (unc > 0)
-    sign = 1;
-  if (unc < 0)
-    sign = -1;
-  for(unsigned i=0;i<jets.size();i++) {
-    bool passID(true);
-    if (id == 1 && !jets[i].looseID())
-      passID = false;
-    if (id == 2 && !jets[i].tightID()) 
-      passID = false;
-    if (passID) {
-      if (fabs(jets[i].y()) <= ymax && jets[i].ptCor()*(1+sign*jets[i].unc()) >= ptmin)
-        counter++;
-    }
-  }
-  return counter;
-}
-//---------------------------------------------------
 float QCDEvent::genmjj()
 {
   if (GenJets_.size() < 2)
@@ -129,26 +104,6 @@ float QCDEvent::pfmjjcor(int k)
     double cor1 = PFJets_[1].cor();
     double unc0 = PFJets_[0].unc();
     double unc1 = PFJets_[1].unc();
-    return (cor0*(1+sign*unc0)*P0+cor1*(1+sign*unc1)*P1).mass();
-  }
-}
-//---------------------------------------------------
-float QCDEvent::pfmjjcor(int k,int src)
-{
-  int sign(0);
-  if (PFJets_.size() < 2)
-    return 0.0;
-  else {
-    if (k>0)
-      sign = 1;
-    if (k<0)
-      sign = -1;
-    const LorentzVector& P0 = PFJets_[0].p4();
-    const LorentzVector& P1 = PFJets_[1].p4();
-    double cor0 = PFJets_[0].cor();
-    double cor1 = PFJets_[1].cor();
-    double unc0 = PFJets_[0].uncSrc(src);
-    double unc1 = PFJets_[1].uncSrc(src);
     return (cor0*(1+sign*unc0)*P0+cor1*(1+sign*unc1)*P1).mass();
   }
 }
