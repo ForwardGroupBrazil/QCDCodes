@@ -30,13 +30,17 @@ using namespace reco;
 
 PatVBFTree::PatVBFTree(edm::ParameterSet const& cfg) 
 {
-  srcJets_ = cfg.getParameter<edm::InputTag>        ("jets");
-  srcMET_  = cfg.getParameter<edm::InputTag>        ("met");
-  srcRho_  = cfg.getParameter<edm::InputTag>        ("rho");
-  srcBtag_ = cfg.getParameter<std::string>          ("btagger");
-  mbbMin_  = cfg.getParameter<double>               ("mbbMin");
-  dEtaMin_ = cfg.getParameter<double>               ("dEtaMin");
-  srcPU_   = cfg.getUntrackedParameter<std::string> ("pu","");
+  srcJets_    = cfg.getParameter<edm::InputTag>        ("jets");
+  srcMET_     = cfg.getParameter<edm::InputTag>        ("met");
+  srcRho_     = cfg.getParameter<edm::InputTag>        ("rho");
+  srcRhoQGL_  = cfg.getParameter<edm::InputTag>        ("rhoQGL");
+  srcBtag_    = cfg.getParameter<std::string>          ("btagger");
+  srcQGLfile_ = cfg.getParameter<std::string>          ("qglFile");
+  mbbMin_     = cfg.getParameter<double>               ("mbbMin");
+  dEtaMin_    = cfg.getParameter<double>               ("dEtaMin");
+  srcPU_      = cfg.getUntrackedParameter<std::string> ("pu","");
+
+  qglikeli_ = new QGLikelihoodCalculator(srcQGLfile_);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatVBFTree::beginJob() 
@@ -70,6 +74,7 @@ void PatVBFTree::beginJob()
   outTree_->Branch("jetJec"         ,&jec_           ,"jec_[5]/F");
   outTree_->Branch("jetUnc"         ,&unc_           ,"unc_[5]/F");
   outTree_->Branch("jetBeta"        ,&beta_          ,"beta_[5]/F");
+  outTree_->Branch("jetQGL"         ,&qgl_           ,"qgl_[5]/F");
   outTree_->Branch("jetEta"         ,&eta_           ,"eta_[5]/F");
   outTree_->Branch("jetPhi"         ,&phi_           ,"phi_[5]/F");
   outTree_->Branch("jetMass"        ,&mass_          ,"mass_[5]/F");
@@ -137,6 +142,9 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
   edm::Handle<double> rho;
   iEvent.getByLabel(srcRho_,rho);
 
+  edm::Handle<double> rhoQGL;
+  iEvent.getByLabel(srcRhoQGL_,rhoQGL);
+
   edm::Handle<reco::VertexCollection> recVtxs;
   iEvent.getByLabel("goodOfflinePrimaryVertices",recVtxs);
 
@@ -197,6 +205,13 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
         axis_[1][N] = ijet->userFloat("axis2");
         tana_[N]    = ijet->userFloat("tana");
         ttheta_[N]  = ijet->userFloat("ttheta");
+        //----- calculate the qg likelihood ------------
+        int nCharged = ijet->chargedHadronMultiplicity();
+        int nNeutral = ijet->neutralHadronMultiplicity()+ijet->photonMultiplicity();
+        qgl_[N] = -1.0;
+        if (nCharged + nNeutral > 0) {
+          qgl_[N] = qglikeli_->computeQGLikelihoodPU(ijet->pt(),*rhoQGL,nCharged,nNeutral,ptD_[N]);
+        }
       }
       N++;
     }// jet loop
@@ -316,6 +331,7 @@ void PatVBFTree::initialize()
     elf_[i]     = -999;
     muf_[i]     = -999;
     jec_[i]     = -999;
+    qgl_[i]     = -999;
     btag_[i]    = -999;
     btagIdx_[i] = -999;
     beta_[i]    = -999;
