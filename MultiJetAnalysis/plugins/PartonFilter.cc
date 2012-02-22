@@ -55,7 +55,7 @@ bool PartonFilter::filter(edm::Event &iEvent, const edm::EventSetup &iSetup)
     if (ndst3 > 0) continue;
     N++; 
   }
-  if (N == nPartons_) {
+  if (N >= nPartons_) {
     check = true; 
   } 
   return check;
