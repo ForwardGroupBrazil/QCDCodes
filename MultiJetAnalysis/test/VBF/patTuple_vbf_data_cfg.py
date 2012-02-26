@@ -101,7 +101,13 @@ process.out.outputCommands = [
          #'keep L1GlobalTriggerReadoutRecord_*_*_*',
 ]
 
-process.outTracks = cms.EDProducer('PatTracksOutOfJets')
+process.outTracks = cms.EDProducer('PatTracksOutOfJets',
+    jets    = cms.InputTag('selectedPatJets'),
+    vtx     = cms.InputTag('goodOfflinePrimaryVertices'),
+    tracks  = cms.InputTag('generalTracks'),
+    btagger = cms.string('combinedSecondaryVertexBJetTags')
+)
+
 process.ak5SoftTrackJets = process.ak5TrackJets.clone(src = 'outTracks',jetPtMin = 1.0)
 
 process.jetExtender = cms.EDProducer("JetExtendedProducer",
@@ -119,7 +125,7 @@ process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
 process.multiJetFilter = cms.EDFilter('PatMultijetFilter',
     jets     = cms.InputTag('selectedPatJets'),
     minNjets = cms.int32(4),
-    minPt    = cms.double(10)
+    minPt    = cms.double(20)
 )
 
 ############# hlt filter #########################
@@ -132,7 +138,7 @@ process.hltFilter = cms.EDFilter('HLTHighLevel',
 )
 
 process.maxEvents.input = 100
-process.MessageLogger.cerr.FwkReport.reportEvery = 10
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.source.fileNames = [
 '/store/data/Run2011B/MultiJet/AOD/PromptReco-v1/000/175/835/7A821FBE-94DB-E011-9146-BCAEC5364C6C.root'
@@ -164,8 +170,6 @@ process.p = cms.Path(
    #----- create a collection of tracks out of jets ------------
    process.outTracks +
    #----- reconstruct track jets from the soft tracks ----------
-   process.ak5SoftTrackJets +
-   #----- further skim on number of jets -----------------------
-   process.multiJetFilter
+   process.ak5SoftTrackJets
 )
 
