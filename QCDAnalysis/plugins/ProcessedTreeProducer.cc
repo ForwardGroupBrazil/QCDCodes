@@ -347,9 +347,9 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   //----------- PFJets -------------------------
   for(PFJetCollection::const_iterator i_pfjet = pfjets->begin(); i_pfjet != pfjets->end(); i_pfjet++) {
     QCDPFJet qcdpfjet;
-    int index = i_pfjet-pfjets->begin();
-    edm::RefToBase<reco::Jet> pfjetRef(edm::Ref<PFJetCollection>(pfjets,index));
-    double scale = mPFJEC->correction(*i_pfjet,pfjetRef,event,iSetup);
+    //int index = i_pfjet-pfjets->begin();
+    //edm::RefToBase<reco::Jet> pfjetRef(edm::Ref<PFJetCollection>(pfjets,index));
+    double scale = mPFJEC->correction(*i_pfjet,event,iSetup);
     //---- preselection -----------------
     if (fabs(i_pfjet->y()) > mMaxY) continue;
     //---- vertex association -----------
@@ -506,7 +506,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   for(CaloJetCollection::const_iterator i_calojet = calojets->begin(); i_calojet != calojets->end(); i_calojet++) {
     int index = i_calojet-calojets->begin();
     edm::RefToBase<reco::Jet> calojetRef(edm::Ref<CaloJetCollection>(calojets,index));
-    double scale = mCALOJEC->correction(*i_calojet,calojetRef,event,iSetup);
+    double scale = mCALOJEC->correction(*i_calojet,event,iSetup);
     //---- preselection -----------------
     if (fabs(i_calojet->y()) > mMaxY) continue;
     double unc(0.0);
