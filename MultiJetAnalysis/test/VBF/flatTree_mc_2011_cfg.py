@@ -30,5 +30,14 @@ process.Hbb = cms.EDAnalyzer('PatVBFTree',
     qglFile = cms.string('./QG_QCD_Pt-15to3000_TuneZ2_Flat_7TeV_pythia6_Summer11-PU_S3_START42_V11-v2.root')
 )
 
-process.p = cms.Path(process.Hbb)
+############# hlt filter #########################
+process.hltFilter = cms.EDFilter('HLTHighLevel',
+    TriggerResultsTag  = cms.InputTag('TriggerResults','','HLT'),
+    HLTPaths           = cms.vstring('HLT_QuadJet70_v*'),
+    eventSetupPathsKey = cms.string(''),
+    andOr              = cms.bool(True), #----- True = OR, False = AND between the HLTPaths
+    throw              = cms.bool(False)
+)
+
+process.p = cms.Path(process.hltFilter * process.Hbb)
 

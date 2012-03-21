@@ -108,8 +108,8 @@ void JetExtendedProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       Tphi += weightT * dR * dphi;                                                                                                   
 
       weight = weightT*weightT;                                                                                                      
-      sum += weight;                                     
-      sum2 += weight*weight;                                                                                                         
+      sum += pfConst[j]->pt();                                     
+      sum2 += pfConst[j]->pt()*pfConst[j]->pt();                                                                                                         
       sum_deta += deta*weight;                                                                                                       
       sum_dphi += dphi*weight;                                                                                                       
       sum_deta2 += deta*deta*weight;                                                                                                 
@@ -119,29 +119,37 @@ void JetExtendedProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSe
          //PFJetTracks[JetsPF]++;                                                                                                     
          jetPtMax = TMath::Max(jetPtMax,float(pfConst[j]->pt()));         
       }                                                                                                                              
-    }                                                                                                                                
-    Teta = Teta/sumT;                                                                                                                
-    Tphi = Tphi/sumT;                                                                                                                
+    }
+    if (sumT > 0) {                                                                                                                                
+      Teta = Teta/sumT;                                                                                                                
+      Tphi = Tphi/sumT;
+    }                                                                                                                
     if (Teta != 0 && Tphi !=0 ) {
       Ttheta = atan2(Tphi,Teta);                                                                           
     } 
-    float ave_deta = sum_deta/sum;                                                                                                   
-    float ave_dphi = sum_dphi/sum;                                                                                    
-    float ave_deta2 = sum_deta2/sum;                                                                                                 
-    float ave_dphi2 = sum_dphi2/sum;                                                                                                 
-
-    float a =ave_deta2-ave_deta*ave_deta;                                                                                            
-    float b =ave_dphi2-ave_dphi*ave_dphi;                                                                                            
-    float c =-(sum_detadphi/sum-ave_deta*ave_dphi);                                                                                  
-    float delta = sqrt(fabs((a-b)*(a-b)+4*c*c));                                                                                     
-
-    float axis1 = sqrt((a+b+delta)/2);                                                                                               
-    float axis2 = sqrt((a+b-delta)/2);                                                                                               
-
-    float tana = (b-a+delta)/2/c;
+    float axis1(-999),axis2(-999),tana(-999),ptD(-999);
+    if (sum != 0) {
+      float ave_deta = sum_deta/sum;                                                                                                   
+      float ave_dphi = sum_dphi/sum;                                                                                    
+      float ave_deta2 = sum_deta2/sum;                                                                                                 
+      float ave_dphi2 = sum_dphi2/sum;                                                                                                 
     
-    float ptD = sqrt(sum2)/sum;                                                                                                
+      float a = ave_deta2-ave_deta*ave_deta;                                                                                            
+      float b = ave_dphi2-ave_dphi*ave_dphi;                                                                                            
+      float c = -(sum_detadphi/sum-ave_deta*ave_dphi);                                                                                  
+      float delta = sqrt(fabs((a-b)*(a-b)+4*c*c));                                                                                     
 
+      if (a+b+delta > 0) {
+        axis1 = sqrt(0.5*(a+b+delta));
+      }
+      if (a+b-delta > 0) {  
+        axis2 = sqrt(0.5*(a+b-delta));                                                                                               
+      }
+      if (c != 0) {
+        tana = 0.5*(b-a+delta)/c;
+      }
+      ptD = sqrt(sum2)/sum;                                                                                                
+    }
     //---- vertex association -----------
     //---- get the vector of tracks -----
     const reco::PFJet& pfJet = dynamic_cast <const reco::PFJet&> (*(ijet->originalObject()));

@@ -52,6 +52,7 @@ void PatVBFTree::beginJob()
   outTree_->Branch("nvtx"           ,&nVtx_          ,"nVtx_/I");
   outTree_->Branch("nSoftTrackJets" ,&nSoftTrackJets_,"nSoftTrackJets_/I");
   outTree_->Branch("btagIdx"        ,&btagIdx_       ,"btagIdx_[5]/I");
+  outTree_->Branch("softHt"         ,&softHt_        ,"softHt_/F");
   outTree_->Branch("pvx"            ,&pvx_           ,"pvx_/F");
   outTree_->Branch("pvy"            ,&pvy_           ,"pvy_/F");
   outTree_->Branch("pvz"            ,&pvz_           ,"pvz_/F");
@@ -69,6 +70,8 @@ void PatVBFTree::beginJob()
   outTree_->Branch("ptbb"           ,&ptbb_          ,"ptbb_/F");
   outTree_->Branch("dPhiqq"         ,&dPhiqq_        ,"dPhiqq_/F");
   outTree_->Branch("dPhibb"         ,&dPhibb_        ,"dPhibb_/F");
+  outTree_->Branch("etaBoostqq"     ,&etaBoostqq_    ,"etaBoostqq_/F");
+  outTree_->Branch("etaBoostbb"     ,&etaBoostbb_    ,"etaBoostbb_/F");
   outTree_->Branch("jetPt"          ,&pt_            ,"pt_[5]/F");
   outTree_->Branch("jetBtag"        ,&btag_          ,"btag_[5]/F");
   outTree_->Branch("jetJec"         ,&jec_           ,"jec_[5]/F");
@@ -162,11 +165,15 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
   if (cut_vtx && cut_njets) {
     //----- soft track jets ----------------------
     nSoftTrackJets_ = int(softTrackJets->size());
-    for(int it=0;it<TMath::Min(nSoftTrackJets_,3);it++) {
-      softTrackJetPt_ ->push_back((*softTrackJets)[it].pt());
-      softTrackJetEta_->push_back((*softTrackJets)[it].eta());
-      softTrackJetPhi_->push_back((*softTrackJets)[it].phi());
-      softTrackJetE_  ->push_back((*softTrackJets)[it].energy());
+    float softHt(0.0);
+    for(int it=0;it<nSoftTrackJets_;it++) {
+      softHt += (*softTrackJets)[it].pt();
+      if (it < 3) {
+        softTrackJetPt_ ->push_back((*softTrackJets)[it].pt());
+        softTrackJetEta_->push_back((*softTrackJets)[it].eta());
+        softTrackJetPhi_->push_back((*softTrackJets)[it].phi());
+        softTrackJetE_  ->push_back((*softTrackJets)[it].energy());
+      } 
     }
     //----- PF jets ------------------------------
     bool cutID(true);
@@ -199,18 +206,36 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
         btag_[N]    = ijet->bDiscriminator(srcBtag_);
         beta_[N]    = ijet->userFloat("beta");
         unc_[N]     = ijet->userFloat("jecUnc");
-        ptD_[N]     = ijet->userFloat("ptD");
+        ptD_[N] = -1.0;
+        if (ijet->userFloat("ptD") == ijet->userFloat("ptD")) {
+          ptD_[N] = ijet->userFloat("ptD");
+        }
         ptMax_[N]   = ijet->userFloat("ptMax");
-        axis_[0][N] = ijet->userFloat("axis1");
-        axis_[1][N] = ijet->userFloat("axis2");
-        tana_[N]    = ijet->userFloat("tana");
-        ttheta_[N]  = ijet->userFloat("ttheta");
+        axis_[0][N] = -1.0;
+        axis_[1][N] = -1.0;
+        tana_[N]    = -999;
+        ttheta_[N]  = -999;
+        if (ijet->userFloat("axis1") == ijet->userFloat("axis1")) {// check if NAN
+          axis_[0][N] = ijet->userFloat("axis1");
+        }
+        if (ijet->userFloat("axis2") == ijet->userFloat("axis2")) {
+          axis_[1][N] = ijet->userFloat("axis2");
+        }
+        if (ijet->userFloat("tana") == ijet->userFloat("tana")) {
+          tana_[N]    = ijet->userFloat("tana");
+        }
+        if (ijet->userFloat("ttheta") == ijet->userFloat("ttheta")) {
+          ttheta_[N]  = ijet->userFloat("ttheta");
+        } 
         //----- calculate the qg likelihood ------------
         int nCharged = ijet->chargedHadronMultiplicity();
         int nNeutral = ijet->neutralHadronMultiplicity()+ijet->photonMultiplicity();
         qgl_[N] = -1.0;
-        if (nCharged + nNeutral > 0) {
-          qgl_[N] = qglikeli_->computeQGLikelihoodPU(ijet->pt(),*rhoQGL,nCharged,nNeutral,ptD_[N]);
+        if (nCharged + nNeutral > 0 && ptD_[N] > -1) {
+          float qgl = qglikeli_->computeQGLikelihoodPU(ijet->pt(),*rhoQGL,nCharged,nNeutral,ptD_[N]);
+          if (qgl == qgl) {
+            qgl_[N] = qgl;
+          }
         }
       }
       N++;
@@ -273,6 +298,7 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
     }// if MC    
     ht_     = ht;
     htAll_  = htAll;
+    softHt_ = softHt;
     rho_    = *rho;
     pvx_    = (*recVtxs)[0].x();
     pvy_    = (*recVtxs)[0].y();
@@ -289,6 +315,8 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
     ptbb_   = (pat_jets[btagIdx_[0]].p4()+pat_jets[btagIdx_[1]].p4()).pt();
     dEtabb_ = fabs(pat_jets[btagIdx_[0]].eta()-pat_jets[btagIdx_[1]].eta());
     dEtaqq_ = fabs(pat_jets[btagIdx_[2]].eta()-pat_jets[btagIdx_[3]].eta());
+    etaBoostbb_ = 0.5*(pat_jets[btagIdx_[0]].eta()+pat_jets[btagIdx_[1]].eta());
+    etaBoostqq_ = 0.5*(pat_jets[btagIdx_[2]].eta()+pat_jets[btagIdx_[3]].eta());
     dPhibb_ = fabs(deltaPhi(pat_jets[btagIdx_[0]].phi(),pat_jets[btagIdx_[1]].phi()));
     dPhiqq_ = fabs(deltaPhi(pat_jets[btagIdx_[2]].phi(),pat_jets[btagIdx_[3]].phi()));
     if (cutID && (mbb_ > mbbMin_) && (fabs(dEtaqq_) > dEtaMin_)) {
@@ -309,6 +337,7 @@ void PatVBFTree::initialize()
   metSig_ = -999;
   ht_     = -999;
   htAll_  = -999;
+  softHt_ = -999;
   pvx_    = -999;
   pvy_    = -999;
   pvz_    = -999;
@@ -318,6 +347,8 @@ void PatVBFTree::initialize()
   ptbb_   = -999;
   dEtaqq_ = -999;
   dEtabb_ = -999;
+  etaBoostqq_ = -999;
+  etaBoostbb_ = -999;
   dPhiqq_ = -999;
   dPhibb_ = -999;
   for(int i=0;i<5;i++) {
