@@ -83,7 +83,7 @@ process.selectedPatJetsCHS.cut     = "pt > 10 && abs(eta) < 4.7"
 ##--------- keep only jet and MET PAT objects ---
 removeAllPATObjectsBut(process,["Jets","METs"])
 ##--------- output commands ---------------------
-process.out.fileName = 'patTuple.root'
+process.out.fileName = '/tmp/hinzmann/patTuple2.root'
 process.out.outputCommands = [
          #------ MC block ----------------
          'keep *_addPileupInfo_*_*',  
@@ -96,7 +96,7 @@ process.out.outputCommands = [
          #'keep *_selectedPatJets__*',
          #'keep *_selectedPatJetsCHS__*',
          'keep *_jetExtender*_*_*', 
-         'keep *_selectedPatJetsCA8__*',
+         'keep *_ca08PrunedPFJets_*_*',
          'keep *_ak5SoftTrackJets__*',
          'keep *_HBHENoiseFilterResultProducer_*_*', 
          'keep *_pfMet_*_*', 
@@ -133,7 +133,7 @@ process.multiJetFilter = cms.EDFilter('PatMultijetFilter',
     minPt    = cms.double(20)
 )
 
-process.maxEvents.input = 100
+process.maxEvents.input = -1
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.source.fileNames = [
@@ -162,18 +162,6 @@ process.ca08PrunedPFJets.nSubjets = cms.int32(2)
 
 #add pruned CA08 subjets
 addJetCollection(process, 
-                 cms.InputTag('ca08PrunedPFJets'),
-                 'CA8', '',
-                 doJTA        = False,
-                 doBTagging   = False,
-                 jetCorrLabel= ('AK5PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute'])),
-                 doType1MET   = False,
-                 doJetID      = False,
-                )
-process.patJetCorrFactorsCA8.rho = cms.InputTag("kt6PFJets","rho")
-process.selectedPatJetsCA8.cut = "pt > 10 && abs(eta) < 4.7"
-
-addJetCollection(process, 
                  cms.InputTag('ca08PrunedPFJets:subjets'),
                  'CA8', 'Subjets',
                  doJTA        = True,
@@ -193,12 +181,6 @@ process.jetExtenderCA8Subjets = cms.EDProducer("JetExtendedProducer",
 )
 
 # subjet multiplicity filter
-process.multiCA8jetFilter = cms.EDFilter('PatMultijetFilter',
-    jets     = cms.InputTag('selectedPatJetsCA8'),
-    minNjets = cms.int32(1),
-    minPt    = cms.double(20)
-)
-
 process.multiSubjetFilter = cms.EDFilter('PatMultijetFilter',
     jets     = cms.InputTag('selectedPatJetsCA8Subjets'),
     minNjets = cms.int32(2),
@@ -235,7 +217,6 @@ process.p = cms.Path(
    #----- reconstruct track jets from the soft tracks ----------
    process.ak5SoftTrackJets +
    process.multiJetFilter +
-   process.multiCA8jetFilter +
    process.multiSubjetFilter
 )
 
