@@ -32,9 +32,10 @@ PatMultijetSearchTree::PatMultijetSearchTree(edm::ParameterSet const& cfg)
   srcMET_  = cfg.getParameter<edm::InputTag>   ("met");
   srcRho_  = cfg.getParameter<edm::InputTag>   ("rho");
   srcPU_   = cfg.getUntrackedParameter<string> ("pu","");
+  isMC_    = cfg.getUntrackedParameter<bool>   ("isMC",false);
   etaMax_  = cfg.getParameter<double>          ("etaMAX");
   ptMin_   = cfg.getParameter<double>          ("ptMIN");
-  betaMax_ = cfg.getParameter<double>          ("betaMAX");
+  betaMin_ = cfg.getParameter<double>          ("betaMIN");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatMultijetSearchTree::beginJob() 
@@ -62,6 +63,8 @@ void PatMultijetSearchTree::beginJob()
   outTree_->Branch("pt4j"        ,&pt4j_        ,"pt4j_[2]/F");
   outTree_->Branch("dR2jAll"     ,&dR2jAll_     ,"dR2jAll_[28]/F");
   outTree_->Branch("pt"          ,&pt_          ,"pt_[8]/F");
+  outTree_->Branch("jec"         ,&jec_         ,"jec_[8]/F");
+  outTree_->Branch("unc"         ,&unc_         ,"unc_[8]/F");
   outTree_->Branch("beta"        ,&beta_        ,"beta_[8]/F");
   outTree_->Branch("eta"         ,&eta_         ,"eta_[8]/F");
   outTree_->Branch("phi"         ,&phi_         ,"phi_[8]/F");
@@ -72,29 +75,33 @@ void PatMultijetSearchTree::beginJob()
   outTree_->Branch("muf"         ,&muf_         ,"muf_[8]/F");
   outTree_->Branch("elf"         ,&elf_         ,"elf_[8]/F");
   //------------------- MC ---------------------------------
-  outTree_->Branch("pu"          ,&simPU_       ,"simPU_/I");
-  partonId_  = new std::vector<int>;
-  partonSt_  = new std::vector<int>;
-  partonPt_  = new std::vector<float>;
-  partonEta_ = new std::vector<float>;
-  partonPhi_ = new std::vector<float>;
-  partonE_   = new std::vector<float>;
-  outTree_->Branch("partonId"       ,"vector<int>"   ,&partonId_);
-  outTree_->Branch("partonSt"       ,"vector<int>"   ,&partonSt_);
-  outTree_->Branch("partonPt"       ,"vector<float>" ,&partonPt_);
-  outTree_->Branch("partonEta"      ,"vector<float>" ,&partonEta_);
-  outTree_->Branch("partonPhi"      ,"vector<float>" ,&partonPhi_);
-  outTree_->Branch("partonE"        ,"vector<float>" ,&partonE_);
+  if (isMC_) {
+    outTree_->Branch("pu"          ,&simPU_       ,"simPU_/I");
+    partonId_  = new std::vector<int>;
+    partonSt_  = new std::vector<int>;
+    partonPt_  = new std::vector<float>;
+    partonEta_ = new std::vector<float>;
+    partonPhi_ = new std::vector<float>;
+    partonE_   = new std::vector<float>;
+    outTree_->Branch("partonId"       ,"vector<int>"   ,&partonId_);
+    outTree_->Branch("partonSt"       ,"vector<int>"   ,&partonSt_);
+    outTree_->Branch("partonPt"       ,"vector<float>" ,&partonPt_);
+    outTree_->Branch("partonEta"      ,"vector<float>" ,&partonEta_);
+    outTree_->Branch("partonPhi"      ,"vector<float>" ,&partonPhi_);
+    outTree_->Branch("partonE"        ,"vector<float>" ,&partonE_);
+  }
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatMultijetSearchTree::endJob() 
 {
-  delete partonSt_;
-  delete partonId_;
-  delete partonPt_;
-  delete partonEta_;
-  delete partonPhi_;
-  delete partonE_;
+  if (isMC_) {
+    delete partonSt_;
+    delete partonId_;
+    delete partonPt_;
+    delete partonEta_;
+    delete partonPhi_;
+    delete partonE_;
+  }
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatMultijetSearchTree::initialize()
@@ -131,15 +138,19 @@ void PatMultijetSearchTree::initialize()
     phf_[i]  = -999;
     elf_[i]  = -999;
     muf_[i]  = -999;
+    jec_[i]  = -999;
+    unc_[i]  = -999;
   }  
   //----- MC -------
-  simPU_ = -999;
-  partonSt_ ->clear();
-  partonId_ ->clear();
-  partonPt_ ->clear();
-  partonEta_->clear();
-  partonPhi_->clear();
-  partonE_  ->clear();
+  if (isMC_) {
+    simPU_ = -999;
+    partonSt_ ->clear();
+    partonId_ ->clear();
+    partonPt_ ->clear();
+    partonEta_->clear();
+    partonPhi_->clear();
+    partonE_  ->clear();
+  }
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup) 
@@ -212,7 +223,7 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
       int npr = ijet->chargedMultiplicity() + ijet->neutralMultiplicity();
       id = (npr>1 && phf<0.99 && nhf<0.99 && ((fabs(ijet->eta())<=2.4 && nhf<0.9 && phf<0.9 && elf<0.99 && muf<0.99 && chf>0 && chm>0) || fabs(ijet->eta())>2.4));
       double beta = ijet->userFloat("beta");
-      cut_pu  *= (beta < betaMax_);
+      cut_pu  *= (beta > betaMin_);
       cutID   *= id;
       cut_pt  *= (ijet->pt() > ptMin_);
       cut_eta *= (fabs(ijet->eta()) < etaMax_);
@@ -229,6 +240,8 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
       phf_[N] = phf;
       elf_[N] = elf;
       muf_[N] = muf;
+      jec_[N] = 1./ijet->jecFactor(0);
+      unc_[N] = ijet->userFloat("jecUnc");
       N++;
     }// jet loop
     if (cutID && cut_pu && cut_eta && cut_pt) {
