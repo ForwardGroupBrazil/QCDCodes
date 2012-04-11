@@ -5,7 +5,7 @@ process.load('FWCore.MessageService.MessageLogger_cfi')
 ##-------------------- Communicate with the DB -----------------------
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
-process.GlobalTag.globaltag = 'GR_R_42_V12::All'
+process.GlobalTag.globaltag = 'GR_R_52_V7::All'
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Geometry_cff')
 process.load('RecoJets.Configuration.RecoPFJets_cff')
@@ -14,18 +14,15 @@ process.load('RecoJets.Configuration.RecoJets_cff')
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
 #############   Set the number of events #############
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(1000)
+    input = cms.untracked.int32(100)
 )
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+process.MessageLogger.cerr.FwkReport.reportEvery = 10
 #############   Define the source file ###############
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('/store/mc/Summer11/ZJetsToNuNu_50_HT_100_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/FEE84183-B3BD-E011-B6BB-0025901D493C.root',
-    '/store/mc/Summer11/ZJetsToNuNu_50_HT_100_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/18538256-B2BD-E011-8371-002481E76052.root',
-    '/store/mc/Summer11/ZJetsToNuNu_50_HT_100_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/16EC63F9-AFBD-E011-A55D-002481E0DDE8.root',
-    '/store/mc/Summer11/ZJetsToNuNu_50_HT_100_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/16B0B126-B7BD-E011-9E8F-002481E0DBE0.root',
-    '/store/mc/Summer11/ZJetsToNuNu_50_HT_100_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/1686157D-AEBD-E011-AC60-003048C6930E.root',
-    '/store/mc/Summer11/ZJetsToNuNu_50_HT_100_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/165AD271-ABBD-E011-B6F1-0025901D4938.root')
+    fileNames = cms.untracked.vstring(
+    '/store/relval/CMSSW_5_2_3/RelValQCD_FlatPt_15_3000/GEN-SIM-RECO/START52_V5-v1/0043/D610E1E3-0A7A-E111-94D2-00304867D836.root'
+    )
 )
 ############# processed tree producer ##################
 process.TFileService = cms.Service("TFileService",fileName = cms.string('ProcessedTree_mc.root'))
@@ -38,6 +35,8 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     ## database entry for the uncertainties ######
     PFPayloadName   = cms.string(''),
     CaloPayloadName = cms.string(''),
+    jecUncSrc       = cms.string(''),
+    jecUncSrcNames  = cms.vstring(''),
     ## calojet ID and extender for the JTA #######
     calojetID       = cms.InputTag('ak7JetID'),
     calojetExtender = cms.InputTag('ak7JetExtender'),
@@ -66,7 +65,7 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
     ## trigger ###################################
     printTriggerMenu = cms.untracked.bool(True),
     processName     = cms.string('HLT'),
-    triggerName     = cms.vstring('HLT_Jet110_v1'),
+    triggerName     = cms.vstring('HLT_PFJet40_v2'),
     triggerResults  = cms.InputTag("TriggerResults","","HLT"),
     triggerEvent    = cms.InputTag("hltTriggerSummaryAOD","","HLT"),
     ## jec services ##############################
@@ -77,9 +76,7 @@ process.ak7 = cms.EDAnalyzer('ProcessedTreeProducer',
 process.ak5 = process.ak7.clone(
     pfjets           = 'ak5PFJets',
     calojets         = 'ak5CaloJets',
-    genjets          = 'ak7GenJets',
-    PFPayloadName    = '',
-    CaloPayloadName  = '',
+    genjets          = 'ak5GenJets',
     calojetID        = 'ak5JetID',
     calojetExtender  = 'ak5JetExtender',
     pfjecService     = 'ak5PFL1FastL2L3',
@@ -87,15 +84,6 @@ process.ak5 = process.ak7.clone(
     printTriggerMenu = False 
 )
 
-process.kt6PFJets.doRhoFastjet = True
-process.kt6PFJets.Rho_EtaMax = cms.double(5.0)
-process.kt6CaloJets.doRhoFastjet = True
-process.kt6CaloJets.Rho_EtaMax = cms.double(5.0)
-process.ak7PFJets.doAreaFastjet = True
-process.ak7PFJets.Rho_EtaMax = cms.double(5.0)
-process.ak5PFJets.doAreaFastjet = True
-process.ak5PFJets.Rho_EtaMax = cms.double(5.0)
-
-process.path = cms.Path(process.kt6PFJets * process.kt6CaloJets * process.ak7)
+process.path = cms.Path(process.ak7 * process.ak5)
 
 
