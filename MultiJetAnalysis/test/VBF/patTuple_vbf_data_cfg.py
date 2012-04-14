@@ -16,7 +16,7 @@ from PhysicsTools.PatAlgos.tools.jetTools import *
 from PhysicsTools.SelectorUtils.pvSelector_cfi import pvSelector
 
 ##--------- global tag -------------------------
-process.GlobalTag.globaltag = 'GR_R_42_V23::All'
+process.GlobalTag.globaltag = 'GR_R_52_V7::All'
 
 ##--------- remove cleaning --------------------
 removeCleaning(process)
@@ -122,39 +122,40 @@ process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
     payload = cms.string('AK5PFchs') 
 )
 
-process.multiJetFilter = cms.EDFilter('PatMultijetFilter',
-    jets     = cms.InputTag('selectedPatJets'),
-    minNjets = cms.int32(4),
-    minPt    = cms.double(20)
-)
-
 ############# hlt filter #########################
 process.hltFilter = cms.EDFilter('HLTHighLevel',
     TriggerResultsTag  = cms.InputTag('TriggerResults','','HLT'),
-    HLTPaths           = cms.vstring('HLT_QuadJet40_v*','HLT_QuadJet70_v*','HLT_QuadJet80_v*'),
+    HLTPaths           = cms.vstring('HLT_QuadJet75_55_35_20_BTagIP_VBF_v*','HLT_QuadJet75_55_38_20_BTagIP_VBF_v*',
+                                     'HLT_QuadPFJet75_55_35_20_BTagCSV_VBF_v*','HLT_QuadPFJet75_55_38_20_BTagCSV_VBF_v*'
+                                     ),
     eventSetupPathsKey = cms.string(''),
     andOr              = cms.bool(True), #----- True = OR, False = AND between the HLTPaths
     throw              = cms.bool(False)
 )
 
-process.maxEvents.input = 100
+process.maxEvents.input = -1
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.source.fileNames = [
-'/store/data/Run2011B/MultiJet/AOD/PromptReco-v1/000/175/835/7A821FBE-94DB-E011-9146-BCAEC5364C6C.root'
+'/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/467/D8C5020C-F980-E111-84F0-003048F118C2.root',
+'/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/519/E65A5017-6B81-E111-9CF6-001D09F291D2.root',
+'/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/517/0820E829-6681-E111-AFD6-003048F110BE.root',
+'/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/492/EEA1A177-2981-E111-AB04-003048F117B6.root',
+'/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/491/BE07ECB3-1C81-E111-96FA-BCAEC5329713.root',
+'/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/490/E8ACC615-2F81-E111-859C-001D09F23D1D.root'
 ]
 
 process.options.wantSummary = False
 
 process.p = cms.Path(
    #----- skim based on HLT paths ------------------------------
-   process.hltFilter +
+   #process.hltFilter +
    #----- produce the HBHE noise flag --------------------------
    process.HBHENoiseFilterResultProducer +
    #----- re-cluster ak5PFJets after activating the jet area ---
-   process.ak5PFJets +
+   #process.ak5PFJets +
    #----- re-cluster kt6PFJets after activating rho ------------
-   process.kt6PFJets +
+   #process.kt6PFJets +
    #----- re-cluster kt6PFJets after activating rho for ISO ----
    process.kt6PFJetsISO +
    #----- create the collection of good PV ---------------------
