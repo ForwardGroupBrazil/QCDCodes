@@ -31,35 +31,35 @@ process.goodOfflinePrimaryVertices = cms.EDFilter("PrimaryVertexObjectFilter",
     filterParams = pvSelector.clone( minNdof = cms.double(4.0), maxZ = cms.double(24.0) )
 )
 ##--------- PF2PAT -----------------------------
-postfix = 'CHS'
-usePF2PAT(process,runPF2PAT=True, jetAlgo='AK5', runOnMC=False, postfix=postfix,
-          jetCorrections=('AK5PFchs', ['L1FastJet','L2Relative','L3Absolute','L2L3Residual']))
+#postfix = 'CHS'
+#usePF2PAT(process,runPF2PAT=True, jetAlgo='AK5', runOnMC=False, postfix=postfix,
+#          jetCorrections=('AK5PFchs', ['L1FastJet','L2Relative','L3Absolute','L2L3Residual']))
 
-removeMCMatchingPF2PAT(process,'')
+#removeMCMatchingPF2PAT(process,'')
 
-process.pfPileUpCHS.Enable = True
-process.pfPileUpCHS.checkClosestZVertex = cms.bool(False)
-process.pfPileUpCHS.Vertices = cms.InputTag('goodOfflinePrimaryVertices')
-process.pfJetsCHS.doAreaFastjet = True
-process.pfJetsCHS.doRhoFastjet = False
+#process.pfPileUpCHS.Enable = True
+#process.pfPileUpCHS.checkClosestZVertex = cms.bool(False)
+#process.pfPileUpCHS.Vertices = cms.InputTag('goodOfflinePrimaryVertices')
+#process.pfJetsCHS.doAreaFastjet = True
+#process.pfJetsCHS.doRhoFastjet = False
 
 process.ak5PFJets.doAreaFastjet = True
 process.kt6PFJets.doRhoFastjet = True
 
-process.kt6PFJetsCHS = process.kt6PFJets.clone(
-    src = cms.InputTag('pfNoElectron'+postfix),
-    doAreaFastjet = cms.bool(True),
-    doRhoFastjet = cms.bool(True)
-    )
-process.patJetCorrFactorsCHS.rho = cms.InputTag("kt6PFJetsCHS", "rho")
+#process.kt6PFJetsCHS = process.kt6PFJets.clone(
+#    src = cms.InputTag('pfNoElectron'+postfix),
+#    doAreaFastjet = cms.bool(True),
+#    doRhoFastjet = cms.bool(True)
+#    )
+#process.patJetCorrFactorsCHS.rho = cms.InputTag("kt6PFJetsCHS", "rho")
 
-getattr(process,"patPF2PATSequence"+postfix).replace(
-    getattr(process,"pfNoElectron"+postfix),
-    getattr(process,"pfNoElectron"+postfix)*process.kt6PFJetsCHS)
+#getattr(process,"patPF2PATSequence"+postfix).replace(
+#    getattr(process,"pfNoElectron"+postfix),
+#    getattr(process,"pfNoElectron"+postfix)*process.kt6PFJetsCHS)
 
-process.patPF2PATseq = cms.Sequence(
-    getattr(process,"patPF2PATSequence"+postfix)
-    )
+#process.patPF2PATseq = cms.Sequence(
+#    getattr(process,"patPF2PATSequence"+postfix)
+#    )
 
 ##--------- remove MC matching -----------------
 removeMCMatching(process)
@@ -73,14 +73,14 @@ switchJetCollection(process,cms.InputTag('ak5PFJets'),
                  )
 
 process.selectedPatJets.cut        = "pt > 20 && abs(eta) < 3.0"
-process.selectedPatJetsCHS.cut     = "pt > 20 && abs(eta) < 3.0"
+#process.selectedPatJetsCHS.cut     = "pt > 20 && abs(eta) < 3.0"
 ##--------- keep only jet and MET PAT objects ---
 removeAllPATObjectsBut(process,["Jets","METs"])
 ##--------- output commands ---------------------
 process.out.fileName = 'patTuple.root'
 process.out.outputCommands = [
          'keep *_kt6PFJets_rho_PAT',
-         'keep *_kt6PFJetsCHS_rho_PAT',
+         #'keep *_kt6PFJetsCHS_rho_PAT',
          'keep *_kt6PFJetsISO_rho_PAT',## needed for the QG likelihood        
          'keep *_jetExtender*_*_*',
          'keep *_HBHENoiseFilterResultProducer_*_*',
@@ -96,19 +96,19 @@ process.jetExtender = cms.EDProducer("JetExtendedProducer",
     payload = cms.string('AK5PF')
 )
 
-process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
-    jets    = cms.InputTag('selectedPatJetsCHS'),
-    result  = cms.string('extendedPatJetsCHS'),
-    payload = cms.string('AK5PFchs') 
-)
+#process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
+#    jets    = cms.InputTag('selectedPatJetsCHS'),
+#    result  = cms.string('extendedPatJetsCHS'),
+#    payload = cms.string('AK5PFchs') 
+#)
 
 process.multiJetFilter = cms.EDFilter('PatMultijetFilter',
     jets     = cms.InputTag('selectedPatJets'),
     minNjets = cms.int32(4),
-    minPt    = cms.double(30)
+    minPt    = cms.double(20)
 )
 
-process.maxEvents.input = 100
+process.maxEvents.input = 2000
 process.MessageLogger.cerr.FwkReport.reportEvery = 10
 
 process.source.fileNames = [
@@ -116,6 +116,7 @@ process.source.fileNames = [
 ]
 
 process.options.wantSummary = False
+
 
 process.p = cms.Path(
    #----- produce the HBHE noise flag --------------------------
@@ -129,13 +130,13 @@ process.p = cms.Path(
    #----- create the collection of good PV ---------------------
    process.goodOfflinePrimaryVertices +
    #----- run the PF2PAT sequence: doing CHS -------------------
-   process.patPF2PATseq +
+   #process.patPF2PATseq +
    #----- run the default PAT sequence -------------------------
    process.patDefaultSequence +
    #----- extend the PAT jets with additional variables --------
    process.jetExtender +
    #----- extend the CHS PAT jets with additional variables ----
-   process.jetExtenderCHS +
+   #process.jetExtenderCHS +
    #----- create a collection of tracks out of jets ------------
    process.multiJetFilter
 )

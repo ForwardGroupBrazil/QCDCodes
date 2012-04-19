@@ -16,15 +16,15 @@ process.source = cms.Source("PoolSource",
         )
 )
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 10
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 ##-------------------- User analyzer  --------------------------------
 process.multijets = cms.EDAnalyzer('PatMultijetSearchTree',
     jets    = cms.InputTag('jetExtender','extendedPatJets'),
     met     = cms.InputTag('pfMet'),
     rho     = cms.InputTag('kt6PFJets','rho'),
     etaMAX  = cms.double(2.5),
-    ptMIN   = cms.double(30),
-    betaMAX = cms.double(1)
+    ptMIN   = cms.double(20),
+    betaMIN = cms.double(0)
 )
 
 process.hlt  = cms.EDFilter('HLTHighLevel',

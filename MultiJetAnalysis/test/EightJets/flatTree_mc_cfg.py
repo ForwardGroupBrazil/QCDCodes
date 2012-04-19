@@ -12,21 +12,21 @@ process.source = cms.Source("PoolSource",
         'file://./patTuple.root'
         )
 )
-#process.load('KKousour.MultiJetAnalysis.QCD_HT-1000_cfi')
-#process.maxEvents = cms.untracked.PSet(
-#        input = cms.untracked.int32(-1)
-#        )
+process.maxEvents = cms.untracked.PSet(
+        input = cms.untracked.int32(-1)
+        )
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 ##-------------------- User analyzer  --------------------------------
 process.multijets = cms.EDAnalyzer('PatMultijetSearchTree',
     jets    = cms.InputTag('jetExtender','extendedPatJets'),
     met     = cms.InputTag('pfMet'),
     rho     = cms.InputTag('kt6PFJets','rho'),
-    beta    = cms.string('betaAK5PF'),
     etaMAX  = cms.double(2.5),
     ptMIN   = cms.double(30),
-    betaMAX = cms.double(1)
+    betaMIN = cms.double(0),
+    isMC    = cms.untracked.bool(True),
+    pu      = cms.untracked.string('addPileupInfo')
 )
 
 process.p = cms.Path(process.multijets)

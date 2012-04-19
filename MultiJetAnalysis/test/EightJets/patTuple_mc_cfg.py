@@ -85,10 +85,10 @@ process.out.outputCommands = [
          'keep *_genParticles_*_*',
          #--------------------------------
          'keep *_kt6PFJets_rho_PAT',
-         #'keep *_kt6PFJetsCHS_rho_PAT',
+         'keep *_kt6PFJetsCHS_rho_PAT',
          'keep *_kt6PFJetsISO_rho_PAT',## needed for the QG likelihood        
          'keep *_jetExtender*_*_*',
-         #'keep *_HBHENoiseFilterResultProducer_*_*',
+         'keep *_HBHENoiseFilterResultProducer_*_*',
          'keep *_pfMet_*_*', 
          'keep recoVertexs_goodOfflinePrimaryVertices_*_*',
          'keep edmTriggerResults_TriggerResults_*_HLT',
@@ -109,27 +109,22 @@ process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
 
 process.multiJetFilter = cms.EDFilter('PatMultijetFilter',
     jets     = cms.InputTag('selectedPatJets'),
-    minNjets = cms.int32(6),
-    minPt    = cms.double(30)
+    minNjets = cms.int32(4),
+    minPt    = cms.double(20)
 )
 
-process.partonFilter = cms.EDFilter('PartonFilter',
-    src        = cms.InputTag('genParticles'),
-    nPartons   = cms.int32(8),
-    partonType = cms.int32(21)
-)
-
-process.maxEvents.input = -1
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.maxEvents.input = 1000
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.source.fileNames = [
-'rfio:/castor/cern.ch/user/p/panos/multijets/testColoronPythia/coloron800_pi200_Wcoloron152.root'
+'/store/mc/Summer11/QCD_TuneZ2_HT-1000_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/1AB5A492-C4C5-E011-BCD9-90E6BA19A203.root'
 ]
 
 process.options.wantSummary = False
 
 process.p = cms.Path(
-   process.partonFilter *
+   #----- produce the HBHE noise flag --------------------------
+   process.HBHENoiseFilterResultProducer +
    #----- re-cluster ak5PFJets after activating the jet area ---
    process.ak5PFJets +
    #----- re-cluster kt6PFJets after activating rho ------------
