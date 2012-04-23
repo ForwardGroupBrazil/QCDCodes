@@ -22,12 +22,14 @@ class PatMultijetSearchTree : public edm::EDAnalyzer
 
   private:  
     void initialize();
+    void getDoublets(const std::vector<LorentzVector>& P4, float& m2jAve, float& m2jSigma, float m2j[], int index2J[][2]);
+    void getQuartets(const std::vector<LorentzVector>& P4, LorentzVector quartetP4[], float& m4jAve, float& m4jBalance, float m4j[], int index4J[][4], int index2J[][2]);
     std::vector<int> findIndices(const std::vector<int>& v, int rank);
     //---- configurable parameters --------   
     bool isMC_;
     double etaMax_,ptMin_,betaMin_;
     std::string srcPU_;
-    edm::InputTag srcJets_,srcMET_,srcRho_;
+    edm::InputTag srcJets_,srcMET_,srcRho_,srcGenJets_;
     edm::Service<TFileService> fs_;
     TTree *outTree_; 
     //---- output TREE variables ------
@@ -39,6 +41,7 @@ class PatMultijetSearchTree : public edm::EDAnalyzer
     int simPU_;
     std::vector<int> *partonId_,*partonSt_;
     std::vector<float> *partonPt_,*partonEta_,*partonPhi_,*partonE_;
+    float m2jAveGEN_,m4jAveGEN_,m2jAveParton_,m4jAveParton_;
 };
 
 #endif
