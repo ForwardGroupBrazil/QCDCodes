@@ -247,17 +247,17 @@ void PatMultijetSearchTree::getQuartets(const std::vector<LorentzVector>& P4, Lo
       // find the complementary indices
       v[1] = findIndices(v[0],2);
       for(int iq=0;iq<2;iq++) {
-        q1[iq] = index2J_[v[iq][0]][0];
-        q2[iq] = index2J_[v[iq][0]][1];
-        q3[iq] = index2J_[v[iq][1]][0];  
-        q4[iq] = index2J_[v[iq][1]][1];
+        q1[iq] = index2J[v[iq][0]][0];
+        q2[iq] = index2J[v[iq][0]][1];
+        q3[iq] = index2J[v[iq][1]][0];  
+        q4[iq] = index2J[v[iq][1]][1];
         quartetP4[iq] = P4[q1[iq]]+P4[q2[iq]]+P4[q3[iq]]+P4[q4[iq]];
         quartetM[iq] = quartetP4[iq].mass(); 
       } 
       d = abs(quartetM[0]-quartetM[1]);
       if (d < dmin) {
         m4jAve       = 0.5*(quartetM[0]+quartetM[1]);
-        m4jBalance   = fabs(quartetM[0]-quartetM[1])/m4jAve_;
+        m4jBalance   = fabs(quartetM[0]-quartetM[1])/m4jAve;
         for(int iq=0;iq<2;iq++) {
           m4j[iq]   = quartetP4[iq].mass();
           index4J[iq][0] = q1[iq];
