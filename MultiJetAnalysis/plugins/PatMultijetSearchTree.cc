@@ -158,6 +158,10 @@ void PatMultijetSearchTree::initialize()
   //----- MC -------
   if (isMC_) {
     simPU_ = -999;
+    m2jAveGEN_ = -999;
+    m4jAveGEN_ = -999;
+    m2jAveParton_ = -999;
+    m4jAveParton_ = -999;
     partonSt_ ->clear();
     partonId_ ->clear();
     partonPt_ ->clear();
@@ -309,11 +313,13 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
     for(GenJetCollection::const_iterator i_gen = genjets->begin(); i_gen != genjets->end(); i_gen++) {
       genP4.push_back(i_gen->p4());
     }
-    float m2jGEN[4],m2jSigmaGEN,m4jBalanceGEN,m4jGEN[4];
-    int index2JGEN[4][2],index4JGEN[2][4];
-    getDoublets(genP4,m2jAveGEN_,m2jSigmaGEN,m2jGEN,index2JGEN);
-    LorentzVector quartetP4GEN[2];
-    getQuartets(genP4,quartetP4GEN,m4jAveGEN_,m4jBalanceGEN,m4jGEN,index4JGEN,index2JGEN);
+    if (genP4.size() > 7) {  
+      float m2jGEN[4],m2jSigmaGEN,m4jBalanceGEN,m4jGEN[4];
+      int index2JGEN[4][2],index4JGEN[2][4];
+      getDoublets(genP4,m2jAveGEN_,m2jSigmaGEN,m2jGEN,index2JGEN);
+      LorentzVector quartetP4GEN[2];
+      getQuartets(genP4,quartetP4GEN,m4jAveGEN_,m4jBalanceGEN,m4jGEN,index4JGEN,index2JGEN);
+    }
     //---------- partons ------------------
     iEvent.getByLabel("genParticles", genParticles);
     vector<LorentzVector> partonP4;
@@ -335,11 +341,13 @@ void PatMultijetSearchTree::analyze(edm::Event const& iEvent, edm::EventSetup co
       partonE_  ->push_back(p.energy()); 
       partonP4.push_back(p.p4());
     }// parton loop
-    float m2jParton[4],m2jSigmaParton,m4jBalanceParton,m4jParton[2];
-    int index2JParton[4][2],index4JParton[2][4];
-    getDoublets(partonP4,m2jAveParton_,m2jSigmaParton,m2jParton,index2JParton);
-    LorentzVector quartetP4Parton[2];
-    getQuartets(partonP4,quartetP4Parton,m4jAveParton_,m4jBalanceParton,m4jParton,index4JParton,index2JParton);
+    if (partonP4.size() > 7) {
+      float m2jParton[4],m2jSigmaParton,m4jBalanceParton,m4jParton[2];
+      int index2JParton[4][2],index4JParton[2][4];
+      getDoublets(partonP4,m2jAveParton_,m2jSigmaParton,m2jParton,index2JParton);
+      LorentzVector quartetP4Parton[2];
+      getQuartets(partonP4,quartetP4Parton,m4jAveParton_,m4jBalanceParton,m4jParton,index4JParton,index2JParton);
+    }
   } 
   bool cut_vtx = (recVtxs->size() > 0);
   bool cut_njets = (pat_jets.size() > 7);
