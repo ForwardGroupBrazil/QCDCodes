@@ -34,7 +34,7 @@ class QCDEventHdr
       int intpu()           const {return mINTPU;}
       int nbx()             const {return mNBX;} 
       int pu()              const {return mOOTPUEarly+mOOTPULate+mINTPU;}
-      int trpu()         const {return mTrPu;} // get method for True number of interaction
+      int trpu()            const {return mTrPu;} // get method for True number of interaction
       bool isPVgood()       const {return mIsPVgood;}
       bool hcalNoise()      const {return mHCALNoise;}
       float PVndof()        const {return mPVndof;} 
