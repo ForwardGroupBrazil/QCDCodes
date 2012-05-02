@@ -288,7 +288,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     std::vector<PileupSummaryInfo>::const_iterator PUI;
     int nbx = PupInfo->size();
     int ootpuEarly(0),ootpuLate(0),intpu(0);
-    float Tnpv = -1; // new variable for computing pileup weight factor for the event
+    int Tnpv = -1; // new variable for computing pileup weight factor for the event
     for(PUI = PupInfo->begin(); PUI != PupInfo->end(); ++PUI) {
       if (PUI->getBunchCrossing() < 0)
         ootpuEarly += PUI->getPU_NumInteractions();

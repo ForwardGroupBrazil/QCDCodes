@@ -33,7 +33,6 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     virtual void analyze(edm::Event const& evt, edm::EventSetup const& iSetup);
     virtual void endJob();
     virtual ~ProcessedTreeProducer();
-
   private:  
     void buildTree();
     static bool sort_calojets(QCDCaloJet j1, QCDCaloJet j2) {

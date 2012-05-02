@@ -21,6 +21,7 @@ class QCDEventHdr
       void setBS(float fBSx, float fBSy, float fBSz) {mBSx = fBSx; mBSy = fBSy; mBSz = fBSz;}
       void setHCALNoise(bool fNoise) {mHCALNoise = fNoise;}
       void setPU(int fNBX, int fOOTPUEarly, int fOOTPULate, int fINTPU) {mNBX = fNBX; mOOTPUEarly = fOOTPUEarly; mOOTPULate = fOOTPULate; mINTPU = fINTPU;}
+      int setTrPu(int fTrPu) {mTrPu = fTrPu;} // setting the true PU 
       //------------ Get methods ------------------------------
       int runNo()           const {return mRun;} 
       int event()           const {return mEvent;} 
@@ -33,6 +34,7 @@ class QCDEventHdr
       int intpu()           const {return mINTPU;}
       int nbx()             const {return mNBX;} 
       int pu()              const {return mOOTPUEarly+mOOTPULate+mINTPU;}
+      int trpu()         const {return mTrPu;} // get method for True number of interaction
       bool isPVgood()       const {return mIsPVgood;}
       bool hcalNoise()      const {return mHCALNoise;}
       float PVndof()        const {return mPVndof;} 
@@ -43,7 +45,7 @@ class QCDEventHdr
       float BSy()           const {return mBSy;}
       float BSz()           const {return mBSz;}
       float pthat()         const {return mPthat;}
-      float weight()        const {return mWeight;} 
+      float weight()        const {return mWeight;}
       float caloRho()       const {return mCaloRho;} 
       float pfRho()         const {return mPFRho;} 
       private:
@@ -73,6 +75,8 @@ class QCDEventHdr
         int mNBX; 
         //---- ndof for the primary vertex ------------
         float mPVndof;
+        //---- event weight for pileup reweighting --------//
+        int mTrPu;
         //---- position of the primary vertex --------- 
         float mPVx;
         float mPVy;
