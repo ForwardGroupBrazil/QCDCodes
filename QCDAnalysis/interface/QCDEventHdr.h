@@ -21,7 +21,7 @@ class QCDEventHdr
       void setBS(float fBSx, float fBSy, float fBSz) {mBSx = fBSx; mBSy = fBSy; mBSz = fBSz;}
       void setHCALNoise(bool fNoise) {mHCALNoise = fNoise;}
       void setPU(int fNBX, int fOOTPUEarly, int fOOTPULate, int fINTPU) {mNBX = fNBX; mOOTPUEarly = fOOTPUEarly; mOOTPULate = fOOTPULate; mINTPU = fINTPU;}
-      int setTrPu(int fTrPu) {mTrPu = fTrPu;} // setting the true PU 
+      void setTrPu(int fTrPu) {mTrPu = fTrPu;} // setting the true PU 
       //------------ Get methods ------------------------------
       int runNo()           const {return mRun;} 
       int event()           const {return mEvent;} 
