@@ -96,7 +96,7 @@ void ProcessedTreeProducer::beginJob()
   mTriggerPassHisto->SetBit(TH1::kCanRebin);
   isPFJecUncSet_ = false;
   isCaloJecUncSet_ = false;
-}
+} 
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::endJob() 
 {
@@ -288,20 +288,26 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     std::vector<PileupSummaryInfo>::const_iterator PUI;
     int nbx = PupInfo->size();
     int ootpuEarly(0),ootpuLate(0),intpu(0);
+    float Tnpv = -1; // new variable for computing pileup weight factor for the event
     for(PUI = PupInfo->begin(); PUI != PupInfo->end(); ++PUI) {
       if (PUI->getBunchCrossing() < 0)
         ootpuEarly += PUI->getPU_NumInteractions();
       else if (PUI->getBunchCrossing() > 0)
         ootpuLate += PUI->getPU_NumInteractions();
-      else
+      else {
         intpu += PUI->getPU_NumInteractions(); 
-    }
+        Tnpv = PUI->getTrueNumInteractions();
+       } 
+    } 
+     
     mEvtHdr.setPU(nbx,ootpuEarly,ootpuLate,intpu);
+    mEvtHdr.setTrPu(Tnpv);
   } 
   else {
     mEvtHdr.setPthat(0);
     mEvtHdr.setWeight(0); 
     mEvtHdr.setPU(0,0,0,0);
+    mEvtHdr.setTrPu(0);
   }
   //---------------- Jets ---------------------------------------------
   mPFJEC   = JetCorrector::getJetCorrector(mPFJECservice,iSetup);
