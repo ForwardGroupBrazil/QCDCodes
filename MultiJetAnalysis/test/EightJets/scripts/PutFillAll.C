@@ -1,16 +1,15 @@
 #include "PutTMVA.C"
 #include "FillHistos.C"
-void PutFillAll()
+void PutFillAll(TString TRAIN)
 {
   cout<<"Adding MVA branches to signal"<<endl;
-  PutTMVA("flatTree_Col800Sig200_weights","Col800Sig200");
+  PutTMVA("data/flatTree_"+TRAIN+"_weights",TRAIN);
   cout<<"Adding MVA branches to qcd"<<endl;
-  PutTMVA("flatTree_qcd_weights","Col800Sig200");
+  PutTMVA("data/flatTree_qcd_weights",TRAIN);
   cout<<"Adding MVA branches to data"<<endl;
-  PutTMVA("flatTree_data","Col800Sig200");
-  
+  PutTMVA("data/flatTree_data",TRAIN);
   cout<<"Filling Histograms"<<endl;
-  FillHistos("flatTree_Col800Sig200_weights_tmva.root",true);
-  FillHistos("flatTree_qcd_weights_tmva.root",true);
-  FillHistos("flatTree_data_tmva.root",false);
+  FillHistos("flatTree_"+TRAIN+"_weights_tmva"+TRAIN+".root",true);
+  FillHistos("flatTree_qcd_weights_tmva"+TRAIN+".root",true);
+  FillHistos("flatTree_data_tmva"+TRAIN+".root",false);
 }

@@ -1,10 +1,10 @@
 void trainTMVA(TString SIGNAL)
 {
-  TFile *bkgSrc  = TFile::Open("flatTree_qcd_weights.root");
-  TFile *sigSrc  = TFile::Open("flatTree_"+SIGNAL+"_weights.root");
+  TFile *bkgSrc  = TFile::Open("data/flatTree_qcd_weights.root");
+  TFile *sigSrc  = TFile::Open("data/flatTree_"+SIGNAL+"_weights.root");
   TTree* bkgTree = (TTree*)bkgSrc->Get("multijets/events");
   TTree* sigTree = (TTree*)sigSrc->Get("multijets/events"); 
-  TFile *outf    = new TFile("TMVA_"+SIGNAL+".root","RECREATE");
+  TFile *outf    = new TFile("data/TMVA_"+SIGNAL+".root","RECREATE");
 
   TCut preselectionCut = "ht>850 && pt[7]>30";
   int Nbkg = bkgTree->GetEntries();
@@ -37,12 +37,12 @@ void trainTMVA(TString SIGNAL)
   
   factory->PrepareTrainingAndTestTree(preselectionCut,name);
   
-  factory->BookMethod(TMVA::Types::kLikelihood,"LikelihoodD","!H:!V:!TransformOutput:PDFInterpol=Spline2:\
+  //factory->BookMethod(TMVA::Types::kLikelihood,"LikelihoodD","!H:!V:!TransformOutput:PDFInterpol=Spline2:\
 NSmoothSig[0]=20:NSmoothBkg[0]=20:NSmooth=5:\
 NAvEvtPerBin=50:VarTransform=Decorrelate:CreateMVAPdfs=True");
   factory->BookMethod(TMVA::Types::kFisher,"Fisher");
   factory->BookMethod(TMVA::Types::kBDT,"BDT");
-  factory->BookMethod(TMVA::Types::kMLP,"MLP_ANN","NCycles=250:HiddenLayers=N,N-1:TestRate=5:TrainingMethod=BFGS:VarTRansform=Norm");
+  factory->BookMethod(TMVA::Types::kMLP,"MLP_ANN","NCycles=200:HiddenLayers=N,N-1:TestRate=5:TrainingMethod=BFGS:VarTRansform=Norm");
 
   factory->TrainAllMethods();
 
