@@ -3,37 +3,56 @@
 #include <fstream>
 #include <iomanip>
 using namespace RooFit;
-void Fit(TString SIGNAL,TString HISTO)
+void Fit(TString SIGNAL,TString HISTO,double scaleSGN)
 {
   gROOT->ForceStyle();
   TFile *fDat = TFile::Open("Histo_flatTree_data_tmva"+SIGNAL+".root");
   TFile *fBkg = TFile::Open("Histo_flatTree_qcd_weights_tmva"+SIGNAL+".root");
   TFile *fSgn = TFile::Open("Histo_flatTree_"+SIGNAL+"_weights_tmva"+SIGNAL+".root");
-  //TString HISTO = "MLP";
+  
   TH1 *hDat = (TH1*)fDat->Get(HISTO);
-  TH1 *hBkg = (TH1*)fBkg->Get(HISTO);
+  TH1 *hBkgRaw = (TH1*)fBkg->Get(HISTO);
   TH1 *hSgn = (TH1*)fSgn->Get(HISTO);
   TH1 *hDat_JESlo = (TH1*)fDat->Get(HISTO+"_JESlo");
-  TH1 *hBkg_JESlo = (TH1*)fBkg->Get(HISTO+"_JESlo");
+  TH1 *hBkgRaw_JESlo = (TH1*)fBkg->Get(HISTO+"_JESlo");
   TH1 *hSgn_JESlo = (TH1*)fSgn->Get(HISTO+"_JESlo");
   TH1 *hDat_JESup = (TH1*)fDat->Get(HISTO+"_JESup");
-  TH1 *hBkg_JESup = (TH1*)fBkg->Get(HISTO+"_JESup");
+  TH1 *hBkgRaw_JESup = (TH1*)fBkg->Get(HISTO+"_JESup");
   TH1 *hSgn_JESup = (TH1*)fSgn->Get(HISTO+"_JESup");
+  
+  TH1F *hBkg = (TH1F*)hBkgRaw->Clone("Bkg");
+  TH1F *hBkg_JESlo = (TH1F*)hBkgRaw_JESlo->Clone("Bkg_JESlo");
+  TH1F *hBkg_JESup = (TH1F*)hBkgRaw_JESup->Clone("Bkg_JESup");
+  
+  hBkg->Smooth(2);
+  hBkg_JESlo->Smooth(2);
+  hBkg_JESup->Smooth(2);
+  hSgn->Smooth(2);
+  hSgn_JESlo->Smooth(2);
+  hSgn_JESup->Smooth(2);
   
   double lumi = 4967;
   hBkg->Scale(lumi);
+  hBkg_JESlo->Scale(lumi);
+  hBkg_JESup->Scale(lumi);
   double k_factor = hDat->Integral()/hBkg->Integral();
+  double k_factor_JESlo = hDat->Integral()/hBkg_JESlo->Integral();
+  double k_factor_JESup = hDat->Integral()/hBkg_JESup->Integral();
   hBkg->Scale(k_factor);
   cout<<"Signal entries = "<<hSgn->GetEntries()<<endl;
-  hSgn->Scale(lumi);
-  hBkg_JESlo->Scale(k_factor*lumi);
-  hSgn_JESlo->Scale(lumi);
-  hBkg_JESup->Scale(k_factor*lumi);
-  hSgn_JESup->Scale(lumi);
+  hSgn->Scale(lumi/scaleSGN);
+  hBkg_JESlo->Scale(k_factor_JESlo);
+  hSgn_JESlo->Scale(lumi/scaleSGN);
+  hBkg_JESup->Scale(k_factor_JESup);
+  hSgn_JESup->Scale(lumi/scaleSGN);
+  hSgn_JESlo->Scale(hSgn->Integral()/hSgn_JESlo->Integral());
+  hSgn_JESup->Scale(hSgn->Integral()/hSgn_JESup->Integral());
+  
   TH1 *hBkg_STATlo = (TH1*)hBkg->Clone(HISTO+"_STATlo");
   TH1 *hSgn_STATlo = (TH1*)hSgn->Clone(HISTO+"_STATlo");
   TH1 *hBkg_STATup = (TH1*)hBkg->Clone(HISTO+"_STATup");
   TH1 *hSgn_STATup = (TH1*)hSgn->Clone(HISTO+"_STATup");
+  
   float y1,e1;
   for(int i=0;i<hBkg->GetNbinsX();i++) {
     y1 = hBkg->GetBinContent(i+1);
@@ -45,6 +64,11 @@ void Fit(TString SIGNAL,TString HISTO)
     hSgn_STATlo->SetBinContent(i+1,y1-e1);
     hSgn_STATup->SetBinContent(i+1,y1+e1);
   }
+  hBkg_STATlo->Scale(hBkg->Integral()/hBkg_STATlo->Integral());
+  hBkg_STATup->Scale(hBkg->Integral()/hBkg_STATup->Integral());
+  hSgn_STATlo->Scale(hSgn->Integral()/hSgn_STATlo->Integral());
+  hSgn_STATup->Scale(hSgn->Integral()/hSgn_STATup->Integral());
+  
   double xMIN = hBkg->GetBinLowEdge(1);
   double xMAX = hBkg->GetBinLowEdge(hBkg->GetNbinsX()+1);
   double xMIN2 = hDat->GetBinLowEdge(hDat->FindFirstBinAbove(0.5));
@@ -69,6 +93,7 @@ void Fit(TString SIGNAL,TString HISTO)
   double S = hSgn->Integral();
   double m = f.getVal();
   double e = f.getError();
+  cout<<"k-factor = "<<k_factor<<endl;
   cout<<N<<" "<<B<<" "<<S<<endl;
   cout<<"Total cross section =       "<<N/lumi<<" pb"<<endl;
   cout<<"Model cross section =       "<<S/lumi<<" pb"<<endl;
@@ -95,7 +120,7 @@ void Fit(TString SIGNAL,TString HISTO)
   
   TCanvas* cFit = new TCanvas("fitANN_"+SIGNAL,"fitANN_"+SIGNAL,900,600);
   gPad->SetLogy();
-  frame1->SetMaximum(1e+5);
+  frame1->SetMaximum(1e+4);
   frame1->SetMinimum(0.5);
   frame1->GetXaxis()->SetTitle("ANN Output");
   frame1->GetYaxis()->SetTitle("Events");
@@ -137,8 +162,8 @@ void Fit(TString SIGNAL,TString HISTO)
   datacard<<"rate       "<<S<<"    "<<B<<"\n";
   datacard<<"----------------"<<"\n";
   datacard<<"lumi        lnN       1.022    1.022"<<"\n";
-  datacard<<"jes         shape     0        0"<<"\n";
-  datacard<<"mcstat      shape     0        0"<<"\n";
+  datacard<<"jes         shape     1        1"<<"\n";
+  datacard<<"mcstat      shape     1        1"<<"\n";
   datacard<<"jer         shape     0        0"<<"\n";
   datacard.close();
   
@@ -163,4 +188,3 @@ void Fit(TString SIGNAL,TString HISTO)
   hBkg_JESup->Write("background_jerUp");
   hSgn_JESup->Write("signal_jerUp");
 }
-
