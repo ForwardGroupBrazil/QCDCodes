@@ -5,34 +5,45 @@ void FillHistos(TString FileName, bool UseWeights)
   cout<<"Reading File: "<<FileName<<endl;  
   inf = TFile::Open("data/"+FileName);    
   outf = new TFile("Histo_"+FileName,"RECREATE");
-  //----- booking histograms ---------------------- 
-  TH1F *hBDT   = new TH1F("BDT","BDT",100,-1,1); 
-  TH1F *hMLP   = new TH1F("MLP","MLP",30,-0.2,1.1);
-  TH1F *hMLP_JESlo = new TH1F("MLP_JESlo","MLP_JESlo",30,-0.2,1.1);
-  TH1F *hMLP_JESup = new TH1F("MLP_JESup","MLP_JESup",30,-0.2,1.1);
-  TH1F *hCos   = new TH1F("Cos","Cos",100,-1,1);  
-  TH1F *hHT    = new TH1F("HT","HT",70,0,3.5);
-  TH1F *hHT_JESlo = new TH1F("HT_JESlo","HT_JESlo",70,0,3.5);
-  TH1F *hHT_JESup = new TH1F("HT_JESup","HT_JESup",70,0,3.5);
-  TH1F *hM8J   = new TH1F("M8J","M8J",70,0,7);
-  TH1F *hM4J   = new TH1F("M4J","M4J",300,0,3);
-  TH1F *hHT4J  = new TH1F("HT4J","HT4J",100,0,2.0);  
-  TH1F *hPT4J  = new TH1F("PT4J","PT4J",60,0,1.5);
-  TH1F *hEta4J = new TH1F("Eta4J","Eta4J",50,-5,5);  
-  TH1F *hM2J   = new TH1F("M2J","M2J",200,0,1.0);
-  TH1F *hB4J   = new TH1F("B4J","B4J",200,0,2);
-  TH1F *hB2J   = new TH1F("B2J","B2J",200,0,2); 
+  //----- booking histograms ----------------------
+  double PT_MAX[8] = {1200,1200,1200,1200,1200,1200,1200,130};
+  TH1F *hBDT       = new TH1F("BDT","BDT",100,-1,1); 
+  TH1F *hMLP_demo  = new TH1F("MLP_demo","MLP_demo",65,-0.2,1.1);
+  TH1F *hMLP       = new TH1F("MLP","MLP",20,0.6,1.0001);
+  TH1F *hMLP_JESlo = new TH1F("MLP_JESlo","MLP_JESlo",20,0.6,1.0001);
+  TH1F *hMLP_JESup = new TH1F("MLP_JESup","MLP_JESup",20,0.6,1.0001);
+  TH1F *hCos       = new TH1F("Cos","Cos",100,-1,1);  
+  TH1F *hHT        = new TH1F("HT","HT",42,750,2850);
+  TH1F *hHT_JESlo  = new TH1F("HT_JESlo","HT_JESlo",42,750,2850);
+  TH1F *hHT_JESup  = new TH1F("HT_JESup","HT_JESup",42,750,2850);
+  TH1F *hM8J       = new TH1F("M8J","M8J",70,0,7000);
+  TH1F *hM4J       = new TH1F("M4J","M4J",300,0,3000);
+  TH1F *hHT4J      = new TH1F("HT4J","HT4J",100,0,2000);  
+  TH1F *hPT4J      = new TH1F("PT4J","PT4J",60,0,1500);
+  TH1F *hEta4J     = new TH1F("Eta4J","Eta4J",50,-5,5);  
+  TH1F *hM2J       = new TH1F("M2J","M2J",200,0,1000);
+  TH1F *hB4J       = new TH1F("B4J","B4J",200,0,2);
+  TH1F *hB2J       = new TH1F("B2J","B2J",200,0,2); 
+  TH1F *hPtAll     = new TH1F("JetPt","JetPt",240,0,1200);
+  TH1F *hEtaAll    = new TH1F("JetEta","JetEta",50,-5,5);
+  TH1F *hPhiAll    = new TH1F("JetPhi","JetPhi",100,-3.15,3.15);
+  TH1F *hBetaAll   = new TH1F("JetBeta","JetBeta",100,0,1.0001);
+  TH1F *hChfAll    = new TH1F("JetChf","JetChf",100,0,1.0001);
+  TH1F *hNhfAll    = new TH1F("JetNhf","JetNhf",100,0,1.0001);
+  TH1F *hPhfAll    = new TH1F("JetPhf","JetPhf",100,0,1.0001);
+  TH1F *hMufAll    = new TH1F("JetMuf","JetMuf",100,0,1.0001);
+  TH1F *hElfAll    = new TH1F("JetElf","JetElf",100,0,1.0001);
   TH1F *hPt[8],*hPt_JESlo[8],*hPt_JESup[8],*hEta[8],*hPhi[8],*hBeta[8],*hChf[8],*hNhf[8],*hPhf[8],*hMuf[8],*hElf[8];
   char name[1000];  
   for(int i=0;i<8;i++) {
     sprintf(name,"JetPt%d",i);
-    hPt[i] = new TH1F(name,name,240,0,1200);  
+    hPt[i] = new TH1F(name,name,(PT_MAX[i]-30)/5,30,PT_MAX[i]);  
     hPt[i]->Sumw2();
     sprintf(name,"JetPt%d_JESlo",i);
-    hPt_JESlo[i] = new TH1F(name,name,240,0,1200);  
+    hPt_JESlo[i] = new TH1F(name,name,(PT_MAX[i]-30)/5,30,PT_MAX[i]);  
     hPt_JESlo[i]->Sumw2();
     sprintf(name,"JetPt%d_JESup",i);
-    hPt_JESup[i] = new TH1F(name,name,240,0,1200);  
+    hPt_JESup[i] = new TH1F(name,name,(PT_MAX[i]-30)/5,30,PT_MAX[i]);  
     hPt_JESup[i]->Sumw2();
     sprintf(name,"JetEta%d",i);
     hEta[i] = new TH1F(name,name,50,-5,5);  
@@ -61,6 +72,7 @@ void FillHistos(TString FileName, bool UseWeights)
   }
   hBDT->Sumw2();
   hMLP->Sumw2();
+  hMLP_demo->Sumw2();
   hMLP_JESlo->Sumw2();
   hMLP_JESup->Sumw2();
   hCos->Sumw2();  
@@ -75,6 +87,15 @@ void FillHistos(TString FileName, bool UseWeights)
   hM2J->Sumw2();
   hB4J->Sumw2();
   hB2J->Sumw2();
+  hPtAll->Sumw2();
+  hEtaAll->Sumw2();
+  hPhiAll->Sumw2();
+  hBetaAll->Sumw2();
+  hChfAll->Sumw2();
+  hNhfAll->Sumw2();
+  hPhfAll->Sumw2();
+  hMufAll->Sumw2();
+  hElfAll->Sumw2();
   //----- tree variables ---------------------- 
   float BDT,MLP,BDT_JESlo,MLP_JESlo,BDT_JESup,MLP_JESup,m2jAve,m2jSig,m4jAve,m4jBalance,m8j,ht,cosThetaStar,wt(1.0);
   float ht4j[2],pt4j[2],eta4j[2];
@@ -111,20 +132,21 @@ void FillHistos(TString FileName, bool UseWeights)
   //----- loop over tree entries ----------------
   for(int iev=0;iev<tr->GetEntries();iev++) {
     tr->GetEntry(iev);
-    bool preselection = (ht > 850 && pt[7] > 30);
+    bool preselection = (ht > 750 && pt[7] > 30);
     if (!preselection) continue;
     hBDT->Fill(BDT,wt);
     hMLP->Fill(MLP,wt);
+    hMLP_demo->Fill(MLP,wt);
     hMLP_JESlo->Fill(MLP_JESlo,wt);
     hMLP_JESup->Fill(MLP_JESup,wt);
-    hHT->Fill(ht/1000,wt);
-    hM8J->Fill(m8j/1000,wt);
-    hM4J->Fill(m4jAve/1000,wt);
-    hM2J->Fill(m2jAve/1000,wt);
-    hHT4J->Fill(ht4j[0]/1000,wt);
-    hHT4J->Fill(ht4j[1]/1000,wt);  
-    hPT4J->Fill(pt4j[0]/1000,wt);
-    hPT4J->Fill(pt4j[1]/1000,wt);
+    hHT->Fill(ht,wt);
+    hM8J->Fill(m8j,wt);
+    hM4J->Fill(m4jAve,wt);
+    hM2J->Fill(m2jAve,wt);
+    hHT4J->Fill(ht4j[0],wt);
+    hHT4J->Fill(ht4j[1],wt);  
+    hPT4J->Fill(pt4j[0],wt);
+    hPT4J->Fill(pt4j[1],wt);
     hEta4J->Fill(eta4j[0],wt);
     hEta4J->Fill(eta4j[1],wt);  
     hCos->Fill(cosThetaStar,wt);
@@ -132,22 +154,31 @@ void FillHistos(TString FileName, bool UseWeights)
     hB2J->Fill(m2jSig/m2jAve,wt);
     float htlo(0.0),htup(0.0);
     for(int j=0;j<8;j++) {
+      hPtAll->Fill(pt[j],wt);
       hPt[j]->Fill(pt[j],wt);
       hPt_JESlo[j]->Fill((1-unc[j])*pt[j],wt);
       hPt_JESup[j]->Fill((1+unc[j])*pt[j],wt);
       htlo += (1-unc[j])*pt[j];
       htup += (1+unc[j])*pt[j];
+      hEtaAll->Fill(eta[j],wt);
       hEta[j]->Fill(eta[j],wt);
+      hPhiAll->Fill(phi[j],wt);
       hPhi[j]->Fill(phi[j],wt);
+      hBetaAll->Fill(beta[j],wt);
       hBeta[j]->Fill(beta[j],wt);
+      hChfAll->Fill(chf[j],wt);
       hChf[j]->Fill(chf[j],wt);
+      hNhfAll->Fill(nhf[j],wt);
       hNhf[j]->Fill(nhf[j],wt);
+      hPhfAll->Fill(phf[j],wt);
       hPhf[j]->Fill(phf[j],wt);
+      hMufAll->Fill(muf[j],wt);
       hMuf[j]->Fill(muf[j],wt);
+      hElfAll->Fill(elf[j],wt);
       hElf[j]->Fill(elf[j],wt);
     }// jet loop
-    hHT_JESlo->Fill(htlo/1000,wt);
-    hHT_JESup->Fill(htup/1000,wt);
+    hHT_JESlo->Fill(htlo,wt);
+    hHT_JESup->Fill(htup,wt);
   }// tree loop
   outf->Write();  
 }  
