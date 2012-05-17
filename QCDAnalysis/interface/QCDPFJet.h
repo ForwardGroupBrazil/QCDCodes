@@ -13,6 +13,8 @@ class QCDPFJet : public QCDJet {
      void setMulti(int fncand, int fchm, int fnhm, int fphm, int felm, int fmum) {ncand_ = fncand; chm_ = fchm; nhm_ = fnhm; phm_ = fphm; elm_ = felm; mum_ = fmum;}
      void setBeta(float fbeta) {beta_ = fbeta;}
      void setBetaStar(float fbetaStar) {betaStar_ = fbetaStar;}
+     void setHFFrac(float fhf_hf, float fhf_phf) {hf_hf_ = fhf_hf; hf_phf_ = fhf_phf;}
+     void setHFMulti(int fhf_hm, int fhf_phm) {hf_hm_ = fhf_hm; hf_phm_ = fhf_phm;}
      //------------ Get methods ------------------------------ 
      float beta()     const {return beta_;}                
      float betaStar() const {return betaStar_;}
@@ -21,11 +23,15 @@ class QCDPFJet : public QCDJet {
      float phf()      const {return phf_;} 
      float elf()      const {return elf_;}
      float muf()      const {return muf_;}
+     float hf_hf()    const {return hf_hf_;}
+     float hf_phf()   const {return hf_phf_;}
      int chm()        const {return chm_;}
      int nhm()        const {return nhm_;}
      int phm()        const {return phm_;}
      int elm()        const {return elm_;}
      int mum()        const {return mum_;}
+     int hf_hm()      const {return hf_hm_;}
+     int hf_phm()     const {return hf_phm_;}
      int ncand()      const {return ncand_;}
    private:
      //---- charged hadron energy fraction ----
@@ -38,6 +44,14 @@ class QCDPFJet : public QCDJet {
      float elf_;
      //---- muon energy fraction --------------
      float muf_;
+     //-----HF Hadron Fraction ---------------
+     float hf_hf_;
+     //-----HF Photon Fraction ------------
+     float hf_phf_;
+     //-----HF Hadron Multiplicity---------
+     int hf_hm_;
+     //-----HF Photon Multiplicity --------
+     int hf_phm_;
      //---- charged hadron multiplicity -------
      int chm_;
      //---- neutral hadron multiplicity -------

@@ -288,7 +288,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     std::vector<PileupSummaryInfo>::const_iterator PUI;
     int nbx = PupInfo->size();
     int ootpuEarly(0),ootpuLate(0),intpu(0);
-    int Tnpv = -1; // new variable for computing pileup weight factor for the event
+    float Tnpv = -1.; // new variable for computing pileup weight factor for the event
     for(PUI = PupInfo->begin(); PUI != PupInfo->end(); ++PUI) {
       if (PUI->getBunchCrossing() < 0)
         ootpuEarly += PUI->getPU_NumInteractions();
@@ -419,6 +419,10 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     double phf   = i_pfjet->photonEnergyFraction();
     double elf   = i_pfjet->electronEnergyFraction();
     double muf   = i_pfjet->muonEnergyFraction();
+    double hf_hf = i_pfjet->HFHadronEnergyFraction();
+    double hf_phf= i_pfjet->HFEMEnergyFraction();
+    int hf_hm    = i_pfjet->HFHadronMultiplicity();
+    int hf_phm   = i_pfjet->HFEMMultiplicity();
     int chm      = i_pfjet->chargedHadronMultiplicity();
     int nhm      = i_pfjet->neutralHadronMultiplicity();
     int phm      = i_pfjet->photonMultiplicity();
@@ -431,6 +435,8 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     qcdpfjet.setTightID(tightID);
     qcdpfjet.setFrac(chf,nhf,phf,elf,muf);
     qcdpfjet.setMulti(npr,chm,nhm,phm,elm,mum);
+    qcdpfjet.setHFFrac(hf_hf,hf_phf);
+    qcdpfjet.setHFMulti(hf_hm,hf_phm);
     if (mIsMCarlo) {
       GenJetCollection::const_iterator i_matched;
       float rmin(999);
