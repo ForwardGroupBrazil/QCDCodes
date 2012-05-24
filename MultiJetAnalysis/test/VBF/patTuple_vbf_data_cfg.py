@@ -56,7 +56,7 @@ process.kt6PFJetsISO = process.kt6PFJets.clone(
     Rho_EtaMax = cms.double(2.4)
     )
 
-process.patJetCorrFactorsCHS.rho = cms.InputTag("kt6PFJetsCHS", "rho")
+process.patJetCorrFactorsCHS.rho = cms.InputTag("kt6PFJets", "rho")
 
 getattr(process,"patPF2PATSequence"+postfix).replace(
     getattr(process,"pfNoElectron"+postfix),

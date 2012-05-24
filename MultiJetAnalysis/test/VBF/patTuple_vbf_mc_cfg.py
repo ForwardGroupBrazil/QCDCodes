@@ -16,7 +16,7 @@ from PhysicsTools.PatAlgos.tools.jetTools import *
 from PhysicsTools.SelectorUtils.pvSelector_cfi import pvSelector
 
 ##--------- global tag -------------------------
-process.GlobalTag.globaltag = 'GR_R_42_V23::All'
+process.GlobalTag.globaltag = 'GR_R_52_V7::All'
 
 ##--------- remove cleaning --------------------
 removeCleaning(process)
@@ -56,7 +56,7 @@ process.kt6PFJetsISO = process.kt6PFJets.clone(
     Rho_EtaMax = cms.double(2.4)
     )
 
-process.patJetCorrFactorsCHS.rho = cms.InputTag("kt6PFJetsCHS", "rho")
+process.patJetCorrFactorsCHS.rho = cms.InputTag("kt6PFJets", "rho")
 
 getattr(process,"patPF2PATSequence"+postfix).replace(
     getattr(process,"pfNoElectron"+postfix),
@@ -126,12 +126,6 @@ process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
     payload = cms.string('AK5PFchs') 
 )
 
-process.multiJetFilter = cms.EDFilter('PatMultijetFilter',
-    jets     = cms.InputTag('selectedPatJets'),
-    minNjets = cms.int32(4),
-    minPt    = cms.double(20)
-)
-
 process.maxEvents.input = 100
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
@@ -145,9 +139,9 @@ process.p = cms.Path(
    #----- produce the HBHE noise flag --------------------------
    process.HBHENoiseFilterResultProducer +
    #----- re-cluster ak5PFJets after activating the jet area ---
-   process.ak5PFJets +
+   #process.ak5PFJets +
    #----- re-cluster kt6PFJets after activating rho ------------
-   process.kt6PFJets +
+   #process.kt6PFJets +
    #----- re-cluster kt6PFJets after activating rho for ISO ----
    process.kt6PFJetsISO +
    #----- create the collection of good PV ---------------------
@@ -163,7 +157,6 @@ process.p = cms.Path(
    #----- create a collection of tracks out of jets ------------
    process.outTracks +
    #----- reconstruct track jets from the soft tracks ----------
-   process.ak5SoftTrackJets +
-   process.multiJetFilter
+   process.ak5SoftTrackJets
 )
 
