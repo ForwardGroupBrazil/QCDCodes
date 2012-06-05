@@ -108,7 +108,7 @@ process.multiJetFilter = cms.EDFilter('PatMultijetFilter',
     minPt    = cms.double(20)
 )
 
-process.maxEvents.input = 2000
+process.maxEvents.input = 10000
 process.MessageLogger.cerr.FwkReport.reportEvery = 10
 
 process.source.fileNames = [
