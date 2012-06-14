@@ -7,7 +7,7 @@ process.load('RecoJets.JetProducers.TrackJetParameters_cfi')
 process.load("PhysicsTools.PatAlgos.patSequences_cff")
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
 process.load('CommonTools.RecoAlgos.HBHENoiseFilterResultProducer_cfi')
-
+process.load('CMGTools.External.pujetidsequence_cff')
 
 from PhysicsTools.PatAlgos.tools.pfTools import *
 from PhysicsTools.PatAlgos.tools.coreTools import *
@@ -56,6 +56,7 @@ process.kt6PFJetsISO = process.kt6PFJets.clone(
     Rho_EtaMax = cms.double(2.4)
     )
 
+#----- recommendation from JES: use the standard rho for CHS ------
 process.patJetCorrFactorsCHS.rho = cms.InputTag("kt6PFJets", "rho")
 
 getattr(process,"patPF2PATSequence"+postfix).replace(
@@ -80,6 +81,16 @@ switchJetCollection(process,cms.InputTag('ak5PFJets'),
 process.selectedPatJets.cut        = "pt > 10 && abs(eta) < 4.7"
 process.selectedPatJetsCHS.cut     = "pt > 10 && abs(eta) < 4.7"
 
+##---- modify PU jet id -------------
+process.puJetId.jets = cms.InputTag('selectedPatJets')
+process.puJetId.vertexes = cms.InputTag('goodOfflinePrimaryVertices')
+process.puJetMva.jets = cms.InputTag('selectedPatJets')
+process.puJetMva.vertexes = cms.InputTag('goodOfflinePrimaryVertices')
+process.puJetIdChs.jets = cms.InputTag('selectedPatJetsCHS')
+process.puJetIdChs.vertexes = cms.InputTag('goodOfflinePrimaryVertices')
+process.puJetMvaChs.jets = cms.InputTag('selectedPatJetsCHS')
+process.puJetMvaChs.vertexes = cms.InputTag('goodOfflinePrimaryVertices')
+
 ##--------- keep only jet and MET PAT objects ---
 removeAllPATObjectsBut(process,["Jets","METs"])
 ##--------- output commands ---------------------
@@ -88,8 +99,9 @@ process.out.outputCommands = [
          'keep *_kt6PFJets_rho_PAT',
          'keep *_kt6PFJetsCHS_rho_PAT',
          'keep *_kt6PFJetsISO_rho_PAT',## needed for the QG likelihood
-         #'keep *_selectedPatJets__*',
-         #'keep *_selectedPatJetsCHS__*',
+         'keep *_selectedPatJets__*',
+         'keep *_selectedPatJetsCHS__*',
+         'keep *_puJet*_*_*',
          'keep *_jetExtender*_*_*', 
          'keep *_ak5SoftTrackJets__*',
          'keep *_HBHENoiseFilterResultProducer_*_*', 
@@ -133,8 +145,8 @@ process.hltFilter = cms.EDFilter('HLTHighLevel',
     throw              = cms.bool(False)
 )
 
-process.maxEvents.input = -1
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+process.maxEvents.input = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 10
 
 process.source.fileNames = [
 '/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/467/D8C5020C-F980-E111-84F0-003048F118C2.root',
@@ -148,14 +160,8 @@ process.source.fileNames = [
 process.options.wantSummary = False
 
 process.p = cms.Path(
-   #----- skim based on HLT paths ------------------------------
-   #process.hltFilter +
    #----- produce the HBHE noise flag --------------------------
    process.HBHENoiseFilterResultProducer +
-   #----- re-cluster ak5PFJets after activating the jet area ---
-   #process.ak5PFJets +
-   #----- re-cluster kt6PFJets after activating rho ------------
-   #process.kt6PFJets +
    #----- re-cluster kt6PFJets after activating rho for ISO ----
    process.kt6PFJetsISO +
    #----- create the collection of good PV ---------------------
@@ -164,6 +170,9 @@ process.p = cms.Path(
    process.patPF2PATseq +
    #----- run the default PAT sequence -------------------------
    process.patDefaultSequence +
+   #----- pu jet id --------------------------------------------
+   process.puJetIdSqeuence +
+   process.puJetIdSqeuenceChs +
    #----- extend the PAT jets with additional variables --------
    process.jetExtender +
    #----- extend the CHS PAT jets with additional variables ----
