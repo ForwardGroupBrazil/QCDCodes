@@ -393,6 +393,7 @@ void PatVBFTree::initialize()
   nSoftTrackJets_ = -999;
   rho_    = -999;
   met_    = -999;
+  metPhi_ = -999;
   metSig_ = -999;
   ht_     = -999;
   htAll_  = -999;
