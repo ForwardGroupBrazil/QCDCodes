@@ -20,6 +20,7 @@
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
+#include "DataFormats/Common/interface/ValueMap.h"
 #include "KKousour/MultiJetAnalysis/plugins/Classifier_Class.C"
 
 using namespace std;
@@ -50,7 +51,8 @@ GluonTagLikelihood::GluonTagLikelihood(const edm::ParameterSet& iConfig)
 {
   srcJets_ = iConfig.getParameter<edm::InputTag>("jets");
   srcRho_  = iConfig.getParameter<edm::InputTag>("rho");
-  produces<std::vector<double> >("GluonTagLikelihood");
+
+  produces<edm::ValueMap<float> >().setBranchAlias("GluonTagLikelihood");
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 GluonTagLikelihood::~GluonTagLikelihood()
@@ -135,7 +137,7 @@ double GluonTagLikelihood::Interpolate(double pt, int ptlow, int pthigh, double 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void GluonTagLikelihood::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-  std::auto_ptr<std::vector<double> > mva(new std::vector<double>());
+  std::auto_ptr<std::vector<float> > mva(new std::vector<float>());
 
   edm::Handle<edm::View<pat::Jet> > jets;
   iEvent.getByLabel(srcJets_,jets);
@@ -149,7 +151,7 @@ void GluonTagLikelihood::produce(edm::Event& iEvent, const edm::EventSetup& iSet
     if (fabs(jet->eta()) < 2) {
       values.push_back(jet->userFloat("axis1_QC"));
       values.push_back(jet->userFloat("axis2_QC"));
-      values.push_back(jet->userFloat("nChg_ptCut_QC"));
+      values.push_back(jet->userFloat("nChg_QC"));
       values.push_back(jet->userFloat("jetRchg_QC"));
       values.push_back(jet->userFloat("pull_QC"));
     }
@@ -163,7 +165,12 @@ void GluonTagLikelihood::produce(edm::Event& iEvent, const edm::EventSetup& iSet
     double mvaVal = CorrectAndCompute(values,jet->eta(),jet->pt(),*rho);
     mva->push_back(mvaVal);
   }
-  iEvent.put(mva,"GluonTagLikelihood");
+  std::auto_ptr<edm::ValueMap<float> > out(new edm::ValueMap<float>());
+  edm::ValueMap<float>::Filler filler(*out);
+  filler.insert(jets, mva->begin(), mva->end());
+  filler.fill();
+  // put value map into event
+  iEvent.put(out);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 double GluonTagLikelihood::CorrectAndCompute(std::vector<double>& vec, double eta, double pt, double rho) {

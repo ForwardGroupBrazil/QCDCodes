@@ -23,7 +23,7 @@ class PatVBFTree : public edm::EDAnalyzer
   private:  
     void initialize();
     //---- configurable parameters --------   
-    edm::InputTag srcJets_,srcMET_,srcRho_,srcRhoQGL_;
+    edm::InputTag srcJets_,srcMET_,srcRho_,srcRhoQGL_,srcPuJetMvaFull_,srcPuJetMvaSimple_,srcPuJetIdCutBased_,srcGluonJetMva_;
     std::string srcBtag_,srcPU_,srcQGLfile_;
     double mbbMin_,dEtaMin_;
     edm::Service<TFileService> fs_;
@@ -32,14 +32,21 @@ class PatVBFTree : public edm::EDAnalyzer
     //---- output TREE variables ------
     //---- global event variables -----
     int run_,evt_,nVtx_,lumi_,nSoftTrackJets_;
-    float pvx_,pvy_,pvz_,rho_,met_,metSig_,ht_,htAll_,mqq_,mbb_,dEtaqq_,dEtabb_,dPhiqq_,dPhibb_,ptqq_,ptbb_,etaBoostqq_,etaBoostbb_,softHt_;
+    float pvx_,pvy_,pvz_,rho_,met_,metPhi_,metSig_,ht_,htAll_,mqq_,mbb_,dEtaqq_,dEtabb_,dPhiqq_,dPhibb_,ptqq_,ptbb_,etaBoostqq_,etaBoostbb_,softHt_;
     //---- jet variables --------------
     int btagIdx_[5];
     float pt_[5],jec_[5],unc_[5],eta_[5],phi_[5],mass_[5],chf_[5],nhf_[5],phf_[5],elf_[5],muf_[5];
     float beta_[5],ptD_[5],ptMax_[5],axis_[2][5],tana_[5],ttheta_[5],btag_[5],qgl_[5];
+    float axis_QC_[2][5], pull_[5], pull_QC_[5],lead_[5],leadChg_[5],leadChg_QC_[5],leadNeutral_[5];
+    float vtxMass_[5],vtx3dL_[5],vtx3deL_[5],sumTrkPt_[5],sumTrkP_[5],sumTrkPtV_[5],leadTrkPt_[5],vtxPt_[5];
+    float puMvaFull_[5],puMvaSimple_[5],gluonMva_[5];
+    int puIdCutBased_[5];
+    int chgPart_[5],neutralPart_[5],chgPart_ptcut_[5],neutralPart_ptcut_[5],chgPart_QC_[5],chgPart_QC_ptcut_[5],vtxNTrks_[5],part_[5];
+
+
     std::vector<float> *softTrackJetPt_,*softTrackJetEta_,*softTrackJetPhi_,*softTrackJetE_;
     //---- MC variables ---------------
-    int inpu_,otpu_;
+    int npu_;
     std::vector<int> *partonId_,*partonSt_;
     std::vector<float> *partonPt_,*partonEta_,*partonPhi_,*partonE_;
 };

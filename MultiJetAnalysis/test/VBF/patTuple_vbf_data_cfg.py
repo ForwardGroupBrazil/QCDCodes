@@ -82,13 +82,13 @@ process.selectedPatJets.cut        = "pt > 10 && abs(eta) < 4.7"
 process.selectedPatJetsCHS.cut     = "pt > 10 && abs(eta) < 4.7"
 
 ##---- modify PU jet id -------------
-process.puJetId.jets = cms.InputTag('selectedPatJets')
+process.puJetId.jets = cms.InputTag('jetExtender','extendedPatJets')
 process.puJetId.vertexes = cms.InputTag('goodOfflinePrimaryVertices')
-process.puJetMva.jets = cms.InputTag('selectedPatJets')
+process.puJetMva.jets = cms.InputTag('jetExtender','extendedPatJets')
 process.puJetMva.vertexes = cms.InputTag('goodOfflinePrimaryVertices')
-process.puJetIdChs.jets = cms.InputTag('selectedPatJetsCHS')
+process.puJetIdChs.jets = cms.InputTag('jetExtenderCHS','extendedPatJetsCHS')
 process.puJetIdChs.vertexes = cms.InputTag('goodOfflinePrimaryVertices')
-process.puJetMvaChs.jets = cms.InputTag('selectedPatJetsCHS')
+process.puJetMvaChs.jets = cms.InputTag('jetExtenderCHS','extendedPatJetsCHS')
 process.puJetMvaChs.vertexes = cms.InputTag('goodOfflinePrimaryVertices')
 
 ##--------- keep only jet and MET PAT objects ---
@@ -99,8 +99,8 @@ process.out.outputCommands = [
          'keep *_kt6PFJets_rho_PAT',
          'keep *_kt6PFJetsCHS_rho_PAT',
          'keep *_kt6PFJetsISO_rho_PAT',## needed for the QG likelihood
-         'keep *_selectedPatJets__*',
-         'keep *_selectedPatJetsCHS__*',
+         #'keep *_selectedPatJets__*',
+         #'keep *_selectedPatJetsCHS__*',
          'keep *_puJet*_*_*',
          'keep *_jetExtender*_*_*', 
          'keep *_ak5SoftTrackJets__*',
@@ -134,17 +134,6 @@ process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
     payload = cms.string('AK5PFchs') 
 )
 
-############# hlt filter #########################
-process.hltFilter = cms.EDFilter('HLTHighLevel',
-    TriggerResultsTag  = cms.InputTag('TriggerResults','','HLT'),
-    HLTPaths           = cms.vstring('HLT_QuadJet75_55_35_20_BTagIP_VBF_v*','HLT_QuadJet75_55_38_20_BTagIP_VBF_v*',
-                                     'HLT_QuadPFJet75_55_35_20_BTagCSV_VBF_v*','HLT_QuadPFJet75_55_38_20_BTagCSV_VBF_v*'
-                                     ),
-    eventSetupPathsKey = cms.string(''),
-    andOr              = cms.bool(True), #----- True = OR, False = AND between the HLTPaths
-    throw              = cms.bool(False)
-)
-
 process.maxEvents.input = 100
 process.MessageLogger.cerr.FwkReport.reportEvery = 10
 
@@ -170,13 +159,13 @@ process.p = cms.Path(
    process.patPF2PATseq +
    #----- run the default PAT sequence -------------------------
    process.patDefaultSequence +
-   #----- pu jet id --------------------------------------------
-   process.puJetIdSqeuence +
-   process.puJetIdSqeuenceChs +
    #----- extend the PAT jets with additional variables --------
    process.jetExtender +
    #----- extend the CHS PAT jets with additional variables ----
    process.jetExtenderCHS +
+   #----- pu jet id --------------------------------------------
+   process.puJetIdSqeuence +
+   process.puJetIdSqeuenceChs +
    #----- create a collection of tracks out of jets ------------
    process.outTracks +
    #----- reconstruct track jets from the soft tracks ----------

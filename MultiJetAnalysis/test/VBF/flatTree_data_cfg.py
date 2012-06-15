@@ -26,19 +26,28 @@ process.hltFilter = cms.EDFilter('HLTHighLevel',
     throw              = cms.bool(False)
 )
 
+process.GluonTag = cms.EDProducer('GluonTagLikelihood',
+    jets = cms.InputTag('jetExtender','extendedPatJets'),
+    rho  = cms.InputTag('kt6PFJets','rho')
+)
+
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+process.MessageLogger.cerr.FwkReport.reportEvery = 10
 ##-------------------- User analyzer  --------------------------------
 process.Hbb = cms.EDAnalyzer('PatVBFTree',
     jets    = cms.InputTag('jetExtender','extendedPatJets'),
     met     = cms.InputTag('pfMet'),
     rho     = cms.InputTag('kt6PFJets','rho'),
     rhoQGL  = cms.InputTag('kt6PFJetsISO','rho'),
+    puJetMvaFull = cms.InputTag('puJetMva','fullDiscriminant'),
+    puJetMvaSimple = cms.InputTag('puJetMva','simpleDiscriminant'),
+    puJetIdCutBased = cms.InputTag('puJetMva','cutbasedId'),
+    gluonJetMva = cms.InputTag('GluonTag'),
     mbbMin  = cms.double(0.0),
     dEtaMin = cms.double(0.0),
     btagger = cms.string('combinedSecondaryVertexBJetTags'),
     qglFile = cms.string('./QG_QCD_Pt-15to3000_TuneZ2_Flat_7TeV_pythia6_Summer11-PU_S3_START42_V11-v2.root')
 )
 
-process.p = cms.Path(process.hltFilter * process.Hbb)
+process.p = cms.Path(process.GluonTag * process.Hbb)
 
