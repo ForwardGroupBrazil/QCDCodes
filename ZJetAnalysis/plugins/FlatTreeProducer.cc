@@ -25,7 +25,6 @@
 #include "AnalysisDataFormats/CMGTools/interface/Muon.h"
 #include "AnalysisDataFormats/CMGTools/interface/Electron.h"
 #include "AnalysisDataFormats/CMGTools/interface/Photon.h"
-#include "AnalysisDataFormats/CMGTools/interface/DiObject.h"
 
 using namespace std;
 using namespace reco;
@@ -36,17 +35,16 @@ FlatTreeProducer::FlatTreeProducer(edm::ParameterSet const& cfg)
   srcMET_         = cfg.getParameter<edm::InputTag> ("met");
   srcElectrons_   = cfg.getParameter<edm::InputTag> ("electrons");
   srcMuons_       = cfg.getParameter<edm::InputTag> ("muons");
-  srcDiElectrons_ = cfg.getParameter<edm::InputTag> ("diElectrons");
-  srcDiMuons_     = cfg.getParameter<edm::InputTag> ("diMuons");
-  srcPhotons_     = cfg.getParameter<edm::InputTag> ("photons");
   srcRho_         = cfg.getParameter<edm::InputTag> ("rho"); 
   minJetPt_       = cfg.getParameter<double>        ("minJetPt");
-  maxJetEta_      = cfg.getParameter<double>        ("maxJetEta");   
-  minPhotonPt_    = cfg.getParameter<double>        ("minPhotonPt");     
+  maxJetEta_      = cfg.getParameter<double>        ("maxJetEta");
+  minMuonPt_      = cfg.getParameter<double>        ("minMuonPt");     
+  minElectronPt_  = cfg.getParameter<double>        ("minElectronPt");   
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void FlatTreeProducer::beginJob() 
 {
+  jetP4_        = new std::vector<LorentzVector>();
   jetPt_        = new std::vector<float>(); 
   jetEta_       = new std::vector<float>();
   jetPhi_       = new std::vector<float>();
@@ -61,16 +59,13 @@ void FlatTreeProducer::beginJob()
   jetElf_       = new std::vector<float>(); 
   jetId_        = new std::vector<int>();
   jetPu_        = new std::vector<int>();
-  photonPt_     = new std::vector<float>();
-  photonEta_    = new std::vector<float>();
-  photonPhi_    = new std::vector<float>();
-  photonE_      = new std::vector<float>();
   elP4_         = new std::vector<LorentzVector>();
   elPt_         = new std::vector<float>();
   elEta_        = new std::vector<float>();
   elPhi_        = new std::vector<float>();
   elE_          = new std::vector<float>(); 
   elIso_        = new std::vector<float>(); 
+  elMva_        = new std::vector<float>();
   elId_         = new std::vector<int>();
   elCh_         = new std::vector<int>();
   muP4_         = new std::vector<LorentzVector>(); 
@@ -90,7 +85,6 @@ void FlatTreeProducer::beginJob()
   outTree_->Branch("njets"       ,&njets_       ,"njets_/I");
   outTree_->Branch("nmuons"      ,&nmuons_      ,"nmuons_/I");
   outTree_->Branch("nelectrons"  ,&nelectrons_  ,"nelectrons_/I");
-  outTree_->Branch("nphotons"    ,&nphotons_    ,"nphotons_/I");
   outTree_->Branch("rho"         ,&rho_         ,"rho_/F");
   outTree_->Branch("met"         ,&met_         ,"met_/F");
   outTree_->Branch("metPhi"      ,&metPhi_      ,"metPhi_/F");
@@ -109,17 +103,13 @@ void FlatTreeProducer::beginJob()
   outTree_->Branch("jetElf"   ,"vector<float>"     ,&jetElf_);
   outTree_->Branch("jetId"    ,"vector<int>"       ,&jetId_);
   outTree_->Branch("jetPu"    ,"vector<int>"       ,&jetPu_);
-  //---------- photons -----------------------------------------
-  outTree_->Branch("photonPt" ,"vector<float>"     ,&photonPt_);
-  outTree_->Branch("photonEta","vector<float>"     ,&photonEta_);
-  outTree_->Branch("photonPhi","vector<float>"     ,&photonPhi_);
-  outTree_->Branch("photonE"  ,"vector<float>"     ,&photonE_);
   //---------- electrons -----------------------------------------
   outTree_->Branch("elPt"     ,"vector<float>"     ,&elPt_);
   outTree_->Branch("elEta"    ,"vector<float>"     ,&elEta_);
   outTree_->Branch("elPhi"    ,"vector<float>"     ,&elPhi_);
   outTree_->Branch("elE"      ,"vector<float>"     ,&elE_);
   outTree_->Branch("elIso"    ,"vector<float>"     ,&elIso_);
+  outTree_->Branch("elMva"    ,"vector<float>"     ,&elMva_);
   outTree_->Branch("elId"     ,"vector<int>"       ,&elId_);
   outTree_->Branch("elCh"     ,"vector<int>"       ,&elCh_);
   //---------- muons -----------------------------------------
@@ -150,10 +140,6 @@ void FlatTreeProducer::beginJob()
   outTree_->Branch("mmjPt"    ,&mmjPt_             ,"mmjPt_/F");
   outTree_->Branch("mmjY"     ,&mmjY_              ,"mmjY_/F");
   outTree_->Branch("mmjM"     ,&mmjM_              ,"mmjM_/F");
-  //---------- photon+jet -----------------------------------------
-  outTree_->Branch("gjPt"     ,&gjPt_              ,"gjPt_/F");
-  outTree_->Branch("gjY"      ,&gjY_               ,"gjY_/F");
-  outTree_->Branch("gjM"      ,&gjM_               ,"gjM_/F");
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void FlatTreeProducer::endJob() 
@@ -172,7 +158,6 @@ void FlatTreeProducer::initialize()
   njets_        = -999;
   nelectrons_   = -999;
   nmuons_       = -999; 
-  nphotons_     = -999;
   eePt_         = -999;
   eeEta_        = -999;
   eePhi_        = -999;
@@ -189,15 +174,13 @@ void FlatTreeProducer::initialize()
   mmjPt_        = -999;
   mmjY_         = -999;
   mmjM_         = -999; 
-  gjPt_         = -999;
-  gjY_          = -999;
-  gjM_          = -999;
   elP4_->clear();
   elPt_->clear();
   elEta_->clear();
   elPhi_->clear();
   elE_->clear();
   elIso_->clear();
+  elMva_->clear();
   elId_->clear();
   elCh_->clear();
   muP4_->clear();
@@ -208,10 +191,7 @@ void FlatTreeProducer::initialize()
   muIso_->clear();
   muId_->clear();
   muCh_->clear();
-  photonPt_->clear();
-  photonEta_->clear();
-  photonPhi_->clear();
-  photonE_->clear();
+  jetP4_->clear();
   jetPt_->clear();
   jetEta_->clear();
   jetPhi_->clear();
@@ -250,64 +230,52 @@ void FlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup const& 
   iEvent.getByLabel(srcMET_,met);
   met_ = (*met)[0].et();
   metPhi_ = (*met)[0].phi();
-  //---- photon block --------------------------------------------  
-  edm::Handle<edm::View<cmg::Photon> > photons;
-  iEvent.getByLabel(srcPhotons_,photons);
-  edm::View<cmg::Photon> cmg_photons = *photons;
-  nphotons_ = 0;
-  for(edm::View<cmg::Photon>::const_iterator iph = cmg_photons.begin();iph != cmg_photons.end(); ++iph) { 
-    if (iph->pt() < minPhotonPt_) continue;
-    photonPt_->push_back(iph->pt());
-    photonEta_->push_back(iph->eta());
-    photonPhi_->push_back(iph->phi());	
-    photonE_->push_back(iph->energy());	 
-    nphotons_++;     
-  }// electron loop
   //---- muons block --------------------------------------------  
   nmuons_ = 0;
   edm::Handle<edm::View<cmg::Muon> > muons;
   iEvent.getByLabel(srcMuons_,muons);
   edm::View<cmg::Muon> cmg_muons = *muons;
-  for(edm::View<cmg::Muon>::const_iterator imuon = cmg_muons.begin();imuon != cmg_muons.end(); ++imuon) { 
-    muPt_ ->push_back(imuon->pt());
-    muEta_->push_back(imuon->eta());
-    muPhi_->push_back(imuon->phi());	
-    muE_  ->push_back(imuon->energy());	
-    muP4_ ->push_back(imuon->p4());
+  for(edm::View<cmg::Muon>::const_iterator imu = cmg_muons.begin();imu != cmg_muons.end(); ++imu) { 
+    if (imu->pt() < minMuonPt_) continue;
+    muPt_ ->push_back(imu->pt());
+    muEta_->push_back(imu->eta());
+    muPhi_->push_back(imu->phi());	
+    muE_  ->push_back(imu->energy());	
+    muP4_ ->push_back(imu->p4());
     int id(0);
     if (
-      imuon->isGlobalMuon() && 
-      fabs(imuon->normalizedChi2()) < 10 &&
-      imuon->numberOfValidMuonHits() > 0 &&
-      imuon->numberOfMatches() >1 && 
-      fabs(imuon->dxy()) < 0.2 &&
-      imuon->numberOfValidPixelHits() > 0 && 
-      imuon->numberOfValidTrackerHits() > 10
+      imu->isGlobalMuon() && 
+      fabs(imu->normalizedChi2()) < 10 &&
+      imu->numberOfValidMuonHits() > 0 &&
+      imu->numberOfMatches() >1 && 
+      fabs(imu->dxy()) < 0.2 &&
+      imu->numberOfValidPixelHits() > 0 && 
+      imu->numberOfValidTrackerHits() > 10
     ) {
       id = 1;
     }
     muId_->push_back(id);
-    muIso_->push_back(-999);
-    muCh_->push_back(imuon->charge());      
+    muIso_->push_back(imu->relIso());
+    muCh_->push_back(imu->charge());      
     nmuons_++;
   }// muon loop 
   //---- electrons block --------------------------------------------  
   nelectrons_ = 0;
   edm::Handle<edm::View<cmg::Electron> > electrons;
   iEvent.getByLabel(srcElectrons_,electrons);
-  edm::View<cmg::Electron> cmg_electrons = *electrons;
-  for(edm::View<cmg::Electron>::const_iterator iel = cmg_electrons.begin();iel != cmg_electrons.end(); ++iel) { 
+  for(edm::View<cmg::Electron>::const_iterator iel = electrons->begin();iel != electrons->end(); ++iel) { 
+    if (iel->pt() < minElectronPt_) continue;
     elPt_ ->push_back(iel->pt());
     elEta_->push_back(iel->eta());
     elPhi_->push_back(iel->phi());	
     elE_  ->push_back(iel->energy());
     elP4_ ->push_back(iel->p4());
+    int id(0);
     float sigmaIetaIeta                  = iel->sigmaIetaIeta();
     float hadronicOverEm                 = iel->hadronicOverEm();
     float deltaPhiSuperClusterTrackAtVtx = iel->deltaPhiSuperClusterTrackAtVtx();
     float deltaEtaSuperClusterTrackAtVtx = iel->deltaEtaSuperClusterTrackAtVtx();
-    int id(0);
-    float etaSC = fabs(iel->eta());// needs to be FIXED: iel->sourcePtr()->superCluster()->eta()
+    float etaSC = iel->sourcePtr()->get()->superCluster()->eta();
     if (etaSC < 1.4442) {
       if (sigmaIetaIeta < 0.01 && deltaPhiSuperClusterTrackAtVtx < 0.8 && deltaEtaSuperClusterTrackAtVtx < 0.007 && hadronicOverEm < 0.15) 
       id = 1;
@@ -316,33 +284,12 @@ void FlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup const& 
       if (sigmaIetaIeta < 0.03 && deltaPhiSuperClusterTrackAtVtx < 0.7 && deltaEtaSuperClusterTrackAtVtx < 0.009 && hadronicOverEm < 0.15) 
       id = 1;
     }// if EE	
+    elMva_->push_back(iel->mva());
     elId_->push_back(id);
-    elIso_->push_back(-999);
+    elIso_->push_back(iel->relIso());
     elCh_->push_back(iel->charge());
     nelectrons_++;	      
   }// electron loop
-  //---- di-electrons block --------------------------------------------  
-  edm::Handle<edm::View<cmg::DiObject<cmg::Electron, cmg::Electron> > > dielectrons;
-  iEvent.getByLabel(srcDiElectrons_,dielectrons);
-  edm::View<cmg::DiObject<cmg::Electron, cmg::Electron> > cmg_dielectrons = *dielectrons;
-  if (cmg_dielectrons.size() > 0) {
-    eePt_  = cmg_dielectrons[0].pt();
-    eeEta_ = cmg_dielectrons[0].eta();
-    eePhi_ = cmg_dielectrons[0].phi();
-    eeE_   = cmg_dielectrons[0].energy();
-    eeM_   = cmg_dielectrons[0].mass();
-  }
-  //---- di-muon block --------------------------------------------  
-  edm::Handle<edm::View<cmg::DiObject<cmg::Muon, cmg::Muon> > > dimuons;
-  iEvent.getByLabel(srcDiMuons_,dimuons);
-  edm::View<cmg::DiObject<cmg::Muon, cmg::Muon> > cmg_dimuons = *dimuons;
-  if (cmg_dimuons.size() > 0) {
-    mmPt_  = cmg_dimuons[0].pt();
-    mmEta_ = cmg_dimuons[0].eta();
-    mmPhi_ = cmg_dimuons[0].phi();
-    mmE_   = cmg_dimuons[0].energy();
-    mmM_   = cmg_dimuons[0].mass();
-  }
   //---- jets block --------------------------------------------  
   njets_ = 0;
   edm::Handle<edm::View<cmg::PFJet> > jets;
@@ -357,18 +304,19 @@ void FlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup const& 
       double dR = deltaR(ijet->p4(),elP4_->at(iel));
       if (dR < 0.25) {
         matched = true;
-        continue;
+        break;
       }
     }
     for(int imu=0;imu<nmuons_;imu++) {
       double dR = deltaR(ijet->p4(),muP4_->at(imu));
       if (dR < 0.25) {
         matched = true;
-        continue;
+        break;
       }
     }
     if (matched) continue;
 
+    jetP4_->push_back(ijet->p4());
     jetPt_->push_back(ijet->pt());
     jetEta_->push_back(ijet->eta());
     jetPhi_->push_back(ijet->phi());	
@@ -404,24 +352,30 @@ void FlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup const& 
   run_    = iEvent.id().run();
   evt_    = iEvent.id().event();
   lumi_   = iEvent.id().luminosityBlock();
-  if (nVtx_ > 0 && (nelectrons_ > 1 || nmuons_ > 1 || nphotons_ > 0) && njets_ > 0) {
+  if (nVtx_ > 0 && (nelectrons_ > 1 || nmuons_ > 1) && njets_ > 0) {
     if (nelectrons_ > 1) {
-      LorentzVector eejP4(cmg_dielectrons[0].p4() + cmg_jets[0].p4()); 
+      LorentzVector eeP4 = elP4_->at(0) + elP4_->at(1); 
+      eePt_  = eeP4.Pt();
+      eeEta_ = eeP4.Eta();
+      eePhi_ = eeP4.Phi();
+      eeE_   = eeP4.E();
+      eeM_   = eeP4.M();
+      LorentzVector eejP4 = eeP4 + jetP4_->at(0); 
       eejPt_ = eejP4.Pt();
       eejY_  = eejP4.Rapidity();
       eejM_  = eejP4.M();
     }
     if (nmuons_ > 1) {
-      LorentzVector mmjP4(cmg_dimuons[0].p4() + cmg_jets[0].p4());
+      LorentzVector mmP4 = muP4_->at(0) + muP4_->at(1); 
+      mmPt_  = mmP4.Pt();
+      mmEta_ = mmP4.Eta();
+      mmPhi_ = mmP4.Phi();
+      mmE_   = mmP4.E();
+      mmM_   = mmP4.M();
+      LorentzVector mmjP4 = mmP4 + jetP4_->at(0); 
       mmjPt_ = mmjP4.Pt();
       mmjY_  = mmjP4.Rapidity();
       mmjM_  = mmjP4.M();
-    }
-    if (nphotons_ > 0) { 
-      LorentzVector gjP4(cmg_photons[0].p4() + cmg_jets[0].p4());
-      gjPt_  = gjP4.Pt();
-      gjY_   = gjP4.Rapidity();
-      gjM_   = gjP4.M();
     }
     outTree_->Fill();
   }

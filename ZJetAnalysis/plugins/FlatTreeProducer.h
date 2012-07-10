@@ -23,15 +23,15 @@ class  FlatTreeProducer: public edm::EDAnalyzer
   private:  
     void initialize();
     //---- configurable parameters --------   
-    edm::InputTag srcJets_,srcMET_,srcElectrons_,srcMuons_,srcDiElectrons_,srcDiMuons_,srcPhotons_,srcRho_;
+    edm::InputTag srcJets_,srcMET_,srcElectrons_,srcMuons_,srcRho_;
     edm::Service<TFileService> fs_;
     TTree *outTree_; 
-    double minJetPt_,maxJetEta_,minPhotonPt_;
+    double minJetPt_,maxJetEta_,minElectronPt_,minMuonPt_;
     //---- output TREE variables ------
-    int run_,evt_,lumi_,nVtx_,njets_,nelectrons_,nmuons_,nphotons_;
+    int run_,evt_,lumi_,nVtx_,njets_,nelectrons_,nmuons_;
     float rho_;
     //---- electrons -------------------------
-    std::vector<float> *elPt_,*elEta_,*elPhi_,*elE_,*elIso_;
+    std::vector<float> *elPt_,*elEta_,*elPhi_,*elE_,*elIso_,*elMva_;
     std::vector<int> *elId_,*elCh_;
     std::vector<LorentzVector> *elP4_;
     //---- muons -------------------------
@@ -41,16 +41,15 @@ class  FlatTreeProducer: public edm::EDAnalyzer
     //---- jets -------------------------
     std::vector<float> *jetPt_,*jetEta_,*jetPhi_,*jetE_,*jetBtag_,*jetRMS_,*jetBeta_,*jetChf_,*jetNhf_,*jetPhf_,*jetMuf_,*jetElf_;
     std::vector<int> *jetId_,*jetPu_;
-    //---- photons -------------------------
-    std::vector<float> *photonPt_,*photonEta_,*photonPhi_,*photonE_;
+    std::vector<LorentzVector> *jetP4_;
     //---- di-electrons -------------------------
     float eePt_,eeEta_,eePhi_,eeE_,eeM_;
     //---- di-muons -------------------------
     float mmPt_,mmEta_,mmPhi_,mmE_,mmM_;
     //---- MET -------------------------
     float met_,metPhi_;
-    //---- Z/g+jet -----------------------
-    float eejPt_,eejY_,eejM_,mmjPt_,mmjY_,mmjM_,gjPt_,gjY_,gjM_;
+    //---- Z+jet -----------------------
+    float eejPt_,eejY_,eejM_,mmjPt_,mmjY_,mmjM_;
 };
 
 #endif
