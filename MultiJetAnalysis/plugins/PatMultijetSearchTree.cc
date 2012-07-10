@@ -132,8 +132,8 @@ void PatMultijetSearchTree::initialize()
     eta4j_[i] = -999;
     pt4j_[i]  = -999;
     for(int j=0;j<4;j++) {
-      index2J_[i][j] = -999;
-      index4J_[j][i] = -999; 
+      index2J_[j][i] = -999;
+      index4J_[i][j] = -999; 
     }
   }
   for(int i=0;i<4;i++) {

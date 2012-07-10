@@ -34,9 +34,6 @@ PatVBFTree::PatVBFTree(edm::ParameterSet const& cfg)
   srcMET_             = cfg.getParameter<edm::InputTag>         ("met");
   srcRho_             = cfg.getParameter<edm::InputTag>         ("rho");
   srcRhoQGL_          = cfg.getParameter<edm::InputTag>         ("rhoQGL");
-  srcPuJetMvaFull_    = cfg.getParameter<edm::InputTag>         ("puJetMvaFull");
-  srcPuJetMvaSimple_  = cfg.getParameter<edm::InputTag>         ("puJetMvaSimple");
-  srcPuJetIdCutBased_ = cfg.getParameter<edm::InputTag>         ("puJetIdCutBased");
   srcGluonJetMva_     = cfg.getParameter<edm::InputTag>         ("gluonJetMva");
   srcBtag_            = cfg.getParameter<std::string>           ("btagger");
   srcQGLfile_         = cfg.getParameter<std::string>           ("qglFile");
@@ -91,29 +88,9 @@ void PatVBFTree::beginJob()
   outTree_->Branch("jetPhf"               ,&phf_               ,"phf_[5]/F");
   outTree_->Branch("jetMuf"               ,&muf_               ,"muf_[5]/F");
   outTree_->Branch("jetElf"               ,&elf_               ,"elf_[5]/F");
-  outTree_->Branch("jetAxis"              ,&axis_              ,"axis_[2][5]/F");
   outTree_->Branch("jetPtD"               ,&ptD_               ,"ptD_[5]/F");
-  outTree_->Branch("jetPtMax"             ,&ptMax_             ,"ptMax_[5]/F");
-  outTree_->Branch("jetTana"              ,&tana_              ,"tana_[5]/F");
-  outTree_->Branch("jetTtheta"            ,&ttheta_            ,"ttheta_[5]/F");
-  outTree_->Branch("jetPuMvaFull"         ,&puMvaFull_         ,"puMvaFull_[5]/F");
-  outTree_->Branch("jetPuMvaSimple"       ,&puMvaSimple_       ,"puMvaSimple_[5]/F");
   outTree_->Branch("jetGluonMva"          ,&gluonMva_          ,"gluonMva_[5]/F");
-  outTree_->Branch("jetPuIdCutBased"      ,&puIdCutBased_      ,"puIdCutBased_[5]/I");
  //------------------------------------------------------------------- 
-  outTree_->Branch("jetAxis_QC"           ,&axis_QC_           ,"axis_QC_[2][5]/F");
-  outTree_->Branch("jetPull"              ,&pull_              ,"pull_[5]/F");
-  outTree_->Branch("jetPull_QC"           ,&pull_QC_           ,"pull_QC_[5]/F");
-  outTree_->Branch("jetChgPart"           ,&chgPart_           ,"chgPart_[5]/I"); 
-  outTree_->Branch("jetNeutralPart"       ,&neutralPart_       ,"neutralPart_[5]/I");
-  outTree_->Branch("jetChgPart_ptcut"     ,&chgPart_ptcut_     ,"chgPart_ptcut_[5]/I");
-  outTree_->Branch("jetNeutralPart_ptcut" ,&neutralPart_ptcut_ ,"neutralPart_ptcut_[5]/I");
-  outTree_->Branch("jetChgPart_QC"        ,&chgPart_QC_        ,"chgPart_QC_[5]/I");
-  outTree_->Branch("jetChgPart_QC_ptcut"  ,&chgPart_QC_ptcut_  ,"chgPart_QC_ptcut_[5]/I");
-  outTree_->Branch("jetLead"              ,&lead_              ,"lead_[5]/F");
-  outTree_->Branch("jetLeadChg"           ,&leadChg_           ,"leadChg_[5]/F"); 
-  outTree_->Branch("jetLeadChg_QC"        ,&leadChg_QC_        ,"leadChg_QC_[5]/F");
-  outTree_->Branch("jetLeadNeutral"       ,&leadNeutral_       ,"leadNeutral_[5]/F");
   outTree_->Branch("jetVtxMass"           ,&vtxMass_           ,"vtxMass_[5]/F"); 
   outTree_->Branch("jetVtx3dL"            ,&vtx3dL_            ,"vtx3dL_[5]/F");
   outTree_->Branch("jetVtx3deL"           ,&vtx3deL_           ,"vtx3deL_[5]/F");
@@ -169,15 +146,6 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
   edm::Handle<pat::JetCollection> jets;
   iEvent.getByLabel(srcJets_,jets); 
   pat::JetCollection pat_jets = *jets;
-
-  edm::Handle<edm::ValueMap<float> > puJetMvaFull;
-  iEvent.getByLabel(srcPuJetMvaFull_,puJetMvaFull);
- 
-  edm::Handle<edm::ValueMap<float> > puJetMvaSimple;
-  iEvent.getByLabel(srcPuJetMvaSimple_,puJetMvaSimple); 
-
-  edm::Handle<edm::ValueMap<int> > puJetIdCutBased;
-  iEvent.getByLabel(srcPuJetIdCutBased_,puJetIdCutBased);
 
   edm::Handle<edm::ValueMap<float> > gluonJetMva;
   iEvent.getByLabel(srcGluonJetMva_,gluonJetMva);
@@ -253,25 +221,6 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
         beta_[N]              = ijet->userFloat("beta");
         unc_[N]               = ijet->userFloat("jecUnc");
         ptD_[N]               = ijet->userFloat("ptD");
-        ptMax_[N]             = ijet->userFloat("ptMax");
-        axis_[0][N]           = ijet->userFloat("axis1");
-        axis_[1][N]           = ijet->userFloat("axis2");
-        tana_[N]              = ijet->userFloat("tana");
-        ttheta_[N]            = ijet->userFloat("ttheta");
-        axis_QC_[0][N]        = ijet->userFloat("axis1_QC");
-        axis_QC_[1][N]        = ijet->userFloat("axis2_QC");
-        pull_[N]              = ijet->userFloat("pull");
-        pull_QC_[N]           = ijet->userFloat("pull_QC");
-        chgPart_[N]           = ijet->userInt("nChg");
-        neutralPart_[N]       = ijet->userInt("nNeutral");
-        chgPart_ptcut_[N]     = ijet->userInt("nChg_ptCut");
-        neutralPart_ptcut_[N] = ijet->userInt("nNeutral_ptCut");
-        chgPart_QC_[N]        = ijet->userInt("nChg_QC");
-        chgPart_QC_ptcut_[N]  = ijet->userInt("nChg_ptCut_QC");
-        lead_[N]              = ijet->userFloat("jetR");
-        leadChg_[N]           = ijet->userFloat("jetRchg");
-        leadChg_QC_[N]        = ijet->userFloat("jetRchg_QC");
-        leadNeutral_[N]       = ijet->userFloat("jetRneutral");
         vtxMass_[N]           = ijet->userFloat("vtxMass");
         vtx3dL_[N]            = ijet->userFloat("vtx3dL");
         vtx3deL_[N]           = ijet->userFloat("vtx3deL");
@@ -285,10 +234,7 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
         //----- acess value maps -----------------------
         int index = ijet-jets->begin();
         edm::RefToBase<pat::Jet> jetRef(edm::Ref<pat::JetCollection>(jets,index));
-        puMvaFull_[N]    = (*puJetMvaFull)[jetRef];
-        puMvaSimple_[N]  = (*puJetMvaSimple)[jetRef];
-        puIdCutBased_[N] = (*puJetIdCutBased)[jetRef];
-        gluonMva_[N]     = (*gluonJetMva)[jetRef];
+        gluonMva_[N] = (*gluonJetMva)[jetRef];
         //----- calculate the qg likelihood ------------
         int nCharged = ijet->chargedHadronMultiplicity();
         int nNeutral = ijet->neutralHadronMultiplicity()+ijet->photonMultiplicity();
@@ -428,25 +374,6 @@ void PatVBFTree::initialize()
     beta_[i]    = -999;
     unc_[i]     = -999;
     ptD_[i]     = -999;
-    ptMax_[i]   = -999;
-    axis_[0][i] = -999;
-    axis_[1][i] = -999;
-    tana_[i]    = -999;
-    ttheta_[i]  = -999;
-    axis_QC_[0][i] = -999;
-    axis_QC_[1][i] = -999;
-    pull_[i]  = -999;
-    pull_QC_[i]  = -999;
-    chgPart_[i]  = -999;
-    neutralPart_[i]  = -999;
-    chgPart_ptcut_[i]  = -999;
-    neutralPart_ptcut_[i]  = -999;
-    chgPart_QC_[i]  = -999;  
-    chgPart_QC_ptcut_[i]  = -999;
-    lead_[i] = -999;
-    leadChg_[i] = -999;
-    leadChg_QC_[i] = -999;
-    leadNeutral_[i] = -999;
     vtxMass_[i] = -999;
     vtx3dL_[i]  = -999;
     vtx3deL_[i] = -999;
@@ -457,10 +384,7 @@ void PatVBFTree::initialize()
     vtxPt_[i] = -999;
     vtxNTrks_[i] = -999;
     part_[i] = -999;
-    puMvaFull_[i] = -999;
-    puMvaSimple_[i] = -999;
     gluonMva_[i] = -999;
-    puIdCutBased_[i] = -999;
   }
  
   softTrackJetPt_ ->clear(); 

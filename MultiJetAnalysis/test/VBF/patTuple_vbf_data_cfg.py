@@ -7,7 +7,6 @@ process.load('RecoJets.JetProducers.TrackJetParameters_cfi')
 process.load("PhysicsTools.PatAlgos.patSequences_cff")
 process.load('JetMETCorrections.Configuration.DefaultJEC_cff')
 process.load('CommonTools.RecoAlgos.HBHENoiseFilterResultProducer_cfi')
-process.load('CMGTools.External.pujetidsequence_cff')
 
 from PhysicsTools.PatAlgos.tools.pfTools import *
 from PhysicsTools.PatAlgos.tools.coreTools import *
@@ -16,7 +15,7 @@ from PhysicsTools.PatAlgos.tools.jetTools import *
 from PhysicsTools.SelectorUtils.pvSelector_cfi import pvSelector
 
 ##--------- global tag -------------------------
-process.GlobalTag.globaltag = 'GR_R_52_V7::All'
+process.GlobalTag.globaltag = 'GR_R_52_V9::All'
 
 ##--------- remove cleaning --------------------
 removeCleaning(process)
@@ -81,16 +80,6 @@ switchJetCollection(process,cms.InputTag('ak5PFJets'),
 process.selectedPatJets.cut        = "pt > 10 && abs(eta) < 4.7"
 process.selectedPatJetsCHS.cut     = "pt > 10 && abs(eta) < 4.7"
 
-##---- modify PU jet id -------------
-process.puJetId.jets = cms.InputTag('jetExtender','extendedPatJets')
-process.puJetId.vertexes = cms.InputTag('goodOfflinePrimaryVertices')
-process.puJetMva.jets = cms.InputTag('jetExtender','extendedPatJets')
-process.puJetMva.vertexes = cms.InputTag('goodOfflinePrimaryVertices')
-process.puJetIdChs.jets = cms.InputTag('jetExtenderCHS','extendedPatJetsCHS')
-process.puJetIdChs.vertexes = cms.InputTag('goodOfflinePrimaryVertices')
-process.puJetMvaChs.jets = cms.InputTag('jetExtenderCHS','extendedPatJetsCHS')
-process.puJetMvaChs.vertexes = cms.InputTag('goodOfflinePrimaryVertices')
-
 ##--------- keep only jet and MET PAT objects ---
 removeAllPATObjectsBut(process,["Jets","METs"])
 ##--------- output commands ---------------------
@@ -99,9 +88,6 @@ process.out.outputCommands = [
          'keep *_kt6PFJets_rho_PAT',
          'keep *_kt6PFJetsCHS_rho_PAT',
          'keep *_kt6PFJetsISO_rho_PAT',## needed for the QG likelihood
-         #'keep *_selectedPatJets__*',
-         #'keep *_selectedPatJetsCHS__*',
-         'keep *_puJet*_*_*',
          'keep *_jetExtender*_*_*', 
          'keep *_ak5SoftTrackJets__*',
          'keep *_HBHENoiseFilterResultProducer_*_*', 
@@ -109,8 +95,6 @@ process.out.outputCommands = [
          'keep recoVertexs_goodOfflinePrimaryVertices_*_*',
          'keep edmTriggerResults_TriggerResults_*_HLT',
          'keep *_hltTriggerSummaryAOD_*_*'
-         #'keep L1GlobalTriggerObjectMapRecord_*_*_*',
-         #'keep L1GlobalTriggerReadoutRecord_*_*_*',
 ]
 
 process.outTracks = cms.EDProducer('PatTracksOutOfJets',
@@ -135,7 +119,7 @@ process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
 )
 
 process.maxEvents.input = 100
-process.MessageLogger.cerr.FwkReport.reportEvery = 10
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.source.fileNames = [
 '/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/467/D8C5020C-F980-E111-84F0-003048F118C2.root',
@@ -163,9 +147,6 @@ process.p = cms.Path(
    process.jetExtender +
    #----- extend the CHS PAT jets with additional variables ----
    process.jetExtenderCHS +
-   #----- pu jet id --------------------------------------------
-   process.puJetIdSqeuence +
-   process.puJetIdSqeuenceChs +
    #----- create a collection of tracks out of jets ------------
    process.outTracks +
    #----- reconstruct track jets from the soft tracks ----------

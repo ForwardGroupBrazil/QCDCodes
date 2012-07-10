@@ -12,15 +12,18 @@ process.maxEvents = cms.untracked.PSet(
         )
 process.source = cms.Source("PoolSource",
         fileNames = cms.untracked.vstring(
-        'file://./patTuple.root'
+'root://eoscms//eos/cms/store/cmst3/user/kkousour/MultiJet/Run2012A-PromptV1-PAT-V3/6c959e3053513b6fdbecab8620fff14d/patTuple_99_1_3bu.root',
+'root://eoscms//eos/cms/store/cmst3/user/kkousour/MultiJet/Run2012A-PromptV1-PAT-V3/6c959e3053513b6fdbecab8620fff14d/patTuple_76_1_o2n.root',
+'root://eoscms//eos/cms/store/cmst3/user/kkousour/MultiJet/Run2012A-PromptV1-PAT-V3/6c959e3053513b6fdbecab8620fff14d/patTuple_77_1_vjm.root',
+'root://eoscms//eos/cms/store/cmst3/user/kkousour/MultiJet/Run2012A-PromptV1-PAT-V3/6c959e3053513b6fdbecab8620fff14d/patTuple_78_1_Oiq.root'
         )
 )
 
 ############# hlt filter #########################
 process.hltFilter = cms.EDFilter('HLTHighLevel',
     TriggerResultsTag  = cms.InputTag('TriggerResults','','HLT'),
-    #HLTPaths           = cms.vstring('HLT_QuadPFJet75_55_35_20_BTagCSV_VBF_v*'),
-    HLTPaths           = cms.vstring('HLT_QuadJet75_55_35_20_BTagIP_VBF_v*'),
+    #HLTPaths           = cms.vstring('HLT_QuadPFJet75_55_35_20_BTagCSV_VBF_v*','HLT_QuadPFJet75_55_38_20_BTagCSV_VBF','HLT_QuadPFJet78_61_44_31_BTagCSV_VBF','HLT_QuadPFJet82_65_48_35_BTagCSV_VBF'),
+    HLTPaths           = cms.vstring('HLT_QuadJet75_55_35_20_BTagIP_VBF_v*','HLT_QuadJet75_55_38_20_BTagIP_VBF_v*'),
     eventSetupPathsKey = cms.string(''),
     andOr              = cms.bool(True), #----- True = OR, False = AND between the HLTPaths
     throw              = cms.bool(False)
@@ -32,16 +35,13 @@ process.GluonTag = cms.EDProducer('GluonTagLikelihood',
 )
 
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 10
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 ##-------------------- User analyzer  --------------------------------
 process.Hbb = cms.EDAnalyzer('PatVBFTree',
     jets    = cms.InputTag('jetExtender','extendedPatJets'),
     met     = cms.InputTag('pfMet'),
     rho     = cms.InputTag('kt6PFJets','rho'),
     rhoQGL  = cms.InputTag('kt6PFJetsISO','rho'),
-    puJetMvaFull = cms.InputTag('puJetMva','fullDiscriminant'),
-    puJetMvaSimple = cms.InputTag('puJetMva','simpleDiscriminant'),
-    puJetIdCutBased = cms.InputTag('puJetMva','cutbasedId'),
     gluonJetMva = cms.InputTag('GluonTag'),
     mbbMin  = cms.double(0.0),
     dEtaMin = cms.double(0.0),
@@ -49,5 +49,5 @@ process.Hbb = cms.EDAnalyzer('PatVBFTree',
     qglFile = cms.string('./QG_QCD_Pt-15to3000_TuneZ2_Flat_7TeV_pythia6_Summer11-PU_S3_START42_V11-v2.root')
 )
 
-process.p = cms.Path(process.GluonTag * process.Hbb)
+process.p = cms.Path(process.hltFilter * process.GluonTag * process.Hbb)
 

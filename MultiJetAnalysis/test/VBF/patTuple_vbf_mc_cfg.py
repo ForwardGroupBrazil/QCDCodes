@@ -16,7 +16,7 @@ from PhysicsTools.PatAlgos.tools.jetTools import *
 from PhysicsTools.SelectorUtils.pvSelector_cfi import pvSelector
 
 ##--------- global tag -------------------------
-process.GlobalTag.globaltag = 'GR_R_52_V7::All'
+process.GlobalTag.globaltag = 'GR_R_52_V9::All'
 
 ##--------- remove cleaning --------------------
 removeCleaning(process)
@@ -43,9 +43,6 @@ process.pfPileUpCHS.Vertices = cms.InputTag('goodOfflinePrimaryVertices')
 process.pfJetsCHS.doAreaFastjet = True
 process.pfJetsCHS.doRhoFastjet = False
 
-process.ak5PFJets.doAreaFastjet = True
-process.kt6PFJets.doRhoFastjet = True
-
 process.kt6PFJetsCHS = process.kt6PFJets.clone(
     src = cms.InputTag('pfNoElectron'+postfix),
     doAreaFastjet = cms.bool(True),
@@ -56,7 +53,7 @@ process.kt6PFJetsISO = process.kt6PFJets.clone(
     Rho_EtaMax = cms.double(2.4)
     )
 
-process.patJetCorrFactorsCHS.rho = cms.InputTag("kt6PFJets", "rho")
+process.patJetCorrFactorsCHS.rho = cms.InputTag("kt6PFJetsCHS", "rho")
 
 getattr(process,"patPF2PATSequence"+postfix).replace(
     getattr(process,"pfNoElectron"+postfix),
@@ -66,8 +63,8 @@ process.patPF2PATseq = cms.Sequence(
     getattr(process,"patPF2PATSequence"+postfix)
     )
 
-##--------- remove MC matching -----------------
-removeMCMatching(process)
+#removeMCMatching(process)
+
 addPfMET(process, 'PF')
 switchJetCollection(process,cms.InputTag('ak5PFJets'),
                  doJTA        = True,
@@ -126,11 +123,17 @@ process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
     payload = cms.string('AK5PFchs') 
 )
 
-process.maxEvents.input = 100
+process.multiJetFilter = cms.EDFilter('PatMultijetFilter',
+    jets     = cms.InputTag('selectedPatJets'),
+    minNjets = cms.int32(4),
+    minPt    = cms.double(20)
+)
+
+process.maxEvents.input = -1
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.source.fileNames = [
-'/store/mc/Summer11/QCD_TuneZ2_HT-1000_7TeV-madgraph/AODSIM/PU_S4_START42_V11-v1/0000/1AB5A492-C4C5-E011-BCD9-90E6BA19A203.root'
+'/store/mc/Summer12/VBF_HToBB_M-120_TuneZ2star_8TeV-pythia6/GEN-SIM-RECO/PU_S9_START52_V9-v1/0000/14EFB099-B78F-E111-879A-001E67396F9A.root'
 ]
 
 process.options.wantSummary = False
@@ -138,10 +141,6 @@ process.options.wantSummary = False
 process.p = cms.Path(
    #----- produce the HBHE noise flag --------------------------
    process.HBHENoiseFilterResultProducer +
-   #----- re-cluster ak5PFJets after activating the jet area ---
-   #process.ak5PFJets +
-   #----- re-cluster kt6PFJets after activating rho ------------
-   #process.kt6PFJets +
    #----- re-cluster kt6PFJets after activating rho for ISO ----
    process.kt6PFJetsISO +
    #----- create the collection of good PV ---------------------
