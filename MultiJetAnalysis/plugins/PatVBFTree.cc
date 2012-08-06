@@ -19,6 +19,7 @@
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/JetReco/interface/TrackJetCollection.h"
+#include "DataFormats/JetReco/interface/GenJetCollection.h"
 #include "DataFormats/METReco/interface/MET.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
@@ -40,6 +41,7 @@ PatVBFTree::PatVBFTree(edm::ParameterSet const& cfg)
   mbbMin_             = cfg.getParameter<double>                ("mbbMin");
   dEtaMin_            = cfg.getParameter<double>                ("dEtaMin");
   srcPU_              = cfg.getUntrackedParameter<std::string>  ("pu","");
+  srcGenJets_         = cfg.getUntrackedParameter<edm::InputTag>("genjets",edm::InputTag(""));
 
   qglikeli_ = new QGLikelihoodCalculator(srcQGLfile_);
 }
@@ -119,12 +121,20 @@ void PatVBFTree::beginJob()
   partonEta_ = new std::vector<float>;
   partonPhi_ = new std::vector<float>;
   partonE_   = new std::vector<float>;
+  genjetPt_  = new std::vector<float>;
+  genjetEta_ = new std::vector<float>;
+  genjetPhi_ = new std::vector<float>;
+  genjetE_   = new std::vector<float>;
   outTree_->Branch("partonId"       ,"vector<int>"   ,&partonId_);
   outTree_->Branch("partonSt"       ,"vector<int>"   ,&partonSt_);
   outTree_->Branch("partonPt"       ,"vector<float>" ,&partonPt_);
   outTree_->Branch("partonEta"      ,"vector<float>" ,&partonEta_);
   outTree_->Branch("partonPhi"      ,"vector<float>" ,&partonPhi_);
   outTree_->Branch("partonE"        ,"vector<float>" ,&partonE_);
+  outTree_->Branch("genjetPt"       ,"vector<float>" ,&genjetPt_);
+  outTree_->Branch("genjetEta"      ,"vector<float>" ,&genjetEta_);
+  outTree_->Branch("genjetPhi"      ,"vector<float>" ,&genjetPhi_);
+  outTree_->Branch("genjetE"        ,"vector<float>" ,&genjetE_);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatVBFTree::endJob() 
@@ -135,6 +145,10 @@ void PatVBFTree::endJob()
   delete partonEta_;
   delete partonPhi_;
   delete partonE_;
+  delete genjetPt_;
+  delete genjetEta_;
+  delete genjetPhi_;
+  delete genjetE_;
   delete softTrackJetPt_;
   delete softTrackJetEta_;
   delete softTrackJetPhi_;
@@ -167,6 +181,7 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
 
   edm::Handle<GenEventInfoProduct> hEventInfo;
   edm::Handle<GenParticleCollection> genParticles;
+  edm::Handle<GenJetCollection> genjets;
   edm::Handle<std::vector<PileupSummaryInfo> > PupInfo;
 
   initialize();
@@ -280,6 +295,14 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
           }
         }
       }
+      //---------- genjets ------------------
+      iEvent.getByLabel(srcGenJets_, genjets);
+      for(reco::GenJetCollection::const_iterator igen = genjets->begin();igen != genjets->end(); ++igen) {
+        genjetPt_ ->push_back(igen->pt());
+        genjetEta_->push_back(igen->eta());
+        genjetPhi_->push_back(igen->phi());
+        genjetE_  ->push_back(igen->energy()); 
+      }// genjet loop
       //---------- partons ------------------
       iEvent.getByLabel("genParticles", genParticles);
       for(unsigned ip = 0; ip < genParticles->size(); ++ ip) {
@@ -399,6 +422,10 @@ void PatVBFTree::initialize()
   partonEta_->clear();
   partonPhi_->clear();
   partonE_  ->clear();
+  genjetPt_ ->clear();
+  genjetEta_->clear();
+  genjetPhi_->clear();
+  genjetE_  ->clear();
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 PatVBFTree::~PatVBFTree() 

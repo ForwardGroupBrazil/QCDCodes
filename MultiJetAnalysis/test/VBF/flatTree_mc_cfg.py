@@ -19,16 +19,17 @@ process.source = cms.Source("PoolSource",
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000 
 ##-------------------- User analyzer  --------------------------------
 process.Hbb = cms.EDAnalyzer('PatVBFTree',
-    jets    = cms.InputTag('jetExtender','extendedPatJets'),
-    met     = cms.InputTag('pfMet'),
-    rho     = cms.InputTag('kt6PFJets','rho'),
-    rhoQGL  = cms.InputTag('kt6PFJetsISO','rho'),
+    jets        = cms.InputTag('jetExtender','extendedPatJets'),
+    met         = cms.InputTag('pfMet'),
+    rho         = cms.InputTag('kt6PFJets','rho'),
+    rhoQGL      = cms.InputTag('kt6PFJetsISO','rho'),
     gluonJetMva = cms.InputTag('GluonTag'),
-    mbbMin  = cms.double(0.0),
-    dEtaMin = cms.double(0.0),
-    pu      = cms.untracked.string('addPileupInfo'),
-    btagger = cms.string('combinedSecondaryVertexBJetTags'),
-    qglFile = cms.string('./QG_QCD_Pt-15to3000_TuneZ2_Flat_7TeV_pythia6_Summer11-PU_S3_START42_V11-v2.root')
+    mbbMin      = cms.double(0.0),
+    dEtaMin     = cms.double(0.0),
+    pu          = cms.untracked.string('addPileupInfo'),
+    genjets = cms.untracked.InputTag('ak5GenJets'),
+    btagger     = cms.string('combinedSecondaryVertexBJetTags'),
+    qglFile     = cms.string('./QG_QCD_Pt-15to3000_TuneZ2_Flat_7TeV_pythia6_Summer11-PU_S3_START42_V11-v2.root')
 )
 
 process.GluonTag = cms.EDProducer('GluonTagLikelihood',

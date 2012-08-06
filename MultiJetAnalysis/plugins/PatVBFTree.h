@@ -23,7 +23,7 @@ class PatVBFTree : public edm::EDAnalyzer
   private:  
     void initialize();
     //---- configurable parameters --------   
-    edm::InputTag srcJets_,srcMET_,srcRho_,srcRhoQGL_,srcGluonJetMva_;
+    edm::InputTag srcJets_,srcGenJets_,srcMET_,srcRho_,srcRhoQGL_,srcGluonJetMva_;
     std::string srcBtag_,srcPU_,srcQGLfile_;
     double mbbMin_,dEtaMin_;
     edm::Service<TFileService> fs_;
@@ -45,6 +45,7 @@ class PatVBFTree : public edm::EDAnalyzer
     int npu_;
     std::vector<int> *partonId_,*partonSt_;
     std::vector<float> *partonPt_,*partonEta_,*partonPhi_,*partonE_;
+    std::vector<float> *genjetPt_,*genjetEta_,*genjetPhi_,*genjetE_;
 };
 
 #endif

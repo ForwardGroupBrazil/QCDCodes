@@ -133,7 +133,7 @@ process.maxEvents.input = -1
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.source.fileNames = [
-'/store/mc/Summer12/VBF_HToBB_M-120_TuneZ2star_8TeV-pythia6/GEN-SIM-RECO/PU_S9_START52_V9-v1/0000/14EFB099-B78F-E111-879A-001E67396F9A.root'
+'/store/mc/Summer12/QCD_HT-1000ToInf_TuneZ2star_8TeV-madgraph-pythia6/AODSIM/PU_S7_START52_V9-v1/0000/FEFE3CA2-3DB2-E111-9D82-00151796D524.root'
 ]
 
 process.options.wantSummary = False
