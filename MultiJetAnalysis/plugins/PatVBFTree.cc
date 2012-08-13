@@ -31,23 +31,44 @@ using namespace reco;
 
 PatVBFTree::PatVBFTree(edm::ParameterSet const& cfg) 
 {
-  srcJets_            = cfg.getParameter<edm::InputTag>         ("jets");
-  srcMET_             = cfg.getParameter<edm::InputTag>         ("met");
-  srcRho_             = cfg.getParameter<edm::InputTag>         ("rho");
-  srcRhoQGL_          = cfg.getParameter<edm::InputTag>         ("rhoQGL");
-  srcGluonJetMva_     = cfg.getParameter<edm::InputTag>         ("gluonJetMva");
-  srcBtag_            = cfg.getParameter<std::string>           ("btagger");
-  srcQGLfile_         = cfg.getParameter<std::string>           ("qglFile");
-  mbbMin_             = cfg.getParameter<double>                ("mbbMin");
-  dEtaMin_            = cfg.getParameter<double>                ("dEtaMin");
-  srcPU_              = cfg.getUntrackedParameter<std::string>  ("pu","");
-  srcGenJets_         = cfg.getUntrackedParameter<edm::InputTag>("genjets",edm::InputTag(""));
+  srcJets_            = cfg.getParameter<edm::InputTag>             ("jets");
+  srcMET_             = cfg.getParameter<edm::InputTag>             ("met");
+  srcRho_             = cfg.getParameter<edm::InputTag>             ("rho");
+  srcRhoQGL_          = cfg.getParameter<edm::InputTag>             ("rhoQGL");
+  srcBtag_            = cfg.getParameter<std::string>               ("btagger");
+  srcQGLfile_         = cfg.getParameter<std::string>               ("qglFile");
+  mbbMin_             = cfg.getParameter<double>                    ("mbbMin");
+  dEtaMin_            = cfg.getParameter<double>                    ("dEtaMin");
+  srcPU_              = cfg.getUntrackedParameter<std::string>      ("pu","");
+  srcGenJets_         = cfg.getUntrackedParameter<edm::InputTag>    ("genjets",edm::InputTag(""));
+  
+  triggerCache_       = triggerExpression::Data(cfg.getParameterSet("triggerConfiguration"));
+  vtriggerAlias_      = cfg.getParameter<std::vector<std::string> > ("triggerAlias");
+  vtriggerSelection_  = cfg.getParameter<std::vector<std::string> > ("triggerSelection");
+
+  if (vtriggerAlias_.size() != vtriggerSelection_.size()) {
+    cout<<"ERROR: the number of trigger aliases does not match the number of trigger names !!!"<<endl;
+    return;
+  }
+
+  for(unsigned i=0;i<vtriggerSelection_.size();i++) {
+    vtriggerSelector_.push_back(triggerExpression::parse(vtriggerSelection_[i]));
+  }
 
   qglikeli_ = new QGLikelihoodCalculator(srcQGLfile_);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatVBFTree::beginJob() 
 {
+  //--- book the trigger histograms ---------
+  triggerNamesHisto_ = fs_->make<TH1F>("TriggerNames","TriggerNames",1,0,1);
+  triggerNamesHisto_->SetBit(TH1::kCanRebin);
+  for(unsigned i=0;i<vtriggerSelection_.size();i++) {
+    triggerNamesHisto_->Fill(vtriggerSelection_[i].c_str(),1);
+  }
+  triggerPassHisto_ = fs_->make<TH1F>("TriggerPass","TriggerPass",1,0,1);
+  triggerPassHisto_->SetBit(TH1::kCanRebin);
+  //--- book the tree -----------------------
   outTree_ = fs_->make<TTree>("events","events");
   outTree_->Branch("runNo"                ,&run_               ,"run_/I");
   outTree_->Branch("evtNo"                ,&evt_               ,"evt_/I");
@@ -91,8 +112,16 @@ void PatVBFTree::beginJob()
   outTree_->Branch("jetMuf"               ,&muf_               ,"muf_[5]/F");
   outTree_->Branch("jetElf"               ,&elf_               ,"elf_[5]/F");
   outTree_->Branch("jetPtD"               ,&ptD_               ,"ptD_[5]/F");
-  outTree_->Branch("jetGluonMva"          ,&gluonMva_          ,"gluonMva_[5]/F");
  //------------------------------------------------------------------- 
+  outTree_->Branch("jetAxis"              ,&axis_              ,"axis_[2][5]/F");
+  outTree_->Branch("jetAxis_QC"           ,&axis_QC_           ,"axis_QC_[2][5]/F");
+  outTree_->Branch("jetPull"              ,&pull_              ,"pull_[5]/F");
+  outTree_->Branch("jetPull_QC"           ,&pull_QC_           ,"pull_QC_[5]/F");
+  outTree_->Branch("jetR"                 ,&jetR_              ,"jetR_[5]/F");
+  outTree_->Branch("jetRChg_QC"           ,&jetRChg_QC_        ,"jetRChg_QC_[5]/F");
+  outTree_->Branch("jetnChg_QC"           ,&nChg_QC_           ,"nChg_QC_[5]/I");
+  outTree_->Branch("jetnChg_ptCut"        ,&nChg_ptCut_        ,"nChg_ptCut_[5]/I");
+  outTree_->Branch("jetnNeutral_ptCut"    ,&nNeutral_ptCut_    ,"nNeutral_ptCut_[5]/I");
   outTree_->Branch("jetVtxMass"           ,&vtxMass_           ,"vtxMass_[5]/F"); 
   outTree_->Branch("jetVtx3dL"            ,&vtx3dL_            ,"vtx3dL_[5]/F");
   outTree_->Branch("jetVtx3deL"           ,&vtx3deL_           ,"vtx3deL_[5]/F");
@@ -104,7 +133,9 @@ void PatVBFTree::beginJob()
   outTree_->Branch("jetVtxNTrks"          ,&vtxNTrks_          ,"vtxNTrks_[5]/I"); 
   outTree_->Branch("jetPart"              ,&part_              ,"part_[5]/I"); 
  //------------------------------------------------------------------
-
+  triggerResult_ = new std::vector<bool>;
+  outTree_->Branch("triggerResult","vector<bool>",&triggerResult_);
+  //------------------------------------------------------------------
   softTrackJetPt_  = new std::vector<float>;
   softTrackJetEta_ = new std::vector<float>;
   softTrackJetPhi_ = new std::vector<float>;
@@ -135,6 +166,8 @@ void PatVBFTree::beginJob()
   outTree_->Branch("genjetEta"      ,"vector<float>" ,&genjetEta_);
   outTree_->Branch("genjetPhi"      ,"vector<float>" ,&genjetPhi_);
   outTree_->Branch("genjetE"        ,"vector<float>" ,&genjetE_);
+
+  cout<<"Begin job finished"<<endl;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatVBFTree::endJob() 
@@ -153,6 +186,10 @@ void PatVBFTree::endJob()
   delete softTrackJetEta_;
   delete softTrackJetPhi_;
   delete softTrackJetE_;
+  delete triggerResult_;
+  for(unsigned i=0;i<vtriggerSelector_.size();i++) {
+    delete vtriggerSelector_[i];
+  }
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup) 
@@ -160,9 +197,6 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
   edm::Handle<pat::JetCollection> jets;
   iEvent.getByLabel(srcJets_,jets); 
   pat::JetCollection pat_jets = *jets;
-
-  edm::Handle<edm::ValueMap<float> > gluonJetMva;
-  iEvent.getByLabel(srcGluonJetMva_,gluonJetMva);
 
   edm::Handle<reco::TrackJetCollection> softTrackJets;
   iEvent.getByLabel("ak5SoftTrackJets",softTrackJets);
@@ -185,7 +219,24 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
   edm::Handle<std::vector<PileupSummaryInfo> > PupInfo;
 
   initialize();
-
+ 
+  //-------------- Trigger Info -----------------------------------
+  if (triggerCache_.setEvent(iEvent,iSetup)) {
+    for(unsigned itrig=0;itrig<vtriggerSelector_.size();itrig++) {
+      bool result(false);
+      if (vtriggerSelector_[itrig]) {
+        if (triggerCache_.configurationUpdated()) {
+          vtriggerSelector_[itrig]->init(triggerCache_);
+        }
+        result = (*(vtriggerSelector_[itrig]))(triggerCache_);
+      }
+      if (result) {
+        triggerPassHisto_->Fill(vtriggerAlias_[itrig].c_str(),1);
+      }
+      triggerResult_->push_back(result);
+    }
+  }
+     
   //----- at least one good vertex -----------
   bool cut_vtx = (recVtxs->size() > 0);
   //----- at least 4 jets --------------------
@@ -246,10 +297,18 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
         vtxPt_[N]             = ijet->userFloat("vtxPt");
         vtxNTrks_[N]          = ijet->userInt("vtxNTracks");
         part_[N]              = ijet->userInt("nConstituents");
-        //----- acess value maps -----------------------
-        int index = ijet-jets->begin();
-        edm::RefToBase<pat::Jet> jetRef(edm::Ref<pat::JetCollection>(jets,index));
-        gluonMva_[N] = (*gluonJetMva)[jetRef];
+
+        axis_[0][N]           = ijet->userFloat("axis1");
+        axis_[1][N]           = ijet->userFloat("axis2");
+        axis_QC_[0][N]        = ijet->userFloat("axis1_QC");
+        axis_QC_[1][N]        = ijet->userFloat("axis2_QC");
+        pull_[N]              = ijet->userFloat("pull");
+        pull_QC_[N]           = ijet->userFloat("pull_QC");
+        jetR_[N]              = ijet->userFloat("jetR");
+        jetRChg_QC_[N]        = ijet->userFloat("jetRchg_QC");
+        nChg_ptCut_[N]        = ijet->userInt("nChg_ptCut");
+        nNeutral_ptCut_[N]    = ijet->userInt("nNeutral_ptCut");
+        nChg_QC_[N]           = ijet->userInt("nChg_QC");
         //----- calculate the qg likelihood ------------
         int nCharged = ijet->chargedHadronMultiplicity();
         int nNeutral = ijet->neutralHadronMultiplicity()+ijet->photonMultiplicity();
@@ -355,61 +414,71 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatVBFTree::initialize()
 {
-  run_    = -999;
-  evt_    = -999;
-  lumi_   = -999;
-  nVtx_   = -999;
+  run_            = -999;
+  evt_            = -999;
+  lumi_           = -999;
+  nVtx_           = -999;
   nSoftTrackJets_ = -999;
-  rho_    = -999;
-  met_    = -999;
-  metPhi_ = -999;
-  metSig_ = -999;
-  ht_     = -999;
-  htAll_  = -999;
-  softHt_ = -999;
-  pvx_    = -999;
-  pvy_    = -999;
-  pvz_    = -999;
-  mqq_    = -999;
-  mbb_    = -999;
-  ptqq_   = -999;
-  ptbb_   = -999;
-  dEtaqq_ = -999;
-  dEtabb_ = -999;
-  etaBoostqq_ = -999;
-  etaBoostbb_ = -999;
-  dPhiqq_ = -999;
-  dPhibb_ = -999;
+  rho_            = -999;
+  met_            = -999;
+  metPhi_         = -999;
+  metSig_         = -999;
+  ht_             = -999;
+  htAll_          = -999;
+  softHt_         = -999;
+  pvx_            = -999;
+  pvy_            = -999;
+  pvz_            = -999;
+  mqq_            = -999;
+  mbb_            = -999;
+  ptqq_           = -999;
+  ptbb_           = -999;
+  dEtaqq_         = -999;
+  dEtabb_         = -999;
+  etaBoostqq_     = -999;
+  etaBoostbb_     = -999;
+  dPhiqq_         = -999;
+  dPhibb_         = -999;
   for(int i=0;i<5;i++) {
-    pt_[i]      = -999;
-    eta_[i]     = -999;
-    phi_[i]     = -999;
-    mass_[i]    = -999;
-    chf_[i]     = -999;
-    nhf_[i]     = -999;
-    phf_[i]     = -999;
-    elf_[i]     = -999;
-    muf_[i]     = -999;
-    jec_[i]     = -999;
-    qgl_[i]     = -999;
-    btag_[i]    = -999;
-    btagIdx_[i] = -999;
-    beta_[i]    = -999;
-    unc_[i]     = -999;
-    ptD_[i]     = -999;
-    vtxMass_[i] = -999;
-    vtx3dL_[i]  = -999;
-    vtx3deL_[i] = -999;
-    sumTrkPt_[i] = -999;
-    sumTrkP_[i] = -999;
+    pt_[i]        = -999;
+    eta_[i]       = -999;
+    phi_[i]       = -999;
+    mass_[i]      = -999;
+    chf_[i]       = -999;
+    nhf_[i]       = -999;
+    phf_[i]       = -999;
+    elf_[i]       = -999;
+    muf_[i]       = -999;
+    jec_[i]       = -999;
+    qgl_[i]       = -999;
+    btag_[i]      = -999;
+    btagIdx_[i]   = -999;
+    beta_[i]      = -999;
+    unc_[i]       = -999;
+    ptD_[i]       = -999;
+    vtxMass_[i]   = -999;
+    vtx3dL_[i]    = -999;
+    vtx3deL_[i]   = -999;
+    sumTrkPt_[i]  = -999;
+    sumTrkP_[i]   = -999;
     sumTrkPtV_[i] = -999;
     leadTrkPt_[i] = -999;
-    vtxPt_[i] = -999;
-    vtxNTrks_[i] = -999;
-    part_[i] = -999;
-    gluonMva_[i] = -999;
+    vtxPt_[i]     = -999;
+    vtxNTrks_[i]  = -999;
+    part_[i]      = -999;
+    for(int j=0;j<2;j++) {
+      axis_[j][i]   = -999;
+      axis_QC_[j][i] = -999;
+    }
+    pull_[i]           = -999; 
+    pull_QC_[i]        = -999;
+    jetR_[i]           = -999;
+    jetRChg_QC_[i]     = -999;
+    nChg_QC_[i]        = -999;
+    nChg_ptCut_[i]     = -999;
+    nNeutral_ptCut_[i] = -999;
   }
- 
+  triggerResult_  ->clear();
   softTrackJetPt_ ->clear(); 
   softTrackJetEta_->clear();
   softTrackJetPhi_->clear();
