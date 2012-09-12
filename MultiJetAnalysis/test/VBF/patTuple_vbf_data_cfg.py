@@ -15,7 +15,7 @@ from PhysicsTools.PatAlgos.tools.jetTools import *
 from PhysicsTools.SelectorUtils.pvSelector_cfi import pvSelector
 
 ##--------- global tag -------------------------
-process.GlobalTag.globaltag = 'GR_R_52_V9::All'
+process.GlobalTag.globaltag = 'GR_R_53_V13::All'
 
 ##--------- remove cleaning --------------------
 removeCleaning(process)
@@ -118,16 +118,11 @@ process.jetExtenderCHS = cms.EDProducer("JetExtendedProducer",
     payload = cms.string('AK5PFchs') 
 )
 
-process.maxEvents.input = 100
+process.maxEvents.input = -1
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.source.fileNames = [
-'/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/467/D8C5020C-F980-E111-84F0-003048F118C2.root',
-'/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/519/E65A5017-6B81-E111-9CF6-001D09F291D2.root',
-'/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/517/0820E829-6681-E111-AFD6-003048F110BE.root',
-'/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/492/EEA1A177-2981-E111-AB04-003048F117B6.root',
-'/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/491/BE07ECB3-1C81-E111-96FA-BCAEC5329713.root',
-'/store/data/Run2012A/MultiJet/AOD/PromptReco-v1/000/190/490/E8ACC615-2F81-E111-859C-001D09F23D1D.root'
+'/store/data/Run2012C/BJetPlusX/AOD/PromptReco-v2/000/198/941/18A3A7B9-6CCF-E111-B6BE-001D09F2462D.root'
 ]
 
 process.options.wantSummary = False
