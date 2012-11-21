@@ -34,14 +34,13 @@ PatVBFTree::PatVBFTree(edm::ParameterSet const& cfg)
   srcJets_            = cfg.getParameter<edm::InputTag>             ("jets");
   srcMET_             = cfg.getParameter<edm::InputTag>             ("met");
   srcRho_             = cfg.getParameter<edm::InputTag>             ("rho");
-  srcRhoQGL_          = cfg.getParameter<edm::InputTag>             ("rhoQGL");
+  srcRhoQGL_          = cfg.getParameter<edm::InputTag>             ("rhoQGL"); 
   srcBtag_            = cfg.getParameter<std::string>               ("btagger");
-  srcQGLfile_         = cfg.getParameter<std::string>               ("qglFile");
-  mbbMin_             = cfg.getParameter<double>                    ("mbbMin");
   dEtaMin_            = cfg.getParameter<double>                    ("dEtaMin");
+  ptMin_              = cfg.getParameter<vector<double> >           ("ptMin");
   srcPU_              = cfg.getUntrackedParameter<std::string>      ("pu","");
   srcGenJets_         = cfg.getUntrackedParameter<edm::InputTag>    ("genjets",edm::InputTag(""));
-  
+
   triggerCache_       = triggerExpression::Data(cfg.getParameterSet("triggerConfiguration"));
   vtriggerAlias_      = cfg.getParameter<std::vector<std::string> > ("triggerAlias");
   vtriggerSelection_  = cfg.getParameter<std::vector<std::string> > ("triggerSelection");
@@ -54,8 +53,6 @@ PatVBFTree::PatVBFTree(edm::ParameterSet const& cfg)
   for(unsigned i=0;i<vtriggerSelection_.size();i++) {
     vtriggerSelector_.push_back(triggerExpression::parse(vtriggerSelection_[i]));
   }
-
-  qglikeli_ = new QGLikelihoodCalculator(srcQGLfile_);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void PatVBFTree::beginJob() 
@@ -76,11 +73,13 @@ void PatVBFTree::beginJob()
   outTree_->Branch("nvtx"                 ,&nVtx_              ,"nVtx_/I");
   outTree_->Branch("nSoftTrackJets"       ,&nSoftTrackJets_    ,"nSoftTrackJets_/I");
   outTree_->Branch("btagIdx"              ,&btagIdx_           ,"btagIdx_[5]/I");
+  outTree_->Branch("etaIdx"               ,&etaIdx_            ,"etaIdx_[5]/I");
   outTree_->Branch("softHt"               ,&softHt_            ,"softHt_/F");
   outTree_->Branch("pvx"                  ,&pvx_               ,"pvx_/F");
   outTree_->Branch("pvy"                  ,&pvy_               ,"pvy_/F");
   outTree_->Branch("pvz"                  ,&pvz_               ,"pvz_/F");
   outTree_->Branch("rho"                  ,&rho_               ,"rho_/F");
+  outTree_->Branch("rhoQGL"               ,&rhoQGL_            ,"rhoQGL_/F");
   outTree_->Branch("ht"                   ,&ht_                ,"ht_/F");
   outTree_->Branch("htAll"                ,&htAll_             ,"htAll_/F");
   outTree_->Branch("pvz"                  ,&pvz_               ,"pvz_/F");
@@ -90,6 +89,9 @@ void PatVBFTree::beginJob()
   outTree_->Branch("mqq"                  ,&mqq_               ,"mqq_/F");
   outTree_->Branch("mbb"                  ,&mbb_               ,"mbb_/F");
   outTree_->Branch("dEtaqq"               ,&dEtaqq_            ,"dEtaqq_/F");
+  outTree_->Branch("mqqEta"               ,&mqqEta_            ,"mqqEta_/F");
+  outTree_->Branch("mbbEta"               ,&mbbEta_            ,"mbbEta_/F");
+  outTree_->Branch("dEtaqqEta"            ,&dEtaqqEta_         ,"dEtaqqEta_/F");
   outTree_->Branch("dEtabb"               ,&dEtabb_            ,"dEtabb_/F");
   outTree_->Branch("ptqq"                 ,&ptqq_              ,"ptqq_/F");
   outTree_->Branch("ptbb"                 ,&ptbb_              ,"ptbb_/F");
@@ -198,6 +200,9 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
   iEvent.getByLabel(srcJets_,jets); 
   pat::JetCollection pat_jets = *jets;
 
+  edm::Handle<edm::ValueMap<float> > qglMap;
+  iEvent.getByLabel("qglAK5PF",qglMap);
+
   edm::Handle<reco::TrackJetCollection> softTrackJets;
   iEvent.getByLabel("ak5SoftTrackJets",softTrackJets);
 
@@ -221,6 +226,7 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
   initialize();
  
   //-------------- Trigger Info -----------------------------------
+  triggerPassHisto_->Fill("totalEvents",1);
   if (triggerCache_.setEvent(iEvent,iSetup)) {
     for(unsigned itrig=0;itrig<vtriggerSelector_.size();itrig++) {
       bool result(false);
@@ -310,19 +316,13 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
         nNeutral_ptCut_[N]    = ijet->userInt("nNeutral_ptCut");
         nChg_QC_[N]           = ijet->userInt("nChg_QC");
         //----- calculate the qg likelihood ------------
-        int nCharged = ijet->chargedHadronMultiplicity();
-        int nNeutral = ijet->neutralHadronMultiplicity()+ijet->photonMultiplicity();
-        qgl_[N] = -1.0;
-        if (nCharged + nNeutral > 0 && ptD_[N] > -1) {
-          float qgl = qglikeli_->computeQGLikelihoodPU(ijet->pt(),*rhoQGL,nCharged,nNeutral,ptD_[N]);
-          if (qgl == qgl) {// check if NAN
-            qgl_[N] = qgl;
-          }
-        }
+        int ii = ijet - jets->begin();
+        edm::RefToBase<pat::Jet> jetRef(edm::Ref<pat::JetCollection>(jets,ii));
+        qgl_[N] = (*qglMap)[jetRef];
       }
       N++;
     }// jet loop
-    //----- order jets according to the btag value -----
+    //----- order the 4 leading jets according to the btag value -----
     float tmp_btag[4],ht(0.0);
     for(int i=0;i<4;i++) {
       btagIdx_[i] = i;
@@ -339,6 +339,25 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
           float tmp = tmp_btag[i]; 
           tmp_btag[i] = tmp_btag[j];
           tmp_btag[j] = tmp;
+        }
+      } 
+    }
+    //----- order the 4 leading jets according to the eta value -----
+    float tmp_eta[4];
+    for(int i=0;i<4;i++) {
+      etaIdx_[i] = i;
+      tmp_eta[i] = eta_[i]; 
+    }
+    etaIdx_[4] = 4;
+    for(int i=0;i<4;i++) {
+      for(int j=i+1;j<4;j++) {
+        if (tmp_eta[j] > tmp_eta[i]) {
+          int k = etaIdx_[i];
+          etaIdx_[i] = etaIdx_[j];
+          etaIdx_[j] = k;
+          float tmp = tmp_eta[i]; 
+          tmp_eta[i] = tmp_eta[j];
+          tmp_eta[j] = tmp;
         }
       } 
     }
@@ -386,6 +405,7 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
     htAll_  = htAll;
     softHt_ = softHt;
     rho_    = *rho;
+    rhoQGL_ = *rhoQGL;
     pvx_    = (*recVtxs)[0].x();
     pvy_    = (*recVtxs)[0].y();
     pvz_    = (*recVtxs)[0].z();
@@ -406,7 +426,16 @@ void PatVBFTree::analyze(edm::Event const& iEvent, edm::EventSetup const& iSetup
     etaBoostqq_ = 0.5*(pat_jets[btagIdx_[2]].eta()+pat_jets[btagIdx_[3]].eta());
     dPhibb_ = fabs(deltaPhi(pat_jets[btagIdx_[0]].phi(),pat_jets[btagIdx_[1]].phi()));
     dPhiqq_ = fabs(deltaPhi(pat_jets[btagIdx_[2]].phi(),pat_jets[btagIdx_[3]].phi()));
-    if (cutID && (mbb_ > mbbMin_) && (fabs(dEtaqq_) > dEtaMin_)) {
+    //--- eta ordered quantities ----------
+    mqqEta_    = (pat_jets[etaIdx_[0]].p4()+pat_jets[etaIdx_[3]].p4()).mass();
+    mbbEta_    = (pat_jets[etaIdx_[1]].p4()+pat_jets[etaIdx_[2]].p4()).mass();
+    dEtaqqEta_ = fabs(pat_jets[etaIdx_[0]].eta()-pat_jets[etaIdx_[3]].eta());
+    //--- pt cut --------------------------
+    bool cut_PT(true);
+    for(int j=0;j<TMath::Min(4,int(ptMin_.size()));j++) {
+      cut_PT *= (pt_[j] > ptMin_[j]); 
+    }
+    if (cutID && cut_PT && (dEtaqq_ > dEtaMin_)) {
       outTree_->Fill();
     }
   }// if vtx and jet multi
@@ -420,6 +449,7 @@ void PatVBFTree::initialize()
   nVtx_           = -999;
   nSoftTrackJets_ = -999;
   rho_            = -999;
+  rhoQGL_         = -999;
   met_            = -999;
   metPhi_         = -999;
   metSig_         = -999;
@@ -431,9 +461,12 @@ void PatVBFTree::initialize()
   pvz_            = -999;
   mqq_            = -999;
   mbb_            = -999;
+  mqqEta_         = -999;
+  mbbEta_         = -999;
   ptqq_           = -999;
   ptbb_           = -999;
   dEtaqq_         = -999;
+  dEtaqqEta_      = -999;
   dEtabb_         = -999;
   etaBoostqq_     = -999;
   etaBoostbb_     = -999;
@@ -453,6 +486,7 @@ void PatVBFTree::initialize()
     qgl_[i]       = -999;
     btag_[i]      = -999;
     btagIdx_[i]   = -999;
+    etaIdx_[i]    = -999;
     beta_[i]      = -999;
     unc_[i]       = -999;
     ptD_[i]       = -999;

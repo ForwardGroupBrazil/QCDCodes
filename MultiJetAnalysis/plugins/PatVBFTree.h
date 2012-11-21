@@ -28,11 +28,11 @@ class PatVBFTree : public edm::EDAnalyzer
     void initialize();
     //---- configurable parameters --------   
     edm::InputTag srcJets_,srcGenJets_,srcMET_,srcRho_,srcRhoQGL_;
-    std::string srcBtag_,srcPU_,srcQGLfile_;
-    double mbbMin_,dEtaMin_;
+    std::string srcBtag_,srcPU_;
+    double dEtaMin_;
+    std::vector<double> ptMin_;
     edm::Service<TFileService> fs_;
     TTree *outTree_; 
-    QGLikelihoodCalculator *qglikeli_;
     //---- TRIGGER -------------------------
     triggerExpression::Data triggerCache_;
     std::vector<triggerExpression::Evaluator*> vtriggerSelector_;
@@ -41,11 +41,12 @@ class PatVBFTree : public edm::EDAnalyzer
     //---- output TREE variables ------
     //---- global event variables -----
     int run_,evt_,nVtx_,lumi_,nSoftTrackJets_;
-    float pvx_,pvy_,pvz_,rho_,met_,metPhi_,metSig_,ht_,htAll_;
+    float pvx_,pvy_,pvz_,rho_,rhoQGL_,met_,metPhi_,metSig_,ht_,htAll_;
     float mqq_,mbb_,dEtaqq_,dEtabb_,dPhiqq_,dPhibb_,ptqq_,ptbb_,etaBoostqq_,etaBoostbb_,softHt_;
+    float mqqEta_,mbbEta_,dEtaqqEta_;
     std::vector<bool> *triggerResult_;
     //---- jet variables --------------
-    int btagIdx_[5];
+    int btagIdx_[5],etaIdx_[5];
     float pt_[5],jec_[5],unc_[5],eta_[5],phi_[5],mass_[5],chf_[5],nhf_[5],phf_[5],elf_[5],muf_[5];
     float beta_[5],ptD_[5],btag_[5],qgl_[5];
     float vtxMass_[5],vtx3dL_[5],vtx3deL_[5],sumTrkPt_[5],sumTrkP_[5],sumTrkPtV_[5],leadTrkPt_[5],vtxPt_[5];
