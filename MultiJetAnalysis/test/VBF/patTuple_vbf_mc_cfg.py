@@ -16,7 +16,7 @@ from PhysicsTools.PatAlgos.tools.jetTools import *
 from PhysicsTools.SelectorUtils.pvSelector_cfi import pvSelector
 
 ##--------- global tag -------------------------
-process.GlobalTag.globaltag = 'GR_R_52_V9::All'
+process.GlobalTag.globaltag = 'GR_R_53_V13::All'
 
 ##--------- remove cleaning --------------------
 removeCleaning(process)
@@ -133,7 +133,7 @@ process.maxEvents.input = -1
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.source.fileNames = [
-'/store/mc/Summer12/QCD_HT-1000ToInf_TuneZ2star_8TeV-madgraph-pythia6/AODSIM/PU_S7_START52_V9-v1/0000/FEFE3CA2-3DB2-E111-9D82-00151796D524.root'
+'/store/mc/Summer12/TTJets_TuneZ2star_8TeV-madgraph-tauola/AODSIM/PU_S7_START52_V9-v1/0000/001D42EE-6B90-E111-9083-003048FF9AC6.root'
 ]
 
 process.options.wantSummary = False
