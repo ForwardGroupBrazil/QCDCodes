@@ -35,8 +35,7 @@ VbfHbbFlatTreeProducer::VbfHbbFlatTreeProducer(edm::ParameterSet const& cfg)
 {
   srcJets_            = cfg.getParameter<edm::InputTag>             ("jets");
   srcMET_             = cfg.getParameter<edm::InputTag>             ("met");
-  srcRho_             = cfg.getParameter<edm::InputTag>             ("rho");
-  srcRhoQGL_          = cfg.getParameter<edm::InputTag>             ("rhoQGL"); 
+  srcRho_             = cfg.getParameter<edm::InputTag>             ("rho"); 
   srcBtag_            = cfg.getParameter<std::string>               ("btagger");
   shiftJES_           = cfg.getParameter<double>                    ("shiftJES");
   dEtaMin_            = cfg.getParameter<double>                    ("dEtaMin");
@@ -83,7 +82,6 @@ void VbfHbbFlatTreeProducer::beginJob()
   outTree_->Branch("pvy"                  ,&pvy_               ,"pvy_/F");
   outTree_->Branch("pvz"                  ,&pvz_               ,"pvz_/F");
   outTree_->Branch("rho"                  ,&rho_               ,"rho_/F");
-  outTree_->Branch("rhoQGL"               ,&rhoQGL_            ,"rhoQGL_/F");
   outTree_->Branch("ht"                   ,&ht_                ,"ht_/F");
   outTree_->Branch("htAll"                ,&htAll_             ,"htAll_/F");
   outTree_->Branch("pvz"                  ,&pvz_               ,"pvz_/F");
@@ -109,7 +107,6 @@ void VbfHbbFlatTreeProducer::beginJob()
   outTree_->Branch("jetJec"               ,&jec_               ,"jec_[5]/F");
   outTree_->Branch("jetUnc"               ,&unc_               ,"unc_[5]/F");
   outTree_->Branch("jetBeta"              ,&beta_              ,"beta_[5]/F");
-  outTree_->Branch("jetQGL"               ,&qgl_               ,"qgl_[5]/F");
   outTree_->Branch("jetEta"               ,&eta_               ,"eta_[5]/F");
   outTree_->Branch("jetPhi"               ,&phi_               ,"phi_[5]/F");
   outTree_->Branch("jetMass"              ,&mass_              ,"mass_[5]/F");
@@ -212,9 +209,6 @@ void VbfHbbFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup c
   edm::Handle<double> rho;
   iEvent.getByLabel(srcRho_,rho);
 
-  edm::Handle<double> rhoQGL;
-  iEvent.getByLabel(srcRhoQGL_,rhoQGL);
-
   edm::Handle<reco::VertexCollection> recVtxs;
   iEvent.getByLabel("offlinePrimaryVertices",recVtxs);
 
@@ -315,11 +309,6 @@ void VbfHbbFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup c
         nChg_ptCut_[N]        = ijet->nChargedPtCut();
         nNeutral_ptCut_[N]    = ijet->nNeutralPtCut();
         nChg_QC_[N]           = ijet->nChargedQC();
-        //----- calculate the qg likelihood ------------
-        //int ii = ijet - jets->begin();
-        //edm::RefToBase<cmg::PFJet> jetRef(edm::Ref<cmg::PFJetCollection>(jets,ii));
-        //edm::RefToBase<cmg::PFJet> jetRef(edm::Ref<edm::View<cmg::PFJet> >(jets,ii));
-        //qgl_[N] = (*qglMap)[jetRef];
       }
       N++;
     }// jet loop
@@ -407,7 +396,6 @@ void VbfHbbFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup c
     htAll_  = htAll;
     softHt_ = softHt;
     rho_    = *rho;
-    rhoQGL_ = *rhoQGL;
     pvx_    = (*recVtxs)[0].x();
     pvy_    = (*recVtxs)[0].y();
     pvz_    = (*recVtxs)[0].z();
@@ -455,7 +443,6 @@ void VbfHbbFlatTreeProducer::initialize()
   nVtx_           = -999;
   nSoftTrackJets_ = -999;
   rho_            = -999;
-  rhoQGL_         = -999;
   met_            = -999;
   metPhi_         = -999;
   metSig_         = -999;
@@ -489,7 +476,6 @@ void VbfHbbFlatTreeProducer::initialize()
     elf_[i]       = -999;
     muf_[i]       = -999;
     jec_[i]       = -999;
-    qgl_[i]       = -999;
     btag_[i]      = -999;
     btagIdx_[i]   = -999;
     etaIdx_[i]    = -999;

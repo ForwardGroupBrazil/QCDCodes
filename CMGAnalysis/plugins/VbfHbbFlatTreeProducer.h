@@ -26,7 +26,7 @@ class VbfHbbFlatTreeProducer : public edm::EDAnalyzer
   private:  
     void initialize();
     //---- configurable parameters --------   
-    edm::InputTag srcJets_,srcGenJets_,srcMET_,srcRho_,srcRhoQGL_,srcGenParticles_;
+    edm::InputTag srcJets_,srcGenJets_,srcMET_,srcRho_,srcGenParticles_;
     std::string srcBtag_,srcPU_;
     double dEtaMin_,shiftJES_;
     std::vector<double> ptMin_;
@@ -40,14 +40,14 @@ class VbfHbbFlatTreeProducer : public edm::EDAnalyzer
     //---- output TREE variables ------
     //---- global event variables -----
     int run_,evt_,nVtx_,lumi_,nSoftTrackJets_;
-    float pvx_,pvy_,pvz_,rho_,rhoQGL_,met_,metPhi_,metSig_,ht_,htAll_;
+    float pvx_,pvy_,pvz_,rho_,met_,metPhi_,metSig_,ht_,htAll_;
     float mqq_,mbb_,dEtaqq_,dEtabb_,dPhiqq_,dPhibb_,ptqq_,ptbb_,etaBoostqq_,etaBoostbb_,softHt_;
     float mqqEta_,mbbEta_,dEtaqqEta_;
     std::vector<bool> *triggerResult_;
     //---- jet variables --------------
     int btagIdx_[5],etaIdx_[5];
     float pt_[5],jec_[5],unc_[5],eta_[5],phi_[5],mass_[5],chf_[5],nhf_[5],phf_[5],elf_[5],muf_[5];
-    float beta_[5],ptD_[5],ptD_QC_[5],btag_[5],qgl_[5],puMva_[5];
+    float beta_[5],ptD_[5],ptD_QC_[5],btag_[5],puMva_[5];
     float vtxPt_[5],vtx3dL_[5],vtx3deL_[5];
     float axis_[2][5],axis_QC_[2][5],pull_[5],pull_QC_[5],jetR_[5],jetRChg_QC_[5];
     int vtxNTrks_[5],part_[5], nChg_QC_[5],nChg_ptCut_[5],nNeutral_ptCut_[5];
