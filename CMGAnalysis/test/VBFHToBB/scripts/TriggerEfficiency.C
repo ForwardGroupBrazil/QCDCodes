@@ -13,10 +13,10 @@ void TriggerEfficiency()
   TString XTITLE[N] = {"|#Delta#eta_{qq}|", "Leading jet p_{T} (GeV)","Second jet p_{T} (GeV)",
                        "Third jet p_{T} (GeV)", "Fourth jet p_{T} (GeV)","mqq (GeV)","CSV[0]","CSV[1]","mbb (GeV)"};
   int REF_TRIG[N] = {9,9,9,9,9,9,9,9,9};
-  int NBINS[N]    = {10,12,12,9,16,5,10,10,5};
-  double XMIN[N]  = {0,20,20,40,20,250,0,0,50};
+  int NBINS[N]    = {24,13,16,24,18,14,10,10,5};
+  double XMIN[N]  = {0,75,60,10,10,220,0,0,50};
   double XMAX[N]  = {6,140,140,130,100,500,1.001,1.001,200};
-  double CUT[N]   = {3.0,90,70,60,40,300,-1,-1,0};
+  double CUT[N]   = {2.5,85,70,60,40,300,-1,-1,0};
   char name[1000];
   TCanvas *can[N];
   TEfficiency *hEff[N];
@@ -29,28 +29,28 @@ void TriggerEfficiency()
     sprintf(name,"triggerResult[%d]==1 && (triggerResult[0]==1 || triggerResult[1]==1)",REF_TRIG[i]);
     TCut cutSIG(name);
     if (i==0) {
-      SEL = "jetPt[0]>90 && jetPt[1]>70 && jetPt[2]>60 && jetPt[3]>40 && mqq>300";
+      SEL = "jetPt[0]>85 && jetPt[1]>70 && jetPt[2]>60 && jetPt[3]>40 && mqq>300";
     }
     else if (i==1) {
-      SEL = "dEtaqq>3 && jetPt[1]>70 && jetPt[2]>60 && jetPt[3]>40 && mqq>300";
+      SEL = "dEtaqq>2.5 && jetPt[1]>70 && jetPt[2]>60 && jetPt[3]>40 && mqq>300";
     }
     else if (i==2) {
-      SEL = "dEtaqq>3 && jetPt[0]>90 && jetPt[2]>60 && jetPt[3]>40 && mqq>300";
+      SEL = "dEtaqq>2.5 && jetPt[0]>85 && jetPt[2]>60 && jetPt[3]>40 && mqq>300";
     }  
     else if (i==3) {
-      SEL = "dEtaqq>3 && jetPt[0]>90 && jetPt[1]>70 && jetPt[3]>40 && mqq>300";
+      SEL = "dEtaqq>2.5 && jetPt[0]>85 && jetPt[1]>70 && jetPt[3]>40 && mqq>300";
     }
     else if (i==4) {
-      SEL = "dEtaqq>3 && jetPt[0]>90 && jetPt[1]>70 && jetPt[2]>60 && mqq>300";
+      SEL = "dEtaqq>2.5 && jetPt[0]>85 && jetPt[1]>70 && jetPt[2]>60 && mqq>300";
     }
     else if (i==5) {
-      SEL = "dEtaqq>3 && jetPt[0]>90 && jetPt[1]>70 && jetPt[2]>60 && jetPt[3]>40";
+      SEL = "dEtaqq>2.5 && jetPt[0]>85 && jetPt[1]>70 && jetPt[2]>60 && jetPt[3]>40";
     }
     else if (i==6 || i==7) {
-      SEL = "dEtaqq>3 && jetPt[0]>90 && jetPt[1]>70 && jetPt[2]>60 && jetPt[3]>40 && mqq>300";
+      SEL = "dEtaqq>2.5 && jetPt[0]>85 && jetPt[1]>70 && jetPt[2]>60 && jetPt[3]>40 && mqq>300";
     }
     else {
-      SEL = "dEtaqq>3 && jetPt[0]>90 && jetPt[1]>70 && jetPt[2]>60 && jetPt[3]>40 && jetBtag[btagIdx[0]]>0.898 && jetBtag[btagIdx[1]]>0.898 && mqq>300";
+      SEL = "dEtaqq>2.5 && jetPt[0]>85 && jetPt[1]>70 && jetPt[2]>60 && jetPt[3]>40 && jetBtag[btagIdx[0]]>0.898 && jetBtag[btagIdx[1]]>0.898 && mqq>300";
     }
     TCut cutSEL(SEL);
     can[i] = new TCanvas("Eff_"+OBS[i],"Eff_"+OBS[i],900,600);
