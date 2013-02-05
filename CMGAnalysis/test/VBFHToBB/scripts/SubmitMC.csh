@@ -1,6 +1,6 @@
 #! /bin/csh
 
-foreach SAMPLE ('VBF-Powheg115' 'VBF-Powheg120' 'VBF-Powheg125' 'VBF-Powheg130' 'VBF-Powheg135' 'GluGlu-Powheg125')
+foreach SAMPLE ('VBF-Powheg115' 'VBF-Powheg120' 'VBF-Powheg125' 'VBF-Powheg130' 'VBF-Powheg135' 'GluGlu-Powheg125' 'GluGlu-Madgraph125' 'QCD-HT100' 'QCD-HT250' 'QCD-HT500' 'QCD-HT1000' 'ZJets' 'TTJets' 'T' 'Tbar')
 	echo $SAMPLE
         echo 'cleaning' 
         eos rm -r /eos/cms/store/cmst3/user/kkousour/CMG/$SAMPLE

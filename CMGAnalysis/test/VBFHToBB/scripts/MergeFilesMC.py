@@ -4,7 +4,7 @@ from CMGTools.Production.eostools import *
 
 path = '/store/cmst3/user/kkousour/CMG/'
 
-datasets = ['VBF-Powheg115','VBF-Powheg120','VBF-Powheg125','VBF-Powheg130','VBF-Powheg135','GluGlu-Powheg125']
+datasets = ['VBF-Powheg115','VBF-Powheg120','VBF-Powheg125','VBF-Powheg130','VBF-Powheg135','GluGlu-Powheg125','GluGlu-Madgraph125','QCD-HT100','QCD-HT250','QCD-HT500','QCD-HT1000','ZJets','TTJets','T','Tbar']
 
 for ds in datasets:
   print 'Adding ROOT files from dataset: /'+ds

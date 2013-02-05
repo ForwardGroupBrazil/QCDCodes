@@ -12,7 +12,7 @@ process.maxEvents = cms.untracked.PSet(
         input = cms.untracked.int32(-1)
         )
 
-process.source = datasetToSource('cmgtools','/VBF_HToBB_M-135_8TeV-powheg-pythia6/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM/V5_B/PAT_CMG_V5_13_0','cmgTuple_.*.root')
+process.source = datasetToSource('cmgtools','/VBF_HToBB_M-125_8TeV-powheg-pythia6/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM/V5_B/PAT_CMG_V5_13_0','cmgTuple_.*.root')
 
 #############   Format MessageLogger #################
 process.MessageLogger.cerr.FwkReport.reportEvery = 100
@@ -21,7 +21,7 @@ process.Hbb = cms.EDAnalyzer('VbfHbbFlatTreeProducer',
     jets             = cms.InputTag('cmgPFJetSel'),
     genjets          = cms.untracked.InputTag('genJetSel'), 
     genparticles     = cms.untracked.InputTag('genParticlesPruned'),
-    met              = cms.InputTag('nopuMet'),
+    met              = cms.InputTag('cmgPFMETRaw'),
     rho              = cms.InputTag('kt6PFJets','rho'),
     shiftJES         = cms.double(0.0),
     dEtaMin          = cms.double(2.),

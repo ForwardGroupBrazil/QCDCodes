@@ -3,44 +3,25 @@ import FWCore.ParameterSet.Config as cms
 process = cms.Process("myprocess")
 process.load('FWCore.MessageService.MessageLogger_cfi')
 
-from CMGTools.Production.datasetToSource import *
-from CMGTools.Common.Tools.applyJSON_cff import *
-
 process.TFileService=cms.Service("TFileService",fileName=cms.string('flatTree.root'))
+
+from CMGTools.Production.datasetToSource import *
 
 ##-------------------- Define the source  ----------------------------
 process.maxEvents = cms.untracked.PSet(
         input = cms.untracked.int32(-1)
         )
 
-process.source = datasetToSource('cmgtools','/BJetPlusX/Run2012B-13Jul2012-v1/AOD/PAT_CMG_V5_12_0','cmgTuple_.*.root')
-
-applyJSON(process,'Cert_190456-196531_8TeV_13Jul2012ReReco_Collisions12_JSON_v2.txt')
-
-############# hlt filter #########################
-process.hltFilter = cms.EDFilter('HLTHighLevel',
-    TriggerResultsTag  = cms.InputTag('TriggerResults','','HLT'),
-    HLTPaths           = cms.vstring(
-       'HLT_QuadJet75_55_35_20_BTagIP_VBF_v*', 
-       'HLT_QuadJet75_55_38_20_BTagIP_VBF_v*',
-       'HLT_QuadPFJet75_55_35_20_BTagCSV_VBF_v*',
-       'HLT_QuadPFJet75_55_38_20_BTagCSV_VBF_v*',
-       'HLT_QuadPFJet78_61_44_31_BTagCSV_VBF_v*',
-       'HLT_QuadPFJet82_65_48_35_BTagCSV_VBF_v*',  
-       'HLT_PFJet40_v*',
-       'HLT_PFJet80_v*'
-    ),
-    eventSetupPathsKey = cms.string(''),
-    andOr              = cms.bool(True), #----- True = OR, False = AND between the HLTPaths
-    throw              = cms.bool(False)
-)
+process.source = datasetToSource('cmgtools','/VBF_HToBB_M-120_8TeV-powheg-pythia6/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM/V5_B/PAT_CMG_V5_13_0','cmgTuple_.*.root')
 
 #############   Format MessageLogger #################
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+process.MessageLogger.cerr.FwkReport.reportEvery = 100
 ##-------------------- User analyzer  --------------------------------
 process.Hbb = cms.EDAnalyzer('VbfHbbFlatTreeProducer',
     jets             = cms.InputTag('cmgPFJetSel'),
-    met              = cms.InputTag('nopuMet'),
+    genjets          = cms.untracked.InputTag('genJetSel'), 
+    genparticles     = cms.untracked.InputTag('genParticlesPruned'),
+    met              = cms.InputTag('cmgPFMETRaw'),
     rho              = cms.InputTag('kt6PFJets','rho'),
     shiftJES         = cms.double(0.0),
     dEtaMin          = cms.double(2.),
@@ -78,4 +59,4 @@ process.HbbCHS = process.Hbb.clone(jets = cms.InputTag('cmgPFJetSelCHS'))
 process.HbbCHSJesUp = process.HbbCHS.clone(shiftJES = 1.0);
 process.HbbCHSJesDo = process.HbbCHS.clone(shiftJES = -1.0);
 
-process.p = cms.Path(process.hltFilter * process.Hbb * process.HbbCHS)
+process.p = cms.Path(process.Hbb * process.HbbJesUp * process.HbbJesDo * process.HbbCHS * process.HbbCHSJesUp * process.HbbCHSJesDo)
