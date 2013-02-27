@@ -16,10 +16,9 @@ void FillHistogramsAll()
     "/afs/cern.ch/work/k/kkousour/private/data/vbfhbb/flatTree_GluGlu-Madgraph125_preselect_hard_tmva"
   };
   bool ApplyTriggerSel[12] = {true,true,true,true,true,true,true,true,true,true,true,true};
-  bool ApplyPuWeight[12]   = {false,true,true,true,true,true,true,true,true,true,true,true};
   bool isMC[12]            = {false,true,true,true,true,true,true,true,true,true,true,true}; 
   
   for(int i=0;i<12;i++) {
-    FillHistograms(FILENAME[i],ApplyTriggerSel[i],ApplyPuWeight[i],isMC[i]);
+    FillHistograms(FILENAME[i],ApplyTriggerSel[i],isMC[i]);
   }  
 }
