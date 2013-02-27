@@ -72,7 +72,8 @@ void AddBranches()
   
   float dEtaqq,dEtaqqEta,dPhibb,mqq,mbb,softHt,etaBoostqq;
   int btagIdx[5],jetPart[5],softMulti;
-  float jetQGLnew[5],jetBtag[5],jetPuMva[5],jetPt[5],jetPtD[5],jetEta[5],jetPhi[5],jetMass[5],jetChf[5],jetNhf[5],jetPhf[5],jetElf[5],jetMuf[5],jetVtxPt[5],jetVtx3dL[5],jetVtx3deL[5],jetAxis[2][5],jetAxis_QC[2][5],jetPull[5],jetPull_QC[5],jetR[5],jetnChg_QC[5],jetnChg_ptCut[5],jetnNeutral_ptCut[5];
+  float jetQGLnew[5],jetBtag[5],jetPuMva[5],jetPt[5],jetPtD[5],jetEta[5],jetPhi[5],jetMass[5],jetChf[5],jetNhf[5],jetPhf[5],jetElf[5],jetMuf[5],jetVtxPt[5],jetVtx3dL[5],jetVtx3deL[5],jetAxis[2][5],jetAxis_QC[2][5],jetPull[5],jetPull_QC[5],jetR[5];
+  int jetnChg_QC[5],jetnChg_ptCut[5],jetnNeutral_ptCut[5];
   bool puId[3]; 
   float met,metPhi,rho,mbbCor,puWt,cosTheta,cosAlpha;
   float MLP_CLA;
