@@ -1,7 +1,9 @@
 #include "TMVA/Reader.h"
 #include "TFile.h"
+#include "TH1F.h"
 #include "TKey.h"
 #include "TCollection.h"
+#include "TVector3.h"
 #include "TLorentzVector.h"
 #include "Settings.h"
 using namespace TMVA;
@@ -37,15 +39,16 @@ void AddBranches()
   readerCLA->AddVariable("softHt"           ,&varCLA[8]);
   readerCLA->AddVariable("softMulti"        ,&varCLA[9]);
   readerCLA->AddVariable("jetEtaBtag[2]"    ,&varCLA[10]);
-  readerCLA->AddVariable("jetPt[4]/mqq"     ,&varCLA[11]);
-  // spectator variables: not used for the training but recoreded
-  readerCLA->AddSpectator("mbb"             ,&varCLA[12]);
-  readerCLA->AddSpectator("dPhibb"          ,&varCLA[13]);
-  readerCLA->AddSpectator("rho"             ,&varREG[14]);
+  readerCLA->AddVariable("abs(cosTheta)"    ,&varCLA[11]);
+  readerCLA->AddVariable("abs(cosAlpha)"    ,&varCLA[12]);
+  // spectator variables: not used for the training but recorded
+  readerCLA->AddSpectator("mbb"             ,&varCLA[13]);
+  readerCLA->AddSpectator("dPhibb"          ,&varCLA[14]);
+  readerCLA->AddSpectator("rho"             ,&varCLA[15]);
 
-  // --- Book the MVA methods
-  readerCLA->BookMVA("BDT_CLA","/afs/cern.ch/work/k/kkousour/private/data/vbfhbb/xml_files/factory_hybrid21_125_BDT.weights.xml");
-  readerCLA->BookMVA("MLP_CLA","/afs/cern.ch/work/k/kkousour/private/data/vbfhbb/xml_files/factory_hybrid21_125_MLP_ANN.weights.xml");
+  // --- Book the MVA methods ----
+  //readerCLA->BookMVA("BDT_CLA","/afs/cern.ch/work/k/kkousour/private/data/vbfhbb/xml_files/factory_hybrid25_125_BDT.weights.xml");
+  readerCLA->BookMVA("MLP_CLA","/afs/cern.ch/work/k/kkousour/private/data/vbfhbb/xml_files/hybrid_MLP_Preapproval.weights.xml");
   // ---- regression TMVA ---------------------------
   TMVA::Reader *readerREG = new TMVA::Reader("!Color:!Silent");
   
@@ -65,13 +68,14 @@ void AddBranches()
   readerREG->AddVariable("met"       ,&varREG[13]);
   readerREG->AddVariable("rho"       ,&varREG[14]);
     
-  readerREG->BookMVA("BDT_REG","/afs/cern.ch/work/k/kkousour/private/data/vbfhbb/xml_files/factoryJetReg_BDT.weights.xml");
+  readerREG->BookMVA("MLP_REG","/afs/cern.ch/work/k/kkousour/private/data/vbfhbb/xml_files/regression_MLP_Preapproval.weights.xml");
   
   float dEtaqq,dEtaqqEta,dPhibb,mqq,mbb,softHt,etaBoostqq;
   int btagIdx[5],jetPart[5],softMulti;
-  float jetQGLnew[5],jetBtag[5],jetPt[5],jetPtD[5],jetEta[5],jetPhi[5],jetMass[5],jetChf[5],jetNhf[5],jetPhf[5],jetElf[5],jetMuf[5],jetVtxPt[5],jetVtx3dL[5],jetVtx3deL[5],jetAxis[2][5],jetAxis_QC[2][5],jetPull[5],jetPull_QC[5],jetR[5],jetnChg_QC[5],jetnChg_ptCut[5],jetnNeutral_ptCut[5];
-  float met,metPhi,rho,mbbCor;
-  float BDT_CLA,MLP_CLA;
+  float jetQGLnew[5],jetBtag[5],jetPuMva[5],jetPt[5],jetPtD[5],jetEta[5],jetPhi[5],jetMass[5],jetChf[5],jetNhf[5],jetPhf[5],jetElf[5],jetMuf[5],jetVtxPt[5],jetVtx3dL[5],jetVtx3deL[5],jetAxis[2][5],jetAxis_QC[2][5],jetPull[5],jetPull_QC[5],jetR[5],jetnChg_QC[5],jetnChg_ptCut[5],jetnNeutral_ptCut[5];
+  bool puId[3]; 
+  float met,metPhi,rho,mbbCor,puWt,cosTheta,cosAlpha;
+  float MLP_CLA;
   
   TString FileName[19] = {
     "flatTree_GluGlu-Powheg125_preselect_hard",
@@ -96,9 +100,15 @@ void AddBranches()
   };
   TKey *key;
   TString PATH("/afs/cern.ch/work/k/kkousour/private/data/vbfhbb/");
-  for(int iFile=16;iFile<19;iFile++) {
+  for(int iFile=0;iFile<19;iFile++) {
     cout<<"Opening file: "<<FileName[iFile]<<endl;
     TFile *inf   = TFile::Open(PATH+FileName[iFile]+".root");
+    TFile *puf;
+    TH1F *hPuWeight;
+    if (iFile < 15) {
+      puf = TFile::Open("pileUpFile_"+FileName[iFile]+"_tmva.root");
+      hPuWeight = (TH1F*)puf->Get("pileUpWeight");
+    }
     TFile *outf  = TFile::Open(PATH+FileName[iFile]+"_tmva.root","RECREATE");
     // find the directories
     std::vector<TString> DIR_NAME;
@@ -108,15 +118,20 @@ void AddBranches()
         DIR_NAME.push_back(TString(key->GetName()));
       }  
     }
-    for(unsigned int idir=0;idir<DIR_NAME.size();idir++) {
+    for(int idir=0;idir<TMath::Min(3,int(DIR_NAME.size()));idir++) {
+      if (iFile > 14 && idir > 0) continue;
       TTree *trIN  = (TTree*)inf->Get(DIR_NAME[idir]+"/events");
       cout<<"Cloning tree "<<DIR_NAME[idir]<<endl;
       TTree *trOUT = (TTree*)trIN->CloneTree(-1,"fast");
       cout<<"Filling new tree"<<endl;  
-      TBranch *brBDT    = trOUT->Branch("BDT"      ,&BDT_CLA    ,"BDT_CLA/F");
-      TBranch *brMLP    = trOUT->Branch("MLP"      ,&MLP_CLA    ,"MLP_CLA/F");
-      TBranch *brMbbCOR = trOUT->Branch("mbbCor"   ,&mbbCor     ,"mbbCor/F");
-      TBranch *brQGLnew = trOUT->Branch("jetQGLnew",&jetQGLnew  ,"jetQGLnew[5]/F");
+      //TBranch *brBDT      = trOUT->Branch("BDT"      ,&BDT_CLA    ,"BDT_CLA/F");
+      TBranch *brMLP      = trOUT->Branch("MLP"      ,&MLP_CLA    ,"MLP_CLA/F");
+      TBranch *brCosTheta = trOUT->Branch("cosTheta" ,&cosTheta   ,"cosTheta/F");
+      TBranch *brCosAlpha = trOUT->Branch("cosAlpha" ,&cosAlpha   ,"cosAlpha/F");
+      TBranch *brMbbCOR   = trOUT->Branch("mbbCor"   ,&mbbCor     ,"mbbCor/F");
+      TBranch *brPuId     = trOUT->Branch("puId"     ,&puId       ,"puId[3]/O");
+      TBranch *brPuWt     = trOUT->Branch("puWt"     ,&puWt       ,"puWt/F"); 
+      TBranch *brQGLnew   = trOUT->Branch("jetQGLnew",&jetQGLnew  ,"jetQGLnew[5]/F");
     
       trOUT->SetBranchAddress("btagIdx"          ,&btagIdx);
       trOUT->SetBranchAddress("mqq"              ,&mqq);
@@ -127,6 +142,7 @@ void AddBranches()
       trOUT->SetBranchAddress("etaBoostqq"       ,&etaBoostqq);
       trOUT->SetBranchAddress("nSoftTrackJets"   ,&softMulti);
       trOUT->SetBranchAddress("softHt"           ,&softHt);
+      trOUT->SetBranchAddress("jetPuMva"         ,&jetPuMva);
       trOUT->SetBranchAddress("jetPt"            ,&jetPt);
       trOUT->SetBranchAddress("jetPtD"           ,&jetPtD);
       trOUT->SetBranchAddress("jetPart"          ,&jetPart);
@@ -164,10 +180,41 @@ void AddBranches()
           cout<<10*k<<" %"<<endl;
         decade = k;
         trOUT->GetEntry(i);
-
+        puWt = 1.0;
+        if (iFile < 15) {
+          int bin = hPuWeight->FindBin(rho);
+          puWt = hPuWeight->GetBinContent(bin);
+        }
+        puId[0] = true; // loose
+        puId[1] = true; // medium
+        puId[2] = true; // tight
+        TLorentzVector v4[5];
         for(int j=0;j<5;j++) { 
+          v4[j].SetPtEtaPhiM(jetPt[j],jetEta[j],jetPhi[j],jetMass[j]);
           float pt  = jetPt[j];
           float eta = fabs(jetEta[j]);
+          if (j < 4) {
+            if (eta < 2.5) {
+              puId[0] *= (jetPuMva[j] > -0.80);
+              puId[1] *= (jetPuMva[j] > -0.40);
+              puId[2] *= (jetPuMva[j] > -0.38);
+            }
+            else if (eta >= 2.5 && eta < 2.75) {
+              puId[0] *= (jetPuMva[j] > -0.74);
+              puId[1] *= (jetPuMva[j] > -0.49);
+              puId[2] *= (jetPuMva[j] > -0.32);
+            }
+            else if (eta >= 2.75 && eta < 3.0) {
+              puId[0] *= (jetPuMva[j] > -0.68);
+              puId[1] *= (jetPuMva[j] > -0.50);
+              puId[2] *= (jetPuMva[j] > -0.14);
+            }
+            else {
+              puId[0] *= (jetPuMva[j] > -0.77);
+              puId[1] *= (jetPuMva[j] > -0.65);
+              puId[2] *= (jetPuMva[j] > -0.48);
+            } 
+          }
           int ipt  = TMath::Max(0,FindIndex(8,PT_QGL,pt));
           int ieta = TMath::Max(0,FindIndex(4,ETA_QGL,eta));
           if (ieta == 0) {
@@ -198,17 +245,36 @@ void AddBranches()
         varCLA[8]  = softHt;
         varCLA[9]  = softMulti;
         varCLA[10] = jetEta[btagIdx[2]];
-        varCLA[11] = jetPt[4]/mqq;
+        //--- compute cosTheta --------
+        TLorentzVector v4H = v4[btagIdx[0]]+v4[btagIdx[1]];
+        //--- get the boost vector of the H candidate ------
+        TVector3 b = v4H.BoostVector();
+        //--- boost all the 4-vectors to the H rest frame --
+        for(int j=0;j<4;j++) {
+          v4[j].Boost(-1*b); 
+        }
+        //--- plane vector of qq ------
+        TVector3 vqq = (v4[btagIdx[2]].Vect()).Cross(v4[btagIdx[3]].Vect());
+        TVector3 vqq1 = (v4[btagIdx[2]]+v4[btagIdx[3]]).Vect();
+        cosTheta = cos(vqq.Theta());
+        cosAlpha = cos(vqq1.Theta());
+        varCLA[11] = abs(cosTheta);
+        varCLA[12] = abs(cosAlpha); 
         //--- spectator vatiables -----
-        varCLA[12] = mbb;
-        varCLA[13] = dPhibb;
+        varCLA[13] = mbb;
+        varCLA[14] = dPhibb;
+        varCLA[15] = rho;
   
-        BDT_CLA    = readerCLA->EvaluateMVA("BDT_CLA");
+        //BDT_CLA    = readerCLA->EvaluateMVA("BDT_CLA");
         MLP_CLA    = readerCLA->EvaluateMVA("MLP_CLA");
 
-        brBDT->Fill();
+        //brBDT->Fill();
         brMLP->Fill();
+        brPuWt->Fill();
+        brPuId->Fill();
         brQGLnew->Fill();
+        brCosTheta->Fill();
+        brCosAlpha->Fill();
     
         TLorentzVector P4[2];
         for(int j=0;j<2;j++) {
@@ -218,7 +284,7 @@ void AddBranches()
           varREG[2]  = jetEta[ib];
           float tmpPhi = fabs(jetPhi[ib]-metPhi);
           if (tmpPhi > 3.14159) {
-            tmpPhi -= 3.14159;
+            tmpPhi = 2*3.14159-tmpPhi;
           }
           varREG[3]  = tmpPhi;
           varREG[4]  = jetChf[ib];
@@ -232,7 +298,7 @@ void AddBranches()
           varREG[12] = jetVtx3deL[ib];
           varREG[13] = met;
           varREG[14] = rho;
-          float tmvaREG = readerREG->EvaluateRegression("BDT_REG")[0];
+          float tmvaREG = readerREG->EvaluateRegression("MLP_REG")[0];
           float cor = tmvaREG/jetPt[ib];
           P4[j].SetPtEtaPhiM(cor*jetPt[ib],jetEta[ib],jetPhi[ib],cor*jetMass[ib]);
         }
