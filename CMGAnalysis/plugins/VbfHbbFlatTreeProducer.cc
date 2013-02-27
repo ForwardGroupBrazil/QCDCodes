@@ -27,6 +27,7 @@
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 #include "AnalysisDataFormats/CMGTools/interface/PFJet.h"
+#include "AnalysisDataFormats/CMGTools/interface/BaseMET.h"
 
 using namespace std;
 using namespace reco;
@@ -203,7 +204,7 @@ void VbfHbbFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup c
   edm::Handle<reco::TrackJetCollection> softTrackJets;
   iEvent.getByLabel("ak5SoftTrackJetsForVbfHbb",softTrackJets);
 
-  edm::Handle<edm::View<MET> >  met;
+  edm::Handle<edm::View<cmg::BaseMET> >  met;
   iEvent.getByLabel(srcMET_,met);
 
   edm::Handle<double> rho;
@@ -242,20 +243,34 @@ void VbfHbbFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup c
   bool cut_vtx = (recVtxs->size() > 0);
   //----- at least 4 jets --------------------
   bool cut_njets = (jets->size() > 3);
-
+  
   if (cut_vtx && cut_njets) {
     //----- soft track jets ----------------------
-    nSoftTrackJets_ = int(softTrackJets->size());
     float softHt(0.0);
-    for(int it=0;it<nSoftTrackJets_;it++) {
+    int nsoft(0);
+    for(int it=0;it<int(softTrackJets->size());it++) {
+      //--- make sure that the track jets do not match with the 4 leading PFJets ----
+      int njets(0);
+      bool matched(false);
+      for(edm::View<cmg::PFJet>::const_iterator ijet = cmg_jets.begin();(ijet != cmg_jets.end() && njets<4); ++ijet) {
+        double dR = deltaR(ijet->p4(),(*softTrackJets)[it].p4());
+        if (dR < 0.5) {
+          matched = true;
+          break;
+        }
+        njets++;
+      }
+      if (matched) continue;
       softHt += (*softTrackJets)[it].pt();
-      if (it < 3) {
+      if (nsoft < 3) {
         softTrackJetPt_ ->push_back((*softTrackJets)[it].pt());
         softTrackJetEta_->push_back((*softTrackJets)[it].eta());
         softTrackJetPhi_->push_back((*softTrackJets)[it].phi());
         softTrackJetE_  ->push_back((*softTrackJets)[it].energy());
       } 
+      nsoft++;
     }
+    nSoftTrackJets_ = nsoft;
     //----- PF jets ------------------------------
     bool cutID(true);
     int N(0);
