@@ -1,6 +1,8 @@
 <library   file="*.cc" name="KKousourCMGAnalysisPlugins">
-<use   name="rootcore"/>
+<use   name="root"/> 
 <use   name="rootrflx"/>
+<use   name="rootcore"/>
+<use   name="roottmva"/>
 <use   name="RecoMET/METAlgorithms"/>
 <use   name="JetMETCorrections/Algorithms"/>
 <use   name="RecoJets/JetAlgorithms"/>
@@ -17,7 +19,6 @@
 <use   name="FWCore/PluginManager"/>
 <use   name="FWCore/ServiceRegistry"/>
 <use   name="clhep"/>
-<use   name="root"/>
 <use   name="HLTrigger/HLTcore"/>
 <use   name="L1Trigger/GlobalTriggerAnalyzer"/>
 <use   name="CondFormats/L1TObjects"/>
