@@ -46,6 +46,7 @@ VbfHbbFlatTreeProducer::VbfHbbFlatTreeProducer(edm::ParameterSet const& cfg)
   shiftJES_           = cfg.getParameter<double>                    ("shiftJES");
   ptMin_              = cfg.getParameter<double>                    ("ptMin");
   dEtaMin_            = cfg.getParameter<double>                    ("dEtaMin");
+  ptPreselMin_        = cfg.getParameter<vector<double> >           ("ptPreselMin");
   srcPU_              = cfg.getUntrackedParameter<std::string>      ("pu","");
   srcGenJets_         = cfg.getUntrackedParameter<edm::InputTag>    ("genjets",edm::InputTag(""));
   srcGenParticles_    = cfg.getUntrackedParameter<edm::InputTag>    ("genparticles",edm::InputTag(""));
@@ -99,10 +100,20 @@ void VbfHbbFlatTreeProducer::beginJob()
   outTree_->Branch("metSig"               ,&metSig_            ,"metSig_/F");
   outTree_->Branch("sphericity"           ,&sphericity_        ,"sphericity_/F");
   outTree_->Branch("aplanarity"           ,&aplanarity_        ,"aplanarity_/F");
+  outTree_->Branch("cosTheta"             ,&cosTheta_          ,"cosTheta_/F");
+  outTree_->Branch("mqq"                  ,&mqq_               ,"mqq_/F");
   outTree_->Branch("mbb"                  ,&mbb_               ,"mbb_/F");
-  outTree_->Branch("mbbNew"               ,&mbbNew_            ,"mbbNew_/F");
+  outTree_->Branch("mbbReg"               ,&mbbReg_            ,"mbbReg_/F");
+  outTree_->Branch("mbbRegPart"           ,&mbbRegPart_        ,"mbbRegPart_/F");
   outTree_->Branch("dEtaMax"              ,&dEtaMax_           ,"dEtaMax_/F");
   outTree_->Branch("dEtaqq"               ,&dEtaqq_            ,"dEtaqq_/F");
+  outTree_->Branch("dEtabb"               ,&dEtabb_            ,"dEtabb_/F");
+  outTree_->Branch("ptqq"                 ,&ptqq_              ,"ptqq_/F");
+  outTree_->Branch("ptbb"                 ,&ptbb_              ,"ptbb_/F");
+  outTree_->Branch("dPhiqq"               ,&dPhiqq_            ,"dPhiqq_/F");
+  outTree_->Branch("dPhibb"               ,&dPhibb_            ,"dPhibb_/F");
+  outTree_->Branch("etaBoostqq"           ,&etaBoostqq_        ,"etaBoostqq_/F");
+  outTree_->Branch("etaBoostbb"           ,&etaBoostbb_        ,"etaBoostbb_/F");
   //------------------------------------------------------------------
   btagIdx_        = new std::vector<int>;
   etaIdx_         = new std::vector<int>;
@@ -116,10 +127,14 @@ void VbfHbbFlatTreeProducer::beginJob()
   btag_           = new std::vector<float>;
   puMva_          = new std::vector<float>;
   jec_            = new std::vector<float>;
+  reg_            = new std::vector<float>;
+  regPart_        = new std::vector<float>;
   unc_            = new std::vector<float>;
   beta_           = new std::vector<float>;
+  qgl_            = new std::vector<float>;
   eta_            = new std::vector<float>;
   phi_            = new std::vector<float>;
+  jetMetPhi_      = new std::vector<float>;
   mass_           = new std::vector<float>;
   chf_            = new std::vector<float>;
   nhf_            = new std::vector<float>;
@@ -155,10 +170,14 @@ void VbfHbbFlatTreeProducer::beginJob()
   outTree_->Branch("jetBtag"              ,"vector<float>"     ,&btag_);
   outTree_->Branch("jetPuMva"             ,"vector<float>"     ,&puMva_);
   outTree_->Branch("jetJec"               ,"vector<float>"     ,&jec_);
+  outTree_->Branch("jetReg"               ,"vector<float>"     ,&reg_);
+  outTree_->Branch("jetRegPart"           ,"vector<float>"     ,&regPart_);
   outTree_->Branch("jetUnc"               ,"vector<float>"     ,&unc_);
   outTree_->Branch("jetBeta"              ,"vector<float>"     ,&beta_);
+  outTree_->Branch("jetQGL"               ,"vector<float>"     ,&qgl_);
   outTree_->Branch("jetEta"               ,"vector<float>"     ,&eta_);
   outTree_->Branch("jetPhi"               ,"vector<float>"     ,&phi_);
+  outTree_->Branch("jetMetPhi"            ,"vector<float>"     ,&jetMetPhi_);
   outTree_->Branch("jetMass"              ,"vector<float>"     ,&mass_);
   outTree_->Branch("jetChf"               ,"vector<float>"     ,&chf_);
   outTree_->Branch("jetNhf"               ,"vector<float>"     ,&nhf_);
@@ -222,13 +241,17 @@ void VbfHbbFlatTreeProducer::beginJob()
   outTree_->Branch("genjetPhi"      ,"vector<float>" ,&genjetPhi_);
   outTree_->Branch("genjetE"        ,"vector<float>" ,&genjetE_);
 
-  outTree_->Branch("partonDRbb"     ,&partonDRbb_    ,"partonDRbb_/F");
-
+  qglCalc_    = new QGLCalculator();
+  jetReg_     = new JetRegressor("KKousour/CMGAnalysis/data/factoryJetRegNewGenJets_MLP.weights.xml");
+  jetRegPart_ = new JetRegressor("KKousour/CMGAnalysis/data/factoryJetRegParton_MLP.weights.xml");
   cout<<"Begin job finished"<<endl;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void VbfHbbFlatTreeProducer::endJob() 
 {
+  delete qglCalc_;
+  delete jetReg_;
+  delete jetRegPart_;
   delete partonSt_;
   delete partonId_;
   delete partonMatchIdx_;
@@ -258,10 +281,14 @@ void VbfHbbFlatTreeProducer::endJob()
   delete btag_;
   delete puMva_;
   delete jec_;
+  delete reg_;
+  delete regPart_;
   delete unc_;
   delete beta_;
+  delete qgl_;
   delete eta_;
   delete phi_;
+  delete jetMetPhi_;
   delete mass_;
   delete chf_;
   delete nhf_;
@@ -391,7 +418,7 @@ void VbfHbbFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup c
       bool idT = (idL && ((eta<=2.4 && nhf<0.9 && phf<0.9 && elf<0.7 && muf<0.7 && chf>0 && chm>0) || eta>2.4));
       if (idL && puIdL && (pt > ptMin_)) {
         vP4.push_back(TLorentzVector(ijet->px(),ijet->py(),ijet->pz(),ijet->energy()));
-        sumP2  += ijet->p() * ijet->p();
+        sumP2  += ijet->p()  * ijet->p();
         sumPxx += ijet->px() * ijet->px();
         sumPxy += ijet->px() * ijet->py();
         sumPxz += ijet->px() * ijet->pz();
@@ -407,12 +434,17 @@ void VbfHbbFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup c
         muf_           ->push_back(muf);
         unc_           ->push_back(ijet->uncOnFourVectorScale());
         jec_           ->push_back(aJES/ijet->rawFactor());
+        float dphiJetMet = fabs(deltaPhi(ijet->phi(),(*met)[0].phi()));
+        reg_           ->push_back((jetReg_->getTarget(*ijet,dphiJetMet,*rho,(*met)[0].et()))/ijet->pt());
+        regPart_       ->push_back((jetRegPart_->getTarget(*ijet,dphiJetMet,*rho,(*met)[0].et()))/ijet->et());
+        jetMetPhi_     ->push_back(dphiJetMet);
         pt_            ->push_back(aJES*pt);
         phi_           ->push_back(ijet->phi());
         eta_           ->push_back(ijet->eta());
         mass_          ->push_back(aJES*ijet->mass());
         btag_          ->push_back(ijet->bDiscriminator(srcBtag_.c_str()));
         beta_          ->push_back(ijet->beta());
+        qgl_           ->push_back(qglCalc_->getQGL(*ijet,*rho));
         puMva_         ->push_back(ijet->puMva("full"));
         puIdL_         ->push_back(puIdL);
         puIdM_         ->push_back(puIdM);
@@ -466,6 +498,10 @@ void VbfHbbFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup c
     sphericity_ = 1.5*(eigenValues(1)+eigenValues(2));
     aplanarity_ = 1.5*eigenValues(2); 
     //----- order jets according to the btag value -----
+    order(*btag_,btagIdx_);
+    //----- order jets according to the eta value -----
+    order(*eta_,etaIdx_);
+    /*
     std::vector<float> tmp_btag;
     for(int i=0;i<nJets_;i++) {
       btagIdx_->push_back(i);
@@ -501,6 +537,7 @@ void VbfHbbFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup c
         }
       } 
     }
+    */
     // ------- MC -----------------------------------------
     if (!iEvent.isRealData()) {
       //---------- pu -----------------------
@@ -526,17 +563,6 @@ void VbfHbbFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup c
       iEvent.getByLabel(srcGenParticles_, genParticles);
       for(unsigned ip = 0; ip < genParticles->size(); ++ ip) {
         const GenParticle &p = (*genParticles)[ip];
-        /*
-        if (p.pdgId() == 25) {
-          partonId_ ->push_back(p.pdgId());
-	  partonSt_ ->push_back(p.status()); 
-          partonPt_ ->push_back(p.pt());
-          partonEta_->push_back(p.eta());
-          partonPhi_->push_back(p.phi());
-          partonE_  ->push_back(p.energy());
-          partonDRbb_ = deltaR(p.daughter(0)->p4(),p.daughter(1)->p4());
-        }
-        */
         if (p.status() != 3) continue;
         int ndst3(0);
 	for(unsigned k = 0; k < p.numberOfDaughters(); k++) {
@@ -575,41 +601,79 @@ void VbfHbbFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup c
     ht_     = ht;
     softHt_ = softHt;
     rho_    = *rho;
+    met_    = (*met)[0].et();
+    metPhi_ = (*met)[0].phi();
+    metSig_ = (*met)[0].et()/(*met)[0].sumEt();
     pvx_    = (*recVtxs)[0].x();
     pvy_    = (*recVtxs)[0].y();
     pvz_    = (*recVtxs)[0].z();
     nVtx_   = recVtxs->size();
-    met_    = (*met)[0].et();
-    metPhi_ = (*met)[0].phi();
-    metSig_ = (*met)[0].et()/(*met)[0].sumEt();
     run_    = iEvent.id().run();
     evt_    = iEvent.id().event();
     lumi_   = iEvent.id().luminosityBlock();
     if (nJets_ > 3) {
-      b1_ = (*btagIdx_)[0];
-      b2_ = (*btagIdx_)[1];
-      q1_ = (*btagIdx_)[2];
-      q2_ = (*btagIdx_)[3]; 
-      float btag21 = (*btag_)[(*btagIdx_)[2]]/(*btag_)[(*btagIdx_)[1]];
-      if (btag21 > 0.5) {
-        if ((*etaIdx_)[(*btagIdx_)[1]] == 0 || (*etaIdx_)[(*btagIdx_)[1]] > 2) {
-          b2_ = (*btagIdx_)[2];
-          q1_ = (*btagIdx_)[1];
-          q2_ = (*btagIdx_)[3];
-        }
-      } 
-      int ib0 = (*btagIdx_)[0];
-      int ib1 = (*btagIdx_)[1];
-      mbb_    = (vaJES[ib0]*vP4[ib0]+vaJES[ib1]*vP4[ib1]).M();
-      mbbNew_ = (vaJES[b1_]*vP4[b1_]+vaJES[b2_]*vP4[b2_]).M(); 
-      cout<<btag21<<" "<<mbb_<<" "<<mbbNew_<<" "<<ib0<<" "<<ib1<<" "<<b1_<<" "<<b2_<<endl;
-      int ie0 = (*etaIdx_)[0];
-      int ie1 = (*etaIdx_)[nJets_-1];
-      dEtaMax_ = fabs((*eta_)[ie0]-(*eta_)[ie1]);
-      dEtaqq_  = fabs((*eta_)[q1_]-(*eta_)[q2_]);
-      outTree_->Fill();
+      b1_         = (*btagIdx_)[0];
+      b2_         = (*btagIdx_)[1];
+      q1_         = (*btagIdx_)[2];
+      q2_         = (*btagIdx_)[3];  
+      mbb_        = (vaJES[b1_]*vP4[b1_]+vaJES[b2_]*vP4[b2_]).M();
+      mbbReg_     = (vaJES[b1_]*(*reg_)[b1_]*vP4[b1_]+vaJES[b2_]*(*reg_)[b2_]*vP4[b2_]).M(); 
+      mbbRegPart_ = (vaJES[b1_]*(*regPart_)[b1_]*vP4[b1_]+vaJES[b2_]*(*regPart_)[b2_]*vP4[b2_]).M(); 
+      dEtaMax_    = fabs((*eta_)[(*etaIdx_)[0]]-(*eta_)[(*etaIdx_)[nJets_-1]]);
+      dEtabb_     = fabs((*eta_)[b1_]-(*eta_)[b2_]);
+      dEtaqq_     = fabs((*eta_)[q1_]-(*eta_)[q2_]);
+      mqq_        = (vaJES[q1_]*vP4[q1_]+vaJES[q2_]*vP4[q2_]).M();
+      ptqq_       = (vaJES[q1_]*vP4[q1_]+vaJES[q2_]*vP4[q2_]).Pt();
+      ptbb_       = (vaJES[b1_]*vP4[b1_]+vaJES[b2_]*vP4[b2_]).Pt();
+      etaBoostbb_ = 0.5*((*eta_)[b1_]+(*eta_)[b2_]);
+      etaBoostqq_ = 0.5*((*eta_)[q1_]+(*eta_)[q2_]);
+      dPhibb_     = fabs(deltaPhi((*phi_)[b1_],(*phi_)[b2_]));
+      dPhiqq_     = fabs(deltaPhi((*phi_)[q1_],(*phi_)[q2_])); 
+      //----- angles at the qqbb rest frame ------
+      TLorentzVector cmP4 = vP4[b1_]+vP4[b2_]+vP4[q1_]+vP4[q2_];
+      TVector3 vb = cmP4.BoostVector();
+      TLorentzVector cmP4b1 = vP4[b1_];
+      TLorentzVector cmP4b2 = vP4[b2_];
+      TLorentzVector cmP4q1 = vP4[q1_];
+      TLorentzVector cmP4q2 = vP4[q2_];
+      cmP4b1.Boost(-vb);
+      cmP4b2.Boost(-vb);
+      cmP4q1.Boost(-vb);
+      cmP4q2.Boost(-vb);
+      cosTheta_ = cos(((cmP4q1.Vect()).Cross(cmP4q2.Vect())).Angle((cmP4b1.Vect()).Cross(cmP4b2.Vect())));
+      if (
+           (dEtaqq_ > dEtaMin_) && 
+           ((*pt_)[0] > ptPreselMin_[0]) && 
+           ((*pt_)[1] > ptPreselMin_[1]) &&
+           ((*pt_)[2] > ptPreselMin_[2]) &&
+           ((*pt_)[3] > ptPreselMin_[3]) 
+         ) {
+        outTree_->Fill();
+      }
     }
   }// if vtx
+}
+//////////////////////////////////////////////////////////////////////////////////////////
+void VbfHbbFlatTreeProducer::order(vector<float> const& v, vector<int>* idx)
+{
+  vector<float> tmp;
+  int N = int(v.size());
+  for(int i=0;i<N;i++) {
+    idx->push_back(i);
+    tmp.push_back(v[i]); 
+  }
+  for(int i=0;i<N;i++) {
+    for(int j=i+1;j<N;j++) {
+      if (tmp[j] > tmp[i]) {
+        int k = (*idx)[i];
+        (*idx)[i] = (*idx)[j];
+        (*idx)[j] = k;
+        float x = tmp[i]; 
+        tmp[i] = tmp[j];
+        tmp[j] = x;
+      }
+    } 
+  }
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void VbfHbbFlatTreeProducer::initialize()
@@ -632,10 +696,19 @@ void VbfHbbFlatTreeProducer::initialize()
   pvz_            = -999;
   sphericity_     = -999;
   aplanarity_     = -999;
+  cosTheta_       = -999;
   mbb_            = -999;
-  mbbNew_         = -999;
+  mbbReg_         = -999;
+  mbbRegPart_     = -999;
   dEtaMax_        = -999;
   dEtaqq_         = -999;
+  dEtabb_         = -999;
+  etaBoostqq_     = -999;
+  etaBoostbb_     = -999;
+  dPhiqq_         = -999;
+  dPhibb_         = -999;
+  ptqq_           = -999;
+  ptbb_           = -999;
   b1_             = -999;
   b2_             = -999;
   q1_             = -999;
@@ -643,6 +716,7 @@ void VbfHbbFlatTreeProducer::initialize()
   pt_             ->clear();
   eta_            ->clear();
   phi_            ->clear();
+  jetMetPhi_      ->clear();
   mass_           ->clear();
   chf_            ->clear();
   nhf_            ->clear();
@@ -650,10 +724,13 @@ void VbfHbbFlatTreeProducer::initialize()
   elf_            ->clear();
   muf_            ->clear();
   jec_            ->clear();
+  reg_            ->clear();
+  regPart_        ->clear(); 
   btag_           ->clear();
   btagIdx_        ->clear();
   etaIdx_         ->clear();
   beta_           ->clear();
+  qgl_            ->clear();
   puMva_          ->clear();
   unc_            ->clear();
   ptD_            ->clear();
@@ -686,7 +763,6 @@ void VbfHbbFlatTreeProducer::initialize()
   softTrackJetE_  ->clear();
   //----- MC -------
   npu_ = -999;
-  partonDRbb_ = -999;
   partonSt_      ->clear();
   partonId_      ->clear();
   partonMatchIdx_->clear();

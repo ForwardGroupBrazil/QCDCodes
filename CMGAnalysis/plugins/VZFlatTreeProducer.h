@@ -36,9 +36,9 @@ class VZFlatTreeProducer : public edm::EDAnalyzer
     std::vector<triggerExpression::Evaluator*> vtriggerSelector_;
     std::vector<std::string> vtriggerAlias_,vtriggerSelection_;
     TH1F *triggerPassHisto_,*triggerNamesHisto_;
-    double minJetPt_,maxJetEta_,minElectronPt_,minMuonPt_;
+    double minJetPt_,maxJetEta_,minJetPtSel_,maxJetEtaSel_,minBJetPtSel_,maxBJetEtaSel_,minElectronPt_,minMuonPt_;
     //---- output TREE variables ------
-    int run_,evt_,lumi_,nVtx_,njets_,nelectrons_,nmuons_,npu_;
+    int run_,evt_,lumi_,nVtx_,njets_,nbjetsSel_,njetsSel_,nelectrons_,nmuons_,npu_;
     float rho_,sphericity_,aplanarity_;
     std::vector<bool> *triggerResult_;
     //---- electrons -------------------------
@@ -59,6 +59,8 @@ class VZFlatTreeProducer : public edm::EDAnalyzer
     float eePt_,eeEta_,eePhi_,eeE_,eeM_;
     //---- di-muons -------------------------
     float mmPt_,mmEta_,mmPhi_,mmE_,mmM_;
+    //---- electron-muon -------------------------
+    float emPt_,emEta_,emPhi_,emE_,emM_;
     //---- di-jets -------------------------
     float jjPt_,jjEta_,jjPhi_,jjE_,jjM_,jjDPhi_,jjDEta_;
     //---- MET -------------------------

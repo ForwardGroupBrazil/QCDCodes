@@ -63,15 +63,15 @@ QGLCalculator::QGLCalculator()
   std::cout<<"Booking QGL readers"<<std::endl;
   for(int ipt=0;ipt<7;ipt++) {
     for(int ieta=0;ieta<3;ieta++) {
-      readerQGL_[ipt][ieta] = new TMVA::Reader("!Color:!Silent");
-      readerQGL_[ipt][ieta]->AddVariable("axis1"  ,&varQGL_[0]);
-      readerQGL_[ipt][ieta]->AddVariable("axis2"  ,&varQGL_[1]);
-      readerQGL_[ipt][ieta]->AddVariable("Mult"   ,&varQGL_[2]);
-      readerQGL_[ipt][ieta]->AddVariable("JetR"   ,&varQGL_[3]);
-      readerQGL_[ipt][ieta]->AddVariable("JetPull",&varQGL_[4]);
+      reader_[ipt][ieta] = new TMVA::Reader("!Color:!Silent");
+      reader_[ipt][ieta]->AddVariable("axis1"  ,&var_[0]);
+      reader_[ipt][ieta]->AddVariable("axis2"  ,&var_[1]);
+      reader_[ipt][ieta]->AddVariable("Mult"   ,&var_[2]);
+      reader_[ipt][ieta]->AddVariable("JetR"   ,&var_[3]);
+      reader_[ipt][ieta]->AddVariable("JetPull",&var_[4]);
       std::string ss = PT_CAT_[ipt]+"_"+ETA_CAT_[ieta]+"_Likelihood.xml";
       edm::FileInPath f1("KKousour/CMGAnalysis/data/"+ss);
-      readerQGL_[ipt][ieta]->BookMVA("LIK_"+PT_CAT_[ipt]+"_"+ETA_CAT_[ieta],f1.fullPath());
+      reader_[ipt][ieta]->BookMVA("LIK_"+PT_CAT_[ipt]+"_"+ETA_CAT_[ieta],f1.fullPath());
     }
   } 
 }
@@ -93,23 +93,23 @@ float QGLCalculator::getQGL(cmg::PFJet const& jet,float rho)
   int ipt  = TMath::Max(0,FindIndex(8,PT_BND_,jet.pt()));
   int ieta = TMath::Max(0,FindIndex(4,ETA_BND_,fabs(jet.eta())));
   if (ieta == 0) {
-    varQGL_[0] = jet.axisMajorQC()-COR_RHO_[ipt][ieta][0]*rho;
-    varQGL_[1] = jet.axisMinorQC()-COR_RHO_[ipt][ieta][1]*rho;
-    varQGL_[2] = jet.nChargedQC()-COR_RHO_[ipt][ieta][3]*rho;
-    varQGL_[3] = jet.fmax()-COR_RHO_[ipt][ieta][4]*rho;
-    varQGL_[4] = jet.pullQC()-COR_RHO_[ipt][ieta][2]*rho;
+    var_[0] = jet.axisMajorQC()-COR_RHO_[ipt][ieta][0]*rho;
+    var_[1] = jet.axisMinorQC()-COR_RHO_[ipt][ieta][1]*rho;
+    var_[2] = jet.nChargedQC()-COR_RHO_[ipt][ieta][3]*rho;
+    var_[3] = jet.fmax()-COR_RHO_[ipt][ieta][4]*rho;
+    var_[4] = jet.pullQC()-COR_RHO_[ipt][ieta][2]*rho;
   }
   else {
-    varQGL_[0] = jet.axisMajor()-COR_RHO_[ipt][ieta][0]*rho;
-    varQGL_[1] = jet.axisMinor()-COR_RHO_[ipt][ieta][1]*rho;
-    varQGL_[2] = jet.nChargedPtCut()+jet.nNeutralPtCut()-COR_RHO_[ipt][ieta][3]*rho;
-    varQGL_[3] = jet.fmax()-COR_RHO_[ipt][ieta][4]*rho;
-    varQGL_[4] = jet.pull()-COR_RHO_[ipt][ieta][2]*rho;
+    var_[0] = jet.axisMajor()-COR_RHO_[ipt][ieta][0]*rho;
+    var_[1] = jet.axisMinor()-COR_RHO_[ipt][ieta][1]*rho;
+    var_[2] = jet.nChargedPtCut()+jet.nNeutralPtCut()-COR_RHO_[ipt][ieta][3]*rho;
+    var_[3] = jet.fmax()-COR_RHO_[ipt][ieta][4]*rho;
+    var_[4] = jet.pull()-COR_RHO_[ipt][ieta][2]*rho;
   }
-  return readerQGL_[ipt][ieta]->EvaluateMVA("LIK_"+PT_CAT_[ipt]+"_"+ETA_CAT_[ieta]);
+  return reader_[ipt][ieta]->EvaluateMVA("LIK_"+PT_CAT_[ipt]+"_"+ETA_CAT_[ieta]);
 }
 //-------------------------------------------------------------
 QGLCalculator::~QGLCalculator()
 {
-
+  delete reader_;
 }

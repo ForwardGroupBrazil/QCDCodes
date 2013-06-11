@@ -49,6 +49,10 @@ VZFlatTreeProducer::VZFlatTreeProducer(edm::ParameterSet const& cfg)
   srcRho_             = cfg.getParameter<edm::InputTag> ("rho"); 
   minJetPt_           = cfg.getParameter<double>        ("minJetPt");
   maxJetEta_          = cfg.getParameter<double>        ("maxJetEta");
+  minJetPtSel_        = cfg.getParameter<double>        ("minJetPtSel");
+  maxJetEtaSel_       = cfg.getParameter<double>        ("maxJetEtaSel");
+  minBJetPtSel_       = cfg.getParameter<double>        ("minBJetPtSel");
+  maxBJetEtaSel_      = cfg.getParameter<double>        ("maxBJetEtaSel");
   minMuonPt_          = cfg.getParameter<double>        ("minMuonPt");     
   minElectronPt_      = cfg.getParameter<double>        ("minElectronPt"); 
   srcPU_              = cfg.getUntrackedParameter<std::string>      ("pu","");
@@ -102,7 +106,7 @@ void VZFlatTreeProducer::beginJob()
   muIso_        = new std::vector<float>(); 
   muId_         = new std::vector<int>();
   muCh_         = new std::vector<int>();
-  triggerResult_ = new std::vector<bool>;
+  triggerResult_= new std::vector<bool>;
   //--- book the trigger histograms ---------
   triggerNamesHisto_ = fs_->make<TH1F>("TriggerNames","TriggerNames",1,0,1);
   triggerNamesHisto_->SetBit(TH1::kCanRebin);
@@ -117,6 +121,8 @@ void VZFlatTreeProducer::beginJob()
   outTree_->Branch("lumi"        ,&lumi_        ,"lumi_/I");
   outTree_->Branch("nvtx"        ,&nVtx_        ,"nVtx_/I");
   outTree_->Branch("njets"       ,&njets_       ,"njets_/I");
+  outTree_->Branch("njetsSel"    ,&njetsSel_    ,"njetsSel_/I");
+  outTree_->Branch("nbjetsSel"   ,&nbjetsSel_   ,"nbjetsSel_/I");
   outTree_->Branch("nmuons"      ,&nmuons_      ,"nmuons_/I");
   outTree_->Branch("nelectrons"  ,&nelectrons_  ,"nelectrons_/I");
   outTree_->Branch("rho"         ,&rho_         ,"rho_/F");
@@ -171,6 +177,12 @@ void VZFlatTreeProducer::beginJob()
   outTree_->Branch("mmPhi"    ,&mmPhi_             ,"mmPhi_/F");
   outTree_->Branch("mmE"      ,&mmE_               ,"mmE_/F");
   outTree_->Branch("mmM"      ,&mmM_               ,"mmM_/F");
+  //---------- electron-muon -----------------------------------------
+  outTree_->Branch("emPt"     ,&emPt_              ,"emPt_/F");
+  outTree_->Branch("emEta"    ,&emEta_             ,"emEta_/F");
+  outTree_->Branch("emPhi"    ,&emPhi_             ,"emPhi_/F");
+  outTree_->Branch("emE"      ,&emE_               ,"emE_/F");
+  outTree_->Branch("emM"      ,&emM_               ,"emM_/F");
   //---------- di-jets -----------------------------------------
   outTree_->Branch("jjPt"     ,&jjPt_              ,"jjPt_/F");
   outTree_->Branch("jjEta"    ,&jjEta_             ,"jjEta_/F");
@@ -246,6 +258,8 @@ void VZFlatTreeProducer::initialize()
   met_          = -999;
   metPhi_       = -999;
   njets_        = -999;
+  njetsSel_     = -999;
+  nbjetsSel_    = -999;
   nelectrons_   = -999;
   nmuons_       = -999; 
   eePt_         = -999;
@@ -258,6 +272,11 @@ void VZFlatTreeProducer::initialize()
   mmPhi_        = -999;
   mmE_          = -999;
   mmM_          = -999;
+  emPt_         = -999;
+  emEta_        = -999;
+  emPhi_        = -999;
+  emE_          = -999;
+  emM_          = -999;
   jjPt_         = -999;
   jjEta_        = -999;
   jjPhi_        = -999;
@@ -381,17 +400,19 @@ void VZFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup const
     int id(0);
     if (
       imu->isGlobalMuon() && 
+      imu->isPF() &&
       fabs(imu->normalizedChi2()) < 10 &&
       imu->numberOfValidMuonHits() > 0 &&
-      imu->numberOfMatches() >1 && 
+      imu->numberOfMatches() > 1 && 
       fabs(imu->dxy()) < 0.2 &&
+      fabs(imu->dz()) < 0.5 &&
       imu->numberOfValidPixelHits() > 0 && 
-      imu->numberOfValidTrackerHits() > 8
+      imu->numberOfValidTrackerHits() > 5
     ) {
       id = 1;
     }
     muId_->push_back(id);
-    muIso_->push_back(imu->relIso());
+    muIso_->push_back(imu->relIso(0.5,0,0.4));
     muCh_->push_back(imu->charge());      
     nmuons_++;
     if (id > 0) {
@@ -415,23 +436,56 @@ void VZFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup const
     elPhi_->push_back(iel->phi());	
     elE_  ->push_back(iel->energy());
     elP4_ ->push_back(iel->p4());
+    float ecalE = iel->sourcePtr()->get()->ecalEnergy();
+    float trkP  = ecalE/iel->sourcePtr()->get()->eSuperClusterOverP();
     int id(0); 
+    float dxy                            = iel->dxy();
+    float dz                             = iel->dz();
+    float fep                            = fabs(1./ecalE-1./trkP);                              
     float sigmaIetaIeta                  = iel->sigmaIetaIeta();
     float hadronicOverEm                 = iel->hadronicOverEm();
     float deltaPhiSuperClusterTrackAtVtx = iel->deltaPhiSuperClusterTrackAtVtx();
     float deltaEtaSuperClusterTrackAtVtx = iel->deltaEtaSuperClusterTrackAtVtx();
     float etaSC = iel->sourcePtr()->get()->superCluster()->eta();
-    if (etaSC < 1.4442) {
-      if (sigmaIetaIeta < 0.01 && deltaPhiSuperClusterTrackAtVtx < 0.06 && deltaEtaSuperClusterTrackAtVtx < 0.004 && hadronicOverEm < 0.12) 
-      id = 1;
+    if (etaSC < 1.442) {
+      if (hadronicOverEm < 0.12 && sigmaIetaIeta < 0.01 && dxy < 0.02 && fep < 0.05) {
+        if (deltaPhiSuperClusterTrackAtVtx < 0.15 && deltaEtaSuperClusterTrackAtVtx < 0.007 && dz < 0.2)  {
+          id = 1;
+        }
+        if (deltaPhiSuperClusterTrackAtVtx < 0.06 && deltaEtaSuperClusterTrackAtVtx < 0.004 && dz < 0.1)  {
+          id = 2;
+        }
+        if (deltaPhiSuperClusterTrackAtVtx < 0.03 && deltaEtaSuperClusterTrackAtVtx < 0.004 && dz < 0.1)  {
+          id = 3;
+        }
+      }
     }// if EB
-    if (etaSC > 1.5660) {
-      if (sigmaIetaIeta < 0.03 && deltaPhiSuperClusterTrackAtVtx < 0.03 && deltaEtaSuperClusterTrackAtVtx < 0.007 && hadronicOverEm < 0.10) 
-      id = 1;
+    if (etaSC > 1.566) {
+      if (hadronicOverEm < 0.1 && sigmaIetaIeta < 0.03 && dxy < 0.02 && fep < 0.05) {
+        if (deltaPhiSuperClusterTrackAtVtx < 0.10 && deltaEtaSuperClusterTrackAtVtx < 0.009 && dz < 0.2)  {
+          id = 1;
+        }
+        if (deltaPhiSuperClusterTrackAtVtx < 0.03 && deltaEtaSuperClusterTrackAtVtx < 0.007 && dz < 0.1)  {
+          id = 2;
+        }
+        if (deltaPhiSuperClusterTrackAtVtx < 0.02 && deltaEtaSuperClusterTrackAtVtx < 0.005 && dz < 0.1)  {
+          id = 3;
+        }
+      }
     }// if EE	
     elMva_->push_back(iel->mva());
     elId_->push_back(id);
-    elIso_->push_back(iel->relIso());
+    float Aeff;
+    if (etaSC < 1.0) Aeff = 0.13;
+    else if (etaSC >= 1.0 && etaSC < 1.479) Aeff = 0.14;
+    else if (etaSC >= 1.479 && etaSC < 2.0) Aeff = 0.07;
+    else if (etaSC >= 2.0 && etaSC < 2.2) Aeff = 0.09;
+    else if (etaSC >= 2.2 && etaSC < 2.3) Aeff = 0.11;
+    else if (etaSC >= 2.3 && etaSC < 2.5) Aeff = 0.11;
+    else Aeff = 0.14;
+    float iso = iel->chargedHadronIso(0.3)+max((iel->neutralHadronIso(0.3)+iel->photonIso(0.3)-(*rho)*Aeff),0.0);
+    //elIso_->push_back(iel->relIso());
+    elIso_->push_back(iso/iel->pt());
     elCh_->push_back(iel->charge());
     nelectrons_++;
     if (id > 0) {
@@ -445,7 +499,9 @@ void VZFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup const
     }	      
   }// electron loop
   //---- jets block --------------------------------------------  
-  njets_ = 0;
+  njets_     = 0;
+  njetsSel_  = 0;
+  nbjetsSel_ = 0;
   edm::Handle<edm::View<cmg::PFJet> > jets;
   iEvent.getByLabel(srcJets_,jets);
   edm::View<cmg::PFJet> cmg_jets = *jets;
@@ -458,15 +514,15 @@ void VZFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup const
     //---- cross clean with electrons and muons --
     bool matched(false);
     for(int iel=0;iel<nelectrons_;iel++) {
-      double dR = deltaR(ijet->p4(),elP4_->at(iel));
-      if (dR < 0.25) {
+      double dR = deltaR(ijet->p4(),(*elP4_)[iel]);
+      if (dR < 0.5 && (*elIso_)[iel] < 0.15) {
         matched = true;
         break;
       }
     }
     for(int imu=0;imu<nmuons_;imu++) {
-      double dR = deltaR(ijet->p4(),muP4_->at(imu));
-      if (dR < 0.25) {
+      double dR = deltaR(ijet->p4(),(*muP4_)[imu]);
+      if (dR < 0.5 && (*muIso_)[imu] < 0.15) {
         matched = true;
         break;
       }
@@ -506,6 +562,12 @@ void VZFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup const
     jetElf_->push_back(elf);
     jetQGL_->push_back(QGL_->getQGL(*ijet,rho_));          	      
     njets_++;
+    if (ijet->pt() > minJetPtSel_ && fabs(ijet->eta()) < maxJetEtaSel_ && (id > 0) && puIdL) {
+      njetsSel_++; 
+    }
+    if (ijet->pt() > minBJetPtSel_ && fabs(ijet->eta()) < maxBJetEtaSel_ && (id > 0) && puIdL && ijet->bDiscriminator(srcBtag_.c_str()) > 0.679) {
+        nbjetsSel_++; 
+    }
     if (id > 0) {
       sumP2  += ijet->p()  * ijet->p();
       sumPxx += ijet->px() * ijet->px();
@@ -541,19 +603,26 @@ void VZFlatTreeProducer::analyze(edm::Event const& iEvent, edm::EventSetup const
   run_    = iEvent.id().run();
   evt_    = iEvent.id().event();
   lumi_   = iEvent.id().luminosityBlock();
-  if (nVtx_ > 0 && (nelectrons_ > 1 || nmuons_ > 1) && njets_ > 1) {
-    LorentzVector jjP4 = (*jetP4_)[0] + (*jetP4_)[1]; 
-    jjPt_  = jjP4.Pt();
-    jjEta_ = jjP4.Eta();
-    jjPhi_ = jjP4.Phi();
-    jjE_   = jjP4.E();
-    jjM_   = jjP4.M();
-    float dphi = fabs((*jetPhi_)[0]-(*jetPhi_)[1]);
-    if (dphi > 3.14159) {
-      dphi = 2*3.14159-dphi;
-    }  
-    jjDPhi_ = dphi;
-    jjDEta_ = fabs((*jetEta_)[0]-(*jetEta_)[1]);
+  if (nVtx_ > 0 && (nelectrons_ > 1 || nmuons_ > 1) && njets_ > 0) {
+    LorentzVector jjP4(0,0,0,0);
+    if (njets_ > 1) {
+      jjP4 = (*jetP4_)[0] + (*jetP4_)[1]; 
+      jjPt_   = jjP4.Pt();
+      jjEta_  = jjP4.Eta();
+      jjPhi_  = jjP4.Phi();
+      jjE_    = jjP4.E();
+      jjM_    = jjP4.M(); 
+      jjDPhi_ = deltaPhi((*jetPhi_)[0],(*jetPhi_)[1]);
+      jjDEta_ = fabs((*jetEta_)[0]-(*jetEta_)[1]);
+    }
+    if (nelectrons_ > 0 && nmuons_ > 0) {
+      LorentzVector emP4 = (*elP4_)[0] + (*muP4_)[0]; 
+      emPt_  = emP4.Pt();
+      emEta_ = emP4.Eta();
+      emPhi_ = emP4.Phi();
+      emE_   = emP4.E();
+      emM_   = emP4.M();
+    }
     if (nelectrons_ > 1) {
       LorentzVector eeP4 = (*elP4_)[0] + (*elP4_)[1]; 
       eePt_  = eeP4.Pt();

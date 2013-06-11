@@ -18,7 +18,7 @@ class QGLCalculator
     std::string ETA_CAT_[3];
     float PT_BND_[8],ETA_BND_[4];
     float COR_RHO_[7][3][6];
-    TMVA::Reader *readerQGL_[7][3];
-    float varQGL_[5];
+    TMVA::Reader *reader_[7][3];
+    float var_[5];
 };
 #endif
