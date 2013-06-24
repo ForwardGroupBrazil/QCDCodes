@@ -43,7 +43,8 @@ class VZFlatTreeProducer : public edm::EDAnalyzer
     std::vector<bool> *triggerResult_;
     //---- electrons -------------------------
     std::vector<float> *elPt_,*elEta_,*elPhi_,*elE_,*elIso_,*elMva_;
-    std::vector<int>   *elId_,*elCh_;
+    std::vector<int>   *elCh_;
+    std::vector<bool>  *elEB_,*elEE_,*elIdL_,*elIdM_,*elIdT_;
     std::vector<LorentzVector> *elP4_;
     //---- muons -------------------------
     std::vector<float> *muPt_,*muEta_,*muPhi_,*muE_,*muIso_;

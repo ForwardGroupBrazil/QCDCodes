@@ -27,13 +27,13 @@ class VbfHbbFlatTreeProducer : public edm::EDAnalyzer
 
   private:  
     void initialize();
-    void order(std::vector<float> const& v, std::vector<int>* idx);
+    void order(std::vector<float> const& v, std::vector<int>* idx, int Nmax);
     //---- configurable parameters --------   
     edm::InputTag srcJets_,srcGenJets_,srcMET_,srcRho_,srcGenParticles_;
     std::string srcBtag_,srcPU_;
     double dEtaMin_,shiftJES_;
     double ptMin_;
-    std::vector<double> ptPreselMin_;
+    std::vector<double> ptPreselMin_,btagThresholds_;
     edm::Service<TFileService> fs_;
     TTree *outTree_; 
     //---- TRIGGER -------------------------
@@ -46,14 +46,15 @@ class VbfHbbFlatTreeProducer : public edm::EDAnalyzer
     int run_,evt_,nVtx_,lumi_,nSoftTrackJets_,nJets_,nBJets_;
     int b1_,b2_,q1_,q2_;
     float pvx_,pvy_,pvz_,rho_,met_,metPhi_,metSig_,ht_,htAll_,sphericity_,aplanarity_,cosTheta_;
-    float mqq_,mbb_,mbbReg_,mbbRegPart_,dEtaqq_,dEtabb_,dPhiqq_,dPhibb_,ptqq_,ptbb_,etaBoostqq_,etaBoostbb_,softHt_,dEtaMax_;
+    float mqq_,mbb_,mbbReg_,mbbRegPart_,dEtaqq_,dEtabb_,dPhiqq_,dPhibb_,ptqq_,ptbb_,softHt_,dEtaMax_;
+    float mbbDef_,x1_,x2_,yBoostqq_,yStarqq_;
     std::vector<bool> *triggerResult_;
     //---- jet variables --------------
-    std::vector<bool>  *puIdL_,*puIdM_,*puIdT_,*idL_,*idM_,*idT_;
-    std::vector<int>   *btagIdx_,*etaIdx_;
+    std::vector<bool>  *puIdL_,*puIdM_,*puIdT_,*idL_,*idM_,*idT_,*btagL_,*btagM_,*btagT_;
+    std::vector<int>   *btagIdx_,*etaIdx_,*etaAbsIdx_;
     std::vector<int>   *vtxNTrks_,*part_,*nChg_QC_,*nChg_ptCut_,*nNeutral_ptCut_;
     std::vector<float> *pt_,*jec_,*reg_,*regPart_,*unc_,*eta_,*phi_,*mass_,*chf_,*nhf_,*phf_,*elf_,*muf_,*jetMetPhi_;
-    std::vector<float> *beta_,*ptD_,*ptD_QC_,*btag_,*puMva_,*qgl_;
+    std::vector<float> *ptD_,*ptD_QC_,*btag_,*csv_,*puMva_,*qgl_;
     std::vector<float> *vtxPt_,*vtx3dL_,*vtx3deL_;
     std::vector<float> *axisMinor_,*axisMajor_,*axisMinor_QC_,*axisMajor_QC_,*pull_,*pull_QC_,*jetR_,*jetRChg_QC_;
 
