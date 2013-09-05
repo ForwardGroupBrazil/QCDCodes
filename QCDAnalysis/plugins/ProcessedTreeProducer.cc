@@ -40,6 +40,11 @@
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 
+#include "DataFormats/BTauReco/interface/JetTag.h"
+#include "SimDataFormats/JetMatching/interface/JetFlavour.h"
+#include "SimDataFormats/JetMatching/interface/JetFlavourMatching.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
@@ -81,6 +86,8 @@ ProcessedTreeProducer::ProcessedTreeProducer(edm::ParameterSet const& cfg)
   triggerEventTag_   = cfg.getParameter<edm::InputTag>             ("triggerEvent");
   mPFJECUncSrc       = cfg.getParameter<std::string>               ("jecUncSrc");
   mPFJECUncSrcNames  = cfg.getParameter<std::vector<std::string> > ("jecUncSrcNames");
+  mJetFlavour        = cfg.getUntrackedParameter<std::string>      ("jetFlavourMatching","");
+  mXsec              = cfg.getUntrackedParameter<double>           ("Xsec",0.);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 void ProcessedTreeProducer::beginJob() 
@@ -278,6 +285,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   mEvtHdr.setRho(*rhoCalo,*rhoPF);
   //-------------- Generator Info -------------------------------------
   Handle<GenEventInfoProduct> hEventInfo;
+  Handle<std::vector<reco::GenParticle> > genParticles;
   //-------------- Simulated PU Info ----------------------------------
   Handle<std::vector<PileupSummaryInfo> > PupInfo;
   if (mIsMCarlo && mUseGenInfo) { 
@@ -285,6 +293,7 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     mEvtHdr.setPthat(hEventInfo->binningValues()[0]);
     mEvtHdr.setWeight(hEventInfo->weight());
     event.getByLabel(mSrcPU, PupInfo);
+    event.getByLabel("genParticles",genParticles); 
     std::vector<PileupSummaryInfo>::const_iterator PUI;
     int nbx = PupInfo->size();
     int ootpuEarly(0),ootpuLate(0),intpu(0);
@@ -300,14 +309,23 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
        } 
     } 
      
+    float parton_id_initial1(0.), parton_id_initial2(0.);
+
+    parton_id_initial1 = (*genParticles)[4].pdgId();
+    parton_id_initial2 = (*genParticles)[5].pdgId();
+
     mEvtHdr.setPU(nbx,ootpuEarly,ootpuLate,intpu);
     mEvtHdr.setTrPu(Tnpv);
+    mEvtHdr.setXsec(mXsec);
+    mEvtHdr.setInitialPartons(parton_id_initial1, parton_id_initial2);
   } 
   else {
     mEvtHdr.setPthat(0);
     mEvtHdr.setWeight(0); 
     mEvtHdr.setPU(0,0,0,0);
     mEvtHdr.setTrPu(0);
+    mEvtHdr.setXsec(0.);
+    mEvtHdr.setInitialPartons(0., 0.);
   }
   //---------------- Jets ---------------------------------------------
   mPFJEC   = JetCorrector::getJetCorrector(mPFJECservice,iSetup);
@@ -338,18 +356,37 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
   Handle<CaloJetCollection> calojets;
   Handle<JetExtendedAssociation::Container> calojetExtender;
   Handle<ValueMap<reco::JetID> > calojetID;
+  Handle<JetFlavourMatchingCollection> jetMC;
+  // B-tag
+  Handle<JetTagCollection> bTag_tchp;
+  Handle<JetTagCollection> bTag_tche;
+  Handle<JetTagCollection> bTag_csv;
+  Handle<JetTagCollection> bTag_ssvhp;
+  Handle<JetTagCollection> bTag_ssvhe;
+  Handle<JetTagCollection> bTag_jp;
+  event.getByLabel("trackCountingHighPurBJetTags", bTag_tchp);
+  event.getByLabel("trackCountingHighEffBJetTags", bTag_tche);
+  event.getByLabel("combinedSecondaryVertexBJetTags", bTag_csv);
+  event.getByLabel("simpleSecondaryVertexHighPurBJetTags", bTag_ssvhp);
+  event.getByLabel("simpleSecondaryVertexHighEffBJetTags", bTag_ssvhe);
+  event.getByLabel("jetProbabilityBJetTags", bTag_jp);
+  //
+
   event.getByLabel(mPFJetsName,pfjets);
   event.getByLabel(mCaloJetsName,calojets);
   event.getByLabel(mCaloJetExtender,calojetExtender);
   event.getByLabel(mCaloJetID,calojetID);
   if (mIsMCarlo) {
     event.getByLabel(mGenJetsName,genjets);
+    event.getByLabel(mJetFlavour, jetMC);
+    event.getByLabel("genParticles",genParticles); 
     for(GenJetCollection::const_iterator i_gen = genjets->begin(); i_gen != genjets->end(); i_gen++) {
       if (i_gen->pt() > mMinGenPt && fabs(i_gen->y()) < mMaxY) {
         mGenJets.push_back(i_gen->p4());
       }
     }
   }
+  int njets(0);
   //----------- PFJets -------------------------
   for(PFJetCollection::const_iterator i_pfjet = pfjets->begin(); i_pfjet != pfjets->end(); i_pfjet++) {
     QCDPFJet qcdpfjet;
@@ -400,6 +437,18 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       mPFUnc->setJetEta(i_pfjet->eta());
       mPFUnc->setJetPt(scale * i_pfjet->pt());
       unc = mPFUnc->getUncertainty(true);
+
+//to uncertainity  test
+
+for (int i=1; i<20; i++) {float eta=i*0.2;
+for (int j=1; j<20; j++) {float pt=100.*j;
+mPFUnc->setJetEta(eta);
+mPFUnc->setJetPt(pt);
+float uncxx = mPFUnc->getUncertainty(true);
+cout<<"  i  "<<i<<" eta "<<eta<<"  j  "<< j<<" pt "<<pt<<"    uncxx "<<uncxx<<endl;
+}
+}
+
     }
     if (mPFJECUncSrc != "") {
       for(unsigned isrc=0;isrc<mPFJECUncSrcNames.size();isrc++) {
@@ -407,6 +456,12 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
         mPFUncSrc[isrc]->setJetPt(scale * i_pfjet->pt());
         float unc1 = mPFUncSrc[isrc]->getUncertainty(true);
         uncSrc.push_back(unc1);
+//float etayy=0.2;
+//float ptyy=400.;
+//mPFUncSrc[isrc]->setJetEta(etayy);
+//mPFUncSrc[isrc]->setJetPt(ptyy);
+//float unc1yy = mPFUncSrc[isrc]->getUncertainty(true);
+//cout<< " isrc " <<isrc<< " unc1yy " <<unc1yy<<endl;
       }
     }
     qcdpfjet.setP4(i_pfjet->p4());
@@ -439,7 +494,9 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     qcdpfjet.setHFMulti(hf_hm,hf_phm);
     if (mIsMCarlo) {
       GenJetCollection::const_iterator i_matched;
+      JetFlavourMatchingCollection::const_iterator i_flavour_matched;
       float rmin(999);
+      float rmin_flavour(999);
       for(GenJetCollection::const_iterator i_gen = genjets->begin(); i_gen != genjets->end(); i_gen++) {
         double deltaR = reco::deltaR(*i_pfjet,*i_gen);
         if (deltaR < rmin) {
@@ -447,17 +504,143 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
           i_matched = i_gen;
         }
       }
+      
+      //
+      for (reco::JetFlavourMatchingCollection::const_iterator iter = jetMC->begin(); iter != jetMC->end(); iter++) {
+        double deltaR = reco::deltaR(i_pfjet->eta(), i_pfjet->phi(), iter->second.getLorentzVector().Eta(), iter->second.getLorentzVector().Phi());
+         if (deltaR < rmin_flavour) {
+          rmin_flavour = deltaR;
+          i_flavour_matched = iter;
+        }
+     }
+      float bquark_3 = 0.0;
+      float bquark_2 = 0.0; 
+      float parton_id = 0.0;
+      for (reco::GenParticleCollection::const_iterator igen_par = genParticles->begin(); igen_par != genParticles->end(); igen_par++) {
+        double deltaR2 = reco::deltaR(*i_pfjet,*igen_par);       
+        int pdgid = igen_par->pdgId();
+        int status = igen_par->status();
+         if(deltaR2 < 0.35 && status == 3 && abs(pdgid) == 5) bquark_3 = 1.0;
+         if(deltaR2 < 0.35 && status == 2 && abs(pdgid) == 5) bquark_2 = 1.0;
+        }
+ 
+        
+/*
+QCD mc asagidaki sorun oldugu icin asagidaki ekleme yapildi.
+Begin processing the 1201st record. Run 1, Event 5119345, LumiSection 41962 at 14-Aug-2013 03:55:56.357 CDT
+%MSG-e FatalSystemSignal:  ProcessedTreeProducer:ak5 14-Aug-2013 03:55:59 CDT  Run: 1 Event: 5257472
+A fatal system signal has occurred: segmentation violation
+%MSG
+
+
+A fatal system signal has occurred: segmentation violation
+The following is the call stack containing the origin of the signal.
+*/
+       if (njets>2) parton_id = 0.; // ==> Eklenecek satir burada
+        else if (njets<=2 && fabs((*genParticles)[6].pdgId()) >= 32) parton_id = (*genParticles)[7+njets].pdgId(); // Bu satirda biraz degisti
+        else parton_id = (*genParticles)[6+njets].pdgId();
+
+//        cout<<"njets: "<<njets<<"\t parton: "<<parton_id<<endl;
+        njets = njets + 1;
+
+        
+     //
       if (genjets->size() == 0) {
         LorentzVector tmpP4(0.0,0.0,0.0,0.0);
         qcdpfjet.setGen(tmpP4,0);
+        qcdpfjet.setFlavor(-99.0);
+        qcdpfjet.setBstatus(-99.0, -99.0);
+        qcdpfjet.setPartonId(0.0);
       }
-      else
+      else{
         qcdpfjet.setGen(i_matched->p4(),rmin);
+        qcdpfjet.setFlavor(i_flavour_matched->second.getFlavour());
+        qcdpfjet.setBstatus(bquark_3, bquark_2);
+	qcdpfjet.setPartonId(parton_id);
+      }
     }
-    else {
+     else {
       LorentzVector tmpP4(0.0,0.0,0.0,0.0); 
       qcdpfjet.setGen(tmpP4,0);
+      qcdpfjet.setFlavor(-99.0);
+      qcdpfjet.setBstatus(-99.0, -99.0);
+      qcdpfjet.setPartonId(0.);
     }
+    //
+    if(bTag_csv->size() == 0.){
+      qcdpfjet.setBtag_tche(-99.);
+      qcdpfjet.setBtag_tchp(-99.);
+      qcdpfjet.setBtag_csv(-99.);
+      qcdpfjet.setBtag_ssvhe(-99.);
+      qcdpfjet.setBtag_ssvhp(-99.);
+      qcdpfjet.setBtag_jp(-99.);
+    }
+    else{
+    JetTagCollection::const_iterator i_btag_matched_tchp;
+    JetTagCollection::const_iterator i_btag_matched_tche;
+    JetTagCollection::const_iterator i_btag_matched_csv;
+    JetTagCollection::const_iterator i_btag_matched_ssvhe;
+    JetTagCollection::const_iterator i_btag_matched_ssvhp;
+    JetTagCollection::const_iterator i_btag_matched_jp;
+    float rmin_btag_tchp(999), rmin_btag_tche(999), rmin_btag_csv(999), rmin_btag_ssvhe(999), rmin_btag_ssvhp(999), rmin_btag_jp(999);
+    for (JetTagCollection::const_iterator i_btag = bTag_tchp->begin(); i_btag != bTag_tchp->end(); i_btag++){
+        double deltaR = reco::deltaR(i_pfjet->eta(), i_pfjet->phi(), (*i_btag).first->eta(), (*i_btag).first->phi());
+        if (deltaR < rmin_btag_tchp) {
+          rmin_btag_tchp = deltaR;
+          i_btag_matched_tchp = i_btag;
+        }
+     }
+     for (JetTagCollection::const_iterator i_btag = bTag_tche->begin(); i_btag != bTag_tche->end(); i_btag++){
+        double deltaR = reco::deltaR(i_pfjet->eta(), i_pfjet->phi(), (*i_btag).first->eta(), (*i_btag).first->phi());
+        if (deltaR < rmin_btag_tche) {
+          rmin_btag_tche = deltaR;
+          i_btag_matched_tche = i_btag;
+        }
+     }
+    for (JetTagCollection::const_iterator i_btag = bTag_csv->begin(); i_btag != bTag_csv->end(); i_btag++){
+        double deltaR = reco::deltaR(i_pfjet->eta(), i_pfjet->phi(), (*i_btag).first->eta(), (*i_btag).first->phi());
+        if (deltaR < rmin_btag_csv) {
+          rmin_btag_csv = deltaR;
+          i_btag_matched_csv = i_btag;
+        }
+     }
+     for (JetTagCollection::const_iterator i_btag = bTag_ssvhe->begin(); i_btag != bTag_ssvhe->end(); i_btag++){
+        double deltaR = reco::deltaR(i_pfjet->eta(), i_pfjet->phi(), (*i_btag).first->eta(), (*i_btag).first->phi());
+        if (deltaR < rmin_btag_ssvhe) {
+          rmin_btag_ssvhe = deltaR;
+          i_btag_matched_ssvhe = i_btag;
+        }
+     }
+     for (JetTagCollection::const_iterator i_btag = bTag_ssvhp->begin(); i_btag != bTag_ssvhp->end(); i_btag++){
+        double deltaR = reco::deltaR(i_pfjet->eta(), i_pfjet->phi(), (*i_btag).first->eta(), (*i_btag).first->phi());
+        if (deltaR < rmin_btag_ssvhp) {
+          rmin_btag_ssvhp = deltaR;
+          i_btag_matched_ssvhp = i_btag;
+        }
+     }
+     for (JetTagCollection::const_iterator i_btag = bTag_jp->begin(); i_btag != bTag_jp->end(); i_btag++){
+        double deltaR = reco::deltaR(i_pfjet->eta(), i_pfjet->phi(), (*i_btag).first->eta(), (*i_btag).first->phi());
+        if (deltaR < rmin_btag_jp) {
+          rmin_btag_jp = deltaR;
+          i_btag_matched_jp = i_btag;
+        }
+     }
+
+     double btag_tche  = (*i_btag_matched_tche).second;
+     double btag_tchp  = (*i_btag_matched_tchp).second;
+     double btag_csv   = (*i_btag_matched_csv).second;
+     double btag_ssvhe = (*i_btag_matched_ssvhe).second;
+     double btag_ssvhp = (*i_btag_matched_ssvhp).second;
+     double btag_jp    = (*i_btag_matched_jp).second; 
+
+     qcdpfjet.setBtag_tche(btag_tche);
+     qcdpfjet.setBtag_tchp(btag_tchp);
+     qcdpfjet.setBtag_csv(btag_csv);
+     qcdpfjet.setBtag_ssvhe(btag_ssvhe);
+     qcdpfjet.setBtag_ssvhp(btag_ssvhp);
+     qcdpfjet.setBtag_jp(btag_jp);
+     }
+  //
     if (qcdpfjet.ptCor() >= mMinPFPt)
       mPFJets.push_back(qcdpfjet);
     if (qcdpfjet.ptCor() >= mMinPFFatPt && fabs(qcdpfjet.eta()) < mMaxPFFatEta && qcdpfjet.looseID())
@@ -499,6 +682,17 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
       fatJet[i].setCor(1.0);
       fatJet[i].setArea(0.0);
       fatJet[i].setUncSrc(uncSrc); 
+      //
+      fatJet[i].setBtag_tche(tmpPFJets[i].btag_tche());
+      fatJet[i].setBtag_tchp(tmpPFJets[i].btag_tchp());
+      fatJet[i].setBtag_csv(tmpPFJets[i].btag_csv()); 
+      fatJet[i].setBtag_ssvhe(tmpPFJets[i].btag_ssvhe()); 
+      fatJet[i].setBtag_ssvhp(tmpPFJets[i].btag_ssvhp());
+      fatJet[i].setBtag_jp(tmpPFJets[i].btag_jp());
+      fatJet[i].setFlavor(tmpPFJets[i].flavor());
+      fatJet[i].setBstatus(tmpPFJets[i].bstatus3(), tmpPFJets[i].bstatus2());
+      fatJet[i].setPartonId(tmpPFJets[i].PartonId());
+      //
       if (sumPt[i] > 0)
         fatJet[i].setUnc(sumPtUnc[i]/sumPt[i]);
       else
@@ -547,7 +741,8 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
     qcdcalojet.setTightID(tightID);
     if (mIsMCarlo) {
       GenJetCollection::const_iterator i_matched;
-      float rmin(999);
+      JetFlavourMatchingCollection::const_iterator i_flavour_matched;
+      float rmin(999), rmin_flavour(999);
       for(GenJetCollection::const_iterator i_gen = genjets->begin(); i_gen != genjets->end(); i_gen++) {
         double deltaR = reco::deltaR(*i_calojet,*i_gen);
         if (deltaR < rmin) {
@@ -555,17 +750,120 @@ void ProcessedTreeProducer::analyze(edm::Event const& event, edm::EventSetup con
           i_matched = i_gen;
         }
       }
+      for (reco::JetFlavourMatchingCollection::const_iterator iter = jetMC->begin(); iter != jetMC->end(); iter++) {
+        double deltaR = reco::deltaR(i_calojet->eta(), i_calojet->phi(), iter->second.getLorentzVector().Eta(), iter->second.getLorentzVector().Phi());
+         if (deltaR < rmin_flavour) {
+          rmin_flavour = deltaR;
+          i_flavour_matched = iter;
+        }
+     }
+      float bquark_3 = 0.0;
+      float bquark_2 = 0.0;
+      for (reco::GenParticleCollection::const_iterator igen_par = genParticles->begin(); igen_par != genParticles->end(); igen_par++) {
+        double deltaR2 = reco::deltaR(*i_calojet,*igen_par);
+        int pdgid = igen_par->pdgId();
+        int status = igen_par->status();
+         if(deltaR2 < 0.35 && status == 3 && abs(pdgid) == 5) bquark_3 = 1.0;
+         if(deltaR2 < 0.35 && status == 2 && abs(pdgid) == 5) bquark_2 = 1.0;
+        }
+
+
       if (genjets->size() == 0) {
         LorentzVector tmpP4(0.0,0.0,0.0,0.0);
         qcdcalojet.setGen(tmpP4,0);
+        qcdcalojet.setFlavor(-99.0);
+        qcdcalojet.setBstatus(-99, -99);
       }
-      else
+      else{
         qcdcalojet.setGen(i_matched->p4(),rmin);
+        qcdcalojet.setFlavor(i_flavour_matched->second.getFlavour());
+        qcdcalojet.setBstatus(bquark_3, bquark_2);
+      }
     }
     else {
       LorentzVector tmpP4(0.0,0.0,0.0,0.0); 
       qcdcalojet.setGen(tmpP4,0);
+      qcdcalojet.setFlavor(-99.0);
+      qcdcalojet.setBstatus(-99, -99);
     }
+    
+    //
+    if(bTag_csv->size() == 0.){
+      qcdcalojet.setBtag_tche(-99.);
+      qcdcalojet.setBtag_tchp(-99.);
+      qcdcalojet.setBtag_csv(-99.);
+      qcdcalojet.setBtag_ssvhe(-99.);
+      qcdcalojet.setBtag_ssvhp(-99.);
+      qcdcalojet.setBtag_jp(-99.);
+    }
+    else{
+    JetTagCollection::const_iterator i_btag_matched_tchp;
+    JetTagCollection::const_iterator i_btag_matched_tche;
+    JetTagCollection::const_iterator i_btag_matched_csv;
+    JetTagCollection::const_iterator i_btag_matched_ssvhe;
+    JetTagCollection::const_iterator i_btag_matched_ssvhp;
+    JetTagCollection::const_iterator i_btag_matched_jp;
+    float rmin_btag_tchp(999), rmin_btag_tche(999), rmin_btag_csv(999), rmin_btag_ssvhe(999), rmin_btag_ssvhp(999), rmin_btag_jp(999);
+    for (JetTagCollection::const_iterator i_btag = bTag_tchp->begin(); i_btag != bTag_tchp->end(); i_btag++){
+        double deltaR = reco::deltaR(i_calojet->eta(), i_calojet->phi(), (*i_btag).first->eta(), (*i_btag).first->phi());
+        if (deltaR < rmin_btag_tchp) {
+          rmin_btag_tchp = deltaR;
+          i_btag_matched_tchp = i_btag;
+        }
+     }
+     for (JetTagCollection::const_iterator i_btag = bTag_tche->begin(); i_btag != bTag_tche->end(); i_btag++){
+        double deltaR = reco::deltaR(i_calojet->eta(), i_calojet->phi(), (*i_btag).first->eta(), (*i_btag).first->phi());
+        if (deltaR < rmin_btag_tche) {
+          rmin_btag_tche = deltaR;
+          i_btag_matched_tche = i_btag;
+        }
+     }
+    for (JetTagCollection::const_iterator i_btag = bTag_csv->begin(); i_btag != bTag_csv->end(); i_btag++){
+        double deltaR = reco::deltaR(i_calojet->eta(), i_calojet->phi(), (*i_btag).first->eta(), (*i_btag).first->phi());
+        if (deltaR < rmin_btag_csv) {
+          rmin_btag_csv = deltaR;
+          i_btag_matched_csv = i_btag;
+        }
+     }
+    for (JetTagCollection::const_iterator i_btag = bTag_ssvhe->begin(); i_btag != bTag_ssvhe->end(); i_btag++){
+        double deltaR = reco::deltaR(i_calojet->eta(), i_calojet->phi(), (*i_btag).first->eta(), (*i_btag).first->phi());
+        if (deltaR < rmin_btag_ssvhe) {
+          rmin_btag_ssvhe = deltaR;
+          i_btag_matched_ssvhe = i_btag;
+        }
+     }
+     for (JetTagCollection::const_iterator i_btag = bTag_ssvhp->begin(); i_btag != bTag_ssvhp->end(); i_btag++){
+        double deltaR = reco::deltaR(i_calojet->eta(), i_calojet->phi(), (*i_btag).first->eta(), (*i_btag).first->phi());
+        if (deltaR < rmin_btag_ssvhp) {
+          rmin_btag_ssvhp = deltaR;
+          i_btag_matched_ssvhp = i_btag;
+        }
+     }
+     for (JetTagCollection::const_iterator i_btag = bTag_jp->begin(); i_btag != bTag_jp->end(); i_btag++){
+        double deltaR = reco::deltaR(i_calojet->eta(), i_calojet->phi(), (*i_btag).first->eta(), (*i_btag).first->phi());
+        if (deltaR < rmin_btag_jp) {
+          rmin_btag_jp = deltaR;
+          i_btag_matched_jp = i_btag;
+        }
+     }
+
+     double btag_tche  = (*i_btag_matched_tche).second;
+     double btag_tchp  = (*i_btag_matched_tchp).second;
+     double btag_csv   = (*i_btag_matched_csv).second;
+     double btag_ssvhe = (*i_btag_matched_ssvhe).second;
+     double btag_ssvhp = (*i_btag_matched_ssvhp).second;
+     double btag_jp    = (*i_btag_matched_jp).second;
+
+     qcdcalojet.setBtag_tche(btag_tche);
+     qcdcalojet.setBtag_tchp(btag_tchp);
+     qcdcalojet.setBtag_csv(btag_csv);
+     qcdcalojet.setBtag_ssvhe(btag_ssvhe);
+     qcdcalojet.setBtag_ssvhp(btag_ssvhp);
+     qcdcalojet.setBtag_jp(btag_jp);
+     }
+  //
+
+
     if (qcdcalojet.ptCor() >= mMinCaloPt)
       mCaloJets.push_back(qcdcalojet);
   }

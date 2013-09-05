@@ -22,6 +22,8 @@ class QCDEventHdr
       void setHCALNoise(bool fNoise) {mHCALNoise = fNoise;}
       void setPU(int fNBX, int fOOTPUEarly, int fOOTPULate, int fINTPU) {mNBX = fNBX; mOOTPUEarly = fOOTPUEarly; mOOTPULate = fOOTPULate; mINTPU = fINTPU;}
       void setTrPu(float fTrPu) {mTrPu = fTrPu;} // setting the true PU 
+      void setXsec(double fXsec) {mmXsec = fXsec;};
+      void setInitialPartons(float finitial1, float finitial2) {mInitial_parton1 = finitial1; mInitial_parton2 = finitial2;}
       //------------ Get methods ------------------------------
       int runNo()           const {return mRun;} 
       int event()           const {return mEvent;} 
@@ -48,6 +50,9 @@ class QCDEventHdr
       float weight()        const {return mWeight;}
       float caloRho()       const {return mCaloRho;} 
       float pfRho()         const {return mPFRho;} 
+      float Xsec()          const {return mmXsec;} 
+      float init_parton1()  const {return mInitial_parton1;}
+      float init_parton2()  const {return mInitial_parton2;}
       private:
         //---- flag about the PV quality -------------- 
         bool mIsPVgood; 
@@ -93,5 +98,10 @@ class QCDEventHdr
         float mCaloRho;
         //---- median PF pt density -------------------
         float mPFRho;
+        // ---- Xsec
+        double mmXsec;
+        // --- Initial Partons ------------------------
+        float mInitial_parton1;
+        float mInitial_parton2;
 };
 #endif
