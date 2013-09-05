@@ -18,12 +18,11 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
-using namespace edm;
 using namespace reco;
 using namespace std;
 using namespace trigger;
 
-class ProcessedTreeProducer : public edm::EDAnalyzer 
+class ProcessedTreeProducer : public edm::EDAnalyzer
 {
   public:
     typedef reco::Particle::LorentzVector LorentzVector;
@@ -33,7 +32,7 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     virtual void analyze(edm::Event const& evt, edm::EventSetup const& iSetup);
     virtual void endJob();
     virtual ~ProcessedTreeProducer();
-  private:  
+  private:
     void buildTree();
     static bool sort_calojets(QCDCaloJet j1, QCDCaloJet j2) {
       return j1.ptCor() > j2.ptCor();
@@ -41,25 +40,23 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     static bool sort_pfjets(QCDPFJet j1, QCDPFJet j2) {
       return j1.ptCor() > j2.ptCor();
     }
-    //---- configurable parameters --------  
+    //---- configurable parameters --------
     bool   mIsMCarlo;
     bool   mUseGenInfo;
     bool   mPrintTriggerMenu;
     bool   isPFJecUncSet_,isCaloJecUncSet_;
     int    mGoodVtxNdof,mMinNCaloJets,mMinNPFJets;
-    double mGoodVtxZ; 
+    double mGoodVtxZ;
     double mMinCaloPt,mMinPFPt,mMinPFFatPt,mMaxPFFatEta,mMinGenPt,mMaxY,mMinJJMass,mXsec;
-    std::string mCaloJECservice;
-    std::string mPFJECservice;
     std::string mPFPayloadName;
     std::string mCaloPayloadName;
     std::string mPFJECUncSrc;
-    std::string mJetFlavour;
     std::vector<std::string> mPFJECUncSrcNames;
     edm::InputTag mCaloJetsName;
     edm::InputTag mPFJetsName;
+    edm::InputTag mCaloMETName;
+    edm::InputTag mPFMETName;
     edm::InputTag mGenJetsName;
-    edm::InputTag mCaloJetID;
     edm::InputTag mCaloJetExtender;
     edm::InputTag mOfflineVertices;
     edm::InputTag mSrcCaloRho;
@@ -75,15 +72,13 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     edm::Handle<trigger::TriggerEvent> triggerEventHandle_;
     HLTConfigProvider hltConfig_;
     //---- CORRECTORS ----------------------
-    const JetCorrector *mPFJEC;
-    const JetCorrector *mCALOJEC;
     JetCorrectionUncertainty *mCALOUnc;
     JetCorrectionUncertainty *mPFUnc;
     std::vector<JetCorrectionUncertainty*> mPFUncSrc;
-    
+
     edm::Service<TFileService> fs;
     TTree *mTree;
-    TH1F *mTriggerPassHisto,*mTriggerNamesHisto; 
+    TH1F *mTriggerPassHisto,*mTriggerNamesHisto;
     //---- TREE variables --------
     QCDEvent *mEvent;
 };
