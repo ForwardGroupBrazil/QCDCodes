@@ -48,12 +48,13 @@ class ProcessedTreeProducer : public edm::EDAnalyzer
     bool   isPFJecUncSet_,isCaloJecUncSet_;
     int    mGoodVtxNdof,mMinNCaloJets,mMinNPFJets;
     double mGoodVtxZ; 
-    double mMinCaloPt,mMinPFPt,mMinPFFatPt,mMaxPFFatEta,mMinGenPt,mMaxY,mMinJJMass;
+    double mMinCaloPt,mMinPFPt,mMinPFFatPt,mMaxPFFatEta,mMinGenPt,mMaxY,mMinJJMass,mXsec;
     std::string mCaloJECservice;
     std::string mPFJECservice;
     std::string mPFPayloadName;
     std::string mCaloPayloadName;
     std::string mPFJECUncSrc;
+    std::string mJetFlavour;
     std::vector<std::string> mPFJECUncSrcNames;
     edm::InputTag mCaloJetsName;
     edm::InputTag mPFJetsName;
